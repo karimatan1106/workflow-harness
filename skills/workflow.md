@@ -33,7 +33,7 @@ even in 10M+ line codebases.
 
 | Command | Action |
 |---------|--------|
-| `/harness start <name>` | Start task (userIntent >= 20 chars, UI-1) |
+| `/harness start <name>` | Start task (UI-1 check; 3-axis intent analysis; AskUserQuestion if unclear) |
 | `/harness status` | Show current task state |
 | `/harness next` | Run DoD checks and advance |
 | `/harness approve <type>` | Approve gate (requirements/design/test_design/code_review/acceptance) |
@@ -50,11 +50,15 @@ even in 10M+ line codebases.
 **`/harness start <name>`**
 1. Pre-start checks: active tasks <= 5, git status clean, branch fresh vs origin
 2. Validate userIntent >= 20 characters (UI-1: block if too short)
-3. Detect ambiguous expressions and request rephrasing (UI-2: PF-4)
-4. Detect missing purpose/success criteria (UI-7: PF-5, warning only)
-5. Call `harness_start(taskName, userIntent)`
-6. Call `harness_set_scope` if files/dirs are known
-7. Report: taskId, phase, size, docsDir, sessionToken
+3. Analyze userIntent on 3 axes: purpose (why), success criteria (definition of done), impact scope (which files/modules); if all 3 axes are clear, skip to step 6
+4. Invoke AskUserQuestion for unclear axes (max 3 questions, 2-4 options each):
+   - Purpose unclear → ask: "What is the goal of this task? (why are you doing it?)"
+   - Success criteria unclear → ask: "How will you know this task is complete? (what should work?)"
+   - Impact scope unclear → ask: "Which files, modules, or features will be affected?"
+5. Integrate answers into userIntent (append responses to original intent string)
+6. Call `harness_start(taskName, enriched userIntent)`
+7. Call `harness_set_scope` if files/dirs are known
+8. Report: taskId, phase, size, docsDir, sessionToken
 
 **`/harness next`**
 1. Call `harness_next(taskId, sessionToken)`
