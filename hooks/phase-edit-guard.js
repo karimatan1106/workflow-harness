@@ -58,6 +58,14 @@ function runHook(raw) {
 
   if (isBypassPath(filePath)) process.exit(0);
 
+  // Block Orchestrator from directly editing phase artifacts
+  const normalizedPath = filePath.replace(/\\/g, '/');
+  if (normalizedPath.includes('docs/workflows/')) {
+    const msg = `Orchestrator must not edit phase artifacts directly. Use Agent tool to delegate to subagents.`;
+    process.stderr.write(JSON.stringify({ decision: 'block', reason: msg, path: filePath }) + '\n');
+    process.exit(2);
+  }
+
   const phase = getCurrentPhase(findProjectRoot());
   if (!phase) process.exit(0);
 

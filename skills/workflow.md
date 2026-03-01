@@ -90,3 +90,20 @@ Use corresponding `harness_*` MCP tool with taskId and sessionToken.
 
 If the user asks a question (ending with "?"), it is usually review/analysis -- no workflow needed.
 If the user gives a directive ("do X", "fix X", "add X"), start the workflow.
+
+---
+
+## 4. Orchestrator Direct Edit Policy
+
+Orchestrator MUST NOT edit phase artifacts in `docs/workflows/` directly.
+Phase artifact paths match: `docs/workflows/**` (any file under the workflow docs directory).
+
+**NEVER (blocked by phase-edit-guard hook):**
+- Using Edit/Write tools on `docs/workflows/<task>/planning.toon`
+- Using Edit/Write tools on `docs/workflows/<task>/spec.md`
+- Using Edit/Write tools on any file under `docs/workflows/`
+
+**OK (correct delegation pattern):**
+- Launch a subagent via the Task/Agent tool; subagent writes the artifact
+- Call `harness_next` to run DoD gates after subagent completes
+- On DoD failure, re-launch the subagent with a retry prompt (never fix inline)
