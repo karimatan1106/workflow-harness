@@ -1,0 +1,285 @@
+{
+  "tasks": [
+    {
+      "taskId": "180e9ee1-24d9-4e3e-ad09-54acc2e91f4b",
+      "taskName": "csp-sub-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "3184ba68-22b3-4e50-b580-138f7305f663",
+      "taskName": "list-beta-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "3194f52e-a92c-47ee-a5c3-019b6e6a47d8",
+      "taskName": "list-alpha-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "31bdcfd2-2ef4-43cb-9ac2-33e2953d30b1",
+      "taskName": "ct-large-task",
+      "phase": "scope_definition",
+      "size": "medium",
+      "status": "active"
+    },
+    {
+      "taskId": "46c29e1f-2692-4e35-9f9b-6c51d87296fc",
+      "taskName": "kb-url-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "59ab8e20-3b45-4720-afe7-54ff2b9bbd4b",
+      "taskName": "rt-reset-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "5a64290a-3f19-4279-a1ee-c9213f54527a",
+      "taskName": "lt-tamper-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "5cbba446-dfa6-4049-a5c7-7aa676cf3179",
+      "taskName": "ap-hmac-task",
+      "phase": "research",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "5f988737-1580-4135-9417-9d9879097c1a",
+      "taskName": "tf-empty-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "6668a9da-b220-4c32-837c-42d4f25cb699",
+      "taskName": "ct-small-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "66f53d2c-d97d-4d5d-b346-f55c55a6643b",
+      "taskName": "ag-approve-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "69c39e65-18e8-4949-abb5-d41e72a132d7",
+      "taskName": "ct-uuid-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "6fa75cc9-13b5-42fe-9ece-ae138a208b60",
+      "taskName": "lt-load-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "772cbb1c-b1d4-44bd-bc55-6747dbb56b31",
+      "taskName": "ct-scope-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "832e3246-6f95-46a8-b680-8d19bcd1fe06",
+      "taskName": "ct-json-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "8691c48b-07c2-4fab-b37c-0357e9e51e02",
+      "taskName": "list-active-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "8d4c74ef-ec62-4bd1-8c57-18254b586856",
+      "taskName": "ap-complete-task",
+      "phase": "research",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "934a1450-8247-47ed-acf7-19adc932a61a",
+      "taskName": "us-dedup-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "9c1bdedf-d300-45bf-ab88-f571272b1d60",
+      "taskName": "kb-empty-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "a5bc9da7-9660-44f8-a9d0-8a045f7be281",
+      "taskName": "rt-history-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "a8660710-72cb-4ddf-aa6a-d227df392813",
+      "taskName": "ct-hmac-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "b0566269-8328-4ec3-9d82-cd730f99d1d7",
+      "taskName": "csp-multi-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "b0c9eeaa-7e61-4ae6-a447-b3534b58e375",
+      "taskName": "tf-baseline-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "b59c1bb7-1d8f-4718-a464-35f557ca2dcd",
+      "taskName": "kb-basic-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "bc86092d-a43f-4025-ac0d-98687a93446f",
+      "taskName": "ct-session-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "be813dd9-8323-46cc-88fc-3ec9e1d0164d",
+      "taskName": "ap-persist-task",
+      "phase": "research",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "c06ba604-6ebd-40a7-af09-b09f8452a365",
+      "taskName": "list-tamper-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "c35ef02e-0cea-4da3-a78e-25263fa44545",
+      "taskName": "tf-record-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "c3de3ca2-998f-4735-8510-8e79da230d5f",
+      "taskName": "ct-scope-dir",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "c55c472f-8aa1-46e2-a5e3-c9e8cdbbb88c",
+      "taskName": "ag-multi-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "d1d7da23-8940-45b9-bd3c-08c977e5f7cc",
+      "taskName": "us-replace-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "d47d0996-f20d-42a7-a3f4-ec483a8dd312",
+      "taskName": "ct-disk-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "d489b306-63cd-4d2d-9a66-3492edbb53d8",
+      "taskName": "rt-hmac-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "d4bda758-c22f-4482-bdfd-2856472e4d2a",
+      "taskName": "us-glob-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "dc45ab12-38e2-411d-80ad-42999cb31376",
+      "taskName": "us-merge-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "f9989aae-f088-4b7a-8b01-95d2e994869c",
+      "taskName": "ap-advance-task",
+      "phase": "research",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "fc305fc8-37ff-4575-b76d-bb943daef75c",
+      "taskName": "kb-multi-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "fd0f330a-646f-4b06-8adf-a517d1698817",
+      "taskName": "ct-paths-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "fe161edb-0f9a-4be9-a80d-d33f68bcd797",
+      "taskName": "ct-basic-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    },
+    {
+      "taskId": "ff85568e-0170-4abe-8204-8a61359b8da4",
+      "taskName": "tf-dedup-task",
+      "phase": "scope_definition",
+      "size": "small",
+      "status": "active"
+    }
+  ],
+  "updatedAt": "2026-03-01T02:00:08.557Z"
+}

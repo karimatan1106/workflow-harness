@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "lessons": [],
+  "stashedFailures": [
+    {
+      "phase": "research",
+      "taskId": "task-123",
+      "errorPattern": "Forbidden patterns found: TODO; Content lines 8 < required 30",
+      "errorMessage": "Forbidden patterns found: TODO; Content lines 8 < required 30",
+      "retryCount": 1,
+      "createdAt": "2026-03-01T11:54:06.115Z"
+    }
+  ]
+}

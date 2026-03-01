@@ -1,0 +1,12 @@
+{
+  "name": "workflow-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Intent-driven 30-phase workflow harness for Claude Code",
+  "type": "module",
+  "scripts": {
+    "build": "cd mcp-server && npm run build",
+    "dev": "cd mcp-server && npm run dev",
+    "test": "cd mcp-server && npm test"
+  }
+}
