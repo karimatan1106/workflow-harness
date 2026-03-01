@@ -1,0 +1,6 @@
+node_modules/
+dist/
+mcp-server/.claude/state/
+mcp-server/.claude/generated-files.json
+*.local
+.env
