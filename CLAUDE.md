@@ -2,6 +2,8 @@
 
 This file is the authoritative harness-level instruction set. All AI agents operating within this project MUST follow these rules. Violations are blocked by hooks.
 
+**ワークフロー強制ルール**: コード/ファイルの変更を伴うタスクは `/harness start <タスク名>` でワークフローを開始すること。質問・分析・調査は直接回答してよい。
+
 ---
 
 ## 1. Design Philosophy
