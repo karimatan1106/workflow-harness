@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { encode as toonEncode } from '@toon-format/toon';
 import { setupHandlerTest, teardownHandlerTest, type TestCtx } from './handler-test-setup.js';
 
 let ctx: TestCtx;
@@ -83,73 +84,49 @@ describe('Parallel Phases', () => {
     const docsDir = startRes.docsDir as string;
     mkdirSync(docsDir, { recursive: true });
 
-    // IFV-1: threat_modeling requires requirements.md as input
-    writeFileSync(join(docsDir, 'requirements.md'), [
-      '## サマリー', '', 'Requirements for the task.', '', '## 受入基準', '',
-      'AC-1: System must authenticate users.', 'AC-2: System must log all access.', 'AC-3: System must encrypt data.',
-      '', '## NOT_IN_SCOPE', '', 'No out-of-scope items.', '', '## OPEN_QUESTIONS', '', 'なし',
-    ].join('\n'), 'utf8');
+    // IFV-1: threat_modeling requires requirements.toon as input
+    const requirementsContent = toonEncode({
+      phase: 'requirements',
+      taskId: 'test',
+      ts: new Date().toISOString(),
+      decisions: [
+        { id: 'REQ-001', statement: 'System must authenticate users with JWT tokens', rationale: 'Security requirement' },
+        { id: 'REQ-002', statement: 'System must log all access events for audit', rationale: 'Compliance requirement' },
+        { id: 'REQ-003', statement: 'System must encrypt data at rest and in transit', rationale: 'Security requirement' },
+        { id: 'REQ-004', statement: 'System must handle rate limiting for all endpoints', rationale: 'Performance requirement' },
+        { id: 'REQ-005', statement: 'System must validate all input before processing', rationale: 'Security requirement' },
+      ],
+      acceptanceCriteria: [
+        { id: 'AC-1', criterion: 'System authenticates users correctly' },
+        { id: 'AC-2', criterion: 'System logs all access events' },
+        { id: 'AC-3', criterion: 'System encrypts sensitive data' },
+      ],
+      notInScope: [{ item: 'Mobile application development is excluded' }],
+      openQuestions: [],
+      artifacts: [{ path: 'docs/requirements.toon', role: 'spec', summary: 'Requirements definition' }],
+      next: { criticalDecisions: ['REQ-001'], readFiles: ['docs/requirements.toon'], warnings: [] },
+    });
+    writeFileSync(join(docsDir, 'requirements.toon'), requirementsContent, 'utf8');
 
-    // Create valid threat-model.md artifact with Delta Entry and required sections
-    const artifact = [
-      '## サマリー',
-      '',
-      '- [TM-001][finding] 認証トークンの漏洩リスクが主要な脅威として特定された',
-      '- [TM-002][decision] JWTトークンにはHMAC-SHA256署名を適用する方針とした',
-      '- [TM-003][risk] セッション固定攻撃への対策が必要である',
-      '- [TM-004][constraint] 外部認証プロバイダのレート制限が1000req/minである',
-      '- [TM-005][next] planningフェーズで認証フローの詳細設計を実施する',
-      '',
-      '## 脅威シナリオ',
-      '',
-      '攻撃者がネットワーク傍受によりJWTトークンを取得するシナリオを想定する。',
-      'HTTPS強制により通信路の暗号化を確保し、トークン漏洩を防止する。',
-      'クロスサイトスクリプティング攻撃によるトークン窃取への対策も必要である。',
-      'HTTPOnly属性のCookieを使用してJavaScriptからのアクセスを防止する。',
-      'CSRF攻撃に対してはSameSite属性とCSRFトークンの二重防御を採用する。',
-      'SQLインジェクション攻撃はパラメータ化クエリの徹底で完全に防止する。',
-      'ブルートフォース攻撃にはアカウントロックアウト機構で対処する。',
-      'ディレクトリトラバーサル攻撃には入力パスの正規化で対策する。',
-      'セッションハイジャック攻撃にはIPバインドとUA検証で検出する。',
-      'APIキー漏洩リスクには環境変数管理とシークレットローテーションで対策する。',
-      '',
-      '## リスク評価',
-      '',
-      'トークン漏洩リスクはHTTPS強制とHTTPOnly Cookieにより低減される。',
-      'セッション固定攻撃は認証成功時のセッションID再生成で対策する。',
-      '権限昇格リスクはロールベースアクセス制御の厳密な実装で軽減する。',
-      'SQLインジェクションリスクはパラメータ化クエリの使用で排除する。',
-      '依存パッケージの脆弱性は定期的なnpm auditで継続監視する。',
-      'DoS攻撃のリスクはレートリミッターとWAFの導入により軽減される。',
-      'ファイルアップロード機能のリスクはMIMEタイプ検証とサイズ制限で対策する。',
-      'ログインジェクション攻撃は出力エンコーディングの徹底で防止される。',
-      'オープンリダイレクト攻撃はホワイトリスト方式のURL検証で排除する。',
-      'サーバーサイドリクエストフォージェリはURLスキーム制限で防止する。',
-      '',
-      '## セキュリティ要件',
-      '',
-      'すべてのAPIエンドポイントでJWT検証ミドルウェアを適用すること。',
-      'パスワードはbcryptでハッシュ化し、平文保存を禁止する。',
-      'ログイン試行回数を制限し、ブルートフォース攻撃を防止する。',
-      'セキュリティヘッダーを全レスポンスに付与する設定を実装する。',
-      'エラーメッセージに内部情報を含めないようサニタイズすること。',
-      'アクセスログには認証情報を含めず監査証跡として保全する。',
-      'トークンの有効期限を15分に設定しリフレッシュトークンで延長する。',
-      'Content-Security-Policyヘッダーでインラインスクリプトを禁止する。',
-      'Strict-Transport-Securityヘッダーを設定してHTTPS接続を強制する。',
-      'X-Content-Type-Optionsヘッダーでコンテンツスニッフィングを防止する。',
-      'APIレスポンスにX-Frame-Optionsヘッダーを付与してクリックジャッキングを防ぐ。',
-      'データベース接続にはTLSを使用し通信を暗号化する。',
-      'サーバーサイドのバリデーションをクライアントサイドと独立して実装する。',
-      'セキュリティパッチの適用を自動化するCI/CDパイプラインを構築する。',
-      '入力値のサニタイズ処理を全APIエンドポイントに適用する。',
-    ].join('\n');
-    writeFileSync(join(docsDir, 'threat-model.md'), artifact, 'utf8');
-    writeFileSync(
-      join(docsDir, 'threat_modeling.toon'),
-      'phase: threat_modeling\ntaskId: toon-test\nts: "2026-03-01T00:00:00Z"\ndecisions[1]{id,statement,rationale}:\n  TM-001,Threat model completed,Security analysis done\n',
-      'utf8',
-    );
+    // Create valid threat-model.toon artifact with decisions[] and required keys
+    const threatModelContent = toonEncode({
+      phase: 'threat_modeling',
+      taskId: 'test',
+      ts: new Date().toISOString(),
+      decisions: [
+        { id: 'TM-001', statement: 'JWTトークン漏洩リスクが主要な脅威として特定された。HMAC-SHA256署名を適用する', rationale: 'セキュリティ要件に基づく' },
+        { id: 'TM-002', statement: 'セッション固定攻撃への対策として認証成功時にセッションIDを再生成する', rationale: 'OWASP推奨事項' },
+        { id: 'TM-003', statement: 'SQLインジェクション攻撃はパラメータ化クエリの徹底で完全に防止する', rationale: 'セキュリティベストプラクティス' },
+        { id: 'TM-004', statement: 'ブルートフォース攻撃にはアカウントロックアウト機構と1000req/min制限で対処する', rationale: 'レート制限ポリシー' },
+        { id: 'TM-005', statement: 'planningフェーズで認証フローの詳細設計を実施し脅威対策を組み込む', rationale: '設計フェーズへの引き継ぎ' },
+        { id: 'TM-006', statement: 'CSRF攻撃に対してはSameSite属性とCSRFトークンの二重防御を採用する', rationale: 'クロスサイト攻撃対策' },
+        { id: 'TM-007', statement: 'XSS攻撃はHTTPOnly属性のCookieとContent-Security-Policyヘッダーで防止する', rationale: 'フロントエンドセキュリティ' },
+        { id: 'TM-008', statement: 'APIキー漏洩リスクには環境変数管理とシークレットローテーションで対策する', rationale: 'シークレット管理ポリシー' },
+      ],
+      artifacts: [{ path: 'docs/threat-model.toon', role: 'spec', summary: 'Threat modeling artifact' }],
+      next: { criticalDecisions: ['TM-001', 'TM-002'], readFiles: ['docs/threat-model.toon'], warnings: [] },
+    });
+    writeFileSync(join(docsDir, 'threat-model.toon'), threatModelContent, 'utf8');
 
     const res = await call(mgr, 'harness_complete_sub', {
       taskId,
@@ -175,8 +152,8 @@ describe('Parallel Phases', () => {
     const docsDir = startRes.docsDir as string;
     mkdirSync(docsDir, { recursive: true });
 
-    // Create an invalid threat-model.md (missing required sections, too short)
-    writeFileSync(join(docsDir, 'threat-model.md'), '## サマリー\n\nShort content.', 'utf8');
+    // Create an invalid threat-model.toon (too short, missing required keys)
+    writeFileSync(join(docsDir, 'threat-model.toon'), 'phase: threat_modeling\ntaskId: test\n', 'utf8');
 
     const res = await call(mgr, 'harness_complete_sub', {
       taskId,

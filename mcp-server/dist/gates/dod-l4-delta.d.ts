@@ -1,5 +1,5 @@
 /**
- * DoD L4 Delta Entry format check: validates ## サマリー section entries.
+ * DoD L4 Delta Entry format check: validates decisions[] array in TOON artifacts.
  * @spec docs/spec/features/workflow-harness.md
  */
 import type { DoDCheckResult } from './dod-types.js';

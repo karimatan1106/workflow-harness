@@ -12,30 +12,36 @@ export const ARTIFACT_QUALITY_RULES = `## 成果物品質要件
   日本語: 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ダミー, 仮置き
 - 角括弧プレースホルダー [#xxx#] 形式禁止
 - 禁止語への言及は間接表現を使用すること`;
-export const SUMMARY_SECTION_RULE = `## サマリーセクション必須（Delta Entry形式）
-成果物の先頭には必ず「## サマリー」セクションを配置し、Delta Entry形式で記述すること。
+export const SUMMARY_SECTION_RULE = `## TOON形式成果物（必須）
+成果物はTOON形式で作成すること。ファイル: \`{docsDir}/{phase}.toon\`
 
-### Delta Entry形式
-各エントリは「- [ID][カテゴリ] 内容」の1行形式で記述する。
-IDはフェーズ接頭辞+連番（例: R-001, IA-002, REQ-003）。
-カテゴリは以下から選択: decision, constraint, risk, finding, next, dependency, assumption
+TOONはJSONより40-50%トークン効率が高い構造化形式。
 
-### 記述ルール
-- 1エントリ=1行。改行で分割しない
-- 具体的な固有名詞（ファイル名・関数名・技術名）を必ず含める
-- 「〜する」「〜である」で終わる断定形を使用（「〜かもしれない」「〜と思われる」は禁止）
-- 次フェーズで必要な情報は [next] カテゴリで明示する
-- 最低5エントリ、最大30エントリ
+### TOON形式ルール
+- キー: 値（スカラー）— 例: \`phase: research\`
+- 文字列値にカンマ・改行を含む場合のみ引用符で囲む — 例: \`ts: "2026-03-01T10:00:00Z"\`
+- 配列テーブル: \`フィールド名[要素数]{列1,列2,...}:\` の後、インデント行で各行をカンマ区切り
+- ネスト: インデントでオブジェクトをネスト（\`next:\` の下にインデントで子キー）
 
-### 例
+### 必須フィールド（decisions・artifacts・next）
+decisions[] に最低5エントリが必要。各エントリはid・statement・rationaleを含む。
+
 \`\`\`
-## サマリー
-- [R-001][finding] auth.middleware.ts がJWT検証を担当、既存の認証フローはsession-based
-- [R-002][decision] JWT認証方式を採用: ステートレスでスケーラブル
-- [R-003][constraint] 既存DBスキーマの変更不可: usersテーブルにtokenカラム追加のみ許可
-- [R-004][risk] 外部認証プロバイダのレート制限: 1000 req/min を超えるとブロック
-- [R-005][next] implementationでauth.middleware.tsを新規作成、routes/auth.tsを修正
+phase: {phase}
+taskId: {taskId}
+ts: "作成時のISO8601タイムスタンプ"
+decisions[N]{id,statement,rationale}:
+  F-001,決定内容を1文で,その理由
+  F-002,別の決定内容,別の理由
+artifacts[N]{path,role,summary}:
+  出力ファイルのパス,spec,1文要約
+next:
+  criticalDecisions[N]: F-001,F-002
+  readFiles[N]: 次フェーズが読むべきファイルパス
+  warnings[N]: 次フェーズへの注意事項
 \`\`\`
+
+注意: 上記の[N]は実際の要素数に置き換えること。roleはspec|design|test|impl|report|diagramから選択。
 
 ### IDプレフィックス規則
 | フェーズ | プレフィックス |
@@ -58,36 +64,7 @@ IDはフェーズ接頭辞+連番（例: R-001, IA-002, REQ-003）。
 | security_scan | SS |
 | performance_test | PT |
 | e2e_test | E2E |
-| health_observation | HO |
-
-### TOONチェックポイント（TOON-first Phase 1）
-MDの「## サマリー」に加え、TOONチェックポイントファイルも作成すること。
-ファイル: \`{docsDir}/{phase}.toon\` （{phase}は現在のフェーズ名）
-
-TOONはJSONより40-50%トークン効率が高い構造化形式。次フェーズのsubagentはMDではなくTOONを優先的に読む。
-
-TOON形式ルール:
-- キー: 値（スカラー）— 例: \`phase: research\`
-- 文字列値にカンマ・改行を含む場合のみ引用符で囲む — 例: \`ts: "2026-03-01T10:00:00Z"\`
-- 配列テーブル: \`フィールド名[要素数]{列1,列2,...}:\` の後、インデント行で各行をカンマ区切り
-- ネスト: インデントでオブジェクトをネスト（\`next:\` の下にインデントで子キー）
-
-\`\`\`
-phase: {phase}
-taskId: {taskId}
-ts: "作成時のISO8601タイムスタンプ"
-decisions[N]{id,statement,rationale}:
-  F-001,決定内容を1文で,その理由
-  F-002,別の決定内容,別の理由
-artifacts[N]{path,role,summary}:
-  出力ファイルのパス,spec,1文要約
-next:
-  criticalDecisions[N]: F-001,F-002
-  readFiles[N]: 次フェーズが読むべきファイルパス
-  warnings[N]: 次フェーズへの注意事項
-\`\`\`
-
-注意: 上記の[N]は実際の要素数に置き換えること。roleはspec|design|test|impl|report|diagramから選択。`;
+| health_observation | HO |`;
 // AGT-1: Subagent termination detection tag
 export const EXIT_CODE_RULE = `## ★重要★ 完了時の終了タグ (AGT-1)
 全ての作業完了時、最後のメッセージに以下のタグを含めること:

@@ -41,23 +41,23 @@ export function getPhaseDefinition(phase: string): import('./definitions-shared.
 // ─── ACE TOON-first: output filename → source phase mapping ──
 
 const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
-  'scope-definition.md': 'scope_definition',
-  'research.md': 'research',
-  'impact-analysis.md': 'impact_analysis',
-  'requirements.md': 'requirements',
-  'threat-model.md': 'threat_modeling',
-  'spec.md': 'planning',
+  'scope-definition.toon': 'scope_definition',
+  'research.toon': 'research',
+  'impact-analysis.toon': 'impact_analysis',
+  'requirements.toon': 'requirements',
+  'threat-model.toon': 'threat_modeling',
+  'spec.toon': 'planning',
   'state-machine.mmd': 'state_machine',
   'flowchart.mmd': 'flowchart',
-  'ui-design.md': 'ui_design',
-  'test-design.md': 'test_design',
-  'test-selection.md': 'test_selection',
-  'code-review.md': 'code_review',
-  'acceptance-report.md': 'acceptance_verification',
-  'manual-test.md': 'manual_test',
-  'security-scan.md': 'security_scan',
-  'performance-test.md': 'performance_test',
-  'e2e-test.md': 'e2e_test',
+  'ui-design.toon': 'ui_design',
+  'test-design.toon': 'test_design',
+  'test-selection.toon': 'test_selection',
+  'code-review.toon': 'code_review',
+  'acceptance-report.toon': 'acceptance_verification',
+  'manual-test.toon': 'manual_test',
+  'security-scan.toon': 'security_scan',
+  'performance-test.toon': 'performance_test',
+  'e2e-test.toon': 'e2e_test',
 };
 
 function buildToonFirstSection(phase: string, docsDir: string): string {
@@ -70,15 +70,14 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
     const basename = inputFile.replace(/^\{docsDir\}\//, '');
     const sourcePhase = OUTPUT_FILE_TO_PHASE[basename];
     if (sourcePhase) {
-      entries.push(`- \`${docsDir}/${sourcePhase}.toon\` が存在すれば \`${docsDir}/${basename}\` の代わりに読む`);
+      entries.push(`- \`${docsDir}/${basename}\` を読む`);
     }
   }
 
   if (entries.length === 0) return '';
 
-  return '\n\n## TOON-first コンテキスト読み込み（ACE）\n'
-    + '前フェーズの成果物を読む際、以下のTOONファイルが存在する場合はMDより先に読むこと（40-50%トークン効率向上）。\n'
-    + 'TOONファイルが存在しない場合はMDファイルにフォールバックする。\n'
+  return '\n\n## TOON コンテキスト読み込み（ACE）\n'
+    + '前フェーズの成果物を読む際、以下のTOONファイルを読むこと（40-50%トークン効率向上）。\n'
     + entries.join('\n')
     + '\n';
 }

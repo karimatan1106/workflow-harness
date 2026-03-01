@@ -11,8 +11,8 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
     model: 'sonnet',
     bashCategories: ['readonly'],
     inputFiles: [],
-    outputFile: '{docsDir}/scope-definition.md',
-    requiredSections: ['## サマリー', '## スコープ定義', '## 影響範囲', '## スコープ外'],
+    outputFile: '{docsDir}/scope-definition.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
     subagentTemplate: `# scope_definitionフェーズ
 
@@ -33,7 +33,7 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 /batch は複数ファイルをまとめて処理し、コンテキスト過負荷を防ぎます。
 
 ## 出力
-{docsDir}/scope-definition.md に保存してください。
+{docsDir}/scope-definition.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -45,9 +45,9 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
     description: 'Investigate codebase, existing patterns, dependencies',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/scope-definition.md'],
-    outputFile: '{docsDir}/research.md',
-    requiredSections: ['## サマリー', '## 調査結果', '## 既存実装の分析'],
+    inputFiles: ['{docsDir}/scope-definition.toon'],
+    outputFile: '{docsDir}/research.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# researchフェーズ
 
@@ -58,7 +58,7 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 
 ## 入力
 以下のファイルを読み込んでください:
-- {docsDir}/scope-definition.md
+- {docsDir}/scope-definition.toon
 
 ## 作業内容
 コードベースを調査し、既存のパターン・依存関係・制約を分析してください。
@@ -92,7 +92,7 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 - ツール呼び出し結果は構造化サマリーとして人間可読な形式にまとめること
 
 ## 出力
-{docsDir}/research.md に保存してください。
+{docsDir}/research.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -104,9 +104,9 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
     description: 'Analyze blast radius using dependency graphs',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/scope-definition.md', '{docsDir}/research.md'],
-    outputFile: '{docsDir}/impact-analysis.md',
-    requiredSections: ['## サマリー', '## 影響ファイル一覧', '## 依存関係分析', '## リスク評価'],
+    inputFiles: ['{docsDir}/scope-definition.toon', '{docsDir}/research.toon'],
+    outputFile: '{docsDir}/impact-analysis.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# impact_analysisフェーズ
 
@@ -116,8 +116,8 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/scope-definition.md
-- {docsDir}/research.md
+- {docsDir}/scope-definition.toon
+- {docsDir}/research.toon
 
 ## 作業内容
 変更の影響範囲（ブラストレディウス）を分析してください。
@@ -127,7 +127,7 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 4. 影響を受けるテストの特定
 
 ## 出力
-{docsDir}/impact-analysis.md に保存してください。
+{docsDir}/impact-analysis.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -139,9 +139,9 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
     description: 'Define functional/non-functional requirements with acceptance criteria',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/research.md', '{docsDir}/impact-analysis.md'],
-    outputFile: '{docsDir}/requirements.md',
-    requiredSections: ['## サマリー', '## 機能要件', '## 非機能要件', '## 受入基準'],
+    inputFiles: ['{docsDir}/research.toon', '{docsDir}/impact-analysis.toon'],
+    outputFile: '{docsDir}/requirements.toon',
+    requiredSections: ['decisions', 'acceptanceCriteria', 'notInScope', 'openQuestions'],
     minLines: 50,
     subagentTemplate: `# requirementsフェーズ
 
@@ -151,8 +151,8 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/research.md
-- {docsDir}/impact-analysis.md
+- {docsDir}/research.toon
+- {docsDir}/impact-analysis.toon
 
 ## 作業内容
 機能要件・非機能要件を定義し、受入基準（AC-N）を設定してください。
@@ -178,7 +178,7 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 - Orchestratorは空でないOPEN_QUESTIONSをユーザーに確認してから承認に進む
 
 ## 出力
-{docsDir}/requirements.md に保存してください。
+{docsDir}/requirements.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

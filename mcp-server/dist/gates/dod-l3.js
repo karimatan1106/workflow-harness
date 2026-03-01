@@ -3,40 +3,48 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 import { readFileSync, existsSync, statSync } from 'node:fs';
+import { decode as toonDecode } from '@toon-format/toon';
 import { PHASE_REGISTRY } from '../phases/registry.js';
-import { isStructuralLine } from './dod-helpers.js';
+function getStringLen(v) {
+    if (v === null || v === undefined)
+        return 0;
+    if (typeof v === 'string')
+        return v.length;
+    if (typeof v === 'number' || typeof v === 'boolean')
+        return String(v).length;
+    if (Array.isArray(v))
+        return v.reduce((acc, item) => acc + getStringLen(item), 0);
+    if (typeof v === 'object')
+        return Object.values(v).reduce((acc, val) => acc + getStringLen(val), 0);
+    return 0;
+}
 function analyzeArtifact(content) {
-    const lines = content.split('\n');
-    let inCodeFence = false;
-    let totalLines = 0;
-    let contentLines = 0;
-    const sections = [];
-    let currentSection = null;
-    for (const line of lines) {
-        totalLines++;
-        const trimmed = line.trim();
-        if (/^`{3,}/.test(trimmed)) {
-            inCodeFence = !inCodeFence;
-            continue;
-        }
-        if (inCodeFence)
-            continue;
-        const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
-        if (headingMatch) {
-            if (currentSection)
-                sections.push(currentSection);
-            currentSection = { heading: headingMatch[2], contentLineCount: 0 };
-            continue;
-        }
-        if (!trimmed || isStructuralLine(trimmed))
-            continue;
-        contentLines++;
-        if (currentSection)
-            currentSection.contentLineCount++;
+    let obj;
+    try {
+        obj = toonDecode(content);
     }
-    if (currentSection)
-        sections.push(currentSection);
-    return { totalLines, contentLines, sections, sectionDensity: totalLines > 0 ? contentLines / totalLines : 0 };
+    catch {
+        return { totalChars: content.length, contentChars: 0, fieldCount: 0, sectionDensity: 0 };
+    }
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+        const len = getStringLen(obj);
+        return { totalChars: len, contentChars: len, fieldCount: 1, sectionDensity: 1 };
+    }
+    const record = obj;
+    const CORE_KEYS = new Set(['decisions', 'artifacts', 'next', 'acceptanceCriteria', 'notInScope', 'openQuestions', 'functionalRequirements', 'nonFunctionalRequirements']);
+    let totalChars = 0;
+    let contentChars = 0;
+    let fieldCount = 0;
+    for (const [key, val] of Object.entries(record)) {
+        const len = getStringLen(val);
+        totalChars += len;
+        fieldCount++;
+        if (CORE_KEYS.has(key))
+            contentChars += len;
+    }
+    if (totalChars === 0)
+        return { totalChars: 0, contentChars: 0, fieldCount: 0, sectionDensity: 0 };
+    return { totalChars, contentChars, fieldCount, sectionDensity: contentChars / totalChars };
 }
 export function checkL3Quality(phase, docsDir, workflowDir) {
     const config = PHASE_REGISTRY[phase];
@@ -51,18 +59,16 @@ export function checkL3Quality(phase, docsDir, workflowDir) {
     const analysis = analyzeArtifact(content);
     const minLines = config.minLines ?? 0;
     const errors = [];
-    if (minLines > 0 && analysis.contentLines < minLines)
-        errors.push(`Content lines ${analysis.contentLines} < required ${minLines}`);
+    if (minLines > 0 && analysis.contentChars < minLines * 10)
+        errors.push(`Content chars ${analysis.contentChars} < required ${minLines * 10} (minLines ${minLines} * 10)`);
     if (analysis.sectionDensity < 0.30)
         errors.push(`Section density ${(analysis.sectionDensity * 100).toFixed(1)}% < required 30%`);
-    for (const section of analysis.sections) {
-        if (section.contentLineCount < 5)
-            errors.push(`Section "${section.heading}" has only ${section.contentLineCount} content lines (min 5)`);
-    }
+    if (analysis.fieldCount < 3)
+        errors.push(`TOON field count ${analysis.fieldCount} < required 3`);
     const passed = errors.length === 0;
     return {
         level: 'L3', check: 'artifact_quality', passed,
-        evidence: passed ? `Quality OK: ${analysis.contentLines} content lines, density ${(analysis.sectionDensity * 100).toFixed(1)}%` : errors.join('; '),
+        evidence: passed ? `Quality OK: ${analysis.contentChars} content chars, density ${(analysis.sectionDensity * 100).toFixed(1)}%` : errors.join('; '),
     };
 }
 const RTM_CHECK_PHASES = ['code_review', 'acceptance_verification', 'completed'];

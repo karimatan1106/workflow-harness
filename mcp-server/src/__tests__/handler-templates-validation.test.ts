@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { encode as toonEncode } from '@toon-format/toon';
 import { setupHandlerTest, teardownHandlerTest, type TestCtx } from './handler-test-setup.js';
 
 let ctx: TestCtx;
@@ -126,57 +127,28 @@ describe('Validation', () => {
     const docsDir = startRes.docsDir as string;
     mkdirSync(docsDir, { recursive: true });
 
-    const content = [
-      '## サマリー',
-      '',
-      '- [SD-001][finding] 対象ファイルはsrc/tools/handler.tsの単一ファイルである',
-      '- [SD-002][decision] ハンドラーレベルの統合テストカバレッジ向上を実施する',
-      '- [SD-003][constraint] 既存テストへの影響はなくテストスイート全体の合格率を維持する',
-      '- [SD-004][risk] 一時ディレクトリ使用によりファイルシステムへの影響は限定的である',
-      '- [SD-005][next] researchフェーズでhandler.tsの現在の構造と依存関係を調査する',
-      '- [SD-006][dependency] manager.ts、dod.ts、definitions.tsに依存している',
-      '- [SD-007][assumption] vitestフレームワークを使用してテストを実装する前提である',
-      '',
-      '## スコープ定義',
-      '',
-      '対象ファイルは src/tools/handler.ts の単一ファイルです。',
-      'このファイルにはすべてのツールディスパッチロジックが含まれています。',
-      '変更の目的はハンドラーレベルの統合テストカバレッジ向上です。',
-      '影響する主要関数は handleToolCall と TOOL_DEFINITIONS の2つです。',
-      '変更規模は小さく、既存ファイルへの修正は行いません。',
-      '新規テストファイル handler.test.ts を src/__tests__/ に作成します。',
-      'テストは vitest フレームワークを使用して実装します。',
-      '既存の manager.test.ts と同じパターンで一時ディレクトリを使用します。',
-      '',
-      '## 影響範囲',
-      '',
-      '影響を受けるファイルは src/__tests__/handler.test.ts の新規作成のみです。',
-      '依存するファイルには manager.ts、dod.ts、definitions.ts があります。',
-      'テスト実行時は一時ディレクトリを使用するためファイルシステムへの影響は限定的です。',
-      '既存テストへの影響はなく、テストスイート全体の合格率は維持されます。',
-      'ビルド設定への変更は不要で、tsconfig.json も修正しません。',
-      'package.json の依存関係追加も必要ありません。',
-      'CI/CD パイプラインへの変更も発生しません。',
-      '型定義ファイルへの変更も不要です。',
-      '',
-      '## スコープ外',
-      '',
-      'このタスクでは UI 関連の変更は一切行いません。',
-      'データベース関連の変更も対象外で、スキーマ修正は含まれません。',
-      '外部 API との連携変更もスコープ外です。',
-      'インフラ設定の変更はこのタスクでは行いません。',
-      'パフォーマンスの最適化も今回のスコープには含まれません。',
-      'セキュリティポリシーの変更もスコープ外となります。',
-      'ドキュメント更新はテスト追加完了後の別タスクで対応します。',
-      'リファクタリングも別タスクで実施予定のためスコープ外です。',
-    ].join('\n');
+    const content = toonEncode({
+      phase: 'scope_definition',
+      taskId: 'test',
+      ts: new Date().toISOString(),
+      decisions: [
+        { id: 'SD-001', statement: '対象ファイルはsrc/tools/handler.tsの単一ファイルであることが確認された', rationale: 'スコープ定義の結果' },
+        { id: 'SD-002', statement: 'ハンドラーレベルの統合テストカバレッジ向上を実施するという決定をした', rationale: '品質向上の目的' },
+        { id: 'SD-003', statement: '既存テストへの影響はなくテストスイート全体の合格率を維持するという制約がある', rationale: 'リグレッション防止' },
+        { id: 'SD-004', statement: '一時ディレクトリ使用によりファイルシステムへの影響は限定的であるリスクを確認した', rationale: 'リスク評価結果' },
+        { id: 'SD-005', statement: 'researchフェーズでhandler.tsの現在の構造と依存関係を調査するという次アクションを決定した', rationale: '調査フェーズの開始' },
+        { id: 'SD-006', statement: 'manager.ts、dod.ts、definitions.tsに依存しているという依存関係を特定した', rationale: '依存関係分析' },
+        { id: 'SD-007', statement: 'vitestフレームワークを使用してテストを実装する前提であることを確認した', rationale: 'テストフレームワーク選定' },
+      ],
+      artifacts: [{ path: 'docs/scope-definition.toon', role: 'spec', summary: 'Scope definition artifact' }],
+      next: {
+        criticalDecisions: ['SD-001', 'SD-002'],
+        readFiles: ['docs/scope-definition.toon'],
+        warnings: [],
+      },
+    });
 
-    writeFileSync(join(docsDir, 'scope-definition.md'), content, 'utf8');
-    writeFileSync(
-      join(docsDir, 'scope_definition.toon'),
-      'phase: scope_definition\ntaskId: toon-test\nts: "2026-03-01T00:00:00Z"\ndecisions[1]{id,statement,rationale}:\n  SD-001,Scope defined,Initial scope analysis\n',
-      'utf8',
-    );
+    writeFileSync(join(docsDir, 'scope-definition.toon'), content, 'utf8');
 
     const res = await call(mgr, 'harness_pre_validate', {
       taskId,

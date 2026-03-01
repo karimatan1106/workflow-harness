@@ -10,9 +10,9 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Review design artifacts for consistency',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.md', '{docsDir}/spec.md', '{docsDir}/threat-model.md'],
-    outputFile: '{docsDir}/design-review.md',
-    requiredSections: ['## サマリー', '## AC→設計マッピング'],
+    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.toon', '{docsDir}/spec.toon', '{docsDir}/threat-model.toon'],
+    outputFile: '{docsDir}/design-review.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
     subagentTemplate: `# design_reviewフェーズ
 
@@ -22,11 +22,11 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
 ## 入力
 以下の全設計成果物を読み込んでレビューしてください:
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
-- {docsDir}/ui-design.md
-- {docsDir}/threat-model.md
+- {docsDir}/ui-design.toon
+- {docsDir}/threat-model.toon
 
 ## 作業内容
 設計成果物の整合性を検証してください。
@@ -43,7 +43,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのACにマッピングが必要。空欄のACがある場合、承認がブロックされる。
 
 ## 出力
-{docsDir}/design-review.md に保存してください。
+{docsDir}/design-review.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -55,9 +55,9 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Test strategy and test cases mapped to AC-N',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/spec.md', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
-    outputFile: '{docsDir}/test-design.md',
-    requiredSections: ['## サマリー', '## テスト方針', '## テストケース'],
+    inputFiles: ['{docsDir}/spec.toon', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
+    outputFile: '{docsDir}/test-design.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# test_designフェーズ
 
@@ -66,7 +66,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
 
@@ -87,7 +87,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのACに最低1件のテストケースが必要。カバーなしのACがある場合、承認がブロックされる。
 
 ## 出力
-{docsDir}/test-design.md に保存してください。
+{docsDir}/test-design.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -99,9 +99,9 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Select relevant tests using dependency analysis',
     model: 'haiku',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/test-design.md', '{docsDir}/impact-analysis.md'],
-    outputFile: '{docsDir}/test-selection.md',
-    requiredSections: ['## サマリー', '## 選択テスト一覧', '## 実行コマンド'],
+    inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/impact-analysis.toon'],
+    outputFile: '{docsDir}/test-selection.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
     subagentTemplate: `# test_selectionフェーズ
 
@@ -110,8 +110,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/test-design.md
-- {docsDir}/impact-analysis.md
+- {docsDir}/test-design.toon
+- {docsDir}/impact-analysis.toon
 
 ## 作業内容
 影響分析に基づき実行すべきテストを選択してください。
@@ -120,7 +120,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 3. 実行コマンドの生成
 
 ## 出力
-{docsDir}/test-selection.md に保存してください。
+{docsDir}/test-selection.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

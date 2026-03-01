@@ -25,9 +25,9 @@ afterEach(() => {
 describe('runDoDChecks for phases with no output file', () => {
   it('passes all checks for "test_impl" which has no outputFile', async () => {
     const state = makeMinimalState('test_impl', tempDir, docsDir);
-    // IFV-1: test_impl requires test-design.md and test-selection.md as inputs
-    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['## サマリー', '## テスト方針', '## テストケース'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-selection.md'), buildValidArtifact(['## サマリー', '## 選択テスト一覧', '## 実行コマンド'], 6), 'utf8');
+    // IFV-1: test_impl requires test-design.toon and test-selection.toon as inputs
+    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-selection.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     // TDD-1: test_impl requires Red phase evidence (Red before Green)
     state.proofLog = [
       { phase: 'test_impl', timestamp: '2024-01-01T00:00:00.000Z', level: 'L2', check: 'exit_code_zero', result: false, evidence: 'tests failed (Red phase)' },
@@ -40,23 +40,23 @@ describe('runDoDChecks for phases with no output file', () => {
 
   it('passes all checks for "implementation" which has no outputFile', async () => {
     const state = makeMinimalState('implementation', tempDir, docsDir);
-    // IFV-1: implementation requires spec.md and test-design.md as inputs
-    writeFileSync(join(docsDir, 'spec.md'), buildValidArtifact(['## サマリー', '## 概要', '## 実装計画', '## 変更対象ファイル'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['## サマリー', '## テスト方針', '## テストケース'], 6), 'utf8');
+    // IFV-1: implementation requires spec.toon and test-design.toon as inputs
+    writeFileSync(join(docsDir, 'spec.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     expect(result.passed).toBe(true);
   });
 
-  it('always returns 21 check results', async () => {
+  it('always returns 22 check results', async () => {
     const state = makeMinimalState('refactoring', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
-    expect(result.checks).toHaveLength(23);
-    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L2', 'L3', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L4']);
-    expect(result.checks[18].check).toBe('tc_coverage');
-    expect(result.checks[19].check).toBe('artifact_drift');
-    expect(result.checks[20].check).toBe('package_lock_sync');
-    expect(result.checks[21].check).toBe('tdd_red_evidence');
-    expect(result.checks[22].check).toBe('dead_references');
+    expect(result.checks).toHaveLength(22);
+    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L2', 'L3', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L4']);
+    expect(result.checks[17].check).toBe('tc_coverage');
+    expect(result.checks[18].check).toBe('artifact_drift');
+    expect(result.checks[19].check).toBe('package_lock_sync');
+    expect(result.checks[20].check).toBe('tdd_red_evidence');
+    expect(result.checks[21].check).toBe('dead_references');
   });
 });
 
@@ -64,7 +64,7 @@ describe('runDoDChecks for phases with no output file', () => {
 
 describe('IFV-1 input files existence check', () => {
   it('fails input_files_exist when required input file is missing', async () => {
-    // threat_modeling requires requirements.md as input; do not create it
+    // threat_modeling requires requirements.toon as input; do not create it
     const state = makeMinimalState('threat_modeling', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
     const ifv = result.checks.find(c => c.check === 'input_files_exist')!;
@@ -74,7 +74,7 @@ describe('IFV-1 input files existence check', () => {
 
   it('passes input_files_exist when all input files exist', async () => {
     const state = makeMinimalState('threat_modeling', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'requirements.md'), buildValidArtifact(['## サマリー', '## 機能要件', '## 受入基準'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'requirements.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const ifv = result.checks.find(c => c.check === 'input_files_exist')!;
     expect(ifv.passed).toBe(true);
@@ -103,8 +103,8 @@ describe('L1 file existence check', () => {
 
   it('passes L1 when the expected output file exists', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const content = buildValidArtifact(['## サマリー', '## 調査結果', '## 既存実装の分析'], 6);
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l1 = result.checks.find(c => c.level === 'L1')!;
     expect(l1.passed).toBe(true);
@@ -165,4 +165,3 @@ describe('L2 exit code check', () => {
     expect(l2.passed).toBe(true);
   });
 });
-

@@ -3,8 +3,24 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 import { readFileSync, existsSync } from 'node:fs';
+import { decode as toonDecode } from '@toon-format/toon';
 import { PHASE_REGISTRY } from '../phases/registry.js';
-import { checkForbiddenPatterns, checkBracketPlaceholders, checkDuplicateLines, checkRequiredSections, } from './dod-helpers.js';
+import { checkForbiddenPatterns, checkBracketPlaceholders, checkDuplicateLines, } from './dod-helpers.js';
+function checkRequiredToonKeys(content, requiredKeys) {
+    if (requiredKeys.length === 0)
+        return [];
+    let obj;
+    try {
+        obj = toonDecode(content);
+    }
+    catch {
+        return requiredKeys;
+    }
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj))
+        return requiredKeys;
+    const record = obj;
+    return requiredKeys.filter(key => !(key in record));
+}
 export function checkL4ContentValidation(phase, docsDir, workflowDir) {
     const config = PHASE_REGISTRY[phase];
     if (!config || !config.outputFile) {
@@ -24,9 +40,9 @@ export function checkL4ContentValidation(phase, docsDir, workflowDir) {
     const duplicates = checkDuplicateLines(content);
     if (duplicates.length > 0)
         errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
-    const missingSections = checkRequiredSections(content, config.requiredSections ?? []);
-    if (missingSections.length > 0)
-        errors.push(`Missing required sections: ${missingSections.join(', ')}`);
+    const missingKeys = checkRequiredToonKeys(content, config.requiredSections ?? []);
+    if (missingKeys.length > 0)
+        errors.push(`Missing required TOON keys: ${missingKeys.join(', ')}`);
     const passed = errors.length === 0;
     return {
         level: 'L4', check: 'content_validation', passed,

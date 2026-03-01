@@ -1,10 +1,11 @@
 /**
- * DoD gate tests: L4 required sections, RTM completeness, AC completeness.
+ * DoD gate tests: L4 required TOON keys, RTM completeness, AC completeness.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { encode as toonEncode } from '@toon-format/toon';
 
 import { runDoDChecks } from '../gates/dod.js';
 import { createTempDir, removeTempDir, makeMinimalState, buildValidArtifact } from './dod-test-helpers.js';
@@ -20,53 +21,64 @@ afterEach(() => {
   removeTempDir(tempDir);
 });
 
-// ─── L4: Required Sections ────────────────────────
+// ─── L4: Required TOON Keys ────────────────────────
 
 describe('L4 required sections check', () => {
-  it('fails L4 when a required section header is missing', async () => {
+  it('fails L4 when a required TOON key is missing', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const lines = [
-      '## サマリー',
-      'Summary content line 1 providing an overview of the research findings.',
-      'Summary content line 2 providing context for the research task.',
-      'Summary content line 3 providing scope information for the research.',
-      'Summary content line 4 providing key objectives of the research.',
-      'Summary content line 5 providing expected outcomes of the research.',
-      'Summary content line 6 providing next steps after research completion.',
-      '',
-      '## 調査結果',
-      'Result line 1 with detailed investigation findings and observations.',
-      'Result line 2 with more detailed investigation findings and analysis.',
-      'Result line 3 with comprehensive investigation findings and recommendations.',
-      'Result line 4 with final investigation findings and conclusions drawn.',
-      'Result line 5 with additional investigation findings for completeness.',
-      'Result line 6 with supplementary investigation findings for thoroughness.',
-      '',
-    ];
-    writeFileSync(join(docsDir, 'research.md'), lines.join('\n'), 'utf8');
+    // Write a TOON without the 'artifacts' key (required by registry)
+    const content = toonEncode({
+      phase: 'research',
+      taskId: 'test',
+      ts: new Date().toISOString(),
+      decisions: [
+        { id: 'R-001', statement: 'Decision one for research', rationale: 'Reason one' },
+        { id: 'R-002', statement: 'Decision two for research', rationale: 'Reason two' },
+        { id: 'R-003', statement: 'Decision three for research', rationale: 'Reason three' },
+        { id: 'R-004', statement: 'Decision four for research', rationale: 'Reason four' },
+        { id: 'R-005', statement: 'Decision five for research', rationale: 'Reason five' },
+      ],
+      // 'artifacts' key is intentionally missing
+      next: { criticalDecisions: ['R-001'], readFiles: ['docs/research.toon'], warnings: [] },
+    });
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(false);
-    expect(l4.evidence).toContain('既存実装の分析');
+    expect(l4.evidence).toContain('artifacts');
   });
 
-  it('passes L4 when all required sections are present and content is valid', async () => {
+  it('passes L4 when all required TOON keys are present and content is valid', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const content = buildValidArtifact(['## サマリー', '## 調査結果', '## 既存実装の分析'], 6);
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(true);
   });
 
-  it('fails L4 for planning phase when required sections are missing', async () => {
+  it('fails L4 for planning phase when required TOON key is missing', async () => {
     const state = makeMinimalState('planning', tempDir, docsDir);
-    const incompleteContent = buildValidArtifact(['## サマリー', '## 概要'], 6);
-    writeFileSync(join(docsDir, 'spec.md'), incompleteContent, 'utf8');
+    // Write a spec.toon missing the 'next' key
+    const content = toonEncode({
+      phase: 'planning',
+      taskId: 'test',
+      ts: new Date().toISOString(),
+      decisions: [
+        { id: 'PL-001', statement: 'Decision one for planning phase', rationale: 'Reason one' },
+        { id: 'PL-002', statement: 'Decision two for planning phase', rationale: 'Reason two' },
+        { id: 'PL-003', statement: 'Decision three for planning phase', rationale: 'Reason three' },
+        { id: 'PL-004', statement: 'Decision four for planning phase', rationale: 'Reason four' },
+        { id: 'PL-005', statement: 'Decision five for planning phase', rationale: 'Reason five' },
+      ],
+      artifacts: [{ path: 'docs/spec.toon', role: 'spec', summary: 'Planning spec' }],
+      // 'next' key is intentionally missing
+    });
+    writeFileSync(join(docsDir, 'spec.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(false);
-    expect(l4.evidence).toContain('実装計画');
+    expect(l4.evidence).toContain('next');
   });
 });
 
