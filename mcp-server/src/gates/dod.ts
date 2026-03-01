@@ -10,7 +10,6 @@ import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkBaselin
 import { checkL4ContentValidation } from './dod-l4-content.js';
 import { checkACFormat, checkNotInScope, checkOpenQuestions, checkIntentConsistency } from './dod-l4-requirements.js';
 import { checkDeltaEntryFormat } from './dod-l4-delta.js';
-import { checkToonCheckpoint } from './dod-l4-toon.js';
 import { checkAcDesignMapping, checkAcTcMapping, checkAcAchievementTable, checkTCCoverage } from './dod-l4-ia.js';
 import { checkArtifactDrift } from './dod-l4-art.js';
 import { checkPackageLockSync } from './dod-l4-commit.js';
@@ -46,7 +45,6 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkBaselineRequired(state, phase), 'L3');
   push(checkArtifactFreshness(phase, docsDir), 'L3');
   push(checkDeltaEntryFormat(phase, docsDir, workflowDir), 'L4');
-  push(checkToonCheckpoint(phase, docsDir), 'L4');
   push(checkAcDesignMapping(state, phase, docsDir), 'L4');
   push(checkAcTcMapping(phase, docsDir), 'L4');
   push(checkAcAchievementTable(phase, docsDir), 'L4');

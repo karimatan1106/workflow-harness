@@ -1,7 +1,7 @@
 /**
- * DoD L4 TOON checkpoint check (blocking — TOON-first enforced).
+ * dod-l4-toon.ts — stub (checkToonCheckpoint廃止済み)
+ * L1のcheckL1FileExistsがTOONファイル存在確認を担うため本チェックは廃止。
  * @spec docs/spec/features/workflow-harness.md
  */
-import type { DoDCheckResult } from './dod-types.js';
-export declare function checkToonCheckpoint(phase: string, docsDir: string): DoDCheckResult;
+export {};
 //# sourceMappingURL=dod-l4-toon.d.ts.map

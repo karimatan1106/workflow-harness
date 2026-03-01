@@ -300,32 +300,28 @@ The AC-N and F-NNN chains together ensure that user intent flows from requiremen
 ## 13. Artifact Quality Requirements
 
 All phase artifacts with an outputFile are validated by L3 and L4 DoD checks.
+**All artifacts are TOON format (.toon). Markdown (.md) artifacts are no longer produced.**
 
-### Line Count and Density (L3)
-- Total content lines must meet the phase's `minLines` threshold
-- Section density (content lines / total lines) must be >= 30%
-- Each section (## heading) must contain >= 5 substantive lines
-- Substantive lines exclude: empty lines, horizontal rules, code fence boundaries, headings
+### Content Chars and Density (L3)
+- Total content chars (from TOON core keys: decisions, artifacts, next, acceptanceCriteria, notInScope, openQuestions) must meet the phase's `minLines * 10` threshold
+- Section density (content key chars / total key chars) must be >= 30%
+- TOON field count must be >= 3
 
 ### Forbidden Patterns (L4)
-- 12 words detected by `includes()` outside code fences (see Section 5)
+- 12 words detected by `includes()` outside TOON string values (see Section 5)
 - Bracket placeholder `[#xxx#]` format
 - Compound words containing forbidden words are also detected
 - Use indirect references: "the pattern detected by the validator" instead of quoting the forbidden word
 
 ### Duplicate Lines (L4)
 - 3+ identical non-structural lines trigger an error
-- Structural lines excluded: headings, horizontal rules, code fences, table rows, bold labels, short label lines
 - Fix: add context-specific information to each line to make it unique
 
-### Required Sections (L4)
-- Each phase defines required Markdown heading sections
-- code_review requires: `## 設計-実装整合性`, `## ユーザー意図との整合性`
-- manual_test requires: `## テストシナリオ`, `## テスト結果`
-- security_scan requires: `## 脆弱性スキャン結果`, `## 検出された問題`
-- performance_test requires: `## パフォーマンス計測結果`, `## ボトルネック分析`
-- e2e_test requires: `## E2Eテストシナリオ`, `## テスト実行結果`
-- All artifact phases require: `## サマリー` (Delta Entry format: `- [ID][category] content`)
+### Required TOON Keys (L4)
+- Each phase defines required TOON top-level keys (not Markdown headings)
+- All artifact phases require: `decisions`, `artifacts`, `next`
+- requirements phase requires: `decisions`, `acceptanceCriteria`, `notInScope`, `openQuestions`
+- decisions[] must contain >= 5 entries (enforced by delta_entry_format check)
 
 ---
 

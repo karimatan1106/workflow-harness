@@ -14,6 +14,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { computePatternSimilarity, computeQualityScore, saveCuratorReport } from './curator-helpers.js';
+import { extractAndStoreBullets } from './ace-context.js';
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const REFLECTOR_PATH = join(STATE_DIR, 'reflector-log.json');
 const MAX_LESSONS_AFTER_CURATION = 40; // More aggressive than reflector's 50
@@ -123,6 +124,7 @@ export function runCuratorCycle(taskId, taskName) {
     }
     catch { /* Non-fatal: store might be locked */ }
     saveCuratorReport(report);
+    extractAndStoreBullets(store.lessons);
     return report;
 }
 //# sourceMappingURL=curator.js.map

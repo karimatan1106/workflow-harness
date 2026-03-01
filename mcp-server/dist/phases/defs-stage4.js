@@ -7,7 +7,7 @@ export const DEFS_STAGE4 = {
         description: 'Write failing tests (TDD Red phase)',
         model: 'sonnet',
         bashCategories: ['readonly', 'testing'],
-        inputFiles: ['{docsDir}/test-design.md', '{docsDir}/test-selection.md'],
+        inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/test-selection.toon'],
         outputFile: null,
         requiredSections: [],
         minLines: 0,
@@ -17,8 +17,8 @@ export const DEFS_STAGE4 = {
 - タスク名: {taskName}
 
 ## 入力
-- {docsDir}/test-design.md
-- {docsDir}/test-selection.md
+- {docsDir}/test-design.toon
+- {docsDir}/test-selection.toon
 
 ## 作業内容
 テスト設計に基づきテストコードを作成してください（TDD Redフェーズ）。
@@ -35,7 +35,7 @@ export const DEFS_STAGE4 = {
         description: 'Write code to pass tests (TDD Green phase)',
         model: 'sonnet',
         bashCategories: ['readonly', 'testing', 'implementation'],
-        inputFiles: ['{docsDir}/spec.md', '{docsDir}/test-design.md'],
+        inputFiles: ['{docsDir}/spec.toon', '{docsDir}/test-design.toon'],
         outputFile: null,
         requiredSections: [],
         minLines: 0,
@@ -46,11 +46,11 @@ export const DEFS_STAGE4 = {
 
 ## 入力
 以下の設計成果物を全て読み込んでから実装してください:
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
-- {docsDir}/ui-design.md
-- {docsDir}/test-design.md
+- {docsDir}/ui-design.toon
+- {docsDir}/test-design.toon
 
 ## 設計チェックリスト（実装開始前に必須確認）
 - spec.mdに記載された全機能を実装したか
@@ -119,8 +119,8 @@ export const DEFS_STAGE4 = {
         model: 'sonnet',
         bashCategories: ['readonly'],
         inputFiles: [],
-        outputFile: '{docsDir}/code-review.md',
-        requiredSections: ['## サマリー', '## 設計-実装整合性', '## ユーザー意図との整合性'],
+        outputFile: '{docsDir}/code-review.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 30,
         subagentTemplate: `# code_reviewフェーズ
 
@@ -131,9 +131,9 @@ export const DEFS_STAGE4 = {
 
 ## 入力
 以下の設計成果物と実装コードを比較してください:
-- {docsDir}/spec.md
-- {docsDir}/requirements.md
-- {docsDir}/threat-model.md
+- {docsDir}/spec.toon
+- {docsDir}/requirements.toon
+- {docsDir}/threat-model.toon
 
 ## レビュー姿勢（SRB-1）
 **外部レビュアーの視点**でレビューすること。実装者と同一セッションの知識を前提にしないこと。
@@ -155,7 +155,7 @@ export const DEFS_STAGE4 = {
 不合格のACが1件でもある場合、承認がブロックされる。
 
 ## 出力
-{docsDir}/code-review.md に保存してください。
+{docsDir}/code-review.toon に保存してください。
 
 承認ゲートです。
 

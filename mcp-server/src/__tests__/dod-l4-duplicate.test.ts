@@ -20,14 +20,34 @@ afterEach(() => {
   removeTempDir(tempDir);
 });
 
+/**
+ * Build a TOON file with N identical decision rows (same id, statement, rationale).
+ * This produces N identical raw lines in the TOON text, triggering duplicate detection.
+ */
+function buildToonWithDuplicateRows(count: number): string {
+  const dupRow = '  DUP-001,This exact duplicate line appears multiple times in the document and is very problematic,Duplicate rationale text for testing purposes only';
+  const rows = Array(count).fill(dupRow).join('\n');
+  return [
+    'phase: research',
+    'taskId: test-task-id',
+    'ts: "2026-03-01T00:00:00Z"',
+    `decisions[${count}]{id,statement,rationale}:`,
+    rows,
+    'artifacts[1]{path,role,summary}:',
+    '  docs/output.toon,spec,Primary output artifact for this phase containing all decisions',
+    'next:',
+    '  criticalDecisions[1]: DUP-001',
+    '  readFiles[1]: docs/output.toon',
+    '  warnings[0]:',
+  ].join('\n');
+}
+
 // ─── L4: Duplicate Line Detection ─────────────────
 
 describe('L4 duplicate line detection', () => {
   it('fails L4 when the same non-structural line appears 3 or more times', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const baseContent = buildValidArtifact(['## サマリー', '## 調査結果', '## 既存実装の分析'], 6);
-    const dupLine = 'This exact duplicate line appears multiple times in the document and is problematic.';
-    writeFileSync(join(docsDir, 'research.md'), baseContent + `\n${dupLine}\n${dupLine}\n${dupLine}\n`, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(3), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(false);
@@ -36,51 +56,26 @@ describe('L4 duplicate line detection', () => {
 
   it('does NOT fail L4 when a line appears only twice', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const content = buildValidArtifact(['## サマリー', '## 調査結果', '## 既存実装の分析'], 6);
-    const twiceLine = 'This line appears two times only which should be acceptable behavior.';
-    writeFileSync(join(docsDir, 'research.md'), content + `\n${twiceLine}\n${twiceLine}\n`, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(2), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(true);
   });
 
-  it('does NOT flag heading lines as duplicates even when repeated', async () => {
+  it('does NOT flag structural TOON lines as duplicates even when repeated', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const lines = [
-      '## サマリー',
-      'Summary line 1 providing overview of the task and its objectives.',
-      'Summary line 2 providing context and background information.',
-      'Summary line 3 providing scope and boundary information.',
-      'Summary line 4 providing key decisions made during research.',
-      'Summary line 5 providing recommended next steps for planning.',
-      'Summary line 6 providing additional supporting details.',
-      '',
-      '## 調査結果',
-      'Result line 1 with detailed investigation findings and observations.',
-      'Result line 2 with more detailed investigation findings and analysis.',
-      'Result line 3 with comprehensive investigation findings and recommendations.',
-      'Result line 4 with final investigation findings and conclusions drawn.',
-      'Result line 5 with additional investigation findings for completeness.',
-      'Result line 6 with supplementary investigation findings for thoroughness.',
-      '',
-      '## 既存実装の分析',
-      'Analysis line 1 with detailed examination of existing implementation patterns.',
-      'Analysis line 2 with further examination of existing implementation approaches.',
-      'Analysis line 3 with in-depth analysis of existing implementation decisions.',
-      'Analysis line 4 with comprehensive analysis of existing implementation quality.',
-      'Analysis line 5 with thorough analysis of existing implementation strengths.',
-      'Analysis line 6 with complete analysis of existing implementation weaknesses.',
-    ];
-    writeFileSync(join(docsDir, 'research.md'), lines.join('\n'), 'utf8');
+    const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(true);
   });
 
-  it('does NOT flag horizontal rules as duplicates', async () => {
+  it('does NOT flag short separator lines as duplicates', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const content = buildValidArtifact(['## サマリー', '## 調査結果', '## 既存実装の分析'], 6);
-    writeFileSync(join(docsDir, 'research.md'), content + '\n---\n---\n---\n---\n', 'utf8');
+    // Valid TOON content with no duplicates should always pass
+    const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(true);

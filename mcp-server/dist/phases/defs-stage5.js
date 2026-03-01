@@ -55,9 +55,9 @@ export const DEFS_STAGE5 = {
         description: 'Verify all acceptance criteria are met',
         model: 'sonnet',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/requirements.md', '{docsDir}/test-design.md'],
-        outputFile: '{docsDir}/acceptance-report.md',
-        requiredSections: ['## サマリー', '## 受入基準', '## 検証結果'],
+        inputFiles: ['{docsDir}/requirements.toon', '{docsDir}/test-design.toon'],
+        outputFile: '{docsDir}/acceptance-report.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 40,
         subagentTemplate: `# acceptance_verificationフェーズ
 
@@ -67,8 +67,8 @@ export const DEFS_STAGE5 = {
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/requirements.md
-- {docsDir}/test-design.md
+- {docsDir}/requirements.toon
+- {docsDir}/test-design.toon
 
 ## 作業内容
 全受入基準（AC-N）が満たされているか検証してください。
@@ -77,7 +77,7 @@ export const DEFS_STAGE5 = {
 3. ユーザー意図との最終整合性確認
 
 ## 出力
-{docsDir}/acceptance-report.md に保存してください。
+{docsDir}/acceptance-report.toon に保存してください。
 
 承認ゲートです。
 
@@ -91,8 +91,8 @@ export const DEFS_STAGE5 = {
         model: 'sonnet',
         bashCategories: ['readonly', 'testing'],
         inputFiles: [],
-        outputFile: '{docsDir}/manual-test.md',
-        requiredSections: ['## サマリー', '## テストシナリオ', '## テスト結果'],
+        outputFile: '{docsDir}/manual-test.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 40,
         subagentTemplate: `# manual_testフェーズ
 
@@ -107,7 +107,7 @@ export const DEFS_STAGE5 = {
 3. 発見した問題を報告
 
 ## 出力
-{docsDir}/manual-test.md に保存してください。
+{docsDir}/manual-test.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -119,8 +119,8 @@ export const DEFS_STAGE5 = {
         model: 'sonnet',
         bashCategories: ['readonly', 'testing', 'security'],
         inputFiles: [],
-        outputFile: '{docsDir}/security-scan.md',
-        requiredSections: ['## サマリー', '## 脆弱性スキャン結果', '## 検出された問題'],
+        outputFile: '{docsDir}/security-scan.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 40,
         subagentTemplate: `# security_scanフェーズ
 
@@ -136,7 +136,7 @@ export const DEFS_STAGE5 = {
 4. 検出された問題と対策を記録
 
 ## 出力
-{docsDir}/security-scan.md に保存してください。
+{docsDir}/security-scan.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

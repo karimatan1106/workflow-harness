@@ -7,9 +7,9 @@ export const DEFS_STAGE2 = {
         description: 'STRIDE analysis and risk assessment',
         model: 'sonnet',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/requirements.md'],
-        outputFile: '{docsDir}/threat-model.md',
-        requiredSections: ['## サマリー', '## 脅威シナリオ', '## リスク評価', '## セキュリティ要件'],
+        inputFiles: ['{docsDir}/requirements.toon'],
+        outputFile: '{docsDir}/threat-model.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 40,
         subagentTemplate: `# threat_modelingフェーズ
 
@@ -18,7 +18,7 @@ export const DEFS_STAGE2 = {
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/requirements.md
+- {docsDir}/requirements.toon
 
 ## 作業内容
 STRIDE分析に基づく脅威モデリングを実施してください。
@@ -28,7 +28,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 4. 対策の優先順位付け
 
 ## 出力
-{docsDir}/threat-model.md に保存してください。
+{docsDir}/threat-model.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -39,9 +39,9 @@ STRIDE分析に基づく脅威モデリングを実施してください。
         description: 'Technical specification and implementation plan',
         model: 'sonnet',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/requirements.md', '{docsDir}/threat-model.md'],
-        outputFile: '{docsDir}/spec.md',
-        requiredSections: ['## サマリー', '## 概要', '## 実装計画', '## 変更対象ファイル'],
+        inputFiles: ['{docsDir}/requirements.toon', '{docsDir}/threat-model.toon'],
+        outputFile: '{docsDir}/spec.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 50,
         subagentTemplate: `# planningフェーズ
 
@@ -50,8 +50,8 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/requirements.md
-- {docsDir}/threat-model.md
+- {docsDir}/requirements.toon
+- {docsDir}/threat-model.toon
 
 ## 作業内容
 技術仕様書と実装計画を作成してください。
@@ -61,7 +61,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 4. 変更対象ファイルの一覧
 
 ## 出力
-{docsDir}/spec.md に保存してください。
+{docsDir}/spec.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -72,9 +72,9 @@ STRIDE分析に基づく脅威モデリングを実施してください。
         description: 'State diagrams in Mermaid stateDiagram-v2',
         model: 'haiku',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/spec.md'],
+        inputFiles: ['{docsDir}/spec.toon'],
         outputFile: '{docsDir}/state-machine.mmd',
-        requiredSections: ['## サマリー'],
+        requiredSections: ['decisions'],
         minLines: 15,
         subagentTemplate: `# state_machineフェーズ
 
@@ -83,7 +83,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 
 ## 作業内容
 Mermaid stateDiagram-v2形式でステートマシン図を作成してください。
@@ -103,9 +103,9 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
         description: 'Process flow diagrams in Mermaid flowchart',
         model: 'haiku',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/spec.md'],
+        inputFiles: ['{docsDir}/spec.toon'],
         outputFile: '{docsDir}/flowchart.mmd',
-        requiredSections: ['## サマリー'],
+        requiredSections: ['decisions'],
         minLines: 15,
         subagentTemplate: `# flowchartフェーズ
 
@@ -114,7 +114,7 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 
 ## 作業内容
 Mermaid flowchart形式で処理フローチャートを作成してください。
@@ -134,9 +134,9 @@ Mermaid flowchart形式で処理フローチャートを作成してください
         description: 'Interface design and component specifications',
         model: 'sonnet',
         bashCategories: ['readonly'],
-        inputFiles: ['{docsDir}/spec.md'],
-        outputFile: '{docsDir}/ui-design.md',
-        requiredSections: ['## サマリー', '## コンポーネント設計', '## 画面構成', '## インタラクション'],
+        inputFiles: ['{docsDir}/spec.toon'],
+        outputFile: '{docsDir}/ui-design.toon',
+        requiredSections: ['decisions', 'artifacts', 'next'],
         minLines: 50,
         subagentTemplate: `# ui_designフェーズ
 
@@ -145,7 +145,7 @@ Mermaid flowchart形式で処理フローチャートを作成してください
 - 出力先: {docsDir}/
 
 ## 入力
-- {docsDir}/spec.md
+- {docsDir}/spec.toon
 
 ## 作業内容
 UI設計とコンポーネント仕様を作成してください。
@@ -155,7 +155,7 @@ UI設計とコンポーネント仕様を作成してください。
 4. レスポンシブ対応の方針
 
 ## 出力
-{docsDir}/ui-design.md に保存してください。
+{docsDir}/ui-design.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

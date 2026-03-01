@@ -12,8 +12,8 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
     model: 'sonnet',
     bashCategories: ['readonly', 'testing'],
     inputFiles: [],
-    outputFile: '{docsDir}/performance-test.md',
-    requiredSections: ['## サマリー', '## パフォーマンス計測結果', '## ボトルネック分析'],
+    outputFile: '{docsDir}/performance-test.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# performance_testフェーズ
 
@@ -29,7 +29,7 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
 4. 改善提案
 
 ## 出力
-{docsDir}/performance-test.md に保存してください。
+{docsDir}/performance-test.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -42,8 +42,8 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
     model: 'sonnet',
     bashCategories: ['readonly', 'testing'],
     inputFiles: [],
-    outputFile: '{docsDir}/e2e-test.md',
-    requiredSections: ['## サマリー', '## E2Eテストシナリオ', '## テスト実行結果'],
+    outputFile: '{docsDir}/e2e-test.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# e2e_testフェーズ
 
@@ -58,7 +58,7 @@ E2Eテストを実施してください。
 3. テスト結果の記録
 
 ## 出力
-{docsDir}/e2e-test.md に保存してください。
+{docsDir}/e2e-test.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -175,8 +175,8 @@ CI/CDパイプラインの結果を確認してください。
     model: 'sonnet',
     bashCategories: ['readonly'],
     inputFiles: [],
-    outputFile: '{docsDir}/health-report.md',
-    requiredSections: ['## サマリー', '## ヘルス状態', '## パフォーマンス計測結果'],
+    outputFile: '{docsDir}/health-report.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
     subagentTemplate: `# health_observationフェーズ
 
@@ -190,7 +190,7 @@ CI/CDパイプラインの結果を確認してください。
 3. パフォーマンスメトリクスの確認
 
 ## 出力
-{docsDir}/health-report.md に保存してください。
+{docsDir}/health-report.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
