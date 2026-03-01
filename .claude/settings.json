@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          "node hooks/enforce-workflow.js",
+          "node hooks/block-dangerous-commands.js"
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          "node hooks/phase-edit-guard.js",
+          "node hooks/loop-detector.js"
+        ]
+      }
+    ]
+  }
+}

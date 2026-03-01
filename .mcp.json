@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "workflow-harness": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "cwd": "workflow-harness"
+    }
+  }
+}
