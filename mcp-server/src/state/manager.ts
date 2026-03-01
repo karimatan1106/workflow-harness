@@ -72,7 +72,7 @@ export class StateManager {
     const idx = state.completedPhases.indexOf(targetPhase);
     if (idx === -1 && state.phase !== targetPhase) return { success: false, error: 'Target phase was not in completed phases' };
     if (idx !== -1) state.completedPhases = state.completedPhases.slice(0, idx);
-    state.phase = targetPhase; state.updatedAt = new Date().toISOString();
+    state.phase = targetPhase; state.retryCount = {}; state.updatedAt = new Date().toISOString();
     updateCheckpoint(state, targetPhase);
     signAndPersist(state, this.hmacKey); writeTaskIndex(); return { success: true };
   }
@@ -80,7 +80,7 @@ export class StateManager {
   resetTask(taskId: string, targetPhase: PhaseName, reason: string): { success: boolean; error?: string } {
     const state = this.loadTask(taskId);
     if (!state) return { success: false, error: 'Task not found' };
-    state.completedPhases = []; state.subPhaseStatus = {}; state.phase = targetPhase;
+    state.completedPhases = []; state.subPhaseStatus = {}; state.retryCount = {}; state.phase = targetPhase;
     state.updatedAt = new Date().toISOString(); updateCheckpoint(state, targetPhase);
     if (!state.resetHistory) state.resetHistory = [];
     state.resetHistory.push({ reason, resetAt: state.updatedAt, targetPhase });

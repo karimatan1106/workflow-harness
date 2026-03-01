@@ -174,6 +174,30 @@ describe('resetTask', () => {
     mgr.resetTask(state.taskId, 'scope_definition', 'clearing subs');
     expect(mgr.loadTask(state.taskId)!.subPhaseStatus).toEqual({});
   });
+  it('clears retryCount to empty object on reset', () => {
+    const mgr = createMgr();
+    const state = mgr.createTask('rt-retry-reset', 'Intent for retryCount reset test with sufficient length text ok.');
+    mgr.incrementRetryCount(state.taskId, 'planning');
+    mgr.incrementRetryCount(state.taskId, 'research');
+    expect(mgr.getRetryCount(state.taskId, 'planning')).toBe(1);
+    mgr.resetTask(state.taskId, 'scope_definition' as any, 'clearing retry counts');
+    const loaded = mgr.loadTask(state.taskId);
+    expect(loaded!.retryCount).toEqual({});
+  });
+});
+
+describe('goBack', () => {
+  it('clears retryCount to empty object on goBack', () => {
+    const mgr = createMgr();
+    const state = mgr.createTask('gb-retry-clear', 'Intent for goBack retryCount clear test with sufficient length.');
+    mgr.advancePhase(state.taskId);
+    mgr.incrementRetryCount(state.taskId, 'research');
+    expect(mgr.getRetryCount(state.taskId, 'research')).toBe(1);
+    const result = mgr.goBack(state.taskId, 'scope_definition' as any);
+    expect(result.success).toBe(true);
+    const loaded = mgr.loadTask(state.taskId);
+    expect(loaded!.retryCount).toEqual({});
+  });
 });
 
 describe('sub-phase dependency enforcement', () => {
