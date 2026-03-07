@@ -4,3 +4,11 @@ mcp-server/.claude/state/
 mcp-server/.claude/generated-files.json
 *.local
 .env
+
+# Watchdog & session ephemeral files (generated per-project)
+.agent/.watchdog-counter
+.agent/.edit-counter
+.agent/.file-read-log
+.agent/.handoff-session-marker
+.agent/.pitfall-triggered
+.agent/checkpoint.toon

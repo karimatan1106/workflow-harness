@@ -3,22 +3,6 @@ name: harness-project-structure
 description: Enterprise project structure for frontend (Feature-First + CDD) and backend (Clean Architecture + DDD).
 ---
 
-# Enterprise Project Structure
-
-## Project Root
-
-```
-project/
-├── src/
-│   ├── frontend/         # React/Next.js + Storybook
-│   └── backend/          # TypeScript/Hono + Clean Architecture
-├── docs/                 # Documentation
-├── packages/             # Shared packages (types)
-├── e2e/                  # E2E tests
-├── docker-compose.yml
-└── README.md
-```
-
 ## Frontend (Feature-First + CDD)
 
 ```
@@ -45,53 +29,35 @@ src/frontend/
 ```
 src/backend/
 ├── domain/               # ★ Business logic core
-│   ├── entities/         # Domain entities
-│   ├── value-objects/
-│   ├── aggregates/
-│   ├── events/
+│   ├── entities/ | value-objects/ | aggregates/ | events/
 │   ├── repositories/     # Ports (interfaces)
 │   └── services/
 ├── application/          # Use cases
-│   ├── use-cases/
-│   ├── commands/         # CQRS write
-│   ├── queries/          # CQRS read
-│   └── dtos/
+│   ├── use-cases/ | commands/ (CQRS write) | queries/ (CQRS read) | dtos/
 ├── infrastructure/       # Technical adapters
 │   ├── database/         # Prisma + repository impls
-│   ├── external/         # Third-party integrations
-│   ├── messaging/
-│   ├── cache/
-│   └── config/
+│   ├── external/ | messaging/ | cache/ | config/
 ├── presentation/         # API layer (Hono routes)
-│   ├── routes/
-│   ├── middleware/
-│   └── schemas/          # Zod schemas
+│   ├── routes/ | middleware/ | schemas/ (Zod)
 ├── batch/                # Batch jobs
 ├── shared/               # Constants, utils, exceptions
 └── tests/                # Integration tests
 ```
 
-## Dependency Flow (Backend)
-
-```
-Presentation → Application → Domain ← Infrastructure
-```
-
-- Domain is pure (no external dependencies)
-- Infrastructure implements Domain ports (dependency inversion)
+**Dependency Flow**: Presentation → Application → Domain ← Infrastructure. Domain is pure (no external deps).
 
 ## Docs-to-Source Mapping
 
 | Docs | Frontend | Backend |
 |------|----------|---------|
-| `docs/spec/features/{name}.md` | `src/frontend/features/{name}/` | `src/backend/application/use-cases/{name}/` |
-| `docs/spec/components/{name}.md` | `src/frontend/components/ui/{name}/` | — |
-| `docs/spec/screens/{name}.md` | `src/frontend/app/(routes)/{name}/` | — |
-| `docs/spec/api/{name}.md` | `src/frontend/features/{name}/api/` | `src/backend/presentation/routes/{name}/` |
-| `docs/spec/events/{name}.md` | — | `src/backend/domain/events/` |
-| `docs/spec/database/{name}.md` | — | `src/backend/infrastructure/database/` |
-| `docs/architecture/integrations/{name}.md` | — | `src/backend/infrastructure/external/` |
-| `docs/architecture/batch/{name}.md` | — | `src/backend/batch/` |
+| `docs/spec/features/{name}.md` | `features/{name}/` | `application/use-cases/{name}/` |
+| `docs/spec/components/{name}.md` | `components/ui/{name}/` | — |
+| `docs/spec/screens/{name}.md` | `app/(routes)/{name}/` | — |
+| `docs/spec/api/{name}.md` | `features/{name}/api/` | `presentation/routes/{name}/` |
+| `docs/spec/events/{name}.md` | — | `domain/events/` |
+| `docs/spec/database/{name}.md` | — | `infrastructure/database/` |
+| `docs/architecture/integrations/{name}.md` | — | `infrastructure/external/` |
+| `docs/architecture/batch/{name}.md` | — | `batch/` |
 
 ## Phase-Specific Considerations
 
@@ -104,14 +70,4 @@ Presentation → Application → Domain ← Infrastructure
 | test_impl | Stories + tests (CDD Red) | Use-case tests |
 | implementation | Components (CDD Green) | Domain/app layer |
 
-## Applicability
-
-**Use this structure for:**
-- Multi-team development
-- Long-term maintenance
-- Complex business logic
-
-**Simplify for:**
-- Prototypes/PoC
-- Simple CRUD apps
-- Small tools
+Simplify for prototypes/PoC, simple CRUD, small tools.

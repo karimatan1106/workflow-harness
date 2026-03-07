@@ -25,7 +25,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 ## 作業内容
 テスト設計に基づきテストコードを作成してください（TDD Redフェーズ）。
-1. test-design.mdのテストケースを実装
+1. test-design.toonのテストケースを実装
 2. テストは失敗する状態で作成（実装コードがまだないため）
 3. テストファイルのパスを記録
 
@@ -57,10 +57,10 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 - {docsDir}/test-design.toon
 
 ## 設計チェックリスト（実装開始前に必須確認）
-- spec.mdに記載された全機能を実装したか
+- spec.toonに記載された全機能を実装したか
 - state-machine.mmdの全状態遷移を実装したか
 - flowchart.mmdの全処理フローを実装したか
-- test-design.mdの全テストケースに対応するコードがあるか
+- test-design.toonの全テストケースに対応するコードがあるか
 
 ## 作業内容
 テストが通るように実装コードを作成してください。
@@ -148,7 +148,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 ## 作業内容
 設計と実装の整合性を検証してください。
-1. spec.mdの全機能が実装されているか
+1. spec.toonの全機能が実装されているか
 2. 設計書にない追加機能（勝手な追加）がないか
 3. ユーザー意図が正しく反映されているか
 4. セキュリティ要件の対策実装確認

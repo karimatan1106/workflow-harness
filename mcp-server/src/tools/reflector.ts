@@ -127,9 +127,7 @@ export function formatLessonsForPrompt(phase: string): string {
   const lessons = getLessonsForPhase(phase);
   if (lessons.length === 0) return '';
   const lines = lessons.map(l => `[${l.id}][${l.category}] ${l.phase}: ${l.errorPattern} → ${l.lesson}`);
-  return '\n\n## 既知の落とし穴（Reflector自動注入）\n'
-    + '過去の失敗から学んだ教訓です。同じ失敗を繰り返さないよう注意してください:\n'
-    + lines.join('\n') + '\n';
+  return '\n\n## 既知の落とし穴\n' + lines.join('\n') + '\n';
 }
 
 /**

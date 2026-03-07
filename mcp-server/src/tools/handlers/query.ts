@@ -61,9 +61,6 @@ export async function handleHarnessGetSubphaseTemplate(args: Record<string, unkn
     phase,
     model: phaseDef?.model ?? registryDef?.model ?? 'sonnet',
     subagentTemplate: prompt,
-    requiredSections: phaseDef?.requiredSections ?? registryDef?.requiredSections ?? [],
-    minLines: phaseDef?.minLines ?? registryDef?.minLines ?? 0,
-    bashCategories: phaseDef?.bashCategories ?? registryDef?.bashCategories ?? ['readonly'],
   });
 }
 
@@ -84,7 +81,7 @@ export async function handleHarnessPreValidate(args: Record<string, unknown>, sm
     const retryResult = buildRetryPrompt(retryCtx);
     retryInfo = { retryPrompt: retryResult.prompt, suggestModelEscalation: retryResult.suggestModelEscalation, suggestedModel: retryResult.suggestedModel };
   }
-  return respond({ phase: task.phase, passed: dodResult.passed, checks: dodResult.checks, errors: dodResult.errors, ...(retryInfo ? { retry: retryInfo } : {}) });
+  return respond({ phase: task.phase, passed: dodResult.passed, ...(dodResult.passed ? {} : { checks: dodResult.checks, errors: dodResult.errors }), ...(retryInfo ? { retry: retryInfo } : {}) });
 }
 
 export async function handleHarnessUpdateAcStatus(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {

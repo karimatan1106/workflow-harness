@@ -30,8 +30,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
 ## 作業内容
 設計成果物の整合性を検証してください。
-1. spec.mdと各設計図の一貫性
-2. 要件（requirements.md）との対応関係
+1. spec.toonと各設計図の一貫性
+2. 要件（requirements.toon）との対応関係
 3. セキュリティ要件の反映確認
 4. AC-Nと設計要素の対応表を作成
 
@@ -39,7 +39,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのAC-Nに対応する設計要素を以下の形式でマッピングすること:
 | AC-N | 設計コンポーネント | 仕様書参照 |
 |----|-------------|---------|
-| AC-1 | (対応する設計要素) | spec.md §X.Y |
+| AC-1 | (対応する設計要素) | spec.toon §X.Y |
 全てのACにマッピングが必要。空欄のACがある場合、承認がブロックされる。
 
 ## 出力

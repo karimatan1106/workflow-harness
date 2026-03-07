@@ -9,48 +9,7 @@ import type { TaskState, PhaseConfig, RTMEntry } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-interface L3Analysis {
-  totalChars: number;
-  contentChars: number;
-  fieldCount: number;
-  sectionDensity: number;
-}
-
-function getStringLen(v: unknown): number {
-  if (v === null || v === undefined) return 0;
-  if (typeof v === 'string') return v.length;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v).length;
-  if (Array.isArray(v)) return v.reduce((acc: number, item) => acc + getStringLen(item), 0);
-  if (typeof v === 'object') return Object.values(v as Record<string, unknown>).reduce((acc: number, val) => acc + getStringLen(val), 0);
-  return 0;
-}
-
-function analyzeArtifact(content: string): L3Analysis {
-  let obj: unknown;
-  try {
-    obj = toonDecode(content);
-  } catch {
-    return { totalChars: content.length, contentChars: 0, fieldCount: 0, sectionDensity: 0 };
-  }
-  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
-    const len = getStringLen(obj);
-    return { totalChars: len, contentChars: len, fieldCount: 1, sectionDensity: 1 };
-  }
-  const record = obj as Record<string, unknown>;
-  const CORE_KEYS = new Set(['decisions', 'artifacts', 'next', 'acceptanceCriteria', 'notInScope', 'openQuestions', 'functionalRequirements', 'nonFunctionalRequirements']);
-  let totalChars = 0;
-  let contentChars = 0;
-  let fieldCount = 0;
-  for (const [key, val] of Object.entries(record)) {
-    const len = getStringLen(val);
-    totalChars += len;
-    fieldCount++;
-    if (CORE_KEYS.has(key)) contentChars += len;
-  }
-  if (totalChars === 0) return { totalChars: 0, contentChars: 0, fieldCount: 0, sectionDensity: 0 };
-  return { totalChars, contentChars, fieldCount, sectionDensity: contentChars / totalChars };
-}
-
+/** L3 artifact quality: TOON parse check only. Content quality is validated by L4. */
 export function checkL3Quality(phase: string, docsDir: string, workflowDir: string): DoDCheckResult {
   const config: PhaseConfig | undefined = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   if (!config || !config.outputFile) {
@@ -61,17 +20,18 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
     return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}` };
   }
   const content = readFileSync(outputFile, 'utf8');
-  const analysis = analyzeArtifact(content);
-  const minLines = config.minLines ?? 0;
-  const errors: string[] = [];
-  if (minLines > 0 && analysis.contentChars < minLines * 10) errors.push(`Content chars ${analysis.contentChars} < required ${minLines * 10} (minLines ${minLines} * 10)`);
-  if (analysis.sectionDensity < 0.30) errors.push(`Section density ${(analysis.sectionDensity * 100).toFixed(1)}% < required 30%`);
-  if (analysis.fieldCount < 3) errors.push(`TOON field count ${analysis.fieldCount} < required 3`);
-  const passed = errors.length === 0;
-  return {
-    level: 'L3', check: 'artifact_quality', passed,
-    evidence: passed ? `Quality OK: ${analysis.contentChars} content chars, density ${(analysis.sectionDensity * 100).toFixed(1)}%` : errors.join('; '),
-  };
+  // Only check TOON parsability — content/density/fieldCount checks removed (L4 covers these via required keys)
+  try {
+    toonDecode(content);
+  } catch (e) {
+    const lines = content.split('\n');
+    const mdHeaders = lines.filter(l => /^#{1,6}\s/.test(l));
+    const parseError = mdHeaders.length > 0
+      ? `TOON parse failed: ${mdHeaders.length} Markdown headers (##) found. TOON uses "key: value", not Markdown. First: "${mdHeaders[0].slice(0, 60)}"`
+      : `TOON parse failed: ${e instanceof Error ? e.message.slice(0, 150) : 'unknown error'}`;
+    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: parseError };
+  }
+  return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'TOON parse OK' };
 }
 
 const RTM_CHECK_PHASES = ['code_review', 'acceptance_verification', 'completed'];

@@ -14,17 +14,26 @@ import {
 } from './dod-helpers.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-function checkRequiredToonKeys(content: string, requiredKeys: string[]): string[] {
-  if (requiredKeys.length === 0) return [];
+interface ToonKeyCheckResult { missingKeys: string[]; parseError?: string }
+
+function checkRequiredToonKeys(content: string, requiredKeys: string[]): ToonKeyCheckResult {
+  if (requiredKeys.length === 0) return { missingKeys: [] };
   let obj: unknown;
   try {
     obj = toonDecode(content);
-  } catch {
-    return requiredKeys;
+  } catch (e) {
+    // Detect common TOON parse errors and provide actionable guidance
+    const msg = e instanceof Error ? e.message : String(e);
+    const lines = content.split('\n');
+    const mdHeaders = lines.filter(l => /^#{1,6}\s/.test(l));
+    if (mdHeaders.length > 0) {
+      return { missingKeys: requiredKeys, parseError: `TOON parse error: Markdown headers detected (${mdHeaders.length} lines starting with #). TOON uses "key: value" format, not Markdown. Remove all ## headers and use TOON key syntax instead. First offending line: "${mdHeaders[0].slice(0, 60)}"` };
+    }
+    return { missingKeys: requiredKeys, parseError: `TOON parse error: ${msg.slice(0, 200)}. Ensure file uses TOON format (key: value), not Markdown or JSON.` };
   }
-  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return requiredKeys;
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return { missingKeys: requiredKeys };
   const record = obj as Record<string, unknown>;
-  return requiredKeys.filter(key => !(key in record));
+  return { missingKeys: requiredKeys.filter(key => !(key in record)) };
 }
 
 export function checkL4ContentValidation(phase: string, docsDir: string, workflowDir: string): DoDCheckResult {
@@ -47,8 +56,9 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   const duplicates = checkDuplicateLines(content);
   if (duplicates.length > 0) errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
 
-  const missingKeys = checkRequiredToonKeys(content, config.requiredSections ?? []);
-  if (missingKeys.length > 0) errors.push(`Missing required TOON keys: ${missingKeys.join(', ')}`);
+  const toonCheck = checkRequiredToonKeys(content, config.requiredSections ?? []);
+  if (toonCheck.parseError) errors.push(toonCheck.parseError);
+  else if (toonCheck.missingKeys.length > 0) errors.push(`Missing required TOON keys: ${toonCheck.missingKeys.join(', ')}`);
 
   const passed = errors.length === 0;
   return {

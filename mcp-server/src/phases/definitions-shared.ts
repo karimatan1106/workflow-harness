@@ -23,85 +23,35 @@ export type { PhaseName };
 
 // ─── Shared Template Fragments ───────────────────
 
-export const ARTIFACT_QUALITY_RULES = `## 成果物品質要件
-- 各セクション（## 見出し）内に最低5行の実質行を含めること
-- セクション密度（実質行/総行）は30%以上を維持すること
-- 同一行の3回以上繰り返し禁止
-- 禁止パターン（12語）: コードフェンス外への記載禁止
-  英語: TODO, TBD, WIP, FIXME
-  日本語: 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ダミー, 仮置き
-- 角括弧プレースホルダー [#xxx#] 形式禁止
-- 禁止語への言及は間接表現を使用すること`;
+export const ARTIFACT_QUALITY_RULES = `=== 品質要件 ===
+- セクション実質行≥5、密度≥30%、同一行3回以上繰り返し禁止
+- 禁止語(コードフェンス外): TODO,TBD,WIP,FIXME,未定,未確定,要検討,検討中,対応予定,サンプル,ダミー,仮置き
+- [#xxx#]形式禁止。禁止語は間接表現で言及`;
 
-export const SUMMARY_SECTION_RULE = `## TOON形式成果物（必須）
-成果物はTOON形式で作成すること。ファイル: \`{docsDir}/{phase}.toon\`
+export const SUMMARY_SECTION_RULE = `=== TOON成果物 ===
+ファイル: \`{docsDir}/{phase}.toon\` — TOON形式(JSONより40-50%効率的)
+★ .toonファイルに ## ヘッダーやMarkdownテーブルを絶対に書かないこと。key: value形式のみ使用。## を書くとパーサーエラーになる。
 
-TOONはJSONより40-50%トークン効率が高い構造化形式。
+ルール: キー: 値 / カンマ・改行含む値のみ引用符 / 配列: \`名[N]{列1,列2}:\` +インデント行 / ネスト: インデント
 
-### TOON形式ルール
-- キー: 値（スカラー）— 例: \`phase: research\`
-- 文字列値にカンマ・改行を含む場合のみ引用符で囲む — 例: \`ts: "2026-03-01T10:00:00Z"\`
-- 配列テーブル: \`フィールド名[要素数]{列1,列2,...}:\` の後、インデント行で各行をカンマ区切り
-- ネスト: インデントでオブジェクトをネスト（\`next:\` の下にインデントで子キー）
+必須: decisions[N≥5]{id,statement,rationale} / artifacts[N]{path,role,summary} / next(criticalDecisions,readFiles,warnings)
+role: spec|design|test|impl|report|diagram。[N]は実数に置換。
 
-### 必須フィールド（decisions・artifacts・next）
-decisions[] に最低5エントリが必要。各エントリはid・statement・rationaleを含む。
+IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requirements=REQ,threat_modeling=TM,planning=PL,state_machine=SM,flowchart=FC,ui_design=UID,design_review=DR,test_design=TD,test_selection=TS,code_review=CR,acceptance_verification=AV,manual_test=MT,security_scan=SS,performance_test=PT,e2e_test=E2E,health_observation=HO`;
 
-\`\`\`
-phase: {phase}
-taskId: {taskId}
-ts: "作成時のISO8601タイムスタンプ"
-decisions[N]{id,statement,rationale}:
-  F-001,決定内容を1文で,その理由
-  F-002,別の決定内容,別の理由
-artifacts[N]{path,role,summary}:
-  出力ファイルのパス,spec,1文要約
-next:
-  criticalDecisions[N]: F-001,F-002
-  readFiles[N]: 次フェーズが読むべきファイルパス
-  warnings[N]: 次フェーズへの注意事項
-\`\`\`
-
-注意: 上記の[N]は実際の要素数に置き換えること。roleはspec|design|test|impl|report|diagramから選択。
-
-### IDプレフィックス規則
-| フェーズ | プレフィックス |
-|---------|--------------|
-| scope_definition | SD |
-| research | R |
-| impact_analysis | IA |
-| requirements | REQ |
-| threat_modeling | TM |
-| planning | PL |
-| state_machine | SM |
-| flowchart | FC |
-| ui_design | UID |
-| design_review | DR |
-| test_design | TD |
-| test_selection | TS |
-| code_review | CR |
-| acceptance_verification | AV |
-| manual_test | MT |
-| security_scan | SS |
-| performance_test | PT |
-| e2e_test | E2E |
-| health_observation | HO |`;
-
-// AGT-1: Subagent termination detection tag
-export const EXIT_CODE_RULE = `## ★重要★ 完了時の終了タグ (AGT-1)
-全ての作業完了時、最後のメッセージに以下のタグを含めること:
-[EXIT_CODE: 0]
-エラーで終了する場合: [EXIT_CODE: 1]
-このタグにより、Orchestratorはsubagentの正常終了を検出できる。`;
+// AGT-1: Subagent termination detection tag + return format
+export const EXIT_CODE_RULE = `=== ★完了時の戻り値(AGT-1) ===
+成果物全文は含めない。最後にTOONサマリーのみ出力:
+成功: result{phase,status,artifact,lines}: {phase},complete,{docsDir}/{phase}.toon,行数 [EXIT_CODE: 0]
+失敗: result{phase,status,error}: {phase},failed,エラー1行 [EXIT_CODE: 1]`;
 
 export function bashCategoryHelp(categories: string[]): string {
   const defs: Record<string, string> = {
-    readonly: 'ls, pwd, cat, head, tail, grep, find, wc, git status/log/diff/show, npm list, node --version',
-    testing: 'npm test, npx vitest, npx jest, npx playwright test, pytest',
-    implementation: 'npm install, pnpm add, npm run build, mkdir, rm, git add, git commit',
-    git: 'git add, git commit, git push, git tag',
-    security: 'npm audit, npx audit-ci, detect-secrets, semgrep, npx snyk, trivy, gitleaks',
+    readonly: 'ls,pwd,cat,head,tail,grep,find,wc,git status/log/diff/show',
+    testing: 'npm test,npx vitest/jest/playwright,pytest',
+    implementation: 'npm install,npm run build,mkdir,rm,git add/commit',
+    git: 'git add/commit/push/tag',
+    security: 'npm audit,semgrep,npx snyk,trivy,gitleaks',
   };
-  const lines = categories.map(c => `- ${c}: ${defs[c] ?? '(unknown)'}`);
-  return `## Bashコマンド制限\n許可カテゴリ: ${categories.join(', ')}\n${lines.join('\n')}\n上記以外はブロックされます。Read/Write/Edit/Glob/Grep等の専用ツールを使用してください。`;
+  return `=== Bash制限 ===\n許可: ${categories.map(c => `${c}(${defs[c] ?? '?'})`).join(' / ')}\n他はRead/Write/Edit/Glob/Grep使用。`;
 }
