@@ -140,6 +140,27 @@ export function checkArtifactFreshness(phase: string, docsDir: string): DoDCheck
   return { level: 'L3', check: 'artifact_freshness', passed: true, evidence };
 }
 
+export function checkInvariantCompleteness(state: TaskState, phase: string): DoDCheckResult {
+  const INV_CHECK_PHASES = ['acceptance_verification', 'completed'];
+  if (!INV_CHECK_PHASES.includes(phase)) {
+    return { level: 'L3', check: 'invariant_completeness', passed: true,
+      evidence: 'Invariant completeness check not required for phase: ' + phase };
+  }
+  if (!state.invariants || state.invariants.length === 0) {
+    return { level: 'L3', check: 'invariant_completeness', passed: true,
+      evidence: 'No invariants defined; invariant check skipped' };
+  }
+  const notHeld = state.invariants.filter(inv => inv.status !== 'held')
+    .map(inv => `${inv.id} (${inv.status})`);
+  const passed = notHeld.length === 0;
+  return {
+    level: 'L3', check: 'invariant_completeness', passed,
+    evidence: passed
+      ? `All ${state.invariants.length} invariants are held`
+      : 'Invariants not held: ' + notHeld.join(', '),
+  };
+}
+
 export function checkBaselineRequired(state: TaskState, phase: string): DoDCheckResult {
   if (phase !== 'regression_test') {
     return { level: 'L3', check: 'baseline_required', passed: true, evidence: 'Baseline check not required for phase: ' + phase };

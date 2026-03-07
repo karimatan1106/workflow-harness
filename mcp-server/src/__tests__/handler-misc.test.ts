@@ -174,8 +174,8 @@ describe('IA-2 AC count requirement', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('TOOL_DEFINITIONS', () => {
-  it('has exactly 22 entries', () => {
-    expect(ctx.TOOL_DEFINITIONS).toHaveLength(22);
+  it('has exactly 24 entries', () => {
+    expect(ctx.TOOL_DEFINITIONS).toHaveLength(24);
   });
 
   it('contains harness_start as the first entry', () => {

@@ -51,7 +51,7 @@ export function createTaskState(taskName: string, userIntent: string, hmacKey: s
   const state: TaskState = {
     taskId, taskName, version: 4, phase: firstPhase, completedPhases: [], skippedPhases: [],
     size, riskScore, userIntent, openQuestions: [], notInScope: [], scopeFiles: files, scopeDirs: dirs, plannedFiles: [],
-    acceptanceCriteria: [], rtmEntries: [], proofLog: [],
+    acceptanceCriteria: [], rtmEntries: [], proofLog: [], invariants: [],
     checkpoint: { taskId, phase: firstPhase, completedPhases: [], timestamp: now, sha256: '', userIntent, scopeFiles: files, acceptanceCriteria: [], rtmEntries: [] },
     docsDir, workflowDir, sessionToken, stateIntegrity: '', createdAt: now, updatedAt: now,
   };

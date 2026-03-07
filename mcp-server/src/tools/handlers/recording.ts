@@ -5,7 +5,8 @@
  */
 
 import type { StateManager } from '../../state/manager.js';
-import type { PhaseName, ProofEntry, ControlLevel, AcceptanceCriterion, RTMEntry } from '../../state/types.js';
+import type { PhaseName, ProofEntry, ControlLevel, AcceptanceCriterion, RTMEntry, ProofTier, InvariantStatus } from '../../state/types.js';
+import type { Invariant } from '../../state/types-invariant.js';
 import { respond, respondError, validateSession, type HandlerResult } from '../handler-shared.js';
 
 export async function handleHarnessRecordProof(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
@@ -118,4 +119,40 @@ export async function handleHarnessRecordTest(args: Record<string, unknown>, sm:
   const ok = sm.recordTestFile(taskId, testFile);
   if (!ok) return respondError('Failed to record test file');
   return respond({ taskId, testFile, recorded: true });
+}
+
+export async function handleHarnessAddInvariant(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
+  const taskId = String(args.taskId ?? '');
+  const id = String(args.id ?? '');
+  const description = String(args.description ?? '');
+  if (!taskId) return respondError('taskId is required');
+  if (!id) return respondError('id is required');
+  if (!description) return respondError('description is required');
+  const task = sm.loadTask(taskId);
+  if (!task) return respondError('Task not found: ' + taskId);
+  const sessionErr = validateSession(task, args.sessionToken);
+  if (sessionErr) return respondError(sessionErr);
+  const invariant: Invariant = { id, description, status: 'open' };
+  if (args.proofTier) invariant.proofTier = String(args.proofTier) as ProofTier;
+  const ok = sm.addInvariant(taskId, invariant);
+  if (!ok) return respondError('Failed to add invariant (duplicate id?)');
+  sm.addProof(taskId, { phase: task.phase as PhaseName, level: 'L4' as ControlLevel, check: 'Invariant defined: ' + id, result: true, evidence: description, timestamp: new Date().toISOString() });
+  return respond({ taskId, invariant, added: true });
+}
+
+export async function handleHarnessUpdateInvariantStatus(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
+  const taskId = String(args.taskId ?? '');
+  const id = String(args.id ?? '');
+  const status = String(args.status ?? '') as InvariantStatus;
+  if (!taskId) return respondError('taskId is required');
+  if (!id) return respondError('id is required');
+  if (!['open', 'held', 'violated'].includes(status)) return respondError('status must be open, held, or violated');
+  const task = sm.loadTask(taskId);
+  if (!task) return respondError('Task not found: ' + taskId);
+  const sessionErr = validateSession(task, args.sessionToken);
+  if (sessionErr) return respondError(sessionErr);
+  const evidence = args.evidence ? String(args.evidence) : undefined;
+  const ok = sm.updateInvariantStatus(taskId, id, status, evidence);
+  if (!ok) return respondError('Invariant not found: ' + id);
+  return respond({ taskId, id, status, updated: true });
 }
