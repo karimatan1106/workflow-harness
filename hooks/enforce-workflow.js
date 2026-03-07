@@ -3,7 +3,7 @@ const { findProjectRoot, getCurrentPhase, isBypassPath } = require('./hook-utils
 
 const BASH_CATEGORIES = {
   readonly: [
-    'ls', 'pwd', 'cat', 'head', 'tail', 'grep', 'find', 'wc',
+    'ls', 'pwd', 'cat', 'head', 'tail', 'grep', 'find', 'wc', 'python serena-query.py',
     'git status', 'git log', 'git diff', 'git show',
     'npm list', 'node --version', 'npm --version'
   ],

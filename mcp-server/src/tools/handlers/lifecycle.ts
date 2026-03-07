@@ -7,7 +7,7 @@ import { execSync } from 'node:child_process';
 import type { StateManager } from '../../state/manager.js';
 import { runDoDChecks } from '../../gates/dod.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
-import { buildSubagentPrompt, getPhaseDefinition } from '../../phases/definitions.js';
+import { getPhaseDefinition } from '../../phases/definitions.js';
 import { buildRetryPrompt, type RetryContext } from '../retry.js';
 import { stashFailure, promoteStashedFailure } from '../reflector.js';
 import { runCuratorCycle } from '../curator.js';
@@ -46,13 +46,17 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
   if (taskId) {
     const task = sm.loadTask(taskId);
     if (!task) return respondError('Task not found: ' + taskId);
-    return respond({
+    const verbose = Boolean(args.verbose ?? false);
+    const core = {
       taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size,
-      completedPhases: task.completedPhases, skippedPhases: task.skippedPhases,
+      docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken,
+    };
+    if (!verbose) return respond(core);
+    return respond({
+      ...core, completedPhases: task.completedPhases, skippedPhases: task.skippedPhases,
       subPhaseStatus: task.subPhaseStatus, userIntent: task.userIntent,
       scopeFiles: task.scopeFiles, scopeDirs: task.scopeDirs, scopeGlob: task.scopeGlob,
       acceptanceCriteria: task.acceptanceCriteria, rtmEntries: task.rtmEntries,
-      docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken,
       baseline: task.baseline, testFiles: task.testFiles, createdAt: task.createdAt, updatedAt: task.updatedAt,
     });
   }
@@ -108,11 +112,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   const nextPhase = result.nextPhase ?? '';
   const guide = buildPhaseGuide(nextPhase);
   const freshTask = sm.loadTask(taskId);
-  const nextPhaseDef = getPhaseDefinition(nextPhase);
-  const subagentTemplate = nextPhaseDef && freshTask
-    ? buildSubagentPrompt(nextPhase, freshTask.taskName, (freshTask as any).docsDir ?? '', (freshTask as any).workflowDir ?? '', (freshTask as any).userIntent ?? '', taskId)
-    : undefined;
-  const responseObj: Record<string, unknown> = { nextPhase, dodChecks: dodResult.checks, phaseGuide: { ...guide, subagentTemplate } };
+  const responseObj: Record<string, unknown> = { nextPhase, phaseGuide: guide, hasTemplate: !!getPhaseDefinition(nextPhase) };
   if (PARALLEL_GROUPS[nextPhase]) {
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: (PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model) ?? 'sonnet' }));
   }

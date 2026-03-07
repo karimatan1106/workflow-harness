@@ -46,9 +46,7 @@ describe('Subagent Templates', () => {
     expect(typeof res.subagentTemplate).toBe('string');
     expect((res.subagentTemplate as string).length).toBeGreaterThan(0);
     expect(typeof res.model).toBe('string');
-    expect(Array.isArray(res.requiredSections)).toBe(true);
-    expect(typeof res.minLines).toBe('number');
-    expect(Array.isArray(res.bashCategories)).toBe(true);
+    // requiredSections, minLines, bashCategories removed for context savings
   });
 
   it('harness_get_subphase_template with taskId substitutes task name in template', async () => {

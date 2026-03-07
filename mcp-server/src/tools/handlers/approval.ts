@@ -9,8 +9,8 @@ import type { StateManager } from '../../state/manager.js';
 import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, type HandlerResult } from '../handler-shared.js';
 
 const APPROVAL_ARTIFACT_MAP: Record<string, string> = {
-  requirements: '/requirements.md', design: '/design-review.md',
-  test_design: '/test-design.md', code_review: '/code-review.md',
+  requirements: '/requirements.toon', design: '/design-review.toon',
+  test_design: '/test-design.toon', code_review: '/code-review.toon',
 };
 
 export async function handleHarnessApprove(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
@@ -31,23 +31,20 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
     return respondError('Approval type ' + JSON.stringify(approvalType) +
       ' does not match current phase gate ' + JSON.stringify(expectedGate) + ' (phase: ' + task.phase + ')');
   }
-  // IA-1: Block requirements approval when OPEN_QUESTIONS exist
+  // IA-1: Block requirements approval when OPEN_QUESTIONS exist (TOON format)
   if (approvalType === 'requirements' && task.docsDir) {
     try {
-      const { readFileSync: readFS, existsSync: existFS } = await import('node:fs');
-      const reqPath = task.docsDir + '/requirements.md';
-      if (existFS(reqPath)) {
-        const reqContent = readFS(reqPath, 'utf8');
-        const oqMatch = reqContent.match(/##\s*OPEN_QUESTIONS[\s\S]*?(?=\n##|\n$|$)/i);
-        if (oqMatch) {
-          const oqLines = oqMatch[0].split('\n').slice(1).filter(l => {
-            const t = l.trim();
-            return t && t !== 'なし' && t !== '- なし' && !t.startsWith('##');
-          });
-          if (oqLines.length !== 0) {
-            return respondError('Cannot approve requirements: OPEN_QUESTIONS section is non-empty (' + oqLines.length + ' items). ' +
-              'Resolve all open questions with the user before approving. ' +
-              'Items: ' + oqLines.slice(0, 3).map(l => l.trim()).join('; '));
+      const { decode: toonDec } = await import('@toon-format/toon');
+      const reqPath = task.docsDir + '/requirements.toon';
+      if (existsSync(reqPath)) {
+        const toon = toonDec(readFileSync(reqPath, 'utf8'));
+        if (typeof toon === 'object' && toon !== null && !Array.isArray(toon)) {
+          const oq = (toon as Record<string, unknown>)['openQuestions'];
+          const items = Array.isArray(oq) ? oq.filter(q => q && String(q) !== 'なし') : [];
+          if (items.length !== 0) {
+            return respondError('Cannot approve requirements: openQuestions has ' + items.length + ' item(s). ' +
+              'Resolve all open questions before approving. ' +
+              'Items: ' + items.slice(0, 3).map(q => typeof q === 'object' ? JSON.stringify(q) : String(q)).join('; '));
           }
         }
       }

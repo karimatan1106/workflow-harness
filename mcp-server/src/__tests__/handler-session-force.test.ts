@@ -89,7 +89,7 @@ describe('Session & Security', () => {
     expect(addRes.error).toBeUndefined();
 
     // Load task and verify both files are present
-    const status = await call(mgr, 'harness_status', { taskId });
+    const status = await call(mgr, 'harness_status', { taskId, verbose: true });
     const scopeFiles = status.scopeFiles as string[];
     expect(scopeFiles).toContain('src/new-file.ts');
     expect(scopeFiles).toContain('src/another-file.ts');
@@ -120,8 +120,6 @@ describe('Force Transition', () => {
     expect(res.error).toBeUndefined();
     expect(res.nextPhase).toBeDefined();
     expect(res.nextPhase).not.toBe('scope_definition');
-    // dodChecks should be empty when force-transitioning
-    expect(Array.isArray(res.dodChecks)).toBe(true);
-    expect((res.dodChecks as unknown[]).length).toBe(0);
+    // dodChecks removed from success response for context savings
   });
 });

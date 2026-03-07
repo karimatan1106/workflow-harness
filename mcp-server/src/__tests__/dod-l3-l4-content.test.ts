@@ -53,15 +53,17 @@ describe('L3 artifact quality check', () => {
     expect(l3.passed).toBe(true);
   });
 
-  it('fails L3 when TOON artifact has too few fields', async () => {
+  it('passes L3 parse check even with minimal fields (content validated by L4)', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    // Only 1 field → fieldCount < 3
     const minimal = toonEncode({ phase: 'research' });
     writeFileSync(join(docsDir, 'research.toon'), minimal, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l3 = result.checks.find(c => c.level === 'L3')!;
-    expect(l3.passed).toBe(false);
-    expect(l3.evidence).toBeTruthy();
+    // L3 only checks TOON parsability now — content checks moved to L4
+    expect(l3.passed).toBe(true);
+    // But L4 should catch missing required keys (decisions, artifacts, next)
+    const l4 = result.checks.find(c => c.check === 'delta_entry_format')!;
+    expect(l4.passed).toBe(false);
   });
 });
 

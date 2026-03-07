@@ -9,11 +9,11 @@ import { PHASE_REGISTRY } from '../phases/registry.js';
 export type HandlerResult = { content: Array<{ type: string; text: string }> };
 
 export const respond = (obj: unknown): HandlerResult => ({
-  content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }],
+  content: [{ type: 'text', text: JSON.stringify(obj) }],
 });
 
 export const respondError = (message: string): HandlerResult => ({
-  content: [{ type: 'text', text: JSON.stringify({ error: message }, null, 2) }],
+  content: [{ type: 'text', text: JSON.stringify({ error: message }) }],
 });
 
 export const PHASE_APPROVAL_GATES: Record<string, string> = {
@@ -38,6 +38,40 @@ export function validateSession(state: TaskState, token: unknown): string | null
   return null;
 }
 
+/** Phase-to-skill-file routing (SKILL.md Section 1). Max 4 files per phase. */
+const SKILL_FILE_ROUTING: Record<string, string[]> = {
+  scope_definition: ['workflow-phases.md', 'workflow-gates.md'],
+  research: ['workflow-phases.md', 'workflow-gates.md'],
+  impact_analysis: ['workflow-phases.md', 'workflow-gates.md'],
+  requirements: ['workflow-phases.md', 'workflow-gates.md'],
+  threat_modeling: ['workflow-phases.md', 'workflow-execution.md'],
+  planning: ['workflow-phases.md', 'workflow-execution.md'],
+  state_machine: ['workflow-phases.md', 'workflow-docs.md'],
+  flowchart: ['workflow-phases.md', 'workflow-docs.md'],
+  ui_design: ['workflow-phases.md', 'workflow-docs.md'],
+  design_review: ['workflow-phases.md', 'workflow-docs.md'],
+  test_design: ['workflow-phases.md', 'workflow-execution.md', 'workflow-gates.md'],
+  test_selection: ['workflow-phases.md', 'workflow-execution.md', 'workflow-gates.md'],
+  test_impl: ['workflow-phases.md', 'workflow-execution.md', 'workflow-gates.md'],
+  implementation: ['workflow-phases.md', 'workflow-execution.md', 'workflow-rules.md'],
+  refactoring: ['workflow-phases.md', 'workflow-rules.md', 'workflow-gates.md'],
+  build_check: ['workflow-phases.md', 'workflow-rules.md', 'workflow-gates.md'],
+  code_review: ['workflow-phases.md', 'workflow-rules.md', 'workflow-gates.md'],
+  testing: ['workflow-phases.md', 'workflow-execution.md', 'workflow-operations.md'],
+  regression_test: ['workflow-phases.md', 'workflow-execution.md', 'workflow-operations.md'],
+  acceptance_verification: ['workflow-phases.md'],
+  manual_test: ['workflow-phases.md'],
+  security_scan: ['workflow-phases.md'],
+  performance_test: ['workflow-phases.md'],
+  e2e_test: ['workflow-phases.md'],
+  docs_update: ['workflow-phases.md', 'workflow-docs.md'],
+  commit: ['workflow-phases.md'],
+  push: ['workflow-phases.md'],
+  ci_verification: ['workflow-phases.md'],
+  deploy: ['workflow-phases.md'],
+  health_observation: ['workflow-phases.md'],
+};
+
 /** Build phase guide object from registry (INC-4 fix). */
 export function buildPhaseGuide(phase: string): {
   model: string;
@@ -45,7 +79,9 @@ export function buildPhaseGuide(phase: string): {
   allowedExtensions: string[];
   requiredSections: string[];
   minLines: number;
+  skillFiles: string[];
 } {
+  const skillFiles = SKILL_FILE_ROUTING[phase] ?? [];
   const config = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   if (config) {
     return {
@@ -54,7 +90,8 @@ export function buildPhaseGuide(phase: string): {
       allowedExtensions: config.allowedExtensions,
       requiredSections: config.requiredSections ?? [],
       minLines: config.minLines ?? 0,
+      skillFiles,
     };
   }
-  return { model: 'sonnet', bashCategories: ['readonly'], allowedExtensions: ['.md'], requiredSections: [], minLines: 0 };
+  return { model: 'sonnet', bashCategories: ['readonly'], allowedExtensions: ['.toon'], requiredSections: [], minLines: 0, skillFiles };
 }

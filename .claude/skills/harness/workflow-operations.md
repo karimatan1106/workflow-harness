@@ -2,92 +2,31 @@
 name: workflow-operations
 description: Test output placement, MCP server cache management, and package installation rules.
 ---
+> CLAUDE.md Sec12(Bash/コアモジュール再起動) が権威仕様。本ファイルは具体的な配置ルールと手順のみ。
 
-# Workflow Operations Skill
-
-## Test Output and Temporary File Placement Rules
-
-Test files must be placed in structured directories, never in the project root.
-
-### Placement Rules
+## 1. Test Output Placement
 
 | File Type | Backend | Frontend |
 |-----------|---------|----------|
-| Test input files | `src/backend/tests/fixtures/input/` | `src/frontend/test/fixtures/` |
-| Test output | `src/backend/tests/fixtures/output/` | `src/frontend/test/output/` |
+| Test input/output | `src/backend/tests/fixtures/{input,output}/` | `src/frontend/test/fixtures/` |
 | Screenshots | `src/backend/tests/screenshots/` | `src/frontend/test/screenshots/` |
 | Unit tests | `src/backend/tests/unit/` | `src/frontend/**/*.test.tsx` |
 | Integration tests | `src/backend/tests/integration/` | `src/frontend/test/integration/` |
 | Regression tests | `src/backend/tests/regression/` | `src/frontend/test/regression/` |
-| E2E tests | `e2e/` | `e2e/` |
-| Temp files | `.tmp/` | `.tmp/` |
+| E2E / Temp | `e2e/` / `.tmp/` | `e2e/` / `.tmp/` |
 
-### Prohibited Root Placements
+**禁止**: root `tests/`, `test_*.ts`, `*.pptx/pdf/png` outputs, `screenshot*.png`, `*_output.*`
 
-- `tests/` directory (root-level)
-- `test_*.ts`, `test_*.js` scripts
-- `*.pptx`, `*.pdf`, `*.png` outputs
-- `screenshot*.png` files
-- `*_output.*`, `*_result.*` files
+## 2. MCP Server Cache Management
 
-### Correct Command Examples
+Node.jsはモジュールをメモリキャッシュ。コード変更後は再起動必須。
 
-```bash
-# Good: appropriate directories
-node src/backend/tests/integration/test_conversion.ts
-vitest src/backend/tests/
-cd src/backend && vitest tests/
-```
+**再起動手順**: `cd workflow-plugin/mcp-server && npm run build` → dist/*.jsタイムスタンプ確認 → MCP再起動 → `harness_status`で確認
 
-### Cleanup
+**再起動必須ファイル**: artifact-validator.ts, definitions.ts, state-manager.ts
+再起動なしでは旧バイナリが動き続けバリデーション失敗が永続する。
 
-Delete after testing:
-- `.tmp/` directory contents
-- `tests/fixtures/output/` unnecessary outputs
-
----
-
-## MCP Server Module Caching
-
-Node.js caches modules in memory; restart is required for code changes to take effect.
-
-### Operation Rules
-
-1. Modifying `dist/*.js` has NO effect on running MCP server
-2. MCP server restart is mandatory for code changes
-3. First: fix artifact content to meet validation requirements
-4. Only fix validator code if bug is clearly confirmed, then restart
-5. Error handling order:
-   - Step 1: Fix artifact content to pass validation
-   - Step 2: Only fix validator if bug is confirmed
-   - Step 3: Always restart MCP server after code fix
-   - Note: Skipping restart causes validation to continue failing
-
-### Mandatory Restart Conditions
-
-**Core files requiring restart:**
-- `artifact-validator.ts` — validation logic (changes affect cache immediately)
-- `definitions.ts` — phase definitions, model config, prompt templates
-- `state-manager.ts` — task state management (HMAC integrity involved)
-
-**Restart Steps (4-step procedure):**
-1. `cd workflow-plugin/mcp-server && npm run build` to transpile
-2. Verify dist/*.js timestamp updated
-3. Restart MCP server (Claude Desktop button or process kill)
-4. Run `workflow_status` to confirm phase, resume from same phase
-
-**Without restart:**
-- Old binary stays in memory via Node.js module cache
-- Validation failures continue indefinitely
-- parallel_verification phase fails for all subphases
-
----
-
-## Package Installation Rules
-
-Dependencies must install in subdirectories, never in project root.
-
-### Installation Locations
+## 3. Package Installation
 
 | Type | Location | Command |
 |------|----------|---------|
@@ -95,28 +34,4 @@ Dependencies must install in subdirectories, never in project root.
 | Backend | `src/backend/` | `cd src/backend && pnpm add xxx` |
 | E2E | `e2e/` | `cd e2e && npm install playwright` |
 
-### Prohibited Root Commands
-
-- `npm install <package>`
-- `npm init`
-- `pnpm add <package>` (outside venv)
-- `yarn add <package>`
-
-### Correct Installation Examples
-
-```bash
-# Good: subdirectory installation
-cd src/frontend && npm install axios
-cd src/backend && pnpm add -r package.json
-cd e2e && npm install playwright
-```
-
-### File Placement
-
-| File | Location |
-|------|----------|
-| `package.json` | `src/frontend/`, `e2e/` |
-| `pnpm-lock.yaml` | `src/backend/` |
-| `tsconfig.json` | `src/backend/` |
-
-Never create `package.json` or `node_modules` in project root.
+**禁止**: root `npm install/init`, `pnpm add`, `yarn add`. root に `package.json` / `node_modules` 作成禁止。

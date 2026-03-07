@@ -6,55 +6,55 @@
 export const TOOL_DEFS_B = [
   {
     name: 'harness_record_feedback',
-    description: 'Append user feedback to the task userIntent.',
+    description: 'Append feedback to userIntent.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        feedback: { type: 'string', description: 'Feedback text to append.' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+        feedback: { type: 'string', description: 'Feedback text.' },
+        sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'feedback', 'sessionToken'],
     },
   },
   {
     name: 'harness_capture_baseline',
-    description: 'Capture the test suite baseline before changes.',
+    description: 'Record pre-change test baseline.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        totalTests: { type: 'number', description: 'Total number of tests in the suite.' },
-        passedTests: { type: 'number', description: 'Number of tests passing before changes.' },
-        failedTests: { type: 'array', items: { type: 'string' }, description: 'Names of tests already failing before changes.' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+        totalTests: { type: 'number', description: 'Total tests.' },
+        passedTests: { type: 'number', description: 'Passing tests.' },
+        failedTests: { type: 'array', items: { type: 'string' }, description: 'Pre-failing test names.' },
+        sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'totalTests', 'passedTests', 'failedTests', 'sessionToken'],
     },
   },
   {
     name: 'harness_record_test_result',
-    description: 'Record a test execution result for the current phase.',
+    description: 'Record test execution result.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        exitCode: { type: 'number', description: 'Exit code of the test command (0 = success).' },
-        output: { type: 'string', description: 'Full output of the test command (minimum 50 characters).', minLength: 50 },
-        summary: { type: 'string', description: 'Short human-readable summary of the test result (optional).' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+        exitCode: { type: 'number', description: '0=success.' },
+        output: { type: 'string', description: 'Test output (min 50 chars).', minLength: 50 },
+        summary: { type: 'string', description: 'Short summary.' },
+        sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'exitCode', 'output', 'sessionToken'],
     },
   },
   {
     name: 'harness_record_test',
-    description: 'Record a test file path created during test_impl phase.',
+    description: 'Register test file path.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        testFile: { type: 'string', description: 'Path to the test file.' },
+        testFile: { type: 'string', description: 'Test file path.' },
         sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'testFile', 'sessionToken'],
@@ -62,7 +62,7 @@ export const TOOL_DEFS_B = [
   },
   {
     name: 'harness_get_test_info',
-    description: 'Get test files and baseline information for a task.',
+    description: 'Get test files and baseline.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -73,16 +73,16 @@ export const TOOL_DEFS_B = [
   },
   {
     name: 'harness_record_known_bug',
-    description: 'Record a known bug found during regression testing (instead of deleting the test).',
+    description: 'Record known bug (not caused by current change).',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        testName: { type: 'string', description: 'Name of the failing test.' },
-        description: { type: 'string', description: 'Description of the bug.' },
-        severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], description: 'Bug severity.' },
-        targetPhase: { type: 'string', description: 'When to fix (next_sprint, backlog, deferred). Optional.' },
-        issueUrl: { type: 'string', description: 'Related issue URL. Optional.' },
+        testName: { type: 'string', description: 'Failing test name.' },
+        description: { type: 'string', description: 'Bug description.' },
+        severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], description: 'Severity.' },
+        targetPhase: { type: 'string', description: 'Fix timing.' },
+        issueUrl: { type: 'string', description: 'Issue URL.' },
         sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'testName', 'description', 'severity', 'sessionToken'],
@@ -90,7 +90,7 @@ export const TOOL_DEFS_B = [
   },
   {
     name: 'harness_get_known_bugs',
-    description: 'Get all known bugs recorded for a task.',
+    description: 'List known bugs.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -101,71 +101,56 @@ export const TOOL_DEFS_B = [
   },
   {
     name: 'harness_get_subphase_template',
-    description: 'Get the subagent prompt template for a specific phase.',
+    description: 'Get subagent prompt template.',
     inputSchema: {
       type: 'object',
       properties: {
-        taskId: { type: 'string', description: 'Task ID (for placeholder substitution).' },
-        phase: { type: 'string', description: 'Phase name to get template for.' },
+        taskId: { type: 'string', description: 'Task ID (for placeholders).' },
+        phase: { type: 'string', description: 'Phase name.' },
       },
       required: ['phase'],
     },
   },
   {
     name: 'harness_pre_validate',
-    description: 'Run DoD checks without advancing the phase. Returns retry prompt on failure.',
+    description: 'Dry-run DoD checks (no advance).',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
         sessionToken: { type: 'string', description: 'Session token.' },
-        retryCount: { type: 'number', description: 'Current retry attempt number (for model escalation logic). Default: 1.' },
+        retryCount: { type: 'number', description: 'Retry attempt #. Default: 1.' },
       },
       required: ['taskId', 'sessionToken'],
     },
   },
   {
     name: 'harness_update_ac_status',
-    description: 'Update the status of an acceptance criterion (AC-N).',
+    description: 'Update AC-N status.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        id: { type: 'string', description: 'Acceptance criterion identifier (e.g. AC-1).' },
-        status: { type: 'string', enum: ['open', 'met', 'not_met'], description: 'New status for the acceptance criterion.' },
-        testCaseId: { type: 'string', description: 'Test case identifier that verified this criterion (optional).' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
-      },
-      required: ['taskId', 'id', 'status', 'sessionToken'],
-    },
-  },
-  {
-    name: 'harness_update_invariant_status',
-    description: 'Update the status of an invariant (INV-N).',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        taskId: { type: 'string', description: 'Task ID.' },
-        id: { type: 'string', description: 'Invariant identifier (e.g. INV-1).' },
-        status: { type: 'string', enum: ['open', 'held', 'violated'], description: 'New status.' },
-        evidence: { type: 'string', description: 'Evidence or reason for status change (optional).' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+        id: { type: 'string', description: 'AC-N id.' },
+        status: { type: 'string', enum: ['open', 'met', 'not_met'], description: 'Status.' },
+        testCaseId: { type: 'string', description: 'Verifying test case.' },
+        sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'id', 'status', 'sessionToken'],
     },
   },
   {
     name: 'harness_update_rtm_status',
-    description: 'Update the status of an RTM entry (F-NNN).',
+    description: 'Update F-NNN status.',
     inputSchema: {
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
-        id: { type: 'string', description: 'RTM entry identifier (e.g. F-001).' },
-        status: { type: 'string', enum: ['pending', 'implemented', 'tested', 'verified'], description: 'New status for the RTM entry.' },
-        codeRef: { type: 'string', description: 'Reference to code artifact (optional).' },
-        testRef: { type: 'string', description: 'Reference to test artifact (optional).' },
-        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+        id: { type: 'string', description: 'F-NNN id.' },
+        status: { type: 'string', enum: ['pending', 'implemented', 'tested', 'verified'], description: 'Status.' },
+        codeRef: { type: 'string', description: 'Code ref.' },
+        testRef: { type: 'string', description: 'Test ref.' },
+        sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'id', 'status', 'sessionToken'],
     },

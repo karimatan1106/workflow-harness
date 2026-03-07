@@ -64,22 +64,13 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
   const config = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   const inputFiles = config?.inputFiles ?? [];
   if (inputFiles.length === 0) return '';
-
-  const entries: string[] = [];
-  for (const inputFile of inputFiles) {
-    const basename = inputFile.replace(/^\{docsDir\}\//, '');
-    const sourcePhase = OUTPUT_FILE_TO_PHASE[basename];
-    if (sourcePhase) {
-      entries.push(`- \`${docsDir}/${basename}\` を読む`);
-    }
-  }
-
-  if (entries.length === 0) return '';
-
-  return '\n\n## TOON コンテキスト読み込み（ACE）\n'
-    + '前フェーズの成果物を読む際、以下のTOONファイルを読むこと（40-50%トークン効率向上）。\n'
-    + entries.join('\n')
-    + '\n';
+  const resolved = inputFiles.map(f => f.replace(/\{docsDir\}/g, docsDir));
+  const toonFiles = resolved.filter(f => {
+    const basename = f.split('/').pop() ?? '';
+    return OUTPUT_FILE_TO_PHASE[basename] !== undefined;
+  });
+  if (toonFiles.length === 0) return '';
+  return '\n\n=== TOON入力(ACE) ===\nread: ' + toonFiles.join(', ') + '\n';
 }
 
 // ─── Prompt Builder ──────────────────────────────
@@ -99,29 +90,46 @@ export function buildSubagentPrompt(
   const categories = config?.bashCategories ?? def.bashCategories;
 
   let prompt = def.subagentTemplate;
+  // Strip verbose header blocks — replaced by compact auto-header below
+  prompt = prompt.replace(/## タスク情報\n(?:- [^\n]+\n)+\n?/g, '');
+  prompt = prompt.replace(/## 入力\n(?:以下のファイルを読み込んでください:\n)?(?:- [^\n]+\n)+\n?/g, '');
+  prompt = prompt.replace(/## 出力\n[^\n]*に保存してください。\n?\n?/g, '');
+  // Fragment expansion FIRST (fragments contain {phase}, {docsDir} etc.)
+  prompt = prompt.replace(/\{SUMMARY_SECTION\}/g, SUMMARY_SECTION_RULE);
+  prompt = prompt.replace(/\{BASH_CATEGORIES\}/g, bashCategoryHelp(categories));
+  prompt = prompt.replace(/\{ARTIFACT_QUALITY\}/g, ARTIFACT_QUALITY_RULES);
+  prompt = prompt.replace(/\{EXIT_CODE_RULE\}/g, EXIT_CODE_RULE);
+  // Variable substitution AFTER (so variables inside fragments are also replaced)
   prompt = prompt.replace(/\{taskName\}/g, taskName);
   prompt = prompt.replace(/\{docsDir\}/g, docsDir);
   prompt = prompt.replace(/\{workflowDir\}/g, workflowDir);
   prompt = prompt.replace(/\{userIntent\}/g, userIntent);
   prompt = prompt.replace(/\{taskId\}/g, taskId ?? '');
-  prompt = prompt.replace(/\{SUMMARY_SECTION\}/g, SUMMARY_SECTION_RULE);
-  prompt = prompt.replace(/\{BASH_CATEGORIES\}/g, bashCategoryHelp(categories));
-  prompt = prompt.replace(/\{ARTIFACT_QUALITY\}/g, ARTIFACT_QUALITY_RULES);
-  prompt = prompt.replace(/\{EXIT_CODE_RULE\}/g, EXIT_CODE_RULE);
-  // {phase} must be replaced AFTER fragment expansion (SUMMARY_SECTION contains {phase})
   prompt = prompt.replace(/\{phase\}/g, phase);
+  // Prepend compact header (task info + input + output in 2 lines)
+  const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
+  const outputFile = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? '';
+  const header = `task:${taskName} intent:${userIntent}\n`
+    + (inputFiles.length > 0 ? `in: ${inputFiles.join(', ')}\n` : '')
+    + (outputFile ? `out: ${outputFile}\n` : '');
 
-  // ACE TOON-first: inject reading instructions for TOON context handoff
-  const toonFirstSection = buildToonFirstSection(phase, docsDir);
-  if (toonFirstSection) {
-    prompt += toonFirstSection;
+  // Insert compact header after the phase title line
+  const titleEnd = prompt.indexOf('\n');
+  if (titleEnd >= 0) {
+    prompt = prompt.slice(0, titleEnd + 1) + header + prompt.slice(titleEnd + 1);
+  } else {
+    prompt = prompt + '\n' + header;
   }
 
-  // ACE Reflector: inject lessons learned from past failures
-  const reflectorSection = formatLessonsForPrompt(phase);
-  if (reflectorSection) {
-    prompt += reflectorSection;
-  }
+  // ACE TOON-first + Reflector lessons
+  const toonFirst = buildToonFirstSection(phase, docsDir);
+  if (toonFirst) prompt += toonFirst;
+  const lessons = formatLessonsForPrompt(phase);
+  if (lessons) prompt += lessons;
+
+  // Replace ## Markdown headers with === delimiters to prevent format contamination
+  // Subagents seeing ## in prompts may replicate it in .toon output, causing parse errors
+  prompt = prompt.replace(/^## /gm, '=== ').replace(/^### /gm, '== ');
 
   return prompt;
 }
