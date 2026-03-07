@@ -11,7 +11,7 @@ import { respondError } from './handler-shared.js';
 import { handleHarnessStart, handleHarnessStatus, handleHarnessNext } from './handlers/lifecycle.js';
 import { handleHarnessApprove } from './handlers/approval.js';
 import { handleHarnessSetScope, handleHarnessCompleteSub, handleHarnessBack, handleHarnessReset } from './handlers/scope-nav.js';
-import { handleHarnessRecordProof, handleHarnessAddAc, handleHarnessAddRtm, handleHarnessRecordFeedback, handleHarnessCaptureBaseline, handleHarnessRecordTestResult, handleHarnessRecordTest } from './handlers/recording.js';
+import { handleHarnessRecordProof, handleHarnessAddAc, handleHarnessAddRtm, handleHarnessRecordFeedback, handleHarnessCaptureBaseline, handleHarnessRecordTestResult, handleHarnessRecordTest, handleHarnessAddInvariant, handleHarnessUpdateInvariantStatus } from './handlers/recording.js';
 import { handleHarnessGetTestInfo, handleHarnessRecordKnownBug, handleHarnessGetKnownBugs, handleHarnessGetSubphaseTemplate, handleHarnessPreValidate, handleHarnessUpdateAcStatus, handleHarnessUpdateRtmStatus } from './handlers/query.js';
 
 export const TOOL_DEFINITIONS = [...TOOL_DEFS_A, ...TOOL_DEFS_B];
@@ -33,6 +33,7 @@ export async function handleToolCall(
       case 'harness_reset':              return handleHarnessReset(args, stateManager);
       case 'harness_record_proof':       return handleHarnessRecordProof(args, stateManager);
       case 'harness_add_ac':             return handleHarnessAddAc(args, stateManager);
+      case 'harness_add_invariant':      return handleHarnessAddInvariant(args, stateManager);
       case 'harness_add_rtm':            return handleHarnessAddRtm(args, stateManager);
       case 'harness_record_feedback':    return handleHarnessRecordFeedback(args, stateManager);
       case 'harness_capture_baseline':   return handleHarnessCaptureBaseline(args, stateManager);
@@ -44,6 +45,7 @@ export async function handleToolCall(
       case 'harness_get_subphase_template': return handleHarnessGetSubphaseTemplate(args, stateManager);
       case 'harness_pre_validate':       return handleHarnessPreValidate(args, stateManager);
       case 'harness_update_ac_status':   return handleHarnessUpdateAcStatus(args, stateManager);
+      case 'harness_update_invariant_status': return handleHarnessUpdateInvariantStatus(args, stateManager);
       case 'harness_update_rtm_status':  return handleHarnessUpdateRtmStatus(args, stateManager);
       default: return respondError('Unknown tool: ' + name);
     }

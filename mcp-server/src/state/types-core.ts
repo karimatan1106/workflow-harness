@@ -107,12 +107,17 @@ export interface RTMEntry {
   status: 'pending' | 'implemented' | 'tested' | 'verified';
 }
 
+// ─── Proof Tier ─────────────────────────────────
+export type ProofTier = 'T1' | 'T2' | 'T3' | 'T4';
+export const PROOF_TIERS: readonly ProofTier[] = ['T1', 'T2', 'T3', 'T4'] as const;
+
 // ─── Acceptance Criteria ────────────────────────
 export interface AcceptanceCriterion {
   id: string;          // AC-1, AC-2, ...
   description: string;
   testCaseId?: string; // TC-AC1-01, TC-AC2-01, ...
   status: 'open' | 'met' | 'not_met';
+  proofTier?: ProofTier;
 }
 
 // ─── Proof Log ──────────────────────────────────

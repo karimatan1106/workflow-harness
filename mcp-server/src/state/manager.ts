@@ -4,6 +4,7 @@
  */
 
 import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
+import type { Invariant, InvariantStatus } from './types-invariant.js';
 import { ensureHmacKeys } from '../utils/hmac.js';
 import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
 import { loadTaskFromDisk, listTasksFromDisk } from './manager-read.js';
@@ -12,6 +13,10 @@ import {
   updateCheckpoint, applyAddAC, applyAddRTM, applyUpdateACStatus, applyUpdateRTMStatus,
   appendProgressLog,
 } from './manager-write.js';
+import {
+  applyAddInvariant, applyUpdateInvariantStatus, applyGetKnownBugs,
+  applyIncrementRetryCount, applyGetRetryCount, applyResetRetryCount, applyRecordArtifactHash,
+} from './manager-invariant.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 
@@ -88,31 +93,22 @@ export class StateManager {
   }
 
   addAcceptanceCriterion(taskId: string, criterion: AcceptanceCriterion): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    applyAddAC(state, criterion); signAndPersist(state, this.hmacKey); return true;
+    const s = this.loadTask(taskId); if (!s) return false; applyAddAC(s, criterion); signAndPersist(s, this.hmacKey); return true;
   }
-
   addRTMEntry(taskId: string, entry: RTMEntry): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    applyAddRTM(state, entry); signAndPersist(state, this.hmacKey); return true;
+    const s = this.loadTask(taskId); if (!s) return false; applyAddRTM(s, entry); signAndPersist(s, this.hmacKey); return true;
   }
 
   recordFeedback(taskId: string, feedback: string): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!state.feedbackLog) state.feedbackLog = [];
-    state.feedbackLog.push({ feedback, recordedAt: new Date().toISOString() });
-    state.updatedAt = new Date().toISOString();
-    signAndPersist(state, this.hmacKey); return true;
+    const s = this.loadTask(taskId); if (!s) return false;
+    if (!s.feedbackLog) s.feedbackLog = [];
+    s.feedbackLog.push({ feedback, recordedAt: new Date().toISOString() });
+    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
   }
-
   recordBaseline(taskId: string, totalTests: number, passedTests: number, failedTests: string[]): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    state.baseline = { capturedAt: new Date().toISOString(), totalTests, passedTests, failedTests };
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
+    const s = this.loadTask(taskId); if (!s) return false;
+    s.baseline = { capturedAt: new Date().toISOString(), totalTests, passedTests, failedTests };
+    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
   }
 
   recordTestResult(taskId: string, exitCode: number, output: string, summary?: string): boolean {
@@ -172,29 +168,29 @@ export class StateManager {
   }
 
   recordKnownBug(taskId: string, bug: { testName: string; description: string; severity: string; targetPhase?: string; issueUrl?: string }): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!state.knownBugs) state.knownBugs = [];
-    state.knownBugs.push({ ...bug, severity: bug.severity as 'low' | 'medium' | 'high' | 'critical', recordedAt: new Date().toISOString() });
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
+    const s = this.loadTask(taskId); if (!s) return false; if (!s.knownBugs) s.knownBugs = [];
+    s.knownBugs.push({ ...bug, severity: bug.severity as 'low' | 'medium' | 'high' | 'critical', recordedAt: new Date().toISOString() });
+    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
   }
-  getKnownBugs(taskId: string): Array<{ testName: string; description: string; severity: string; targetPhase?: string; issueUrl?: string; recordedAt: string }> {
-    const state = this.loadTask(taskId); if (!state) return []; return state.knownBugs ?? [];
-  }
+  getKnownBugs(taskId: string) { const s = this.loadTask(taskId); return s ? applyGetKnownBugs(s) : []; }
   incrementRetryCount(taskId: string, phase: string): number {
-    const state = this.loadTask(taskId); if (!state) return -1;
-    if (!state.retryCount) state.retryCount = {};
-    state.retryCount[phase] = (state.retryCount[phase] ?? 0) + 1;
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return state.retryCount[phase];
+    const s = this.loadTask(taskId); if (!s) return -1;
+    const c = applyIncrementRetryCount(s, phase); s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return c;
   }
-  getRetryCount(taskId: string, phase: string): number {
-    const state = this.loadTask(taskId); if (!state) return 0; return state.retryCount?.[phase] ?? 0;
-  }
+  getRetryCount(taskId: string, phase: string): number { const s = this.loadTask(taskId); return s ? applyGetRetryCount(s, phase) : 0; }
   resetRetryCount(taskId: string, phase: string): void {
-    const state = this.loadTask(taskId); if (!state) return;
-    if (state.retryCount?.[phase]) {
-      delete state.retryCount[phase]; state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey);
-    }
+    const s = this.loadTask(taskId); if (!s) return;
+    if (applyResetRetryCount(s, phase)) { s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); }
   }
-  recordArtifactHash(taskId: string, fp: string, hash: string): boolean { const s = this.loadTask(taskId); if (!s) return false; if (!s.artifactHashes) s.artifactHashes = {}; s.artifactHashes[fp] = hash; s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true; }
+  recordArtifactHash(taskId: string, fp: string, hash: string): boolean {
+    const s = this.loadTask(taskId); if (!s) return false; applyRecordArtifactHash(s, fp, hash); s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+  }
+  addInvariant(taskId: string, invariant: Invariant): boolean {
+    const s = this.loadTask(taskId); if (!s) return false;
+    if (!applyAddInvariant(s, invariant)) return false; signAndPersist(s, this.hmacKey); return true;
+  }
+  updateInvariantStatus(taskId: string, invId: string, status: InvariantStatus, evidence?: string): boolean {
+    const s = this.loadTask(taskId); if (!s) return false;
+    if (!applyUpdateInvariantStatus(s, invId, status, evidence)) return false; signAndPersist(s, this.hmacKey); return true;
+  }
 }

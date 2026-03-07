@@ -144,6 +144,21 @@ export const TOOL_DEFS_A = [
     },
   },
   {
+    name: 'harness_add_invariant',
+    description: 'Add an invariant (INV-N) to the task.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Task ID.' },
+        id: { type: 'string', description: 'Invariant identifier (e.g. INV-1).' },
+        description: { type: 'string', description: 'Description of the invariant.' },
+        proofTier: { type: 'string', enum: ['T1', 'T2', 'T3', 'T4'], description: 'Proof tier level (optional).' },
+        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+      },
+      required: ['taskId', 'id', 'description', 'sessionToken'],
+    },
+  },
+  {
     name: 'harness_add_rtm',
     description: 'Add a Requirements Traceability Matrix (RTM) entry.',
     inputSchema: {

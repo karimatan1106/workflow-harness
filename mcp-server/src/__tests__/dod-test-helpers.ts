@@ -39,6 +39,7 @@ export function makeMinimalState(phase: string, workflowDir: string, docsDir: st
     acceptanceCriteria: [],
     rtmEntries: [],
     proofLog: [],
+    invariants: [],
     checkpoint: {
       taskId: '00000000-0000-4000-8000-000000000001',
       phase: phase as any,

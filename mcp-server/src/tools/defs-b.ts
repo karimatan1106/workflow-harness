@@ -140,6 +140,21 @@ export const TOOL_DEFS_B = [
     },
   },
   {
+    name: 'harness_update_invariant_status',
+    description: 'Update the status of an invariant (INV-N).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Task ID.' },
+        id: { type: 'string', description: 'Invariant identifier (e.g. INV-1).' },
+        status: { type: 'string', enum: ['open', 'held', 'violated'], description: 'New status.' },
+        evidence: { type: 'string', description: 'Evidence or reason for status change (optional).' },
+        sessionToken: { type: 'string', description: 'Session token for authentication.' },
+      },
+      required: ['taskId', 'id', 'status', 'sessionToken'],
+    },
+  },
+  {
     name: 'harness_update_rtm_status',
     description: 'Update the status of an RTM entry (F-NNN).',
     inputSchema: {

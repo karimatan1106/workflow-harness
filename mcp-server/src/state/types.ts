@@ -18,6 +18,7 @@ export type {
   Checkpoint,
   SubPhaseStatus,
   PhaseConfig,
+  ProofTier,
 } from './types-core.js';
 
 export {
@@ -28,7 +29,11 @@ export {
   PhaseNameSchema,
   ApprovalTypeSchema,
   TaskStateSchema,
+  PROOF_TIERS,
 } from './types-core.js';
+
+export type { Invariant, InvariantStatus } from './types-invariant.js';
+export { INVARIANT_STATUSES } from './types-invariant.js';
 
 import type {
   PhaseName,
@@ -40,6 +45,8 @@ import type {
   Checkpoint,
   SubPhaseStatus,
 } from './types-core.js';
+
+import type { Invariant } from './types-invariant.js';
 
 // ─── Task State v4 ──────────────────────────────
 export interface TaskState {
@@ -75,6 +82,9 @@ export interface TaskState {
   acceptanceCriteria: AcceptanceCriterion[];
   rtmEntries: RTMEntry[];
   proofLog: ProofEntry[];
+
+  // Invariants (INV-N)
+  invariants: Invariant[];
 
   // Checkpoints
   checkpoint: Checkpoint;
