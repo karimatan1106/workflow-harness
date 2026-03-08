@@ -24,34 +24,41 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 ## 作業内容
 対象プロジェクトを調査し、変更の影響範囲を特定してください。
 
-### Step 1: エントリポイント特定
-ユーザー意図から変更起点となるファイル・シンボルを特定する。
-
-### Step 2: LSPベース依存列挙（Serena利用可能時）
+### Step 0: Serena利用可否チェック
 \`\`\`bash
-# Serena利用可否チェック（indexer/.venvにインストール済みの場合）
 indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
-
-# 利用可能な場合: エントリポイントからシンボル→参照を辿る
-indexer/.venv/Scripts/python.exe indexer/serena-query.py symbols <relative-path>
-indexer/.venv/Scripts/python.exe indexer/serena-query.py find-refs <name-path> <relative-path>
-indexer/.venv/Scripts/python.exe indexer/serena-query.py find-symbol <name-pattern>
 \`\`\`
-出力はTOON形式。find-refsの結果からファイルパスを抽出しscopeFilesに追加する。
-2hop: エントリポイント→直接参照元→間接参照元（max depth 2）。
+SERENA_UNAVAILABLEの場合はStep 1b/2bのフォールバックを使用する。
 
-### Step 3: フォールバック（Serena未インストール時）
-Serena未インストールの場合、Grep/Globで代替:
-- \`grep -r "import.*from.*<module>" src/\` でimport元を列挙
-- Glob tool で関連ファイルパターンを検索
+### Step 1: LSP-firstエントリポイント検索（LLM推測禁止）
+ユーザー意図のキーワードでLSP検索し、候補を絞り込む:
+\`\`\`bash
+# 1a. キーワードで全出現箇所を検索（--limit 100で制御）
+indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 search_for_pattern --substring_pattern "<意図のキーワード>" --restrict_search_to_code_files true
+# 1b. モジュール構造から候補ディレクトリを確認
+indexer/.venv/Scripts/python.exe indexer/serena-query.py get_symbols_overview --relative_path <候補dir>
+# 1c. 候補シンボルの定義位置を確定
+indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 50 find_symbol --name_path_pattern "<候補名>"
+\`\`\`
+結果が多すぎる場合（_pagination.has_more: true）→ パターンを絞り込んで再検索。
+**フォールバック(1b)**: Grep/Globで \`grep -r "キーワード" src/ | head -50\` を使用。
 
-### Step 4: スコープ設定
+### Step 2: 依存追跡（分岐係数制御）
+Step 1で確定したエントリポイントから参照元を辿る:
+\`\`\`bash
+# 2a. 直接参照元を取得（--limit 100で各hop最大100件）
+indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <確定したname_path> --relative_path <file>
+\`\`\`
+**分岐係数ルール**: 各hopで最大100件。100件超過（has_more: true）時は:
+- パターンを絞り込んで再検索（ディレクトリやファイル名で制限）
+- 全件取得は禁止（--limit 0 は使わない）
+2hop: エントリポイント→直接参照元→間接参照元。各hop最大100件。
+**フォールバック(2b)**: Grep/Globで \`grep -r "import.*<module>" src/\` を使用。
+
+### Step 3: スコープ設定
 1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル）
 2. リスクスコアの算出根拠を記録
 3. スコープ外の項目を明示
-
-## 大規模スコープ対応（BCH-1）
-影響ファイル数が100を超える場合は '/batch' の使用を検討してください。
 
 ## 出力
 {docsDir}/scope-definition.toon に保存してください。
@@ -71,15 +78,7 @@ Serena未インストールの場合、Grep/Globで代替:
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# researchフェーズ
-
-## タスク情報
-- タスク名: {taskName}
-- ユーザー意図: {userIntent}
-- 出力先: {docsDir}/
-
-## 入力
-以下のファイルを読み込んでください:
-- {docsDir}/scope-definition.toon
+task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon out:{docsDir}/research.toon
 
 ## 作業内容
 1. 関連コードの読み込みと分析
@@ -88,9 +87,6 @@ Serena未インストールの場合、Grep/Globで代替:
 4. 依存バージョン固有挙動（S1-17）: node --version / tsc --version / npm --version を記録
 5. {docsDir}/init.sh 生成（S1-10）: ビルド・テスト・セットアップコマンド
 6. raw JSON/JSONL 直接出力禁止（S1-14）: 構造化サマリーにまとめること
-
-## 出力
-{docsDir}/research.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -123,14 +119,12 @@ Serena未インストールの場合、Grep/Globで代替:
 ### 逆依存グラフ構築（Serena利用可能時）
 scope-definition.toonのentry_pointsに対してSerenaで逆依存を列挙:
 \`\`\`bash
-indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
-# 各エントリポイントのシンボルに対して:
-indexer/.venv/Scripts/python.exe indexer/serena-query.py find-refs <name-path> <relative-path>
+# 各エントリポイントのシンボルに対して（--limit 100で分岐制御）:
+indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <name-path> --relative_path <file>
 \`\`\`
-結果から依存グラフ（A→B→C）を構築し、max depth 3で打ち切る。
-
-### フォールバック（Serena未インストール時）
-Grep/Globで代替: \`grep -r "import.*from.*<module>" src/\` + Glob tool。
+**分岐係数ルール**: 各hopで最大100件。has_more: trueの場合はディレクトリで絞り込み再検索。
+結果から依存グラフ（A→B→C）を構築し、各hop最大100件×max depth 3。
+**フォールバック**: Grep/Globで \`grep -r "import.*from.*<module>" src/\` を使用。
 
 ### 分析項目
 1. 逆依存グラフから間接的に影響を受けるモジュールを特定
