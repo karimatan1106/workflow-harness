@@ -42,7 +42,7 @@ export const PHASE_REGISTRY: Record<PhaseName, PhaseConfig> = {
   performance_test: { name: 'performance_test', stage: 11, model: 'sonnet', inputFiles: [], outputFile: '{docsDir}/performance-test.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 40, allowedExtensions: ['.toon'], bashCategories: ['readonly', 'testing'], dodChecks: [], parallelGroup: 'parallel_verification' },
   e2e_test: { name: 'e2e_test', stage: 11, model: 'sonnet', inputFiles: [], outputFile: '{docsDir}/e2e-test.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 40, allowedExtensions: ['.toon', '.ts', '.tsx', '.js'], bashCategories: ['readonly', 'testing'], dodChecks: [], parallelGroup: 'parallel_verification' },
   // Stage 12: Documentation
-  docs_update: { name: 'docs_update', stage: 12, model: 'haiku', inputFiles: [], allowedExtensions: ['.toon', '.md', '.mdx'], bashCategories: ['readonly'], dodChecks: [] },
+  docs_update: { name: 'docs_update', stage: 12, model: 'sonnet', inputFiles: ['{docsDir}/spec.toon', '{docsDir}/requirements.toon', '{docsDir}/code-review.toon'], outputFile: '{docsDir}/docs-update.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 30, allowedExtensions: ['.toon', '.md', '.mdx'], bashCategories: ['readonly', 'implementation'], dodChecks: [] },
   // Stage 13: Release
   commit: { name: 'commit', stage: 13, model: 'haiku', inputFiles: [], allowedExtensions: [], bashCategories: ['readonly', 'git'], dodChecks: [] },
   push: { name: 'push', stage: 13, model: 'haiku', inputFiles: [], allowedExtensions: [], bashCategories: ['readonly', 'git'], dodChecks: [] },

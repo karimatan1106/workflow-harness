@@ -58,6 +58,7 @@ const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
   'security-scan.toon': 'security_scan',
   'performance-test.toon': 'performance_test',
   'e2e-test.toon': 'e2e_test',
+  'docs-update.toon': 'docs_update',
 };
 
 function buildToonFirstSection(phase: string, docsDir: string): string {
