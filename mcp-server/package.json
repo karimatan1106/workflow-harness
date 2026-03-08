@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "harness-inv": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "bash ../indexer/setup.sh || true"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
