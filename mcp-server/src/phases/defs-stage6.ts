@@ -68,24 +68,31 @@ E2Eテストを実施してください。
 
   docs_update: {
     description: 'Update specifications, README, CHANGELOG',
-    model: 'haiku',
-    bashCategories: ['readonly'],
-    inputFiles: [],
-    outputFile: null,
-    requiredSections: [],
-    minLines: 0,
+    model: 'sonnet',
+    bashCategories: ['readonly', 'implementation'],
+    inputFiles: ['{docsDir}/spec.toon', '{docsDir}/requirements.toon', '{docsDir}/code-review.toon'],
+    outputFile: '{docsDir}/docs-update.toon',
+    requiredSections: ['decisions', 'artifacts', 'next'],
+    minLines: 30,
     subagentTemplate: `# docs_updateフェーズ
 
-## タスク情報
-- タスク名: {taskName}
-
 ## 作業内容
-ドキュメントを更新してください。
-1. 仕様書への実装内容の反映
-2. README・CHANGELOGの更新
-3. APIドキュメントの更新（該当する場合）
+実装内容を永続ドキュメントに反映してください。以下の5項目を確認し、該当する変更があれば更新すること。
 
+1. docs/architecture/overview.md — システム概要の更新。実装で追加・変更されたモジュール、依存関係、設計判断を反映する
+2. docs/operations/ — 運用ドキュメントの更新。environments/deployment/monitoring/runbooks配下に該当する変更があれば反映する
+3. CHANGELOG.md — 変更履歴の追記。Conventional Changelog形式で今回の変更内容を記録する
+4. README.md — プロジェクト概要の更新。新機能の説明、使用方法、設定変更があれば反映する
+5. docs/workflows/は.gitignore対象の一時作業フォルダ。ここの成果物を永続パス(docs/architecture/、docs/operations/等)に反映すること
+
+=== ドキュメント配置ルール ===
+- 永続パス: docs/architecture/, docs/operations/, docs/spec/features/, CHANGELOG.md, README.md
+- 一時パス: docs/workflows/{taskName}/ — ワークフロー終了後に破棄される
+- ファイル名: kebab-case、対象機能名をプレフィックスに使用
+
+{SUMMARY_SECTION}
 {BASH_CATEGORIES}
+{ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
   },
 
@@ -98,9 +105,6 @@ E2Eテストを実施してください。
     requiredSections: [],
     minLines: 0,
     subagentTemplate: `# commitフェーズ
-
-## タスク情報
-- タスク名: {taskName}
 
 ## 作業内容
 Conventional Commits形式でコミットしてください。
@@ -122,9 +126,6 @@ Conventional Commits形式でコミットしてください。
     minLines: 0,
     subagentTemplate: `# pushフェーズ
 
-## タスク情報
-- タスク名: {taskName}
-
 ## 作業内容
 リモートリポジトリにプッシュしてください。
 
@@ -142,8 +143,6 @@ Conventional Commits形式でコミットしてください。
     minLines: 0,
     subagentTemplate: `# ci_verificationフェーズ
 
-## タスク名: {taskName}
-
 ## 作業内容
 CI/CDパイプラインの結果を確認してください。
 
@@ -160,8 +159,6 @@ CI/CDパイプラインの結果を確認してください。
     requiredSections: [],
     minLines: 0,
     subagentTemplate: `# deployフェーズ
-
-## タスク名: {taskName}
 
 ## 作業内容
 対象環境へのデプロイを実施してください。
