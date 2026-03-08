@@ -68,6 +68,13 @@ export const TOOL_DEFS_A = [
         dirs: { type: 'array', items: { type: 'string' }, description: 'Dir paths.' },
         glob: { type: 'string', description: 'Glob pattern.' },
         addMode: { type: 'boolean', description: 'Merge mode. Default: false.' },
+        projectTraits: {
+          type: 'object', description: 'Project trait flags for dynamic doc categories.',
+          properties: {
+            hasUI: { type: 'boolean' }, hasAPI: { type: 'boolean' }, hasDB: { type: 'boolean' },
+            hasEvents: { type: 'boolean' }, hasI18n: { type: 'boolean' }, hasDesignSystem: { type: 'boolean' },
+          },
+        },
         sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'sessionToken'],

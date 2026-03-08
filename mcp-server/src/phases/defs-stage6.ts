@@ -77,13 +77,9 @@ E2Eテストを実施してください。
     subagentTemplate: `# docs_updateフェーズ
 
 ## 作業内容
-実装内容を永続ドキュメントに反映してください。以下の5項目を確認し、該当する変更があれば更新すること。
+実装内容を永続ドキュメントに反映してください。以下の項目を確認し、該当する変更があれば更新すること。
 
-1. docs/architecture/overview.md — システム概要の更新。実装で追加・変更されたモジュール、依存関係、設計判断を反映する
-2. docs/operations/ — 運用ドキュメントの更新。environments/deployment/monitoring/runbooks配下に該当する変更があれば反映する
-3. CHANGELOG.md — 変更履歴の追記。Conventional Changelog形式で今回の変更内容を記録する
-4. README.md — プロジェクト概要の更新。新機能の説明、使用方法、設定変更があれば反映する
-5. docs/workflows/は.gitignore対象の一時作業フォルダ。ここの成果物を永続パス(docs/architecture/、docs/operations/等)に反映すること
+{docCategories}
 
 === ドキュメント配置ルール ===
 - 永続パス: docs/architecture/, docs/operations/, docs/spec/features/, CHANGELOG.md, README.md

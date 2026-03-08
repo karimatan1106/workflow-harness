@@ -66,14 +66,16 @@ export type TaskSize = 'small' | 'medium' | 'large';
 export interface RiskScore {
   total: number;
   factors: {
-    fileCount: number;
-    hasTests: boolean;
-    hasConfig: boolean;
-    hasInfra: boolean;
-    hasSecurity: boolean;
-    hasDatabase: boolean;
+    fileCount: number; hasTests: boolean; hasConfig: boolean;
+    hasInfra: boolean; hasSecurity: boolean; hasDatabase: boolean;
     codeLineEstimate: number;
   };
+}
+
+// ─── Project Traits (dynamic doc categories) ────
+export interface ProjectTraits {
+  hasUI: boolean; hasAPI: boolean; hasDB: boolean;
+  hasEvents: boolean; hasI18n: boolean; hasDesignSystem: boolean;
 }
 
 // ─── Parallel Phase Groups ──────────────────────
