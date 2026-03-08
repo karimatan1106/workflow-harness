@@ -74,6 +74,41 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
   return '\n\n=== TOON入力(ACE) ===\nread: ' + toonFiles.join(', ') + '\n';
 }
 
+// ─── Dynamic Doc Categories ─────────────────────
+
+const TRAIT_CATEGORIES: Record<string, string[]> = {
+  hasUI: ['docs/spec/screens/', 'docs/spec/wireframes/', 'docs/spec/components/', 'docs/spec/interactions/', 'docs/spec/responsive/', 'docs/spec/accessibility/'],
+  hasAPI: ['docs/spec/api/'],
+  hasDB: ['docs/spec/database/'],
+  hasEvents: ['docs/spec/events/', 'docs/spec/messages/'],
+  hasI18n: ['docs/spec/i18n/', 'docs/spec/seo/', 'docs/spec/sitemap.md'],
+  hasDesignSystem: ['docs/spec/design-system/', 'docs/spec/components/'],
+};
+
+const FALLBACK_ITEMS = [
+  'docs/architecture/overview.md -- システム概要の更新',
+  'docs/operations/ -- environments/deployment/monitoring/runbooks配下の運用ドキュメント更新',
+  'CHANGELOG.md -- 変更履歴の追記',
+  'README.md -- プロジェクト概要の更新',
+  'docs/workflows/ -- 永続パスへの反映',
+];
+
+export function buildDocCategories(traits?: Record<string, boolean>): string {
+  const lines = FALLBACK_ITEMS.map((item, i) => `${i + 1}. ${item}`);
+  if (traits && typeof traits === 'object') {
+    const seen = new Set<string>();
+    for (const item of FALLBACK_ITEMS) seen.add(item.split(' -- ')[0]);
+    for (const [flag, cats] of Object.entries(TRAIT_CATEGORIES)) {
+      if (traits[flag]) {
+        for (const cat of cats) {
+          if (!seen.has(cat)) { seen.add(cat); lines.push(`${lines.length + 1}. ${cat}`); }
+        }
+      }
+    }
+  }
+  return lines.join('\n');
+}
+
 // ─── Prompt Builder ──────────────────────────────
 
 export function buildSubagentPrompt(
@@ -83,6 +118,7 @@ export function buildSubagentPrompt(
   workflowDir: string,
   userIntent: string,
   taskId?: string,
+  projectTraits?: Record<string, boolean>,
 ): string {
   const def = getPhaseDefinition(phase);
   if (!def) return `# ${phase} phase\n\nNo template defined for this phase.`;
@@ -107,6 +143,7 @@ export function buildSubagentPrompt(
   prompt = prompt.replace(/\{userIntent\}/g, userIntent);
   prompt = prompt.replace(/\{taskId\}/g, taskId ?? '');
   prompt = prompt.replace(/\{phase\}/g, phase);
+  prompt = prompt.replace(/\{docCategories\}/g, buildDocCategories(projectTraits));
   // Prepend compact header (task info + input + output in 2 lines)
   const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
   const outputFile = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? '';

@@ -47,10 +47,11 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
     const task = sm.loadTask(taskId);
     if (!task) return respondError('Task not found: ' + taskId);
     const verbose = Boolean(args.verbose ?? false);
-    const core = {
+    const core: Record<string, unknown> = {
       taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size,
       docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken,
     };
+    if ((task as any).projectTraits) core.projectTraits = (task as any).projectTraits;
     if (!verbose) return respond(core);
     return respond({
       ...core, completedPhases: task.completedPhases, skippedPhases: task.skippedPhases,

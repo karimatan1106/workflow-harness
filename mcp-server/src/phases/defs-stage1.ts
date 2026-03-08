@@ -25,11 +25,8 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 対象プロジェクトを調査し、変更の影響範囲を特定してください。
 
 ### Step 0: Serena利用可否チェック
-\`\`\`bash
-indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
-\`\`\`
-SERENA_UNAVAILABLEの場合はStep 1b/2bのフォールバックを使用する。
-
+\`indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"\`
+SERENA_UNAVAILABLEならStep 1b/2bフォールバック使用。
 ### Step 1: LSP-firstエントリポイント検索（LLM推測禁止）
 ユーザー意図のキーワードでLSP検索し、候補を絞り込む:
 \`\`\`bash
@@ -54,8 +51,17 @@ indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_refere
 **収束チェック**: 前hopと同じファイル集合なら打ち切り（新規ファイルなし=影響範囲確定）。
 **フォールバック(2b)**: Grep/Globで \`grep -r "import.*<module>" src/\` を使用。
 
+### Step 3.5: プロジェクト性質判定
+package.json/tsconfig/ディレクトリ構造からプロジェクト性質を判定し、harness_set_scopeのprojectTraitsに設定:
+- hasUI: React/Vue/Angular/Svelte等のUI FW存在
+- hasAPI: Express/Fastify/REST/GraphQL等のAPI層存在
+- hasDB: Prisma/TypeORM/Sequelize/SQL等のDB層存在
+- hasEvents: EventEmitter/MQ/WebSocket等のイベント機構存在
+- hasI18n: i18next/react-intl/vue-i18n等の国際化FW存在
+- hasDesignSystem: Storybook/designTokens/theme等のデザインシステム存在
+
 ### Step 3: スコープ設定
-1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル）
+1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル、projectTraits含む）
 2. リスクスコアの算出根拠を記録
 3. スコープ外の項目を明示
 

@@ -19,6 +19,7 @@ export type {
   SubPhaseStatus,
   PhaseConfig,
   ProofTier,
+  ProjectTraits,
 } from './types-core.js';
 
 export {
@@ -44,6 +45,7 @@ import type {
   ProofEntry,
   Checkpoint,
   SubPhaseStatus,
+  ProjectTraits,
 } from './types-core.js';
 
 import type { Invariant } from './types-invariant.js';
@@ -101,6 +103,9 @@ export interface TaskState {
   resetHistory?: Array<{ reason: string; resetAt: string; targetPhase: string }>;
   testFiles?: string[];
   knownBugs?: Array<{ testName: string; description: string; severity: 'low' | 'medium' | 'high' | 'critical'; targetPhase?: string; issueUrl?: string; recordedAt: string }>;
+
+  // Project traits (dynamic doc categories)
+  projectTraits?: ProjectTraits;
 
   // Sprint 1-2 additions
   retryCount?: Record<string, number>;                  // RLM-1: phase name → retry count
