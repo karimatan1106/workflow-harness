@@ -49,10 +49,9 @@ Step 1で確定したエントリポイントから参照元を辿る:
 # 2a. 直接参照元を取得（--limit 100で各hop最大100件）
 indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <確定したname_path> --relative_path <file>
 \`\`\`
-**分岐係数ルール**: 各hopで最大100件。100件超過（has_more: true）時は:
-- パターンを絞り込んで再検索（ディレクトリやファイル名で制限）
-- 全件取得は禁止（--limit 0 は使わない）
-2hop: エントリポイント→直接参照元→間接参照元。各hop最大100件。
+**分岐係数ルール**: 各hopで最大100件。has_more: true時はパターン絞り込みで再検索。
+**depth**: 3hop（エントリ→直接参照→間接参照→その参照元）。各hop最大100件。
+**収束チェック**: 前のhopと同じファイル集合なら打ち切り（新規ファイルなし=影響範囲確定）。
 **フォールバック(2b)**: Grep/Globで \`grep -r "import.*<module>" src/\` を使用。
 
 ### Step 3: スコープ設定
@@ -123,7 +122,8 @@ scope-definition.toonのentry_pointsに対してSerenaで逆依存を列挙:
 indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <name-path> --relative_path <file>
 \`\`\`
 **分岐係数ルール**: 各hopで最大100件。has_more: trueの場合はディレクトリで絞り込み再検索。
-結果から依存グラフ（A→B→C）を構築し、各hop最大100件×max depth 3。
+結果から依存グラフを構築。各hop最大100件×max depth 5（scope_definitionより深く追跡）。
+**収束チェック**: 前hopと同じファイル集合なら打ち切り（新規ファイルなし=影響範囲確定）。
 **フォールバック**: Grep/Globで \`grep -r "import.*from.*<module>" src/\` を使用。
 
 ### 分析項目
