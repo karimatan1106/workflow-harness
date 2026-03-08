@@ -29,13 +29,13 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 
 ### Step 2: LSPベース依存列挙（Serena利用可能時）
 \`\`\`bash
-# Serena利用可否チェック
-python -c "import serena" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
+# Serena利用可否チェック（indexer/.venvにインストール済みの場合）
+indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
 
 # 利用可能な場合: エントリポイントからシンボル→参照を辿る
-python serena-query.py symbols <entry-file>       # シンボル一覧
-python serena-query.py find-refs <symbol-name>     # 参照元ファイル列挙
-python serena-query.py find-symbol <symbol-name>   # 定義元特定
+indexer/.venv/Scripts/python.exe indexer/serena-query.py symbols <relative-path>
+indexer/.venv/Scripts/python.exe indexer/serena-query.py find-refs <name-path> <relative-path>
+indexer/.venv/Scripts/python.exe indexer/serena-query.py find-symbol <name-pattern>
 \`\`\`
 出力はTOON形式。find-refsの結果からファイルパスを抽出しscopeFilesに追加する。
 2hop: エントリポイント→直接参照元→間接参照元（max depth 2）。
@@ -123,9 +123,9 @@ Serena未インストールの場合、Grep/Globで代替:
 ### 逆依存グラフ構築（Serena利用可能時）
 scope-definition.toonのentry_pointsに対してSerenaで逆依存を列挙:
 \`\`\`bash
-python -c "import serena" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
+indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
 # 各エントリポイントのシンボルに対して:
-python serena-query.py find-refs <exported-symbol>  # このシンボルを使っている全ファイル
+indexer/.venv/Scripts/python.exe indexer/serena-query.py find-refs <name-path> <relative-path>
 \`\`\`
 結果から依存グラフ（A→B→C）を構築し、max depth 3で打ち切る。
 

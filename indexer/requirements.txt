@@ -1,0 +1,1 @@
+serena-agent @ git+https://github.com/oraios/serena
