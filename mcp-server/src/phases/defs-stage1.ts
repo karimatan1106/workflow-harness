@@ -23,14 +23,35 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 
 ## 作業内容
 対象プロジェクトを調査し、変更の影響範囲を特定してください。
-1. 変更対象のファイル・ディレクトリを列挙
-2. 依存関係の初期分析
-3. リスクスコアの算出根拠を記録
-4. スコープ外の項目を明示
+
+### Step 1: エントリポイント特定
+ユーザー意図から変更起点となるファイル・シンボルを特定する。
+
+### Step 2: LSPベース依存列挙（Serena利用可能時）
+\`\`\`bash
+# Serena利用可否チェック
+python -c "import serena" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
+
+# 利用可能な場合: エントリポイントからシンボル→参照を辿る
+python serena-query.py symbols <entry-file>       # シンボル一覧
+python serena-query.py find-refs <symbol-name>     # 参照元ファイル列挙
+python serena-query.py find-symbol <symbol-name>   # 定義元特定
+\`\`\`
+出力はTOON形式。find-refsの結果からファイルパスを抽出しscopeFilesに追加する。
+2hop: エントリポイント→直接参照元→間接参照元（max depth 2）。
+
+### Step 3: フォールバック（Serena未インストール時）
+Serena未インストールの場合、Grep/Globで代替:
+- \`grep -r "import.*from.*<module>" src/\` でimport元を列挙
+- Glob tool で関連ファイルパターンを検索
+
+### Step 4: スコープ設定
+1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル）
+2. リスクスコアの算出根拠を記録
+3. スコープ外の項目を明示
 
 ## 大規模スコープ対応（BCH-1）
 影響ファイル数が100を超える場合は '/batch' の使用を検討してください。
-/batch は複数ファイルをまとめて処理し、コンテキスト過負荷を防ぎます。
 
 ## 出力
 {docsDir}/scope-definition.toon に保存してください。
@@ -61,35 +82,12 @@ export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
 - {docsDir}/scope-definition.toon
 
 ## 作業内容
-コードベースを調査し、既存のパターン・依存関係・制約を分析してください。
 1. 関連コードの読み込みと分析
-2. 既存の設計パターンの把握
-3. 技術的制約の特定
-4. 実装に必要な前提知識の整理
-
-## 必須記載セクション（research.mdに含めること）
-
-### ## 暗黙の制約・Magic Number 一覧（S1-16）
-コードベースで発見した暗黙的な制約・数値・仮定を以下の表形式で記録する:
-| 値 | 用途 | 根拠・出典 |
-|---|-----|---------|
-| [数値/文字列] | [何に使うか] | [なぜこの値か・どのファイルで定義] |
-
-### ## 依存バージョン固有挙動（S1-17）
-node --version / tsc --version / npm --version の出力を記録し、バージョン固有の挙動を記述する:
-| ライブラリ/RT | バージョン | 固有の挙動・回避策 |
-|-------------|---------|---------------|
-| Node.js | vX.X.X | [固有挙動] |
-
-## init.sh 生成（S1-10）
-{docsDir}/init.sh を作成し、以下を記述すること:
-- ビルドコマンド (npm run build等)
-- 基本テスト確認コマンド (npm test等)
-- 環境セットアップコマンド
-
-## 出力注意（S1-14）
-- raw JSON/JSONL を直接出力しないこと
-- ツール呼び出し結果は構造化サマリーとして人間可読な形式にまとめること
+2. 既存の設計パターン・技術的制約の特定
+3. 暗黙の制約・Magic Number一覧（S1-16）: | 値 | 用途 | 根拠 | 形式で記録
+4. 依存バージョン固有挙動（S1-17）: node --version / tsc --version / npm --version を記録
+5. {docsDir}/init.sh 生成（S1-10）: ビルド・テスト・セットアップコマンド
+6. raw JSON/JSONL 直接出力禁止（S1-14）: 構造化サマリーにまとめること
 
 ## 出力
 {docsDir}/research.toon に保存してください。
@@ -121,10 +119,24 @@ node --version / tsc --version / npm --version の出力を記録し、バージ
 
 ## 作業内容
 変更の影響範囲（ブラストレディウス）を分析してください。
-1. 変更対象ファイルの依存関係グラフを作成
-2. 間接的に影響を受けるモジュールの特定
-3. リスク評価と軽減策の提案
-4. 影響を受けるテストの特定
+
+### 逆依存グラフ構築（Serena利用可能時）
+scope-definition.toonのentry_pointsに対してSerenaで逆依存を列挙:
+\`\`\`bash
+python -c "import serena" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"
+# 各エントリポイントのシンボルに対して:
+python serena-query.py find-refs <exported-symbol>  # このシンボルを使っている全ファイル
+\`\`\`
+結果から依存グラフ（A→B→C）を構築し、max depth 3で打ち切る。
+
+### フォールバック（Serena未インストール時）
+Grep/Globで代替: \`grep -r "import.*from.*<module>" src/\` + Glob tool。
+
+### 分析項目
+1. 逆依存グラフから間接的に影響を受けるモジュールを特定
+2. リスク評価と軽減策の提案
+3. 影響を受けるテストの特定（vitest --related 利用可能時）
+4. harness_set_scope を addMode:true で追加ファイルを登録
 
 ## 出力
 {docsDir}/impact-analysis.toon に保存してください。
