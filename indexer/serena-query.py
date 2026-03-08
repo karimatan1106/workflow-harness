@@ -2,15 +2,19 @@
 """Serena LSP query CLI — generic dispatcher with auto TOON output.
 
 Usage:
-    python serena-query.py [--project <path>] <tool_name> [--param value ...]
+    python serena-query.py [--project <path>] [--limit N] [--offset K] <tool_name> [--param value ...]
+
+Pagination:
+    --limit N    Max results to return (default: 100, 0=unlimited)
+    --offset K   Skip first K results (default: 0)
+    Output includes metadata: total, returned, has_more
 
 Examples:
     python serena-query.py find_symbol --name_path_pattern handleError
+    python serena-query.py --limit 50 find_symbol --name_path_pattern "a"
+    python serena-query.py --limit 50 --offset 50 find_symbol --name_path_pattern "a"
     python serena-query.py get_symbols_overview --relative_path src/auth.ts
     python serena-query.py find_referencing_symbols --name_path Foo/bar --relative_path src/foo.ts
-    python serena-query.py search_for_pattern --substring_pattern "import.*auth" --restrict_search_to_code_files true
-    python serena-query.py list_dir --relative_path src --recursive true
-    python serena-query.py find_file --file_mask "*.test.ts" --relative_path src
 
 All tool arguments map directly to Serena's apply() parameters.
 Output is auto-converted to TOON format.
@@ -63,8 +67,9 @@ def flatten_body_location(obj: dict) -> dict:
     return result
 
 
-def to_toon(tool_name: str, raw: str) -> str:
-    """Auto-convert Serena JSON output to TOON format."""
+def to_toon(tool_name: str, raw: str, limit: int = 0, offset: int = 0) -> str:
+    """Auto-convert Serena JSON output to TOON format with pagination.
+    limit=0 means unlimited. offset skips first N results."""
     if not raw:
         return f"{tool_name}[0]{{}}:\n  (empty)"
 
@@ -78,6 +83,8 @@ def to_toon(tool_name: str, raw: str) -> str:
     # Pattern 1: list of objects [{...}, {...}]
     if isinstance(data, list):
         rows = [flatten_body_location(item) if isinstance(item, dict) else {'value': item} for item in data]
+        total = len(rows)
+        rows = _paginate(rows, limit, offset)
         if rows:
             fields = list(rows[0].keys())
             lines.append(f"{tool_name}[{len(rows)}]{{{','.join(fields)}}}:")
@@ -86,6 +93,7 @@ def to_toon(tool_name: str, raw: str) -> str:
                 lines.append(f"  {','.join(vals)}")
         else:
             lines.append(f"{tool_name}[0]{{}}:")
+        _append_pagination_meta(lines, total, len(rows), limit, offset)
         return '\n'.join(lines)
 
     if not isinstance(data, dict):
@@ -94,17 +102,18 @@ def to_toon(tool_name: str, raw: str) -> str:
     # Pattern 2: {files: [...], dirs: [...]} — simple key-array dict
     if all(isinstance(v, list) and all(isinstance(x, str) for x in v) for v in data.values()):
         for key, arr in data.items():
-            lines.append(f"{key}[{len(arr)}]{{path}}:")
-            for item in arr:
+            total = len(arr)
+            page = _paginate(arr, limit, offset)
+            lines.append(f"{key}[{len(page)}]{{path}}:")
+            for item in page:
                 lines.append(f"  {escape_toon(item)}")
+            _append_pagination_meta(lines, total, len(page), limit, offset)
         return '\n'.join(lines)
 
-    # Pattern 3: {file_path: {kind: [refs]}} — find_referencing_symbols
-    # or {file_path: [lines]} — search_for_pattern
+    # Pattern 3: {file_path: {kind: [refs]}} or {file_path: [lines]}
     rows = []
     for fpath, val in data.items():
         if isinstance(val, dict):
-            # {kind: [{name_path, body_location, ...}]}
             for kind, refs in val.items():
                 if isinstance(refs, list):
                     for ref in refs:
@@ -114,10 +123,11 @@ def to_toon(tool_name: str, raw: str) -> str:
                             row['kind'] = kind
                             rows.append(row)
         elif isinstance(val, list):
-            # [line_strings] — search results
             for line in val:
                 rows.append({'path': fpath, 'match': str(line).strip()})
 
+    total = len(rows)
+    rows = _paginate(rows, limit, offset)
     if rows:
         fields = list(rows[0].keys())
         lines.append(f"{tool_name}[{len(rows)}]{{{','.join(fields)}}}:")
@@ -125,12 +135,31 @@ def to_toon(tool_name: str, raw: str) -> str:
             vals = [escape_toon(str(row.get(f, ''))) for f in fields]
             lines.append(f"  {','.join(vals)}")
     else:
-        # Fallback: key=value pairs
         lines.append(f"{tool_name}:")
         for k, v in data.items():
             lines.append(f"  {k}: {v}")
-
+    _append_pagination_meta(lines, total, len(rows) if rows else 0, limit, offset)
     return '\n'.join(lines)
+
+
+def _paginate(items: list, limit: int, offset: int) -> list:
+    """Apply offset+limit pagination to a list."""
+    if offset:
+        items = items[offset:]
+    if limit > 0:
+        items = items[:limit]
+    return items
+
+
+def _append_pagination_meta(lines: list, total: int, returned: int, limit: int, offset: int):
+    """Append pagination metadata to TOON output."""
+    if limit > 0 or offset > 0:
+        has_more = (offset + returned) < total
+        lines.append(f"_pagination:")
+        lines.append(f"  total: {total}")
+        lines.append(f"  returned: {returned}")
+        lines.append(f"  offset: {offset}")
+        lines.append(f"  has_more: {str(has_more).lower()}")
 
 
 def coerce_arg(value_str: str, annotation) -> object:
@@ -146,7 +175,7 @@ def coerce_arg(value_str: str, annotation) -> object:
     return value_str
 
 
-def dispatch(tool_name: str, cli_args: list[str]):
+def dispatch(tool_name: str, cli_args: list[str], limit: int = 0, offset: int = 0):
     """Generic dispatcher: resolve tool, parse CLI args, call apply(), output TOON."""
     agent = get_agent()
     # Find tool by class name match
@@ -192,7 +221,7 @@ def dispatch(tool_name: str, cli_args: list[str]):
 
     # Execute
     raw = agent.execute_task(lambda: tool.apply(**kwargs))
-    print(to_toon(tool_name, raw))
+    print(to_toon(tool_name, raw, limit=limit, offset=offset))
 
 
 # ─── Tool name aliases (snake_case CLI name → Serena class name) ───
@@ -211,25 +240,37 @@ def resolve_tool_name(cli_name: str) -> str:
     return pascal
 
 
+def _extract_global_arg(args: list, flag: str, default=None):
+    """Extract a global --flag value from args list, removing it."""
+    if flag in args:
+        idx = args.index(flag)
+        if idx + 1 < len(args):
+            val = args[idx + 1]
+            args = args[:idx] + args[idx + 2:]
+            return args, val
+    return args, default
+
+
 if __name__ == '__main__':
     args = sys.argv[1:]
-    project = None
-    if '--project' in args:
-        idx = args.index('--project')
-        if idx + 1 < len(args):
-            project = os.path.abspath(args[idx + 1])
-            args = args[:idx] + args[idx + 2:]
+    args, project = _extract_global_arg(args, '--project')
+    if project:
+        project = os.path.abspath(project)
+    args, limit_str = _extract_global_arg(args, '--limit', '100')
+    args, offset_str = _extract_global_arg(args, '--offset', '0')
+    limit = int(limit_str)
+    offset = int(offset_str)
 
     if len(args) < 1:
         print("Serena LSP Query CLI (generic dispatcher)")
-        print("Usage: python serena-query.py [--project <path>] <tool_name> [--param value ...]")
+        print("Usage: python serena-query.py [--project <path>] [--limit N] [--offset K] <tool_name> [--param ...]")
+        print()
+        print("Pagination: --limit 100 (default), --offset 0 (default), --limit 0 = unlimited")
         print()
         print("Tools: find_symbol, get_symbols_overview, find_referencing_symbols,")
         print("       search_for_pattern, list_dir, find_file, read_file, activate_project")
-        print()
-        print("All --param names match Serena's apply() arguments directly.")
         sys.exit(1)
 
     get_agent(project)
     tool_cls_name = resolve_tool_name(args[0])
-    dispatch(tool_cls_name, args[1:])
+    dispatch(tool_cls_name, args[1:], limit=limit, offset=offset)
