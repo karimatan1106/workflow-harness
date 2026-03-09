@@ -74,7 +74,7 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
     return OUTPUT_FILE_TO_PHASE[basename] !== undefined;
   });
   if (toonFiles.length === 0) return '';
-  return '\n\n**TOON入力(ACE)**\nread: ' + toonFiles.join(', ') + '\n';
+  return '\n\nTOON入力(ACE)\nread: ' + toonFiles.join(', ') + '\n';
 }
 
 // ─── Dynamic Doc Categories ─────────────────────

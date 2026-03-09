@@ -19,6 +19,7 @@ import { PHASE_DEFINITIONS } from '../phases/definitions.js';
 
 const SEP_RE = /^={3,}\s/gm;
 const HEADER_RE = /^#{2,}\s/gm;
+const BOLD_RE = /^\*\*[^*]+\*\*/gm;
 
 // --- AC-1: Static separator removal in shared constants ---
 
@@ -120,6 +121,40 @@ describe('AC-1: defs-stage6 docs_update has no separator', () => {
     const def = PHASE_DEFINITIONS['docs_update' as keyof typeof PHASE_DEFINITIONS];
     expect(def).toBeDefined();
     expect(def!.subagentTemplate).not.toMatch(SEP_RE);
+  });
+});
+
+// --- AC-BOLD: No bold markdown labels in templates ---
+
+describe('AC-BOLD: templates have no bold markdown labels', () => {
+  it('TC-BOLD-01: shared constants have no bold labels', () => {
+    expect(ARTIFACT_QUALITY_RULES).not.toMatch(BOLD_RE);
+    expect(SUMMARY_SECTION_RULE).not.toMatch(BOLD_RE);
+    expect(EXIT_CODE_RULE).not.toMatch(BOLD_RE);
+    expect(PROCEDURE_ORDER_RULE).not.toMatch(BOLD_RE);
+  });
+
+  it('TC-BOLD-02: bashCategoryHelp output has no bold labels', () => {
+    const output = bashCategoryHelp(['readonly', 'testing']);
+    expect(output).not.toMatch(BOLD_RE);
+  });
+
+  it('TC-BOLD-03: all buildSubagentPrompt outputs have no bold labels', () => {
+    for (const phase of Object.keys(PHASE_DEFINITIONS)) {
+      const output = buildSubagentPrompt(
+        phase, 'test-task', 'docs/workflows/test-task',
+        '.harness/workflows/test-task', 'test intent',
+      );
+      expect(output).not.toMatch(BOLD_RE);
+    }
+  });
+
+  it('TC-BOLD-04: all raw subagentTemplates have no bold labels', () => {
+    for (const [, def] of Object.entries(PHASE_DEFINITIONS)) {
+      if (def.subagentTemplate) {
+        expect(def.subagentTemplate).not.toMatch(BOLD_RE);
+      }
+    }
   });
 });
 
