@@ -30,6 +30,7 @@ export function checkPackageLockSync(phase: string, cwd?: string): DoDCheckResul
     return {
       level: 'L4', check: 'package_lock_sync', passed: false,
       evidence: `package.json modified ${Math.round(deltaMs / 1000)}s after package-lock.json. Run npm install to sync lock file. (DEP-1)`,
+      fix: 'npm installを実行してpackage-lock.jsonを同期してください。',
     };
   }
   return { level: 'L4', check: 'package_lock_sync', passed: true, evidence: 'package.json and package-lock.json are synchronized (DEP-1)' };

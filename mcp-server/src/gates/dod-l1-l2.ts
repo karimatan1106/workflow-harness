@@ -22,6 +22,7 @@ export function checkL1FileExists(phase: string, docsDir: string, workflowDir: s
     check: 'output_file_exists',
     passed: exists,
     evidence: exists ? `File exists: ${outputFile}` : `File missing: ${outputFile}`,
+    ...(!exists && { fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' }),
   };
 }
 
@@ -43,6 +44,7 @@ export function checkInputFilesExist(phase: string, docsDir: string, workflowDir
   return {
     level: 'L1', check: 'input_files_exist', passed,
     evidence: passed ? `All ${config.inputFiles.length} input files exist` : `Missing input files: ${missing.join(', ')}`,
+    ...(!passed && { fix: '前フェーズの成果物が不足しています。前フェーズを完了させてから再実行してください。' }),
   };
 }
 
@@ -71,6 +73,7 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
     return {
       level: 'L2', check: 'tdd_red_evidence', passed: false,
       evidence: 'TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)',
+      fix: 'テストを実行して失敗結果をharness_record_proofで記録してください（TDD Redフェーズ）。',
     };
   }
   const hasRedEvidence = testImplProofs.some(e => !e.result);
@@ -79,5 +82,6 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
     evidence: hasRedEvidence
       ? 'TDD Red phase evidence found: test failure recorded before implementation (TDD-1)'
       : 'TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)',
+    ...(!hasRedEvidence && { fix: 'テストを実行して失敗結果をharness_record_proofで記録してください（TDD Redフェーズ）。' }),
   };
 }

@@ -8,6 +8,10 @@ export interface DoDCheckResult {
   check: string;
   passed: boolean;
   evidence: string;
+  /** Actionable fix instruction (populated when passed=false) */
+  fix?: string;
+  /** Example of correct output format (populated when fix benefits from example) */
+  example?: string;
 }
 
 export interface DoDResult {

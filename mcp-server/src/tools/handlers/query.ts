@@ -79,7 +79,7 @@ export async function handleHarnessPreValidate(args: Record<string, unknown>, sm
     const retryCount = Number(args.retryCount ?? 1);
     const phaseDef = getPhaseDefinition(task.phase);
     const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: (phaseDef?.model ?? 'sonnet') as 'opus' | 'sonnet' | 'haiku' };
-    const retryResult = buildRetryPrompt(retryCtx);
+    const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
     retryInfo = { retryPrompt: retryResult.prompt, suggestModelEscalation: retryResult.suggestModelEscalation, suggestedModel: retryResult.suggestedModel };
   }
   return respond({ phase: task.phase, passed: dodResult.passed, ...(dodResult.passed ? {} : { checks: dodResult.checks, errors: dodResult.errors }), ...(retryInfo ? { retry: retryInfo } : {}) });

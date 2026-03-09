@@ -15,7 +15,7 @@ export function checkAcDesignMapping(state: TaskState, phase: string, docsDir: s
   }
   const filePath = docsDir + '/design-review.toon';
   if (!existsSync(filePath)) {
-    return { level: 'L4', check: 'ac_design_mapping', passed: false, evidence: 'design-review.toon not found at: ' + filePath };
+    return { level: 'L4', check: 'ac_design_mapping', passed: false, evidence: 'design-review.toon not found at: ' + filePath, fix: 'design_reviewフェーズの成果物(design-review.toon)を作成してください。' };
   }
   const content = readFileSync(filePath, 'utf8');
   let record: Record<string, unknown>;
@@ -24,13 +24,15 @@ export function checkAcDesignMapping(state: TaskState, phase: string, docsDir: s
     return {
       level: 'L4', check: 'ac_design_mapping', passed: false,
       evidence: 'design-review.toon is missing acDesignMapping key (IA-3)\n修正方法: design-review.toon に acDesignMapping[] キーを追加し、各AC-Nと対応する設計要素を列挙してください。',
+      fix: 'design-review.toonにacDesignMapping[]キーを追加し、各AC-Nと対応する設計要素を列挙してください。',
+      example: 'acDesignMapping[0]{acId,designElement}:\n  AC-1\n  モジュールXのインターフェース設計',
     };
   }
   if (state.acceptanceCriteria && state.acceptanceCriteria.length > 0) {
     const raw = JSON.stringify(record['acDesignMapping'] ?? '');
     const unmapped = state.acceptanceCriteria.filter(ac => !raw.includes(ac.id)).map(ac => ac.id);
     if (unmapped.length > 0) {
-      return { level: 'L4', check: 'ac_design_mapping', passed: false, evidence: 'AC→design mapping missing for: ' + unmapped.join(', ') + ' (IA-3)' };
+      return { level: 'L4', check: 'ac_design_mapping', passed: false, evidence: 'AC→design mapping missing for: ' + unmapped.join(', ') + ' (IA-3)', fix: 'acDesignMapping[]に未マッピングのAC-Nエントリを追加してください。' };
     }
   }
   return { level: 'L4', check: 'ac_design_mapping', passed: true, evidence: 'AC→design mapping key present in design-review.toon (IA-3)' };
@@ -43,7 +45,7 @@ export function checkAcTcMapping(phase: string, docsDir: string): DoDCheckResult
   }
   const filePath = docsDir + '/test-design.toon';
   if (!existsSync(filePath)) {
-    return { level: 'L4', check: 'ac_tc_mapping', passed: false, evidence: 'test-design.toon not found at: ' + filePath };
+    return { level: 'L4', check: 'ac_tc_mapping', passed: false, evidence: 'test-design.toon not found at: ' + filePath, fix: 'test_designフェーズの成果物(test-design.toon)を作成してください。' };
   }
   const content = readFileSync(filePath, 'utf8');
   let record: Record<string, unknown>;
@@ -54,6 +56,7 @@ export function checkAcTcMapping(phase: string, docsDir: string): DoDCheckResult
     evidence: hasKey
       ? 'AC→TC traceability key present in test-design.toon (IA-4)'
       : 'test-design.toon is missing acTcMapping key (IA-4)\n修正方法: test-design.toon に acTcMapping[] キーを追加し、AC-N → TC-{AC#}-{連番} の対応を列挙してください。',
+    ...(!hasKey && { fix: 'test-design.toonにacTcMapping[]キーを追加し、AC-N→TC-{AC#}-{連番}の対応を列挙してください。', example: 'acTcMapping[0]{acId,tcId}:\n  AC-1\n  TC-AC1-01' }),
   };
 }
 
@@ -68,7 +71,7 @@ export function checkTCCoverage(state: TaskState, phase: string, docsDir: string
   }
   const filePath = docsDir + '/test-design.toon';
   if (!existsSync(filePath)) {
-    return { level: 'L3', check: 'tc_coverage', passed: false, evidence: 'test-design.toon not found for TC coverage check' };
+    return { level: 'L3', check: 'tc_coverage', passed: false, evidence: 'test-design.toon not found for TC coverage check', fix: 'test_designフェーズの成果物(test-design.toon)を作成してください。' };
   }
   const content = readFileSync(filePath, 'utf8');
   const tcIds = new Set((content.match(/TC-AC\d+-\d+/g) ?? []));
@@ -79,6 +82,7 @@ export function checkTCCoverage(state: TaskState, phase: string, docsDir: string
     evidence: passed
       ? `TC coverage OK: ${tcCount} unique TC entries for ${acCount} ACs (CRV-1)`
       : `TC coverage insufficient: ${tcCount} TC entries < ${acCount} ACs (CRV-1)\n修正方法: test-design.toon に各AC-Nに対して TC-ACN-01 形式のテストケースを追加してください。`,
+    ...(!passed && { fix: 'test-design.toonに各AC-Nに対してTC-ACN-01形式のテストケースを追加してください。' }),
   };
 }
 
@@ -89,7 +93,7 @@ export function checkAcAchievementTable(phase: string, docsDir: string): DoDChec
   }
   const filePath = docsDir + '/code-review.toon';
   if (!existsSync(filePath)) {
-    return { level: 'L4', check: 'ac_achievement_table', passed: false, evidence: 'code-review.toon not found at: ' + filePath };
+    return { level: 'L4', check: 'ac_achievement_table', passed: false, evidence: 'code-review.toon not found at: ' + filePath, fix: 'code_reviewフェーズの成果物(code-review.toon)を作成してください。' };
   }
   const content = readFileSync(filePath, 'utf8');
   let record: Record<string, unknown>;
@@ -98,6 +102,8 @@ export function checkAcAchievementTable(phase: string, docsDir: string): DoDChec
     return {
       level: 'L4', check: 'ac_achievement_table', passed: false,
       evidence: 'code-review.toon is missing acAchievementStatus key (IA-5)\n修正方法: code-review.toon に acAchievementStatus[] キーを追加し、各AC-Nのpass/fail状態を記入してください。',
+      fix: 'code-review.toonにacAchievementStatus[]キーを追加し、各AC-Nのpass/fail状態を記入してください。',
+      example: 'acAchievementStatus[0]{acId,status}:\n  AC-1\n  passed',
     };
   }
   const entries = record['acAchievementStatus'];
@@ -117,7 +123,7 @@ export function checkAcAchievementTable(phase: string, docsDir: string): DoDChec
     failedACs.push('unknown AC');
   }
   if (failedACs.length > 0) {
-    return { level: 'L4', check: 'ac_achievement_table', passed: false, evidence: 'AC Achievement Status has not_met entries: ' + failedACs.join(', ') + ' (IA-5)' };
+    return { level: 'L4', check: 'ac_achievement_table', passed: false, evidence: 'AC Achievement Status has not_met entries: ' + failedACs.join(', ') + ' (IA-5)', fix: '受入基準のステータスをharness_update_ac_statusでmetに更新してください。' };
   }
   return { level: 'L4', check: 'ac_achievement_table', passed: true, evidence: 'AC Achievement Status key present with no failing ACs (IA-5)' };
 }

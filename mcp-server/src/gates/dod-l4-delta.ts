@@ -27,7 +27,7 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
   }
   const outputFile = config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
   if (!existsSync(outputFile)) {
-    return { level: 'L4', check: 'delta_entry_format', passed: false, evidence: 'Cannot check Delta Entry: file missing: ' + outputFile };
+    return { level: 'L4', check: 'delta_entry_format', passed: false, evidence: 'Cannot check Delta Entry: file missing: ' + outputFile, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }
   const content = readFileSync(outputFile, 'utf8');
   let obj: unknown;
@@ -37,12 +37,14 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
     return {
       level: 'L4', check: 'delta_entry_format', passed: false,
       evidence: `TOON decode failed: ${e instanceof Error ? e.message : String(e)}`,
+      fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。',
     };
   }
   if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
     return {
       level: 'L4', check: 'delta_entry_format', passed: false,
       evidence: 'TOON artifact is not an object',
+      fix: 'TOON成果物がオブジェクト形式になっていません。key: value 形式で記述してください。',
     };
   }
   const record = obj as Record<string, unknown>;
@@ -51,12 +53,15 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
     return {
       level: 'L4', check: 'delta_entry_format', passed: false,
       evidence: `TOON artifact missing decisions[] array\n修正方法: decisions[N]{id,statement,rationale}: テーブルに最低${DELTA_ENTRY_MIN_COUNT}エントリを追加してください。`,
+      fix: '必須TOONキー(decisions)を成果物に追加してください。',
+      example: 'decisions[0]{id,statement,rationale}:\n  D-1\n  要件を明確化\n  ユーザー意図との整合性確保',
     };
   }
   if (decisions.length < DELTA_ENTRY_MIN_COUNT) {
     return {
       level: 'L4', check: 'delta_entry_format', passed: false,
       evidence: `decisions[] count: ${decisions.length} < required ${DELTA_ENTRY_MIN_COUNT}\n修正方法: decisions[N]{id,statement,rationale}: テーブルにあと${DELTA_ENTRY_MIN_COUNT - decisions.length}エントリ追加してください。`,
+      fix: `decisions[]テーブルにあと${DELTA_ENTRY_MIN_COUNT - decisions.length}エントリ追加してください。`,
     };
   }
   return {

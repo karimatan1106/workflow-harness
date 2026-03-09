@@ -43,7 +43,7 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   }
   const outputFile = config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
   if (!existsSync(outputFile)) {
-    return { level: 'L4', check: 'content_validation', passed: false, evidence: `Cannot validate content: file missing: ${outputFile}` };
+    return { level: 'L4', check: 'content_validation', passed: false, evidence: `Cannot validate content: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }
   const content = readFileSync(outputFile, 'utf8');
   const errors: string[] = [];
@@ -64,5 +64,6 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   return {
     level: 'L4', check: 'content_validation', passed,
     evidence: passed ? 'Content validation passed: no forbidden patterns, placeholders, or duplicates' : errors.join('; '),
+    ...(!passed && { fix: errors.some(e => e.includes('Forbidden')) ? '指摘された禁止語を削除し、具体的な実例に置き換えてください。' : errors.some(e => e.includes('Duplicate')) ? '繰り返されている行をそれぞれ異なる内容に書き換えてください。' : errors.some(e => e.includes('Missing required TOON')) ? '必須TOONキー(decisions/artifacts/next)を成果物に追加してください。' : errors.some(e => e.includes('TOON parse')) ? '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' : '指摘された内容バリデーションエラーを修正してください。' }),
   };
 }

@@ -110,7 +110,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     if (!dodResult.passed) {
       const phaseDef = getPhaseDefinition(task.phase);
       const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: (phaseDef?.model ?? 'sonnet') as 'opus' | 'sonnet' | 'haiku' };
-      const retryResult = buildRetryPrompt(retryCtx);
+      const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
       try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
       // VDB-1: Suspect validator bug after 3+ retries on same phase
       const vdb1Warning = retryCount >= 3

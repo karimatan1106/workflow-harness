@@ -3,6 +3,8 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
+import type { DoDCheckResult } from '../gates/dod-types.js';
+
 export interface RetryContext {
   phase: string;
   taskName: string;
@@ -132,8 +134,28 @@ function errorToImprovement(errorMessage: string): string[] {
  * Includes the original error in a code block (reference only, not executable)
  * and specific improvement instructions.
  */
-export function buildRetryPrompt(ctx: RetryContext): RetryPromptResult {
-  const improvements = errorToImprovement(ctx.errorMessage);
+/** Extract structured fix instructions from DoDCheckResult[], falling back to regex */
+function extractImprovements(errorMessage: string, checks?: DoDCheckResult[]): string[] {
+  if (checks && checks.length > 0) {
+    const fixes = checks.filter(c => !c.passed && c.fix).map(c => c.fix!);
+    if (fixes.length > 0) return fixes;
+  }
+  return errorToImprovement(errorMessage);
+}
+
+/** Classify error using check field when available, falling back to regex */
+function classifyFromChecks(errorMessage: string, checks?: DoDCheckResult[]): RetryPromptResult['errorClass'] {
+  if (checks && checks.length > 0) {
+    const failed = checks.filter(c => !c.passed);
+    if (failed.some(c => c.check === 'output_file_exists' || c.check === 'input_files_exist')) return 'FileNotFound';
+    if (failed.some(c => c.check === 'artifact_quality' || c.check === 'content_validation')) return 'SyntaxError';
+    if (failed.length > 0) return 'LogicError';
+  }
+  return classifyError(errorMessage);
+}
+
+export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): RetryPromptResult {
+  const improvements = extractImprovements(ctx.errorMessage, checks);
   const suggestModelEscalation = ctx.retryCount >= 2 && ctx.model === 'haiku';
   const suggestedModel: 'opus' | 'sonnet' | 'haiku' =
     ctx.retryCount >= 3 ? 'sonnet' :
@@ -148,6 +170,6 @@ export function buildRetryPrompt(ctx: RetryContext): RetryPromptResult {
     + '⚠️ 禁止語の転記=再失敗。間接参照のみ使用。\n\n'
     + '## 改善要求\n' + improvementLines + '\n';
 
-  const errorClass = classifyError(ctx.errorMessage);
+  const errorClass = classifyFromChecks(ctx.errorMessage, checks);
   return { prompt, suggestModelEscalation, suggestedModel, errorClass };
 }
