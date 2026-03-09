@@ -16,14 +16,14 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     minLines: 0,
     subagentTemplate: `# test_implフェーズ（TDD Red）
 
-**タスク情報**
+タスク情報
 - タスク名: {taskName}
 
-**入力**
+入力
 - {docsDir}/test-design.toon
 - {docsDir}/test-selection.toon
 
-**作業内容**
+作業内容
 テスト設計に基づきテストコードを作成してください（TDD Redフェーズ）。
 1. test-design.toonのテストケースを実装
 2. テストは失敗する状態で作成（実装コードがまだないため）
@@ -45,10 +45,10 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     minLines: 0,
     subagentTemplate: `# implementationフェーズ（TDD Green）
 
-**タスク情報**
+タスク情報
 - タスク名: {taskName}
 
-**入力**
+入力
 以下の設計成果物を全て読み込んでから実装してください:
 - {docsDir}/spec.toon
 - {docsDir}/state-machine.mmd
@@ -56,13 +56,13 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 - {docsDir}/ui-design.toon
 - {docsDir}/test-design.toon
 
-**設計チェックリスト（実装開始前に必須確認）**
+設計チェックリスト（実装開始前に必須確認）
 - spec.toonに記載された全機能を実装したか
 - state-machine.mmdの全状態遷移を実装したか
 - flowchart.mmdの全処理フローを実装したか
 - test-design.toonの全テストケースに対応するコードがあるか
 
-**作業内容**
+作業内容
 テストが通るように実装コードを作成してください。
 全てのテストが成功する（Green）状態にしてください。
 
@@ -80,16 +80,16 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     minLines: 0,
     subagentTemplate: `# refactoringフェーズ
 
-**タスク情報**
+タスク情報
 - タスク名: {taskName}
 
-**作業内容**
+作業内容
 テストを維持しながらコード品質を改善してください（/simplify 手順 S1-6）。
 
 以下の3観点でコードを評価・改善すること:
-1. **code quality**: コードの重複排除・命名改善・関数責務分離
-2. **code efficiency**: パフォーマンス改善・不要な処理の削除
-3. **CLAUDE.md compliance**: 200行ファイル制限・禁止パターン・フォーマット準拠
+1. code quality: コードの重複排除・命名改善・関数責務分離
+2. code efficiency: パフォーマンス改善・不要な処理の削除
+3. CLAUDE.md compliance: 200行ファイル制限・禁止パターン・フォーマット準拠
 
 テストが引き続き全てパスすることを確認してください。
 ツール呼び出し結果をraw JSON/JONSLで出力しないこと（S1-14）。
@@ -108,10 +108,10 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     minLines: 0,
     subagentTemplate: `# build_checkフェーズ
 
-**タスク情報**
+タスク情報
 - タスク名: {taskName}
 
-**作業内容**
+作業内容
 ビルドが成功することを確認してください。
 1. TypeScriptコンパイル（tsc --noEmit）
 2. ビルドコマンド（npm run build）
@@ -131,22 +131,22 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     minLines: 30,
     subagentTemplate: `# code_reviewフェーズ
 
-**タスク情報**
+タスク情報
 - タスク名: {taskName}
 - ユーザー意図: {userIntent}
 - 出力先: {docsDir}/
 
-**入力**
+入力
 以下の設計成果物と実装コードを比較してください:
 - {docsDir}/spec.toon
 - {docsDir}/requirements.toon
 - {docsDir}/threat-model.toon
 
-**レビュー姿勢（SRB-1）**
-**外部レビュアーの視点**でレビューすること。実装者と同一セッションの知識を前提にしないこと。
+レビュー姿勢（SRB-1）
+外部レビュアーの視点でレビューすること。実装者と同一セッションの知識を前提にしないこと。
 コードだけを見て「設計通りか」「ユーザー意図を満たすか」を判断する。
 
-**作業内容**
+作業内容
 設計と実装の整合性を検証してください。
 1. spec.toonの全機能が実装されているか
 2. 設計書にない追加機能（勝手な追加）がないか
@@ -154,14 +154,14 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 4. セキュリティ要件の対策実装確認
 5. 未実装項目がある場合はimplementationフェーズに差し戻し
 
-**★必須: AC達成状況テーブル (IA-5)**
+★必須: AC達成状況テーブル (IA-5)
 全てのAC-Nの達成状況を以下の形式で報告すること:
 | AC-N | ステータス | 実装証拠（ファイル:行番号） |
 |----|---------|-------------------|
 | AC-1 | 合格/不合格 | src/xxx.ts:42 |
 不合格のACが1件でもある場合、承認がブロックされる。
 
-**出力**
+出力
 {docsDir}/code-review.toon に保存してください。
 
 承認ゲートです。
