@@ -74,7 +74,7 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
     return OUTPUT_FILE_TO_PHASE[basename] !== undefined;
   });
   if (toonFiles.length === 0) return '';
-  return '\n\n=== TOON入力(ACE) ===\nread: ' + toonFiles.join(', ') + '\n';
+  return '\n\n**TOON入力(ACE)**\nread: ' + toonFiles.join(', ') + '\n';
 }
 
 // ─── Dynamic Doc Categories ─────────────────────
@@ -178,10 +178,6 @@ export function buildSubagentPrompt(
   if (toonFirst) prompt += toonFirst;
   const lessons = formatLessonsForPrompt(phase);
   if (lessons) prompt += lessons;
-
-  // Replace ## Markdown headers with === delimiters to prevent format contamination
-  // Subagents seeing ## in prompts may replicate it in .toon output, causing parse errors
-  prompt = prompt.replace(/^## /gm, '=== ').replace(/^### /gm, '== ');
 
   return prompt;
 }
