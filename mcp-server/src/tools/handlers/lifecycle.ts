@@ -4,6 +4,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
 import type { StateManager } from '../../state/manager.js';
 import { runDoDChecks } from '../../gates/dod.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
@@ -89,6 +90,20 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     }
   }
   const docsDir: string = task.docsDir ?? ('docs/workflows/' + task.taskName);
+  // P2+P4: output file existence + size pre-check before DoD
+  if (!forceTransition) {
+    const phaseConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
+    if (phaseConfig?.outputFile) {
+      const outPath = phaseConfig.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', task.workflowDir ?? '');
+      if (!existsSync(outPath)) {
+        return respondError('成果物ファイルが存在しません: ' + outPath + '. フェーズ作業を完了してから harness_next を呼び出してください。');
+      }
+      const fileSize = statSync(outPath).size;
+      if (fileSize < 100) {
+        return respondError('成果物ファイルが空または不完全です (' + fileSize + ' bytes): ' + outPath);
+      }
+    }
+  }
   let dodResult: Awaited<ReturnType<typeof runDoDChecks>>;
   if (!forceTransition) {
     dodResult = await runDoDChecks(task, docsDir);

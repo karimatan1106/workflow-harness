@@ -26,13 +26,16 @@ export function checkL1FileExists(phase: string, docsDir: string, workflowDir: s
 }
 
 // IFV-1 (S3-8): Verify all required input files exist before phase completion
-export function checkInputFilesExist(phase: string, docsDir: string, workflowDir: string): DoDCheckResult {
+export function checkInputFilesExist(phase: string, docsDir: string, workflowDir: string, skippedPhases: string[] = [], fileToPhaseMap: Record<string, string> = {}): DoDCheckResult {
   const config: PhaseConfig | undefined = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   if (!config?.inputFiles || config.inputFiles.length === 0) {
     return { level: 'L1', check: 'input_files_exist', passed: true, evidence: 'No input files required for this phase' };
   }
   const missing: string[] = [];
   for (const inputFile of config.inputFiles) {
+    const basename = inputFile.split('/').pop() ?? '';
+    const sourcePhase = fileToPhaseMap[basename];
+    if (sourcePhase && skippedPhases.includes(sourcePhase)) continue;
     const filePath = inputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
     if (!existsSync(filePath)) missing.push(filePath);
   }

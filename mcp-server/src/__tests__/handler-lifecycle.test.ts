@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { StateManager as StateManagerType } from '../state/manager.js';
 import { setupHandlerTest, teardownHandlerTest, type TestCtx } from './handler-test-setup.js';
 
@@ -38,7 +40,10 @@ describe('Retry and VDB-1 detection', () => {
     });
     const taskId = startRes.taskId as string;
     const token = startRes.sessionToken as string;
-    // Do NOT create the output file — L1 check will fail
+    const docsDir = startRes.docsDir as string;
+    // Create output file that passes P2 pre-check (>=100 bytes) but fails DoD L4
+    mkdirSync(docsDir, { recursive: true });
+    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
@@ -58,12 +63,16 @@ describe('Retry and VDB-1 detection', () => {
     });
     const taskId = startRes.taskId as string;
     const token = startRes.sessionToken as string;
+    const docsDir = startRes.docsDir as string;
+    // Create output file that passes P2 pre-check but fails DoD L4
+    mkdirSync(docsDir, { recursive: true });
+    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
       retryCount: 2,
     });
-    expect(res.error).toBeDefined(); // DoD still fails (no file)
+    expect(res.error).toBeDefined(); // DoD still fails (L4 content)
     expect(res.vdb1Warning).toBeUndefined();
   });
 
@@ -75,6 +84,10 @@ describe('Retry and VDB-1 detection', () => {
     });
     const taskId = startRes.taskId as string;
     const token = startRes.sessionToken as string;
+    const docsDir = startRes.docsDir as string;
+    // Create output file that passes P2 pre-check but fails DoD
+    mkdirSync(docsDir, { recursive: true });
+    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
     // Increment counter 5 times (each call with retryCount >= 1 increments)
     for (let i = 0; i < 5; i++) {
       await call(mgr, 'harness_next', { taskId, sessionToken: token, retryCount: 1 });
