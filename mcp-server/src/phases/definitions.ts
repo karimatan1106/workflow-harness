@@ -3,6 +3,8 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { PhaseName } from '../state/types.js';
 import { PHASE_REGISTRY } from './registry.js';
 import { formatLessonsForPrompt } from '../tools/reflector.js';
@@ -10,6 +12,7 @@ import {
   ARTIFACT_QUALITY_RULES,
   SUMMARY_SECTION_RULE,
   EXIT_CODE_RULE,
+  PROCEDURE_ORDER_RULE,
   bashCategoryHelp,
 } from './definitions-shared.js';
 import { DEFS_STAGE1 } from './defs-stage1.js';
@@ -40,7 +43,7 @@ export function getPhaseDefinition(phase: string): import('./definitions-shared.
 
 // ─── ACE TOON-first: output filename → source phase mapping ──
 
-const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
+export const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
   'scope-definition.toon': 'scope_definition',
   'research.toon': 'research',
   'impact-analysis.toon': 'impact_analysis',
@@ -76,7 +79,7 @@ function buildToonFirstSection(phase: string, docsDir: string): string {
 
 // ─── Dynamic Doc Categories ─────────────────────
 
-const TRAIT_CATEGORIES: Record<string, string[]> = {
+const DEFAULT_TRAIT_CATEGORIES: Record<string, string[]> = {
   hasUI: ['docs/spec/screens/', 'docs/spec/wireframes/', 'docs/spec/components/', 'docs/spec/interactions/', 'docs/spec/responsive/', 'docs/spec/accessibility/'],
   hasAPI: ['docs/spec/api/'],
   hasDB: ['docs/spec/database/'],
@@ -84,6 +87,15 @@ const TRAIT_CATEGORIES: Record<string, string[]> = {
   hasI18n: ['docs/spec/i18n/', 'docs/spec/seo/', 'docs/spec/sitemap.md'],
   hasDesignSystem: ['docs/spec/design-system/', 'docs/spec/components/'],
 };
+
+export function loadTraitCategories(configDir?: string): Record<string, string[]> {
+  try {
+    const p = join(configDir ?? '.', '.harness.json');
+    const parsed = JSON.parse(readFileSync(p, 'utf8'));
+    if (parsed.traitCategories && typeof parsed.traitCategories === 'object') return parsed.traitCategories;
+  } catch { /* fallback */ }
+  return DEFAULT_TRAIT_CATEGORIES;
+}
 
 const FALLBACK_ITEMS = [
   'docs/architecture/overview.md -- システム概要の更新',
@@ -98,7 +110,7 @@ export function buildDocCategories(traits?: Record<string, boolean>): string {
   if (traits && typeof traits === 'object') {
     const seen = new Set<string>();
     for (const item of FALLBACK_ITEMS) seen.add(item.split(' -- ')[0]);
-    for (const [flag, cats] of Object.entries(TRAIT_CATEGORIES)) {
+    for (const [flag, cats] of Object.entries(loadTraitCategories())) {
       if (traits[flag]) {
         for (const cat of cats) {
           if (!seen.has(cat)) { seen.add(cat); lines.push(`${lines.length + 1}. ${cat}`); }
@@ -130,12 +142,14 @@ export function buildSubagentPrompt(
   // Strip verbose header blocks — replaced by compact auto-header below
   prompt = prompt.replace(/## タスク情報\n(?:- [^\n]+\n)+\n?/g, '');
   prompt = prompt.replace(/## 入力\n(?:以下のファイルを読み込んでください:\n)?(?:- [^\n]+\n)+\n?/g, '');
+  prompt = prompt.replace(/^.*(?:読み込んで|ファイルを読み).*$/gm, '');
   prompt = prompt.replace(/## 出力\n[^\n]*に保存してください。\n?\n?/g, '');
   // Fragment expansion FIRST (fragments contain {phase}, {docsDir} etc.)
   prompt = prompt.replace(/\{SUMMARY_SECTION\}/g, SUMMARY_SECTION_RULE);
   prompt = prompt.replace(/\{BASH_CATEGORIES\}/g, bashCategoryHelp(categories));
   prompt = prompt.replace(/\{ARTIFACT_QUALITY\}/g, ARTIFACT_QUALITY_RULES);
   prompt = prompt.replace(/\{EXIT_CODE_RULE\}/g, EXIT_CODE_RULE);
+  prompt = prompt.replace(/\{PROCEDURE_ORDER\}/g, PROCEDURE_ORDER_RULE);
   // Variable substitution AFTER (so variables inside fragments are also replaced)
   prompt = prompt.replace(/\{taskName\}/g, taskName);
   prompt = prompt.replace(/\{docsDir\}/g, docsDir);

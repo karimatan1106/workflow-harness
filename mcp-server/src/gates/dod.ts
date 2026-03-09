@@ -6,6 +6,7 @@
 
 import type { TaskState } from '../state/types.js';
 import { checkL1FileExists, checkL2ExitCode, checkInputFilesExist, checkTDDRedEvidence } from './dod-l1-l2.js';
+import { OUTPUT_FILE_TO_PHASE } from '../phases/definitions.js';
 import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkBaselineRequired, checkArtifactFreshness, checkInvariantCompleteness } from './dod-l3.js';
 import { checkL4ContentValidation } from './dod-l4-content.js';
 import { checkACFormat, checkNotInScope, checkOpenQuestions, checkIntentConsistency } from './dod-l4-requirements.js';
@@ -32,7 +33,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   };
 
   push(checkL1FileExists(phase, docsDir, workflowDir), 'L1');
-  push(checkInputFilesExist(phase, docsDir, workflowDir), 'L1');
+  push(checkInputFilesExist(phase, docsDir, workflowDir, state.skippedPhases ?? [], OUTPUT_FILE_TO_PHASE), 'L1');
   push(checkL2ExitCode(state), 'L2');
   push(checkL3Quality(phase, docsDir, workflowDir), 'L3');
   push(checkL4ContentValidation(phase, docsDir, workflowDir), 'L4');

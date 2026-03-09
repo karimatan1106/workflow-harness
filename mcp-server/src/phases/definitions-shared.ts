@@ -45,6 +45,9 @@ export const EXIT_CODE_RULE = `=== ★完了時の戻り値(AGT-1) ===
 成功: result{phase,status,artifact,lines}: {phase},complete,{docsDir}/{phase}.toon,行数 [EXIT_CODE: 0]
 失敗: result{phase,status,error}: {phase},failed,エラー1行 [EXIT_CODE: 1]`;
 
+export const PROCEDURE_ORDER_RULE = `=== 作業順序(必須) ===
+(1)入力ファイルをRead→(2)内容を分析→(3)成果物をWrite→(4)書いたファイルをReadして検証Read→(5)結果報告`;
+
 export function bashCategoryHelp(categories: string[]): string {
   const defs: Record<string, string> = {
     readonly: 'ls,pwd,cat,head,tail,grep,find,wc,git status/log/diff/show',
