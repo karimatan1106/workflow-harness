@@ -34,6 +34,7 @@ export function checkArtifactDrift(state: TaskState, phase: string): DoDCheckRes
     return {
       level: 'L4', check: 'artifact_drift', passed: false,
       evidence: `Approved artifacts modified since approval: ${drifted.join(', ')} (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。`,
+      fix: '承認済み成果物が変更されています。変更を元に戻すかharness_approveで再承認してください。',
     };
   }
   return { level: 'L4', check: 'artifact_drift', passed: true, evidence: `All ${Object.keys(hashes).length} approved artifacts are unmodified (ART-1)` };

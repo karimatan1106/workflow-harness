@@ -46,6 +46,7 @@ export function checkDeadReferences(phase: string, docsDir: string, workflowDir:
     return {
       level: 'L4', check: 'dead_references', passed: false,
       evidence: `Dead references in ${phase} artifact: ${dead.join(', ')} (DRV-1)\n修正方法: 参照先ファイルを作成するか、リンクを修正してください。`,
+      fix: '参照先が存在しないパスを修正するか削除してください。',
     };
   }
   return { level: 'L4', check: 'dead_references', passed: true, evidence: 'No dead references detected in artifact (DRV-1)' };

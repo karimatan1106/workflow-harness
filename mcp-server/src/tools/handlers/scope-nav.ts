@@ -49,7 +49,7 @@ export async function handleHarnessCompleteSub(args: Record<string, unknown>, sm
     if (!dodResult.passed) {
       const phaseDef = getPhaseDefinition(subPhase);
       const retryCtx: RetryContext = { phase: subPhase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: (phaseDef?.model ?? 'sonnet') as 'opus' | 'sonnet' | 'haiku' };
-      const retryResult = buildRetryPrompt(retryCtx);
+      const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
       try { stashFailure(taskId, subPhase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
       // PHA-1 (S2-30): After 3+ retries, mark completed sub-phases as rollback candidates
       let pha1Warning: string | undefined;

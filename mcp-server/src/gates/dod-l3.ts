@@ -17,7 +17,7 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
   }
   const outputFile = config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
   if (!existsSync(outputFile)) {
-    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}` };
+    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }
   const content = readFileSync(outputFile, 'utf8');
   // Only check TOON parsability — content/density/fieldCount checks removed (L4 covers these via required keys)
@@ -29,7 +29,7 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
     const parseError = mdHeaders.length > 0
       ? `TOON parse failed: ${mdHeaders.length} Markdown headers (##) found. TOON uses "key: value", not Markdown. First: "${mdHeaders[0].slice(0, 60)}"`
       : `TOON parse failed: ${e instanceof Error ? e.message.slice(0, 150) : 'unknown error'}`;
-    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: parseError };
+    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: parseError, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。', example: 'decisions[0]{id,statement,rationale}:\n  D-1\n  要件を明確化\n  ユーザー意図との整合性確保' };
   }
   return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'TOON parse OK' };
 }
@@ -53,6 +53,7 @@ export function checkRTMCompleteness(state: TaskState, phase: string): DoDCheckR
   return {
     level: 'L3', check: 'rtm_completeness', passed,
     evidence: passed ? `All ${state.rtmEntries.length} RTM entries meet minimum status "${requiredStatus}"` : 'RTM entries not at required status: ' + insufficient.join(', '),
+    ...(!passed && { fix: 'RTMエントリのステータスをharness_update_rtm_statusで更新してください。' }),
   };
 }
 
@@ -73,6 +74,7 @@ export function checkACCompleteness(state: TaskState, phase: string): DoDCheckRe
   return {
     level: 'L3', check: 'ac_completeness', passed,
     evidence: passed ? `All ${state.acceptanceCriteria.length} acceptance criteria are met` : errors.join('; '),
+    ...(!passed && { fix: '受入基準のステータスをharness_update_ac_statusでmetに更新してください。' }),
   };
 }
 
@@ -95,7 +97,7 @@ export function checkArtifactFreshness(phase: string, docsDir: string): DoDCheck
     if (ageMs > BLOCK_MS) stale.push(`${filePath} (${ageDays}d old)`);
     else if (ageMs > WARN_MS) warnings.push(`${filePath} (${ageDays}d old)`);
   }
-  if (stale.length > 0) return { level: 'L3', check: 'artifact_freshness', passed: false, evidence: `Stale artifacts (>30 days): ${stale.join(', ')}. Re-run earlier phases.` };
+  if (stale.length > 0) return { level: 'L3', check: 'artifact_freshness', passed: false, evidence: `Stale artifacts (>30 days): ${stale.join(', ')}. Re-run earlier phases.`, fix: '30日以上前の成果物が検出されました。該当する前フェーズを再実行して成果物を更新してください。' };
   const evidence = warnings.length > 0 ? `Freshness warning (>7 days): ${warnings.join(', ')}` : `All input artifacts are fresh`;
   return { level: 'L3', check: 'artifact_freshness', passed: true, evidence };
 }
@@ -118,6 +120,7 @@ export function checkInvariantCompleteness(state: TaskState, phase: string): DoD
     evidence: passed
       ? `All ${state.invariants.length} invariants are held`
       : 'Invariants not held: ' + notHeld.join(', '),
+    ...(!passed && { fix: '不変条件が満たされていません。該当する不変条件を確認し、コードまたは成果物を修正してください。' }),
   };
 }
 
@@ -131,5 +134,6 @@ export function checkBaselineRequired(state: TaskState, phase: string): DoDCheck
     evidence: hasBaseline
       ? `Baseline captured: ${state.baseline!.totalTests} total, ${state.baseline!.passedTests} passed`
       : 'No baseline captured. Use harness_capture_baseline in testing phase before regression_test',
+    ...(!hasBaseline && { fix: 'harness_capture_baselineを実行してテストベースラインを記録してください。' }),
   };
 }
