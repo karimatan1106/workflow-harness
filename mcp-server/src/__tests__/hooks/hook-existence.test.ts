@@ -43,13 +43,17 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(postToolUse[0].command.join(' ')).toContain('post-tool-lint.sh');
   });
 
-  it('settings.json has PreToolUse hook for Write|Edit', () => {
+  it('settings.json has PreToolUse hooks (config-guard + no-verify-block)', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const preToolUse = settings.hooks.PreToolUse;
     expect(preToolUse).toBeDefined();
-    expect(preToolUse).toHaveLength(1);
-    expect(preToolUse[0].matcher).toBe('Write|Edit');
-    expect(preToolUse[0].command.join(' ')).toContain('pre-tool-config-guard.sh');
+    expect(preToolUse.length).toBeGreaterThanOrEqual(2);
+    const configGuard = preToolUse.find((h: any) => h.command.join(' ').includes('pre-tool-config-guard.sh'));
+    expect(configGuard).toBeDefined();
+    expect(configGuard.matcher).toBe('Write|Edit');
+    const noVerify = preToolUse.find((h: any) => h.command.join(' ').includes('pre-tool-no-verify-block.sh'));
+    expect(noVerify).toBeDefined();
+    expect(noVerify.matcher).toBe('Bash');
   });
 
   it('settings.json has Stop hook', () => {
