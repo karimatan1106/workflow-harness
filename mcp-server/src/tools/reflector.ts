@@ -16,6 +16,9 @@ const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const REFLECTOR_PATH = join(STATE_DIR, 'reflector-log.json');
 const MAX_LESSONS = 50;
 
+/** N-07: Minimum quality score for lesson injection. Lessons below this are excluded from prompts. */
+export const MIN_QUALITY_SCORE = 0.3;
+
 export function loadStore(): ReflectorStore {
   try {
     if (existsSync(REFLECTOR_PATH)) {
@@ -147,7 +150,8 @@ function generatePreventionRule(errorPattern: string): string {
  */
 export function getLessonsForPhase(phase: string): ReflectorLesson[] {
   const store = loadStore();
-  const relevant = store.lessons.filter(l => l.phase === phase || l.phase === 'all');
+  const relevant = store.lessons
+    .filter(l => (l.phase === phase || l.phase === 'all') && qualityScore(l) >= MIN_QUALITY_SCORE);
   relevant.sort((a, b) => qualityScore(b) - qualityScore(a));
   return relevant.slice(0, 5);
 }
