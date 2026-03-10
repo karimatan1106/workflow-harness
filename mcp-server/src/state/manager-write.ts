@@ -111,6 +111,14 @@ export function appendProgressLog(state: TaskState, completedPhase: string, next
   } catch { /* non-blocking */ }
 }
 
+/** N-25: Sanitize task name to prevent path traversal, XSS, and injection */
+export function sanitizeTaskName(name: string): string {
+  if (name.length > 10000) throw new Error('Task name exceeds maximum length');
+  let result = name.replace(/\.\./g, '').replace(/[/\\:*?<>|'";\-]+/g, ' ').replace(/<[^>]*>/g, '').trim().replace(/\s+/g, ' ');
+  if (result.length === 0) throw new Error('Task name is empty after sanitization');
+  return result;
+}
+
 export function applyUpdateRTMStatus(state: TaskState, rtmId: string, status: 'pending' | 'implemented' | 'tested' | 'verified', codeRef?: string, testRef?: string): boolean {
   const entry = state.rtmEntries.find(e => e.id === rtmId);
   if (!entry) return false;

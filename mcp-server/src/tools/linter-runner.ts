@@ -43,6 +43,15 @@ export function runJscpd(targetGlob: string, threshold: number): JscpdResult {
   }
 }
 
+/** N-21: Count comment lines for AI antipattern detection */
+export function countCommentLines(content: string): { totalLines: number; commentLines: number; ratio: number } {
+  if (content === '') return { totalLines: 0, commentLines: 0, ratio: 0 };
+  const lines = content.split('\n');
+  const totalLines = lines.length;
+  const commentLines = lines.filter(l => l.trim().startsWith('//')).length;
+  return { totalLines, commentLines, ratio: commentLines / totalLines };
+}
+
 /**
  * Run ast-grep pattern matching.
  * Returns graceful degradation on any error.
