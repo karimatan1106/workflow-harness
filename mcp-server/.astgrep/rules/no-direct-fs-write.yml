@@ -1,0 +1,9 @@
+# N-73: ast-grep rule — ban direct fs.writeFileSync in tool handlers
+# Tool handlers must use StateManager for state mutations
+id: no-direct-fs-write
+language: typescript
+rule:
+  pattern: "fs.writeFileSync($$$ARGS)"
+message: "Use StateManager for state writes. Direct fs.writeFileSync bypasses validation."
+severity: error
+note: "See ADR-STATE: All state mutations must go through StateManager."
