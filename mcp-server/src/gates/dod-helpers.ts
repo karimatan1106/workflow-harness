@@ -4,6 +4,9 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
+import { existsSync } from 'fs';
+import { resolve, basename } from 'path';
+
 export const FORBIDDEN_PATTERNS: string[] = [
   'TODO', 'TBD', 'WIP', 'FIXME',
   '未定', '未確定', '要検討', '検討中', '対応予定', 'サンプル', 'ダミー', '仮置き',
@@ -69,4 +72,32 @@ export function checkRequiredSections(content: string, requiredSections: string[
       return trimmed.startsWith('#') && trimmed.replace(/^#+\s*/, '') === sectionText;
     });
   });
+}
+
+/** N-29: Check if file content exceeds line limit */
+export function checkFileLineLimit(content: string, limit = 200): { exceeded: boolean; lineCount: number } {
+  const lineCount = content.split('\n').length;
+  return { exceeded: lineCount > limit, lineCount };
+}
+
+/** N-30: Parse TOON artifacts[] paths and check existence */
+export function checkBrokenPointers(content: string, basePath: string): string[] {
+  const broken: string[] = [];
+  const artifactMatch = content.match(/artifacts\[.*?\].*?:\n((?:\s+.+\n)*)/);
+  if (!artifactMatch) return broken;
+  const lines = artifactMatch[1].split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    const pathMatch = line.match(/^\s+(\S+),/);
+    if (pathMatch) {
+      const fullPath = resolve(basePath, pathMatch[1]);
+      if (!existsSync(fullPath)) broken.push(pathMatch[1]);
+    }
+  }
+  return broken;
+}
+
+/** N-32: Detect ghost files (new files with same basename as existing) */
+export function detectGhostFiles(newFiles: string[], existingFiles: string[]): string[] {
+  const existingBaseNames = new Set(existingFiles.map(f => basename(f)));
+  return newFiles.filter(f => existingBaseNames.has(basename(f)));
 }
