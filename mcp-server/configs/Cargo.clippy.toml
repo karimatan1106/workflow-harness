@@ -1,0 +1,33 @@
+# N-89: Cargo.toml [lints] section for Clippy pedantic mode.
+# Copy this into your project's Cargo.toml [lints] section.
+# Prevents agents from suppressing lint violations with #[allow(...)].
+#
+# Article: "allow_attributes = 'deny' で #[allow] による抑制を禁止"
+
+# [lints.clippy]
+# # Pedantic mode: catch subtle issues
+# pedantic = { level = "warn", priority = -1 }
+#
+# # Deny #[allow(...)] attributes — agents cannot suppress violations
+# allow_attributes = "deny"
+#
+# # Deny unsafe operations common in AI-generated code
+# unwrap_used = "deny"
+# expect_used = "deny"
+# dbg_macro = "deny"
+#
+# # Additional safety lints
+# panic = "deny"
+# todo = "deny"
+# unimplemented = "deny"
+# unreachable = "deny"
+#
+# # Style lints
+# needless_pass_by_value = "warn"
+# cloned_instead_of_copied = "warn"
+# redundant_closure_for_method_calls = "warn"
+# manual_string_new = "warn"
+#
+# [lints.rust]
+# unsafe_code = "deny"
+# missing_docs = "warn"

@@ -1,0 +1,49 @@
+# N-88: golangci-lint configuration with article-recommended 8 linters.
+# Usage: golangci-lint run --config configs/.golangci.yml ./...
+# Requires: golangci-lint v1.62+ (go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    # Article-specified 8 linters:
+    - staticcheck    # Advanced static analysis (SA/S/ST/QF checks)
+    - gosec          # Security vulnerabilities (G101-G601)
+    - errcheck       # Unchecked error return values
+    - revive         # Fast, configurable replacement for golint
+    - govet          # Reports suspicious constructs (shadow, printf, etc.)
+    - gofumpt        # Stricter gofmt (consistent formatting)
+    - gci            # Import ordering (std → external → internal)
+    - modernize      # Suggest modern Go idioms (go1.21+ features)
+
+linters-settings:
+  gosec:
+    severity: high
+    confidence: medium
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: unexported-return
+        severity: warning
+      - name: blank-imports
+        severity: error
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/your-org)
+  gofumpt:
+    extra-rules: true
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck

@@ -1,0 +1,73 @@
+# N-91: GitHub Actions CI workflow scaffold.
+# Copy to .github/workflows/ci.yml in your project root.
+# Article feedback speed layer: "Minutes (CI/CD)" — full test suite before merge.
+#
+# name: CI
+# on:
+#   pull_request:
+#     branches: [main]
+#   push:
+#     branches: [main]
+#
+# concurrency:
+#   group: ci-${{ github.ref }}
+#   cancel-in-progress: true
+#
+# jobs:
+#   lint-and-type-check:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           submodules: recursive
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: npm
+#       - run: npm ci
+#       - run: npx tsc --noEmit
+#       - run: npx biome check .
+#       - run: npx oxlint .
+#
+#   test:
+#     runs-on: ubuntu-latest
+#     needs: lint-and-type-check
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           submodules: recursive
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: npm
+#       - run: npm ci
+#       - run: npx vitest run --reporter=verbose
+#
+#   # N-91: DeepEval LLM quality gate (optional)
+#   # deepeval:
+#   #   runs-on: ubuntu-latest
+#   #   needs: test
+#   #   if: github.event_name == 'pull_request'
+#   #   steps:
+#   #     - uses: actions/checkout@v4
+#   #     - uses: actions/setup-python@v5
+#   #       with:
+#   #         python-version: '3.12'
+#   #     - run: pip install deepeval
+#   #     - run: deepeval test run tests/eval/
+#   #       env:
+#   #         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+#
+#   # N-83: Visual regression (optional)
+#   # visual-regression:
+#   #   runs-on: ubuntu-latest
+#   #   needs: test
+#   #   steps:
+#   #     - uses: actions/checkout@v4
+#   #     - uses: actions/setup-node@v4
+#   #     - run: npm ci && npx playwright install
+#   #     - run: npx playwright test --grep @visual
+#   #     - uses: argos-ci/argos-action@v2
+#   #       with:
+#   #         token: ${{ secrets.ARGOS_TOKEN }}
+#   #         directory: tests/e2e/__snapshots__
