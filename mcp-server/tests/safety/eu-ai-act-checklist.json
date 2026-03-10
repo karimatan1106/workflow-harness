@@ -1,0 +1,54 @@
+{
+  "regulation": "EU AI Act",
+  "regulationId": "Regulation (EU) 2024/1689",
+  "effectiveDate": "2026-08-02",
+  "riskClassification": "high-risk",
+  "lastReviewDate": "2026-03-10",
+  "requirements": [
+    {
+      "id": "AIA-1",
+      "article": "Art. 9",
+      "requirement": "Risk management system",
+      "description": "Establish, implement, document and maintain a risk management system",
+      "status": "partial",
+      "evidence": "30-phase harness with L1-L4 gates provides systematic risk management",
+      "gaps": "Formal risk register and periodic review cadence not yet established"
+    },
+    {
+      "id": "AIA-2",
+      "article": "Art. 10",
+      "requirement": "Data governance",
+      "description": "Training, validation and testing data shall be subject to appropriate data governance",
+      "status": "partial",
+      "evidence": "TOON format with traceability provides data lineage tracking",
+      "gaps": "No formal data quality metrics or bias detection pipeline"
+    },
+    {
+      "id": "AIA-3",
+      "article": "Art. 14",
+      "requirement": "Human oversight",
+      "description": "High-risk AI systems shall be designed to be effectively overseen by natural persons",
+      "status": "implemented",
+      "evidence": "5 approval gates (requirements/design/test/code/acceptance) ensure human oversight",
+      "gaps": "None identified"
+    },
+    {
+      "id": "AIA-4",
+      "article": "Art. 15",
+      "requirement": "Accuracy, robustness and cybersecurity",
+      "description": "High-risk AI systems shall be designed to achieve an appropriate level of accuracy, robustness and cybersecurity",
+      "status": "implemented",
+      "evidence": "567+ automated tests, sanitizeTaskName security, HMAC verification",
+      "gaps": "None identified"
+    },
+    {
+      "id": "AIA-5",
+      "article": "Art. 9.7",
+      "requirement": "Adversarial testing",
+      "description": "Testing shall include adversarial testing as appropriate",
+      "status": "scaffold",
+      "evidence": "adversarial-cases.json (N-39), PyRIT integration pending",
+      "gaps": "PyRIT/Garak integration not yet implemented, only scaffold exists"
+    }
+  ]
+}
