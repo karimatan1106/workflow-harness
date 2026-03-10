@@ -1,0 +1,41 @@
+# N-47: container-structure-test config (scaffold)
+# Usage: container-structure-test test --image <image> --config container-structure.yaml
+schemaVersion: "2.0.0"
+
+commandTests:
+  - name: "node installed"
+    command: "node"
+    args: ["--version"]
+    expectedOutput: ["v"]
+    exitCode: 0
+
+  - name: "npm installed"
+    command: "npm"
+    args: ["--version"]
+    exitCode: 0
+
+  - name: "non-root user"
+    command: "whoami"
+    excludedOutput: ["root"]
+    exitCode: 0
+
+fileExistenceTests:
+  - name: "app entrypoint exists"
+    path: "/app/dist/index.js"
+    shouldExist: true
+    permissions: "-rw-r--r--"
+
+  - name: "package.json exists"
+    path: "/app/package.json"
+    shouldExist: true
+
+  - name: "no .env file in image"
+    path: "/app/.env"
+    shouldExist: false
+
+metadataTest:
+  env:
+    - key: "NODE_ENV"
+      value: "production"
+  exposedPorts: ["3000"]
+  cmd: ["node", "dist/index.js"]

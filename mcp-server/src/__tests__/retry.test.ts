@@ -55,7 +55,8 @@ describe('buildRetryPrompt model escalation', () => {
   it('suggests model escalation for haiku on retry 2+', () => {
     const result = buildRetryPrompt(makeCtx('File missing', 2, 'haiku'));
     expect(result.suggestModelEscalation).toBe(true);
-    expect(result.suggestedModel).toBe('sonnet');
+    // N-26: complexity-based routing — FileNotFound=critical→opus
+    expect(result.suggestedModel).toBe('opus');
   });
 
   it('does not suggest escalation for sonnet', () => {
@@ -63,9 +64,10 @@ describe('buildRetryPrompt model escalation', () => {
     expect(result.suggestModelEscalation).toBe(false);
   });
 
-  it('suggests sonnet model on retry 3+ regardless of current model', () => {
+  it('suggests opus for critical errors regardless of retry count', () => {
     const result = buildRetryPrompt(makeCtx('File missing', 3, 'haiku'));
-    expect(result.suggestedModel).toBe('sonnet');
+    // N-26: complexity-based routing overrides retryCount logic
+    expect(result.suggestedModel).toBe('opus');
   });
 
   it('includes error message in prompt code block', () => {
