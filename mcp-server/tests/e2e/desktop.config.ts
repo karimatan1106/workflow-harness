@@ -42,3 +42,12 @@ await app.close();
     capabilities: ['find_elements', 'click', 'type', 'read_text', 'screenshot'],
   },
 } as const;
+
+/** N-60: Desktop tool registry */
+export const DESKTOP_TOOLS = {
+  playwright: { name: 'Playwright Electron', platform: 'electron' as const },
+  tauriDriver: { name: 'tauri-driver', platform: 'tauri' as const },
+  terminator: { name: 'Terminator', platform: 'windows' as const, stars: 1300 },
+  macosAutomation: { name: 'macos-ui-automation-mcp', platform: 'macos' as const },
+  circuitMCP: { name: 'circuit-mcp', platform: 'cross' as const, tools: 61 },
+} as const;

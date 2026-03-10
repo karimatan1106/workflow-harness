@@ -52,3 +52,12 @@ appId: com.example.app
     `.trim(),
   },
 } as const;
+
+/** N-60: Mobile tool registry */
+export const MOBILE_TOOLS = {
+  xcodeBuildMCP: { name: 'XcodeBuildMCP', platform: 'ios' as const, mcpTools: 59 },
+  mobileMCP: { name: 'mobile-mcp', platform: 'cross' as const },
+  detox: { name: 'Detox', platform: 'cross' as const, framework: 'react-native' },
+  maestro: { name: 'Maestro MCP', platform: 'cross' as const, format: 'yaml' },
+  appiumMCP: { name: 'Appium MCP', platform: 'cross' as const },
+} as const;
