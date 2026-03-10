@@ -41,3 +41,11 @@ export const VISUAL_REGRESSION_CONFIG = {
     autoAcceptChanges: 'main',
   },
 } as const;
+
+/** N-60: Tool registry for visual regression providers */
+export const VISUAL_REGRESSION_TOOLS = {
+  argos: { name: 'Argos CI', type: 'cloud' as const, ci: true },
+  chromatic: { name: 'Chromatic', type: 'cloud' as const, ci: true },
+  percy: { name: 'Percy', type: 'cloud' as const, ci: true },
+  pixelmatch: { name: 'pixelmatch', type: 'local' as const, ci: false },
+} as const;

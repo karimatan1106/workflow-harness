@@ -1,11 +1,15 @@
 /**
- * N-40: MCP tool contract tests (Pact-style schema verification via vitest)
+ * N-40 + N-57: MCP tool contract tests (Pact-style consumer/provider verification via vitest)
  *
  * Verifies that all MCP tool definitions conform to the expected schema contract.
- * This ensures backward compatibility when tools are added or modified.
+ * N-57 adds: consumer expectations, provider response contracts, breaking change detection.
  */
 import { describe, it, expect } from 'vitest';
-import { TOOL_DEFINITIONS } from '../tools/handler.js';
+import { TOOL_DEFINITIONS, handleToolCall } from '../tools/handler.js';
+import { StateManager } from '../state/manager.js';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 describe('MCP tool contract', () => {
   it('all tools have name and description', () => {
@@ -23,7 +27,6 @@ describe('MCP tool contract', () => {
     for (const def of TOOL_DEFINITIONS) {
       expect(def.inputSchema, `${def.name} missing inputSchema`).toBeDefined();
       expect(def.inputSchema.type, `${def.name} inputSchema.type should be object`).toBe('object');
-      // properties should be an object (may be empty for no-arg tools)
       if (def.inputSchema.properties) {
         expect(typeof def.inputSchema.properties).toBe('object');
       }
@@ -48,5 +51,85 @@ describe('MCP tool contract', () => {
     const names = TOOL_DEFINITIONS.map((d) => d.name);
     const unique = new Set(names);
     expect(unique.size, `duplicate tool names found: ${names.filter((n, i) => names.indexOf(n) !== i)}`).toBe(names.length);
+  });
+});
+
+// N-57: Pact-style consumer/provider contract tests
+describe('MCP consumer contract (what callers expect)', () => {
+  // Consumer expectation: minimum set of tools that must exist
+  const REQUIRED_TOOLS = [
+    'harness_start',
+    'harness_status',
+    'harness_next',
+    'harness_approve',
+    'harness_set_scope',
+    'harness_reset',
+    'harness_back',
+    'harness_add_ac',
+    'harness_record_test',
+    'harness_record_test_result',
+    'harness_record_proof',
+  ];
+
+  it('all required consumer tools are available', () => {
+    const available = new Set(TOOL_DEFINITIONS.map((d) => d.name));
+    for (const required of REQUIRED_TOOLS) {
+      expect(available.has(required), `consumer expects ${required} but it is missing`).toBe(true);
+    }
+  });
+
+  it('harness_next accepts taskId and sessionToken', () => {
+    const next = TOOL_DEFINITIONS.find((d) => d.name === 'harness_next');
+    expect(next).toBeDefined();
+    const props = Object.keys(next!.inputSchema.properties || {});
+    expect(props).toContain('taskId');
+    expect(props).toContain('sessionToken');
+  });
+
+  it('harness_set_scope accepts taskId, sessionToken, and files', () => {
+    const scope = TOOL_DEFINITIONS.find((d) => d.name === 'harness_set_scope');
+    expect(scope).toBeDefined();
+    const props = Object.keys(scope!.inputSchema.properties || {});
+    expect(props).toContain('taskId');
+    expect(props).toContain('sessionToken');
+    expect(props).toContain('files');
+  });
+});
+
+describe('MCP provider contract (response format)', () => {
+  let sm: StateManager;
+  let tmpDir: string;
+
+  beforeAll(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pact-'));
+    sm = new StateManager(tmpDir);
+  });
+
+  afterAll(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('provider returns {content: [{type: "text", text: string}]} on success', async () => {
+    const result = await handleToolCall('harness_status', {}, sm);
+    expect(result).toHaveProperty('content');
+    expect(Array.isArray(result.content)).toBe(true);
+    for (const item of result.content) {
+      expect(item).toHaveProperty('type', 'text');
+      expect(typeof item.text).toBe('string');
+    }
+  });
+
+  it('provider returns error in same format for invalid tool', async () => {
+    const result = await handleToolCall('harness_nonexistent', {}, sm);
+    expect(result).toHaveProperty('content');
+    expect(result.content[0]).toHaveProperty('type', 'text');
+    expect(result.content[0].text).toContain('Unknown');
+  });
+
+  it('provider response text is parseable JSON for status', async () => {
+    const result = await handleToolCall('harness_status', {}, sm);
+    const parsed = JSON.parse(result.content[0].text);
+    // status with no taskId returns list or empty state
+    expect(typeof parsed).toBe('object');
   });
 });

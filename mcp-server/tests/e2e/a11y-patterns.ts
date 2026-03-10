@@ -69,3 +69,23 @@ export const CONTRAST_RATIOS = {
   largeText: 3.0,
   uiComponents: 3.0,
 } as const;
+
+/** N-60: Accessibility test pattern registry */
+export const A11Y_PATTERNS = {
+  roleNavigation: {
+    description: 'Navigate using ARIA roles (button, link, heading)',
+    roles: A11Y_ROLES,
+  },
+  contrastCheck: {
+    description: 'WCAG 2.1 AA contrast ratio validation',
+    ratios: CONTRAST_RATIOS,
+  },
+  labelAudit: {
+    description: 'Find interactive elements missing accessible names',
+    fn: 'findMissingLabels',
+  },
+  treeSnapshot: {
+    description: 'Full accessibility tree comparison for regression',
+    fn: 'getAccessibilityTree',
+  },
+} as const;
