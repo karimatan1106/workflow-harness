@@ -1,0 +1,77 @@
+# N-38: LLM evaluation config for harness quality (requires promptfoo)
+# Install: npm install -g promptfoo
+# Run: npx promptfoo eval -c tests/eval/promptfoo.yaml
+# Docs: https://www.promptfoo.dev/docs/configuration/reference/
+
+description: "Workflow harness TOON output quality evaluation"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-20250514
+    config:
+      max_tokens: 2048
+      temperature: 0
+
+prompts:
+  - |
+    Given this task description: {{task}}
+    Generate a scope definition in TOON format.
+
+    TOON format rules:
+    - key: value pairs (no Markdown headers)
+    - Arrays use name[N]{fields}: syntax
+    - Nested items indented with 2 spaces
+    - Strings with commas must be quoted
+    - Must include: task, phase, intent, decisions[], artifacts[], next
+
+tests:
+  - description: "Basic MCP tool task generates valid TOON scope"
+    vars:
+      task: "Add a new MCP tool for task management"
+    assert:
+      - type: contains
+        value: "task:"
+      - type: contains
+        value: "phase:"
+      - type: contains
+        value: "decisions"
+      - type: contains
+        value: "artifacts"
+      - type: contains
+        value: "next"
+      - type: not-contains
+        value: "##"
+        metric: no-markdown-headers
+      - type: llm-rubric
+        value: >
+          Output must be valid TOON format with key: value pairs.
+          No Markdown headers (##). Must contain task, phase, intent fields.
+          decisions array must have at least 3 items.
+          artifacts array must list file paths with roles.
+
+  - description: "Bug fix task generates focused scope"
+    vars:
+      task: "Fix race condition in session token validation"
+    assert:
+      - type: contains
+        value: "task:"
+      - type: contains
+        value: "riskScore:"
+      - type: llm-rubric
+        value: >
+          Output should focus on a single bug fix.
+          Scope should be narrow (few files).
+          Risk score should be moderate (3-5) for a race condition.
+          Must include rationale for the fix approach.
+
+  - description: "Large task generates comprehensive scope"
+    vars:
+      task: "Implement 10M line codebase support with streaming architecture"
+    assert:
+      - type: contains
+        value: "decisions"
+      - type: llm-rubric
+        value: >
+          Output must reflect a large-scope task.
+          decisions array should have 5+ items covering architecture choices.
+          scopeFiles should list multiple directories.
+          riskScore should be high (7+) given the scale.
