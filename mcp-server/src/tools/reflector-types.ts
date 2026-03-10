@@ -13,6 +13,7 @@ export interface ReflectorLesson {
   helpfulCount: number;   // times injected before phase succeeded
   harmfulCount: number;   // times injected but same error recurred
   category: 'failure' | 'strategy' | 'constraint';
+  preventionRule?: string;  // G-08: auto-generated rule to prevent recurrence
 }
 
 export interface StashedFailure {

@@ -93,6 +93,10 @@ export function promoteStashedFailure(taskId: string, phase: string, retryCount:
     existing.helpfulCount += 1;
     existing.hitCount = existing.helpfulCount + existing.harmfulCount;
     existing.createdAt = new Date().toISOString();
+    // G-08: Generate prevention rule after 2+ successful retries
+    if (existing.helpfulCount >= 2 && !existing.preventionRule) {
+      existing.preventionRule = generatePreventionRule(stashed.errorPattern);
+    }
   } else {
     store.lessons.push({
       id: nextId(store),
@@ -110,6 +114,35 @@ export function promoteStashedFailure(taskId: string, phase: string, retryCount:
 }
 
 /**
+ * G-08: Generate a prevention rule from an error pattern.
+ * Maps known error patterns to actionable prevention instructions.
+ */
+function generatePreventionRule(errorPattern: string): string {
+  if (/Forbidden patterns? found/i.test(errorPattern)) {
+    return '禁止語(TODO/WIP/FIXME等)の使用禁止。具体的な計画・説明に置き換えること。';
+  }
+  if (/Section density/i.test(errorPattern)) {
+    return '各セクションの実質行密度30%以上を維持禁止違反。構造要素でなく説明文を追加すること。';
+  }
+  if (/Missing required sections/i.test(errorPattern)) {
+    return '必須セクション省略禁止。テンプレートの全セクションヘッダーを維持すること。';
+  }
+  if (/Duplicate lines/i.test(errorPattern)) {
+    return '同一行の3回以上の繰り返し禁止。各行に文脈固有の情報を含めること。';
+  }
+  if (/Bracket placeholder/i.test(errorPattern)) {
+    return '[#xxx#]形式のプレースホルダー禁止。具体的な内容に置き換えること。';
+  }
+  if (/Content lines/i.test(errorPattern) || /content lines/i.test(errorPattern)) {
+    return '実質行数不足禁止。空行・構造要素でなく説明・分析・根拠を追加すること。';
+  }
+  if (/No baseline captured/i.test(errorPattern)) {
+    return 'テストベースライン未記録禁止。testingフェーズでharness_capture_baselineを実行すること。';
+  }
+  return `同一エラーパターン「${errorPattern.substring(0, 40)}」の再発禁止。成果物品質要件を確認すること。`;
+}
+
+/**
  * Get lessons relevant to a given phase, sorted by quality score (highest first).
  */
 export function getLessonsForPhase(phase: string): ReflectorLesson[] {
@@ -122,12 +155,28 @@ export function getLessonsForPhase(phase: string): ReflectorLesson[] {
 /**
  * Format lessons as a prompt section in ACE bullet format.
  * Returns empty string if no lessons exist for the phase.
+ * Includes prevention rules (G-08) when available.
  */
 export function formatLessonsForPrompt(phase: string): string {
   const lessons = getLessonsForPhase(phase);
   if (lessons.length === 0) return '';
-  const lines = lessons.map(l => `[${l.id}][${l.category}] ${l.phase}: ${l.errorPattern} → ${l.lesson}`);
+  const lines = lessons.map(l => {
+    let line = `[${l.id}][${l.category}] ${l.phase}: ${l.errorPattern} → ${l.lesson}`;
+    if (l.preventionRule) line += `\n  ⛔ ${l.preventionRule}`;
+    return line;
+  });
   return '\n\n既知の落とし穴\n' + lines.join('\n') + '\n';
+}
+
+/**
+ * G-08: Get prevention rules for a phase.
+ * Returns rules from lessons that have been confirmed effective (helpfulCount >= 2).
+ */
+export function getPreventionRules(phase: string): string[] {
+  const store = loadStore();
+  return store.lessons
+    .filter(l => (l.phase === phase || l.phase === 'all') && l.preventionRule)
+    .map(l => l.preventionRule!);
 }
 
 /**
