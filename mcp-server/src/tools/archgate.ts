@@ -8,11 +8,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { isADRActive } from './adr.js';
+import { runJscpd, runAstGrepPattern } from './linter-runner.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const ARCHGATE_PATH = join(STATE_DIR, 'archgate-rules.json');
 
-export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required';
+export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern';
 
 export interface ArchRule {
   id: string;
@@ -145,6 +146,34 @@ export function runArchGateChecks(
           adrId: rule.adrId,
           passed: false,
           evidence: `${rule.description}: pattern missing in ${missing.map(f => f.path).join(', ')}`,
+        });
+      }
+    }
+
+    if (rule.checkType === 'duplicate_code' && rule.threshold !== undefined) {
+      const result = runJscpd(rule.glob ?? 'src/**/*.ts', rule.threshold);
+      if (!result.passed) {
+        checks.push({
+          ruleId: rule.id,
+          adrId: rule.adrId,
+          passed: false,
+          evidence: `${rule.description}: ${result.percentage}% duplication (threshold: ${rule.threshold}%)`,
+        });
+      }
+    }
+
+    if (rule.checkType === 'ast_grep_pattern' && rule.pattern) {
+      const result = runAstGrepPattern(
+        rule.glob ?? 'src/**/*.ts',
+        rule.pattern,
+        rule.threshold ?? 0,
+      );
+      if (!result.passed) {
+        checks.push({
+          ruleId: rule.id,
+          adrId: rule.adrId,
+          passed: false,
+          evidence: `${rule.description}: ${result.count} matches (${result.matches.map(m => `${m.filePath}:${m.line}: ${m.text}`).join(', ')})`,
         });
       }
     }
