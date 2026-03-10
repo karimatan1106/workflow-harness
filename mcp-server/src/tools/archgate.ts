@@ -184,3 +184,11 @@ export function runArchGateChecks(
     checks,
   };
 }
+
+/** N-27: Feedback speed layers for PostToolUse → CI → human-review pipeline */
+export const FEEDBACK_SPEED_LAYERS = {
+  ms: { name: 'PostToolUse', tools: ['biome', 'oxlint', 'tsc'], maxTime: '100ms' },
+  s: { name: 'pre-commit', tools: ['lefthook', 'full-lint', 'type-check'], maxTime: '10s' },
+  min: { name: 'CI', tools: ['vitest', 'playwright', 'build'], maxTime: '5min' },
+  h: { name: 'human-review', tools: ['code-review', 'acceptance'], maxTime: 'async' },
+} as const;

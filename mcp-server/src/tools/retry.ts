@@ -148,37 +148,46 @@ export function classifyComplexity(
   return 'trivial';
 }
 
+/** N-28: Map error patterns to ADR IDs for prioritized retry guidance */
+export const ERROR_ADR_MAP: Record<string, string[]> = {
+  'Forbidden patterns': ['ADR-FORBIDDEN'],
+  'Section density': ['ADR-DENSITY'],
+  'Missing required': ['ADR-STRUCTURE'],
+  'File missing': ['ADR-OUTPUT'],
+  'TOON parse': ['ADR-TOON'],
+};
+
 export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): RetryPromptResult {
   const improvements = extractImprovements(ctx.errorMessage, checks);
   const suggestModelEscalation = ctx.retryCount >= 2 && ctx.model === 'haiku';
-  const suggestedModel: 'opus' | 'sonnet' | 'haiku' =
-    ctx.retryCount >= 3 ? 'sonnet' :
-    suggestModelEscalation ? 'sonnet' :
-    ctx.model;
-
-  const improvementLines = improvements.map((imp, i) => (i + 1) + '. ' + imp).join('\n');
-
   const errorClass = classifyFromChecks(ctx.errorMessage, checks);
   const complexity = classifyComplexity(checks ?? [], errorClass);
+  // N-26: Plankton routing — complexity-based model selection
+  const suggestedModel: 'opus' | 'sonnet' | 'haiku' =
+    complexity === 'critical' ? 'opus' : complexity === 'moderate' ? 'sonnet' : 'haiku';
   const tag = '[' + complexity.toUpperCase() + ']';
-
+  const improvementLines = improvements.map((imp, i) => (i + 1) + '. ' + imp).join('\n');
+  // N-28: Find matching ADR IDs from error message
+  const mappedAdrIds = Object.entries(ERROR_ADR_MAP)
+    .filter(([pat]) => ctx.errorMessage.includes(pat)).flatMap(([, ids]) => ids);
   // N-02: Append relevant ADR rationale to help guide retry
   let adrSection = '';
   try {
     const activeADRs = getActiveADRs();
-    if (activeADRs.length > 0) {
-      const relevant = activeADRs.slice(0, 3);
+    const prioritized = mappedAdrIds.length > 0
+      ? [...activeADRs.filter(a => mappedAdrIds.includes(a.id)), ...activeADRs.filter(a => !mappedAdrIds.includes(a.id))]
+      : activeADRs;
+    if (prioritized.length > 0) {
+      const relevant = prioritized.slice(0, 3);
       const adrLines = relevant.map(a => `- ${a.id}: ${a.statement} — ${a.rationale}`).join('\n');
       adrSection = '\n## 関連アーキテクチャ決定\n' + adrLines + '\n';
     }
   } catch { /* ADR store unavailable — continue without */ }
-
   const prompt = '# ' + tag + ' ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
     + 'task:' + ctx.taskName + ' out:' + ctx.docsDir + '/\n\n'
     + '## 失敗理由(参照のみ・転記禁止)\n```\n' + ctx.errorMessage + '\n```\n'
     + '⚠️ 禁止語の転記=再失敗。間接参照のみ使用。\n\n'
     + '## 改善要求\n' + improvementLines + '\n'
     + adrSection;
-
   return { prompt, suggestModelEscalation, suggestedModel, errorClass };
 }
