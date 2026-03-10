@@ -39,11 +39,15 @@ describe('N-02: ADR links in retry prompts', () => {
     expect(result.prompt).toContain('No forbidden words');
   });
 
-  it('works normally when no ADRs exist', () => {
+  it('works normally when no ADRs exist (N-67: still includes ERROR_ADR_MAP refs)', () => {
     vi.mocked(getActiveADRs).mockReturnValue([]);
     const result = buildRetryPrompt(baseCtx);
     expect(result.prompt).toBeTruthy();
-    expect(result.prompt).not.toContain('ADR-');
+    // N-67: ERROR/WHY/FIX format now includes ADR refs from ERROR_ADR_MAP
+    // even when ADR store is empty (map-based, not store-based)
+    expect(result.prompt).toContain('ERROR:');
+    expect(result.prompt).toContain('WHY:');
+    expect(result.prompt).toContain('FIX:');
   });
 
   it('limits ADR links to maximum 3', () => {

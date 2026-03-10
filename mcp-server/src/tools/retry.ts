@@ -157,6 +157,14 @@ export const ERROR_ADR_MAP: Record<string, string[]> = {
   'TOON parse': ['ADR-TOON'],
 };
 
+/** N-67: Format error in ERROR/WHY/FIX/EXAMPLE structure per article best practice */
+export function formatStructuredError(
+  error: string, file: string, adrIds: string[], fix: string,
+): string {
+  const adrRef = adrIds.length > 0 ? adrIds.join(', ') : 'N/A';
+  return `ERROR: ${error}\n  ${file}\n  WHY: ${adrRef}\n  FIX: ${fix}`;
+}
+
 export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): RetryPromptResult {
   const improvements = extractImprovements(ctx.errorMessage, checks);
   const suggestModelEscalation = ctx.retryCount >= 2 && ctx.model === 'haiku';
@@ -183,11 +191,16 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
       adrSection = '\n## 関連アーキテクチャ決定\n' + adrLines + '\n';
     }
   } catch { /* ADR store unavailable — continue without */ }
+  // N-67: Format each improvement as structured ERROR/WHY/FIX
+  const structuredErrors = improvements.map((imp, i) => {
+    const relAdrs = mappedAdrIds.length > 0 ? mappedAdrIds : ['N/A'];
+    return formatStructuredError(`DoD check #${i + 1} failed`, ctx.docsDir, relAdrs, imp);
+  }).join('\n\n');
   const prompt = '# ' + tag + ' ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
     + 'task:' + ctx.taskName + ' out:' + ctx.docsDir + '/\n\n'
     + '## 失敗理由(参照のみ・転記禁止)\n```\n' + ctx.errorMessage + '\n```\n'
     + '⚠️ 禁止語の転記=再失敗。間接参照のみ使用。\n\n'
-    + '## 改善要求\n' + improvementLines + '\n'
+    + '## 改善要求(ERROR/WHY/FIX形式)\n' + structuredErrors + '\n'
     + adrSection;
   return { prompt, suggestModelEscalation, suggestedModel, errorClass };
 }

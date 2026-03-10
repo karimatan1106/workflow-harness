@@ -66,3 +66,17 @@ export async function assertCLSWithinThreshold(
   const score = await measureCLS(page, action);
   return { score, passed: score <= threshold };
 }
+
+/**
+ * N-69: Check if animation-related files were changed (git diff trigger).
+ * Only runs @animation tests when CSS/animation/transition/motion files changed.
+ * Usage in CI: `if (shouldRunAnimationTests()) { runAnimationSuite(); }`
+ */
+export function shouldRunAnimationTests(changedFiles: string[]): boolean {
+  const ANIMATION_PATTERNS = /\.(css|scss|less)$|animation|transition|motion|framer|keyframe/i;
+  return changedFiles.some((f) => ANIMATION_PATTERNS.test(f));
+}
+
+/** Git diff command to get changed files for animation test filtering */
+export const ANIMATION_TEST_TRIGGER_CMD =
+  'git diff --name-only HEAD | grep -qE "\\.(css|scss|less)$|animation|transition|motion|framer" && npx playwright test --grep @animation || echo "skipping animation tests"';

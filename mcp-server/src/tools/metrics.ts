@@ -28,11 +28,21 @@ export interface TaskMetrics {
   completedAt: string | null;
 }
 
+/** N-68: Harness effectiveness metrics (article: PR/day, rework rate, critique rate) */
+export interface EffectivenessMetrics {
+  tasksPerDay: number;
+  reworkRate: number;       // retries / total phase transitions
+  firstPassRate: number;    // phases with 0 retries / total phases
+  avgRetriesPerTask: number;
+}
+
 export interface AggregateMetrics {
   totalTasks: number;
   completedTasks: number;
   totalRetries: number;
   totalDoDFailures: number;
+  totalPhaseTransitions: number;
+  firstPassPhases: number;
   phaseTimings: Record<string, { count: number; totalMs: number; avgMs: number }>;
 }
 
@@ -51,7 +61,7 @@ export function loadMetrics(): MetricsStore {
   return {
     version: 1,
     tasks: {},
-    aggregate: { totalTasks: 0, completedTasks: 0, totalRetries: 0, totalDoDFailures: 0, phaseTimings: {} },
+    aggregate: { totalTasks: 0, completedTasks: 0, totalRetries: 0, totalDoDFailures: 0, totalPhaseTransitions: 0, firstPassPhases: 0, phaseTimings: {} },
   };
 }
 
@@ -106,6 +116,9 @@ export function recordPhaseEnd(taskId: string, phase: string): void {
   pt.count += 1;
   pt.totalMs += pm.durationMs;
   pt.avgMs = Math.round(pt.totalMs / pt.count);
+  // N-68: Track phase transitions and first-pass success
+  store.aggregate.totalPhaseTransitions += 1;
+  if (pm.retries === 0) store.aggregate.firstPassPhases += 1;
   saveMetrics(store);
 }
 
@@ -148,4 +161,28 @@ export function getTaskMetrics(taskId: string): TaskMetrics | undefined {
 
 export function getAggregateMetrics(): AggregateMetrics {
   return loadMetrics().aggregate;
+}
+
+/** N-68: Calculate harness effectiveness metrics */
+export function getEffectivenessMetrics(): EffectivenessMetrics {
+  const store = loadMetrics();
+  const agg = store.aggregate;
+  const tasks = Object.values(store.tasks);
+  // Calculate date span
+  const dates = tasks.map(t => new Date(t.startedAt).getTime()).filter(d => !isNaN(d));
+  const daySpan = dates.length >= 2
+    ? Math.max(1, (Math.max(...dates) - Math.min(...dates)) / 86_400_000)
+    : 1;
+  return {
+    tasksPerDay: Math.round((agg.completedTasks / daySpan) * 100) / 100,
+    reworkRate: agg.totalPhaseTransitions > 0
+      ? Math.round((agg.totalRetries / agg.totalPhaseTransitions) * 100) / 100
+      : 0,
+    firstPassRate: agg.totalPhaseTransitions > 0
+      ? Math.round((agg.firstPassPhases / agg.totalPhaseTransitions) * 100) / 100
+      : 1,
+    avgRetriesPerTask: agg.completedTasks > 0
+      ? Math.round((agg.totalRetries / agg.completedTasks) * 100) / 100
+      : 0,
+  };
 }
