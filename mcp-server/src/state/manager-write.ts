@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import type { TaskState, PhaseName, Checkpoint, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
 import { signState, generateSessionToken, generateTaskId } from '../utils/hmac.js';
+import { writeProgressJSON } from './progress-json.js';
 import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-classifier.js';
 import { getActivePhases } from '../phases/registry.js';
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
