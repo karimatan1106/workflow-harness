@@ -159,13 +159,14 @@ describe('AC-3: ACE形式プロンプト注入', () => {
   });
 
   it('TC-AC3-02: getLessonsForPhase()がquality score降順で返す', () => {
-    // Scores: 4/(4+1+1)=0.67, 1/(1+1+1)=0.33, 0/(0+1+1)=0
+    // Scores: 4/(4+1+1)=0.67, 2/(2+1+1)=0.50, 1/(1+1+1)=0.33
+    // N-07: score < 0.3 は除外されるため全てMIN_QUALITY_SCORE以上のレッスンを使用
     setReflectorStore({
       version: 3, nextLessonId: 4,
       lessons: [
         { id: 'L-002', phase: 'research', errorPattern: 'err-b', lesson: 'b', createdAt: new Date().toISOString(), hitCount: 2, helpfulCount: 1, harmfulCount: 1, category: 'failure' },
         { id: 'L-001', phase: 'research', errorPattern: 'err-a', lesson: 'a', createdAt: new Date().toISOString(), hitCount: 5, helpfulCount: 4, harmfulCount: 1, category: 'failure' },
-        { id: 'L-003', phase: 'research', errorPattern: 'err-c', lesson: 'c', createdAt: new Date().toISOString(), hitCount: 1, helpfulCount: 0, harmfulCount: 1, category: 'failure' },
+        { id: 'L-003', phase: 'research', errorPattern: 'err-c', lesson: 'c', createdAt: new Date().toISOString(), hitCount: 3, helpfulCount: 2, harmfulCount: 1, category: 'failure' },
       ],
       stashedFailures: [],
     });

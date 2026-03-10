@@ -4,6 +4,7 @@
  */
 
 import type { DoDCheckResult } from '../gates/dod-types.js';
+import { getActiveADRs } from './adr.js';
 
 export interface RetryContext {
   phase: string;
@@ -164,11 +165,23 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
 
   const improvementLines = improvements.map((imp, i) => (i + 1) + '. ' + imp).join('\n');
 
+  // N-02: Append relevant ADR rationale to help guide retry
+  let adrSection = '';
+  try {
+    const activeADRs = getActiveADRs();
+    if (activeADRs.length > 0) {
+      const relevant = activeADRs.slice(0, 3);
+      const adrLines = relevant.map(a => `- ${a.id}: ${a.statement} — ${a.rationale}`).join('\n');
+      adrSection = '\n## 関連アーキテクチャ決定\n' + adrLines + '\n';
+    }
+  } catch { /* ADR store unavailable — continue without */ }
+
   const prompt = '# ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
     + 'task:' + ctx.taskName + ' out:' + ctx.docsDir + '/\n\n'
     + '## 失敗理由(参照のみ・転記禁止)\n```\n' + ctx.errorMessage + '\n```\n'
     + '⚠️ 禁止語の転記=再失敗。間接参照のみ使用。\n\n'
-    + '## 改善要求\n' + improvementLines + '\n';
+    + '## 改善要求\n' + improvementLines + '\n'
+    + adrSection;
 
   const errorClass = classifyFromChecks(ctx.errorMessage, checks);
   return { prompt, suggestModelEscalation, suggestedModel, errorClass };
