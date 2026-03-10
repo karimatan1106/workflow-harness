@@ -20,7 +20,11 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@ast-grep/napi": "^0.41.0",
+    "@biomejs/biome": "^2.4.6",
     "@types/node": "^20.0.0",
+    "jscpd": "^4.0.8",
+    "oxlint": "^1.52.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }
