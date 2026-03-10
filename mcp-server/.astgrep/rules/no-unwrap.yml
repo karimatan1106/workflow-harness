@@ -1,0 +1,7 @@
+# N-73: ast-grep rule — ban .unwrap() calls (Rust-style, catches bad patterns)
+id: no-unwrap
+language: typescript
+rule:
+  pattern: "$OBJ.unwrap()"
+message: "Avoid .unwrap(). Handle errors explicitly with Result/Option patterns."
+severity: error

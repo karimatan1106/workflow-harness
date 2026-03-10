@@ -1,0 +1,9 @@
+# N-73: ast-grep rule — ban explicit `any` type annotations
+# Replaces regex-based detection with AST-aware matching
+id: no-any-type
+language: typescript
+rule:
+  pattern: "$VAR: any"
+message: "Avoid explicit `any`. Use `unknown`, generics, or a specific type."
+severity: error
+note: "See ADR-TYPING: TypeScript any suppresses all type checking."

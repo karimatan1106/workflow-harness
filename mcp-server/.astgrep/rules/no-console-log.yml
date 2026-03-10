@@ -1,0 +1,8 @@
+# N-73: ast-grep rule — ban console.log in production code
+id: no-console-log
+language: typescript
+rule:
+  pattern: "console.log($$$ARGS)"
+message: "Use structured logger instead of console.log."
+severity: warning
+note: "console.log is not captured by observability pipeline."
