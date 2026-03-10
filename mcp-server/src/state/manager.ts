@@ -13,6 +13,7 @@ import {
   updateCheckpoint, applyAddAC, applyAddRTM, applyUpdateACStatus, applyUpdateRTMStatus,
   appendProgressLog,
 } from './manager-write.js';
+import { writeProgressJSON } from './progress-json.js';
 import {
   applyAddInvariant, applyUpdateInvariantStatus, applyGetKnownBugs,
   applyIncrementRetryCount, applyGetRetryCount, applyResetRetryCount, applyRecordArtifactHash,
@@ -41,6 +42,7 @@ export class StateManager {
     state.updatedAt = new Date().toISOString(); updateCheckpoint(state, nextPhase);
     signAndPersist(state, this.hmacKey); writeTaskIndex();
     appendProgressLog(state, prevPhase, nextPhase);
+    try { writeProgressJSON(state, prevPhase, nextPhase); } catch { /* non-blocking */ }
     return { success: true, nextPhase };
   }
 
