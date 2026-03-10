@@ -13,6 +13,7 @@ import { buildRetryPrompt, type RetryContext } from '../retry.js';
 import { stashFailure, promoteStashedFailure } from '../reflector.js';
 import { runCuratorCycle } from '../curator.js';
 import { respond, respondError, validateSession, buildPhaseGuide, PHASE_APPROVAL_GATES, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
+import { recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure, recordTaskCompletion } from '../metrics.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'など', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -39,6 +40,7 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
     const dirty = execSync('git status --porcelain', { encoding: 'utf8', timeout: 3000 }).trim();
     if (dirty) gitWarning = `Git working tree has uncommitted changes (${dirty.split('\n').length} file(s)). Consider committing or stashing before starting a workflow.`;
   } catch { /* not in a git repo or git not available */ }
+  try { recordPhaseStart(task.taskId, task.taskName, task.phase); } catch { /* non-blocking */ }
   return respond({ taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size, docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken, ...(gitWarning ? { gitWarning } : {}) });
 }
 
@@ -112,6 +114,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
       const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: (phaseDef?.model ?? 'sonnet') as 'opus' | 'sonnet' | 'haiku' };
       const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
       try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
+      try { recordRetry(taskId, task.phase, dodResult.errors.join('\n')); recordDoDFailure(taskId, task.phase, dodResult.errors); } catch { /* non-blocking */ }
       // VDB-1: Suspect validator bug after 3+ retries on same phase
       const vdb1Warning = retryCount >= 3
         ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. Same validation error recurring. Diagnose the validator before retrying. Check if the DoD check itself has a bug.`
@@ -122,6 +125,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     dodResult = { passed: true, checks: [], errors: [] };
   }
   if (retryCount > 1) { try { promoteStashedFailure(taskId, task.phase, retryCount); } catch { /* non-blocking */ } }
+  try { recordPhaseEnd(taskId, task.phase); } catch { /* non-blocking */ }
   sm.resetRetryCount(taskId, task.phase);
   const result = sm.advancePhase(taskId);
   if (!result.success) return respondError(result.error ?? 'Failed to advance phase');
@@ -132,7 +136,9 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   if (PARALLEL_GROUPS[nextPhase]) {
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: (PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model) ?? 'sonnet' }));
   }
+  try { recordPhaseStart(taskId, freshTask?.taskName ?? '', nextPhase); } catch { /* non-blocking */ }
   if (nextPhase === 'completed' && freshTask) {
+    try { recordTaskCompletion(taskId); } catch { /* non-blocking */ }
     try { const r = runCuratorCycle(taskId, freshTask.taskName); responseObj.curatorReport = { lessonsBefore: r.lessonsBefore, lessonsAfter: r.lessonsAfter, actionCount: r.actions.length }; } catch { /* non-blocking */ }
   }
   return respond(responseObj);
