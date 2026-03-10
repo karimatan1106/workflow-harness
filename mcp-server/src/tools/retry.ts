@@ -82,46 +82,22 @@ function errorToImprovement(errorMessage: string): string[] {
     improvements.push('成果物ファイルが指定パスに存在しません。正しいパスに保存してください。');
   }
 
-  // TOON parse error (Markdown headers in .toon file)
-  if (/TOON parse/i.test(errorMessage) || /Markdown headers? detected/i.test(errorMessage)) {
+  if (/TOON parse/i.test(errorMessage) || /Markdown headers? detected/i.test(errorMessage))
     improvements.push('.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。全ての ## 行を削除し、TOON構文で書き直してください。');
-  }
-
-  // Non-zero exit code
-  if (/non-zero exit code/i.test(errorMessage) || /exit code/i.test(errorMessage)) {
+  if (/non-zero exit code/i.test(errorMessage) || /exit code/i.test(errorMessage))
     improvements.push('コマンドの実行が失敗しました。エラー出力を確認し、問題を修正してください。');
-  }
-
-  // RTM entries not at required status
-  if (/RTM entries not at required status/i.test(errorMessage)) {
+  if (/RTM entries not at required status/i.test(errorMessage))
     improvements.push('RTMエントリのステータスを更新してください。harness_update_rtm_statusで各F-NNNのステータスをimplemented以上に更新すること。');
-  }
-
-  // AC not met or still open
-  if (/AC not met/i.test(errorMessage) || /AC still open/i.test(errorMessage)) {
+  if (/AC not met/i.test(errorMessage) || /AC still open/i.test(errorMessage))
     improvements.push('受入基準のステータスを更新してください。harness_update_ac_statusで各AC-Nのステータスをmetに更新すること。');
-  }
-
-  // AC format insufficient (IA-2)
-  if (/AC-N entries.*minimum 3/i.test(errorMessage)) {
+  if (/AC-N entries.*minimum 3/i.test(errorMessage))
     improvements.push('requirements.mdに最低3件のAC-N形式の受入基準を追加してください。形式: AC-1: <具体的な条件>');
-  }
-
-  // NOT_IN_SCOPE missing (IA-2)
-  if (/NOT_IN_SCOPE/i.test(errorMessage) || /スコープ外/i.test(errorMessage)) {
+  if (/NOT_IN_SCOPE/i.test(errorMessage) || /スコープ外/i.test(errorMessage))
     improvements.push('requirements.mdに ## NOT_IN_SCOPE セクションを追加し、スコープ外の項目を明示してください。');
-  }
-
-  // OPEN_QUESTIONS missing (IA-1)
-  if (/OPEN_QUESTIONS/i.test(errorMessage)) {
+  if (/OPEN_QUESTIONS/i.test(errorMessage))
     improvements.push('requirements.mdに ## OPEN_QUESTIONS セクションを追加してください。不明点がなければ「なし」と記載。');
-  }
-
-  // Baseline not captured
-  if (/No baseline captured/i.test(errorMessage)) {
+  if (/No baseline captured/i.test(errorMessage))
     improvements.push('testingフェーズでharness_capture_baselineを実行してテストベースラインを記録してください。');
-  }
-
   // Generic fallback
   if (improvements.length === 0) {
     improvements.push('前回のバリデーション失敗を修正し、成果物品質要件を全て満たしてください。');
@@ -155,6 +131,23 @@ function classifyFromChecks(errorMessage: string, checks?: DoDCheckResult[]): Re
   return classifyError(errorMessage);
 }
 
+/** N-16: Classify error complexity for Plankton-pattern retry escalation */
+export function classifyComplexity(
+  checks: DoDCheckResult[],
+  errorClass: RetryPromptResult['errorClass'],
+): 'trivial' | 'moderate' | 'critical' {
+  const failed = checks.filter(c => !c.passed);
+  if (failed.length > 0) {
+    if (failed.some(c => c.level === 'L1')) return 'critical';
+    if (failed.some(c => c.level === 'L3')) return 'moderate';
+    return 'trivial';
+  }
+  if (errorClass === 'FileNotFound') return 'critical';
+  if (errorClass === 'LogicError') return 'moderate';
+  if (errorClass === 'SyntaxError') return 'trivial';
+  return 'trivial';
+}
+
 export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): RetryPromptResult {
   const improvements = extractImprovements(ctx.errorMessage, checks);
   const suggestModelEscalation = ctx.retryCount >= 2 && ctx.model === 'haiku';
@@ -164,6 +157,10 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
     ctx.model;
 
   const improvementLines = improvements.map((imp, i) => (i + 1) + '. ' + imp).join('\n');
+
+  const errorClass = classifyFromChecks(ctx.errorMessage, checks);
+  const complexity = classifyComplexity(checks ?? [], errorClass);
+  const tag = '[' + complexity.toUpperCase() + ']';
 
   // N-02: Append relevant ADR rationale to help guide retry
   let adrSection = '';
@@ -176,13 +173,12 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
     }
   } catch { /* ADR store unavailable — continue without */ }
 
-  const prompt = '# ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
+  const prompt = '# ' + tag + ' ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
     + 'task:' + ctx.taskName + ' out:' + ctx.docsDir + '/\n\n'
     + '## 失敗理由(参照のみ・転記禁止)\n```\n' + ctx.errorMessage + '\n```\n'
     + '⚠️ 禁止語の転記=再失敗。間接参照のみ使用。\n\n'
     + '## 改善要求\n' + improvementLines + '\n'
     + adrSection;
 
-  const errorClass = classifyFromChecks(ctx.errorMessage, checks);
   return { prompt, suggestModelEscalation, suggestedModel, errorClass };
 }

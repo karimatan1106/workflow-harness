@@ -13,7 +13,7 @@ import { runJscpd, runAstGrepPattern } from './linter-runner.js';
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const ARCHGATE_PATH = join(STATE_DIR, 'archgate-rules.json');
 
-export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern';
+export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern' | 'comment_ratio';
 
 export interface ArchRule {
   id: string;
