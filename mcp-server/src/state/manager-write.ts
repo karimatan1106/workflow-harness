@@ -10,7 +10,7 @@ import type { TaskState, PhaseName, Checkpoint, AcceptanceCriterion, RTMEntry, P
 import { signState, generateSessionToken, generateTaskId } from '../utils/hmac.js';
 import { writeProgressJSON } from './progress-json.js';
 import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-classifier.js';
-import { getActivePhases } from '../phases/registry.js';
+import { getActivePhases, SIZE_SKIP_MAP } from '../phases/registry.js';
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
@@ -50,7 +50,7 @@ export function createTaskState(taskName: string, userIntent: string, hmacKey: s
   const workflowDir = join(STATE_DIR, 'workflows', `${taskId}_${taskName}`);
   const now = new Date().toISOString();
   const state: TaskState = {
-    taskId, taskName, version: 4, phase: firstPhase, completedPhases: [], skippedPhases: [],
+    taskId, taskName, version: 4, phase: firstPhase, completedPhases: [], skippedPhases: SIZE_SKIP_MAP[size],
     size, riskScore, userIntent, openQuestions: [], notInScope: [], scopeFiles: files, scopeDirs: dirs, plannedFiles: [],
     acceptanceCriteria: [], rtmEntries: [], proofLog: [], invariants: [],
     checkpoint: { taskId, phase: firstPhase, completedPhases: [], timestamp: now, sha256: '', userIntent, scopeFiles: files, acceptanceCriteria: [], rtmEntries: [] },
