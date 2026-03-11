@@ -26,7 +26,17 @@ function getKeysPath(stateDir: string): string {
 export function loadHmacKeys(stateDir: string): HmacKeys {
   const keysPath = getKeysPath(stateDir);
   if (existsSync(keysPath)) {
-    return JSON.parse(readFileSync(keysPath, 'utf8')) as HmacKeys;
+    const raw = JSON.parse(readFileSync(keysPath, 'utf8'));
+    // Support legacy array format: [{ key, generation, ... }]
+    if (Array.isArray(raw)) {
+      const entry = raw[raw.length - 1];
+      if (entry?.key) {
+        return { current: entry.key, rotatedAt: entry.createdAt ?? new Date().toISOString() };
+      }
+    }
+    // Current format: { current, previous?, rotatedAt }
+    if (raw.current) return raw as HmacKeys;
+    // Fallback: regenerate if format is unrecognized
   }
   const dir = dirname(keysPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
