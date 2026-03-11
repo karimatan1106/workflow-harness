@@ -6,6 +6,7 @@
 export type {
   ControlLevel,
   DoDCheck,
+  DoDExemptionType,
   GateContext,
   PhaseName,
   TaskSize,

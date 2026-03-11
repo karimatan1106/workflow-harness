@@ -32,6 +32,8 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
       if (existsSync(statePath)) {
         const raw = readFileSync(statePath, 'utf8');
         const state = JSON.parse(raw) as TaskState;
+        // RC-3: Version migration chain entry point
+        // When version 5 is introduced, add: if (state.version === 4) migrateV4ToV5(state);
         if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
           return state;
         }

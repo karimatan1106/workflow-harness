@@ -152,6 +152,7 @@ export interface SubPhaseStatus {
   completedAt?: string;
 }
 
+export type DoDExemptionType = 'exit_code_zero' | 'tdd_red_evidence';
 // ─── Phase Configuration ────────────────────────
 export interface PhaseConfig {
   name: PhaseName;
@@ -164,6 +165,7 @@ export interface PhaseConfig {
   allowedExtensions: string[];
   bashCategories: string[];
   dodChecks: DoDCheck[];
+  dodExemptions?: DoDExemptionType[];
   approvalRequired?: ApprovalType;
   parallelGroup?: ParallelGroupName;
   dependencies?: PhaseName[];

@@ -107,6 +107,25 @@ describe('createTask', () => {
   });
 });
 
+// ─── RC-2: skippedPhases regression tests ───────
+describe('skippedPhases matches SIZE_SKIP_MAP', () => {
+  it('small task: skippedPhases equals SIZE_SKIP_MAP.small', async () => {
+    const { SIZE_SKIP_MAP } = await import('../phases/registry.js');
+    const mgr = createMgr();
+    const state = mgr.createTask('rc2-small', 'Intent for small task regression test for skippedPhases.');
+    expect(state.size).toBe('small');
+    expect(state.skippedPhases).toEqual(SIZE_SKIP_MAP.small);
+  });
+  it('large task: skippedPhases equals SIZE_SKIP_MAP.large (empty)', async () => {
+    const { SIZE_SKIP_MAP } = await import('../phases/registry.js');
+    const mgr = createMgr();
+    const files = Array.from({ length: 10 }, (_, i) => `src/auth/file${i}.ts`);
+    const state = mgr.createTask('rc2-large', 'Intent for large task regression test for skippedPhases.', files, ['infra/terraform/']);
+    expect(state.size).toBe('large');
+    expect(state.skippedPhases).toEqual(SIZE_SKIP_MAP.large);
+  });
+});
+
 describe('loadTask', () => {
   it('loads and returns the state for an existing task', () => {
     const mgr = createMgr();
