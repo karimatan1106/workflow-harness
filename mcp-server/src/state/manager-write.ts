@@ -77,6 +77,7 @@ export function updateCheckpoint(state: TaskState, targetPhase: PhaseName): void
 export function refreshCheckpointTraceability(state: TaskState): void {
   state.checkpoint.acceptanceCriteria = [...state.acceptanceCriteria];
   state.checkpoint.rtmEntries = [...state.rtmEntries];
+  if (state.refinedIntent) state.checkpoint.refinedIntent = state.refinedIntent;
   state.checkpoint.timestamp = state.updatedAt;
   state.checkpoint.sha256 = computeCheckpointHash(state.checkpoint);
 }

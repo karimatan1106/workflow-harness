@@ -58,6 +58,10 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
         'but only ' + acCount + ' found. Use harness_add_ac to add more criteria.');
     }
   }
+  // Generate refinedIntent from AC descriptions after IA-2 validation
+  if (approvalType === 'requirements' && task.acceptanceCriteria && task.acceptanceCriteria.length >= 3) {
+    sm.setRefinedIntent(taskId, task.acceptanceCriteria.map(ac => ac.description).join(' / '));
+  }
   const approvalResult = sm.approveGate(taskId, approvalType);
   if (!approvalResult.success) return respondError(approvalResult.error ?? 'Failed to record approval');
   // ART-1 (S2-6): Record SHA-256 of approved artifact for drift detection

@@ -191,6 +191,11 @@ export class StateManager {
   recordArtifactHash(taskId: string, fp: string, hash: string): boolean {
     const s = this.loadTask(taskId); if (!s) return false; applyRecordArtifactHash(s, fp, hash); s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
   }
+  setRefinedIntent(taskId: string, refinedIntent: string): boolean {
+    const s = this.loadTask(taskId); if (!s) return false;
+    s.refinedIntent = refinedIntent;
+    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+  }
   addInvariant(taskId: string, invariant: Invariant): boolean {
     const s = this.loadTask(taskId); if (!s) return false;
     if (!applyAddInvariant(s, invariant)) return false; signAndPersist(s, this.hmacKey); return true;
