@@ -158,6 +158,8 @@ export function buildSubagentPrompt(
   prompt = prompt.replace(/\{userIntent\}/g, userIntent);
   prompt = prompt.replace(/\{taskId\}/g, taskId ?? '');
   prompt = prompt.replace(/\{phase\}/g, phase);
+  const outBase = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? `${docsDir}/${phase}.toon`;
+  prompt = prompt.replace(/\{outputBasename\}/g, outBase);
   prompt = prompt.replace(/\{docCategories\}/g, buildDocCategories(projectTraits));
   // Prepend compact header (task info + input + output in 2 lines)
   const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
