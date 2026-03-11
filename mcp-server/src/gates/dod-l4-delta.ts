@@ -54,7 +54,7 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
       level: 'L4', check: 'delta_entry_format', passed: false,
       evidence: `TOON artifact missing decisions[] array\n修正方法: decisions[N]{id,statement,rationale}: テーブルに最低${DELTA_ENTRY_MIN_COUNT}エントリを追加してください。`,
       fix: '必須TOONキー(decisions)を成果物に追加してください。',
-      example: 'decisions[0]{id,statement,rationale}:\n  D-1\n  要件を明確化\n  ユーザー意図との整合性確保',
+      example: 'decisions[5]{id,statement,rationale}:\n  SD-1, "要件を明確化する", "ユーザー意図との整合性確保のため"',
     };
   }
   if (decisions.length < DELTA_ENTRY_MIN_COUNT) {

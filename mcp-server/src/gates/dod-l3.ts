@@ -29,7 +29,7 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
     const parseError = mdHeaders.length > 0
       ? `TOON parse failed: ${mdHeaders.length} Markdown headers (##) found. TOON uses "key: value", not Markdown. First: "${mdHeaders[0].slice(0, 60)}"`
       : `TOON parse failed: ${e instanceof Error ? e.message.slice(0, 150) : 'unknown error'}`;
-    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: parseError, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。', example: 'decisions[0]{id,statement,rationale}:\n  D-1\n  要件を明確化\n  ユーザー意図との整合性確保' };
+    return { level: 'L3', check: 'artifact_quality', passed: false, evidence: parseError, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。', example: 'decisions[5]{id,statement,rationale}:\n  SD-1, "要件を明確化する", "ユーザー意図との整合性確保のため"' };
   }
   return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'TOON parse OK' };
 }
