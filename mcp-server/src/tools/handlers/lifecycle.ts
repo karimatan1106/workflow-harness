@@ -54,6 +54,7 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
       taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size,
       docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken,
     };
+    if (task.integrityWarning) core.integrityWarning = true;
     if ((task as any).projectTraits) core.projectTraits = (task as any).projectTraits;
     if (!verbose) return respond(core);
     return respond({

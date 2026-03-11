@@ -13,7 +13,7 @@ import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-c
 import { getActivePhases, SIZE_SKIP_MAP } from '../phases/registry.js';
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
 
-const STATE_DIR = process.env.STATE_DIR || '.claude/state';
+function getStateDir(): string { return process.env.STATE_DIR || '.claude/state'; }
 
 export function computeCheckpointHash(checkpoint: Checkpoint): string {
   const { sha256, ...rest } = checkpoint;
@@ -33,8 +33,9 @@ export function ensureStateDirs(state: TaskState): void {
 }
 
 export function writeTaskIndex(): void {
-  const tasks = buildTaskIndex(STATE_DIR);
-  const indexPath = join(STATE_DIR, 'task-index.json');
+  const sd = getStateDir();
+  const tasks = buildTaskIndex(sd);
+  const indexPath = join(sd, 'task-index.json');
   const indexDir = dirname(indexPath);
   if (!existsSync(indexDir)) mkdirSync(indexDir, { recursive: true });
   writeFileSync(indexPath, JSON.stringify({ tasks, updatedAt: new Date().toISOString() }, null, 2));
@@ -47,7 +48,7 @@ export function createTaskState(taskName: string, userIntent: string, hmacKey: s
   const firstPhase = getActivePhases(size)[0];
   const sessionToken = generateSessionToken();
   const docsDir = getDocsPath(taskName);
-  const workflowDir = join(STATE_DIR, 'workflows', `${taskId}_${taskName}`);
+  const workflowDir = join(getStateDir(), 'workflows', `${taskId}_${taskName}`);
   const now = new Date().toISOString();
   const state: TaskState = {
     taskId, taskName, version: 4, phase: firstPhase, completedPhases: [], skippedPhases: SIZE_SKIP_MAP[size],

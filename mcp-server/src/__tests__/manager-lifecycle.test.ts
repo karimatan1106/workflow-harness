@@ -123,13 +123,13 @@ describe('listTasks', () => {
     expect(ids).toContain(s1.taskId);
     expect(ids).toContain(s2.taskId);
   });
-  it('only includes tasks with valid HMAC (tampered tasks are excluded)', () => {
+  it('includes tampered tasks in list (HMAC failure is non-fatal for listing)', () => {
     const mgr = createMgr();
     const state = mgr.createTask('list-tamper-task', 'Intent for hmac-list task with sufficient length text ok.');
     const stateFile = join(STATE_DIR, 'workflows', `${state.taskId}_list-tamper-task`, 'workflow-state.json');
     const raw = JSON.parse(readFileSync(stateFile, 'utf8'));
     raw.taskName = 'tampered-for-list-test';
     writeFileSync(stateFile, JSON.stringify(raw, null, 2));
-    expect(mgr.listTasks().find(t => t.taskId === state.taskId)).toBeUndefined();
+    expect(mgr.listTasks().find(t => t.taskId === state.taskId)).toBeDefined();
   });
 });

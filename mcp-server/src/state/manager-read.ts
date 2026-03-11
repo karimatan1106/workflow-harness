@@ -8,10 +8,12 @@ import { join } from 'node:path';
 import type { TaskState, PhaseName, TaskSize } from './types.js';
 import { verifyStateWithRotation } from '../utils/hmac.js';
 
-const STATE_DIR = process.env.STATE_DIR || '.claude/state';
+function getStateDir(): string {
+  return process.env.STATE_DIR || '.claude/state';
+}
 
 export function getStatePath(taskId: string, taskName: string): string {
-  return join(STATE_DIR, 'workflows', `${taskId}_${taskName}`, 'workflow-state.json');
+  return join(getStateDir(), 'workflows', `${taskId}_${taskName}`, 'workflow-state.json');
 }
 
 export function getDocsPath(taskName: string): string {
@@ -20,7 +22,8 @@ export function getDocsPath(taskName: string): string {
 }
 
 export function loadTaskFromDisk(taskId: string): TaskState | null {
-  const workflowsDir = join(STATE_DIR, 'workflows');
+  const sd = getStateDir();
+  const workflowsDir = join(sd, 'workflows');
   if (!existsSync(workflowsDir)) return null;
   const entries = readdirSync(workflowsDir, { withFileTypes: true });
   for (const entry of entries) {
@@ -29,10 +32,12 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
       if (existsSync(statePath)) {
         const raw = readFileSync(statePath, 'utf8');
         const state = JSON.parse(raw) as TaskState;
-        if (verifyStateWithRotation(state as unknown as Record<string, unknown>, STATE_DIR)) {
+        if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
           return state;
         }
-        return null;
+        // PL-D-04: return data with integrityWarning instead of null
+        state.integrityWarning = true;
+        return state;
       }
     }
   }
@@ -40,7 +45,8 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
 }
 
 export function listTasksFromDisk(): Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> {
-  const workflowsDir = join(STATE_DIR, 'workflows');
+  const sd = getStateDir();
+  const workflowsDir = join(sd, 'workflows');
   if (!existsSync(workflowsDir)) return [];
   const results: Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> = [];
   const entries = readdirSync(workflowsDir, { withFileTypes: true });
@@ -51,10 +57,14 @@ export function listTasksFromDisk(): Array<{ taskId: string; taskName: string; p
         try {
           const raw = readFileSync(statePath, 'utf8');
           const state = JSON.parse(raw) as TaskState;
-          if (!verifyStateWithRotation(state as unknown as Record<string, unknown>, STATE_DIR)) continue;
-          if (state.phase !== 'completed') {
+          // PL-D-01: check phase before HMAC verification; skip completed tasks entirely
+          if (state.phase === 'completed') continue;
+          // HMAC verification for active tasks (non-fatal: include with warning)
+          if (!verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
             results.push({ taskId: state.taskId, taskName: state.taskName, phase: state.phase, size: state.size });
+            continue;
           }
+          results.push({ taskId: state.taskId, taskName: state.taskName, phase: state.phase, size: state.size });
         } catch { }
       }
     }

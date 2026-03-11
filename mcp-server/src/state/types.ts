@@ -114,6 +114,9 @@ export interface TaskState {
   artifactHashes?: Record<string, string>;               // ART-1: artifact path → SHA-256 hash
   parallelPhaseBackupLog?: string[];                     // PHA-1: rollback candidates after parallel failure
 
+  // Integrity
+  integrityWarning?: boolean; // true when HMAC verification failed but data is readable
+
   // Security
   sessionToken: string;
   stateIntegrity: string; // HMAC-SHA256

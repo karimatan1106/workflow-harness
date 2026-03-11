@@ -19,11 +19,11 @@ import {
   applyIncrementRetryCount, applyGetRetryCount, applyResetRetryCount, applyRecordArtifactHash,
 } from './manager-invariant.js';
 
-const STATE_DIR = process.env.STATE_DIR || '.claude/state';
+function getStateDir(): string { return process.env.STATE_DIR || '.claude/state'; }
 
 export class StateManager {
   private hmacKey: string;
-  constructor() { this.hmacKey = ensureHmacKeys(STATE_DIR); }
+  constructor() { this.hmacKey = ensureHmacKeys(getStateDir()); }
 
   createTask(taskName: string, userIntent: string, files: string[] = [], dirs: string[] = []): TaskState {
     const state = createTaskState(taskName, userIntent, this.hmacKey, files, dirs);
@@ -35,6 +35,7 @@ export class StateManager {
   advancePhase(taskId: string): { success: boolean; nextPhase?: PhaseName; error?: string } {
     const state = this.loadTask(taskId);
     if (!state) return { success: false, error: 'Task not found or HMAC verification failed' };
+    if (state.integrityWarning) return { success: false, error: 'Task has integrity warning — write operations blocked. Re-sign or reset HMAC keys.' };
     const nextPhase = getNextPhase(state.phase, state.size);
     if (!nextPhase) return { success: false, error: 'No next phase available' };
     const prevPhase = state.phase;
@@ -49,6 +50,7 @@ export class StateManager {
   approveGate(taskId: string, approvalType: string): { success: boolean; error?: string } {
     const state = this.loadTask(taskId);
     if (!state) return { success: false, error: 'Task not found' };
+    if (state.integrityWarning) return { success: false, error: 'Task has integrity warning — write operations blocked.' };
     if (!state.approvals) state.approvals = {};
     state.approvals[approvalType] = { approvedAt: new Date().toISOString() };
     state.updatedAt = new Date().toISOString();
@@ -103,6 +105,7 @@ export class StateManager {
 
   recordFeedback(taskId: string, feedback: string): boolean {
     const s = this.loadTask(taskId); if (!s) return false;
+    if (s.integrityWarning) return false;
     if (!s.feedbackLog) s.feedbackLog = [];
     s.feedbackLog.push({ feedback, recordedAt: new Date().toISOString() });
     s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
