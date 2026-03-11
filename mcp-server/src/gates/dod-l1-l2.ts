@@ -49,6 +49,10 @@ export function checkInputFilesExist(phase: string, docsDir: string, workflowDir
 }
 
 export function checkL2ExitCode(state: TaskState): DoDCheckResult {
+  // TDD Red: test_impl ではテスト失敗が正しい状態。tdd_red_evidence に委譲する
+  if (state.phase === 'test_impl') {
+    return { level: 'L2', check: 'exit_code_zero', passed: true, evidence: 'TDD Red phase: exit_code_zero skipped (checked by tdd_red_evidence instead)' };
+  }
   const recentProof = state.proofLog
     .filter(e => e.phase === state.phase && e.level === 'L2')
     .slice(-1)[0];
