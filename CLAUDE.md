@@ -6,7 +6,7 @@ Authoritative instruction set. Violations are blocked by hooks.
 ## Core Principles
 - Phases = context compression. 各成果物が次フェーズへの完全な引き継ぎ。
 - L1-L4決定的ゲートのみ。L5(LLM判断)はゲート使用禁止。
-- 全ソースファイル≤200行。TOON形式(.toon)で成果物生成。
+- 全ソースファイル≤200行=責務分離の指標。超過=責務混在→階層化/正規化/分解で対応（行数削減がゴールではない）。TOON形式(.toon)で成果物生成。
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
 ## Phases: 14ステージ30フェーズ (→ skill: workflow-phases.md)
