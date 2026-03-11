@@ -29,7 +29,7 @@ export const ARTIFACT_QUALITY_RULES = `品質要件
 - [#xxx#]形式禁止。禁止語は間接表現で言及`;
 
 export const SUMMARY_SECTION_RULE = `TOON成果物
-ファイル: \`{outputBasename}\` — TOON形式(JSONより40-50%効率的)
+ファイル: \`{docsDir}/{phase}.toon\` — TOON形式(JSONより40-50%効率的)
 ★ .toonファイルに ## ヘッダーやMarkdownテーブルを絶対に書かないこと。key: value形式のみ使用。## を書くとパーサーエラーになる。
 
 ルール: キー: 値 / カンマ・改行含む値のみ引用符 / 配列: \`名[N]{列1,列2}:\` + 各行カンマ区切り(例: \`  SD-1, "内容", "根拠"\`) / ネスト: インデント
@@ -42,7 +42,7 @@ IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requi
 // AGT-1: Subagent termination detection tag + return format
 export const EXIT_CODE_RULE = `完了時の戻り値(AGT-1)
 成果物全文は含めない。最後にTOONサマリーのみ出力:
-成功: result{phase,status,artifact,lines}: {phase},complete,{outputBasename},行数 [EXIT_CODE: 0]
+成功: result{phase,status,artifact,lines}: {phase},complete,{docsDir}/{phase}.toon,行数 [EXIT_CODE: 0]
 失敗: result{phase,status,error}: {phase},failed,エラー1行 [EXIT_CODE: 1]`;
 
 export const PROCEDURE_ORDER_RULE = `作業順序(必須)

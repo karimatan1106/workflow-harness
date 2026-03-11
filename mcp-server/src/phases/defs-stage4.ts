@@ -39,7 +39,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     description: 'Write code to pass tests (TDD Green phase)',
     model: 'sonnet',
     bashCategories: ['readonly', 'testing', 'implementation'],
-    inputFiles: ['{docsDir}/spec.toon', '{docsDir}/test-design.toon'],
+    inputFiles: ['{docsDir}/planning.toon', '{docsDir}/test-design.toon'],
     outputFile: null,
     requiredSections: [],
     minLines: 0,
@@ -50,14 +50,14 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 入力
 以下の設計成果物を全て読み込んでから実装してください:
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
 - {docsDir}/ui-design.toon
 - {docsDir}/test-design.toon
 
 設計チェックリスト（実装開始前に必須確認）
-- spec.toonに記載された全機能を実装したか
+- planning.toonに記載された全機能を実装したか
 - state-machine.mmdの全状態遷移を実装したか
 - flowchart.mmdの全処理フローを実装したか
 - test-design.toonの全テストケースに対応するコードがあるか
@@ -138,7 +138,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 入力
 以下の設計成果物と実装コードを比較してください:
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 - {docsDir}/requirements.toon
 - {docsDir}/threat-model.toon
 
@@ -148,7 +148,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 作業内容
 設計と実装の整合性を検証してください。
-1. spec.toonの全機能が実装されているか
+1. planning.toonの全機能が実装されているか
 2. 設計書にない追加機能（勝手な追加）がないか
 3. ユーザー意図が正しく反映されているか
 4. セキュリティ要件の対策実装確認
