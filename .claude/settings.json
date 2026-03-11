@@ -1,5 +1,13 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          "node hooks/session-boundary.js"
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -13,6 +21,12 @@
         "hooks": [
           "node hooks/phase-edit-guard.js",
           "node hooks/loop-detector.js"
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          "node hooks/context-watchdog.js"
         ]
       }
     ]
