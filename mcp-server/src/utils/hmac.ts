@@ -28,10 +28,18 @@ export function loadHmacKeys(stateDir: string): HmacKeys {
   if (existsSync(keysPath)) {
     const raw = JSON.parse(readFileSync(keysPath, 'utf8'));
     // Support legacy array format: [{ key, generation, ... }]
-    if (Array.isArray(raw)) {
-      const entry = raw[raw.length - 1];
-      if (entry?.key) {
-        return { current: entry.key, rotatedAt: entry.createdAt ?? new Date().toISOString() };
+    if (Array.isArray(raw) && raw.length >= 1) {
+      const last = raw[raw.length - 1];
+      if (last?.key) {
+        const migrated: HmacKeys = {
+          current: last.key,
+          rotatedAt: last.createdAt ?? new Date().toISOString(),
+        };
+        if (raw.length >= 2) {
+          migrated.previous = raw[raw.length - 2].key;
+        }
+        writeFileSync(keysPath, JSON.stringify(migrated, null, 2));
+        return migrated;
       }
     }
     // Current format: { current, previous?, rotatedAt }
@@ -81,8 +89,17 @@ export function verifyStateWithRotation(state: Record<string, unknown>, stateDir
     return true;
   }
   if (keys.previous) {
-    return verifyState(state, keys.previous);
+    if (verifyState(state, keys.previous)) return true;
   }
+  // PL-D-07: structured log on verification failure
+  const errorContext = !state.stateIntegrity ? 'no_integrity_field' : 'key_mismatch';
+  console.error(JSON.stringify({
+    event: 'hmac_verification_failed',
+    taskId: state.taskId ?? 'unknown',
+    keysUsed: keys.previous ? 'both' : 'current',
+    stateIntegrityPresent: !!state.stateIntegrity,
+    errorContext,
+  }));
   return false;
 }
 

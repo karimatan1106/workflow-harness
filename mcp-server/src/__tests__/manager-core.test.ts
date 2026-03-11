@@ -120,13 +120,15 @@ describe('loadTask', () => {
     const mgr = createMgr();
     expect(mgr.loadTask('00000000-0000-4000-8000-nonexistent00')).toBeNull();
   });
-  it('verifies HMAC and returns null when state file is tampered with', () => {
+  it('verifies HMAC and returns integrityWarning when state file is tampered with', () => {
     const mgr = createMgr();
     const state = mgr.createTask('lt-tamper-task', 'Intent for tamper task with sufficient length text.');
     const stateFile = join(STATE_DIR, 'workflows', `${state.taskId}_lt-tamper-task`, 'workflow-state.json');
     const raw = JSON.parse(readFileSync(stateFile, 'utf8'));
     raw.taskName = 'tampered-name';
     writeFileSync(stateFile, JSON.stringify(raw, null, 2));
-    expect(mgr.loadTask(state.taskId)).toBeNull();
+    const result = mgr.loadTask(state.taskId);
+    expect(result).not.toBeNull();
+    expect((result as any).integrityWarning).toBe(true);
   });
 });
