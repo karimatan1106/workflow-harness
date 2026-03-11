@@ -10,7 +10,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Review design artifacts for consistency',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.toon', '{docsDir}/spec.toon', '{docsDir}/threat-model.toon'],
+    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.toon', '{docsDir}/planning.toon', '{docsDir}/threat-model.toon'],
     outputFile: '{docsDir}/design-review.toon',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
@@ -22,7 +22,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
 入力
 以下の全設計成果物を読み込んでレビューしてください:
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
 - {docsDir}/ui-design.toon
@@ -30,7 +30,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
 作業内容
 設計成果物の整合性を検証してください。
-1. spec.toonと各設計図の一貫性
+1. planning.toonと各設計図の一貫性
 2. 要件（requirements.toon）との対応関係
 3. セキュリティ要件の反映確認
 4. AC-Nと設計要素の対応表を作成
@@ -39,7 +39,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのAC-Nに対応する設計要素を以下の形式でマッピングすること:
 | AC-N | 設計コンポーネント | 仕様書参照 |
 |----|-------------|---------|
-| AC-1 | (対応する設計要素) | spec.toon §X.Y |
+| AC-1 | (対応する設計要素) | planning.toon §X.Y |
 全てのACにマッピングが必要。空欄のACがある場合、承認がブロックされる。
 
 出力
@@ -55,7 +55,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Test strategy and test cases mapped to AC-N',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/spec.toon', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
+    inputFiles: ['{docsDir}/planning.toon', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
     outputFile: '{docsDir}/test-design.toon',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
@@ -66,7 +66,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
 

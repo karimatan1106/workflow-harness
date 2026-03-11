@@ -59,7 +59,7 @@ describe('L4 required sections check', () => {
 
   it('fails L4 for planning phase when required TOON key is missing', async () => {
     const state = makeMinimalState('planning', tempDir, docsDir);
-    // Write a spec.toon missing the 'next' key
+    // Write a planning.toon missing the 'next' key
     const content = toonEncode({
       phase: 'planning',
       taskId: 'test',
@@ -71,10 +71,10 @@ describe('L4 required sections check', () => {
         { id: 'PL-004', statement: 'Decision four for planning phase', rationale: 'Reason four' },
         { id: 'PL-005', statement: 'Decision five for planning phase', rationale: 'Reason five' },
       ],
-      artifacts: [{ path: 'docs/spec.toon', role: 'spec', summary: 'Planning spec' }],
+      artifacts: [{ path: 'docs/planning.toon', role: 'spec', summary: 'Planning spec' }],
       // 'next' key is intentionally missing
     });
-    writeFileSync(join(docsDir, 'spec.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'planning.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.level === 'L4')!;
     expect(l4.passed).toBe(false);

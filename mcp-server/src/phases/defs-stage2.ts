@@ -44,7 +44,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
     model: 'sonnet',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/requirements.toon', '{docsDir}/threat-model.toon'],
-    outputFile: '{docsDir}/spec.toon',
+    outputFile: '{docsDir}/planning.toon',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# planningフェーズ
@@ -65,7 +65,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 4. 変更対象ファイルの一覧
 
 出力
-{docsDir}/spec.toon に保存してください。
+{docsDir}/planning.toon に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -77,7 +77,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
     description: 'State diagrams in Mermaid stateDiagram-v2',
     model: 'haiku',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/spec.toon'],
+    inputFiles: ['{docsDir}/planning.toon'],
     outputFile: '{docsDir}/state-machine.mmd',
     requiredSections: ['decisions'],
     minLines: 15,
@@ -88,7 +88,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 
 作業内容
 Mermaid stateDiagram-v2形式でステートマシン図を作成してください。
@@ -109,7 +109,7 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
     description: 'Process flow diagrams in Mermaid flowchart',
     model: 'haiku',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/spec.toon'],
+    inputFiles: ['{docsDir}/planning.toon'],
     outputFile: '{docsDir}/flowchart.mmd',
     requiredSections: ['decisions'],
     minLines: 15,
@@ -120,7 +120,7 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 
 作業内容
 Mermaid flowchart形式で処理フローチャートを作成してください。
@@ -141,7 +141,7 @@ Mermaid flowchart形式で処理フローチャートを作成してください
     description: 'Interface design and component specifications',
     model: 'sonnet',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/spec.toon'],
+    inputFiles: ['{docsDir}/planning.toon'],
     outputFile: '{docsDir}/ui-design.toon',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
@@ -152,7 +152,7 @@ Mermaid flowchart形式で処理フローチャートを作成してください
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/spec.toon
+- {docsDir}/planning.toon
 
 作業内容
 UI設計とコンポーネント仕様を作成してください。

@@ -40,8 +40,8 @@ describe('runDoDChecks for phases with no output file', () => {
 
   it('passes all checks for "implementation" which has no outputFile', async () => {
     const state = makeMinimalState('implementation', tempDir, docsDir);
-    // IFV-1: implementation requires spec.toon and test-design.toon as inputs
-    writeFileSync(join(docsDir, 'spec.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    // IFV-1: implementation requires planning.toon and test-design.toon as inputs
+    writeFileSync(join(docsDir, 'planning.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     expect(result.passed).toBe(true);

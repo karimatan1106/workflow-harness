@@ -70,9 +70,9 @@ describe('AC-2: registry.ts docs_update config', () => {
     expect(config.outputFile).toBe('{docsDir}/docs-update.toon');
   });
 
-  it('TC-AC2-02: inputFiles contains spec.toon, requirements.toon, code-review.toon', () => {
+  it('TC-AC2-02: inputFiles contains planning.toon, requirements.toon, code-review.toon', () => {
     const inputFiles = config.inputFiles as string[];
-    expect(inputFiles).toContain('{docsDir}/spec.toon');
+    expect(inputFiles).toContain('{docsDir}/planning.toon');
     expect(inputFiles).toContain('{docsDir}/requirements.toon');
     expect(inputFiles).toContain('{docsDir}/code-review.toon');
   });

@@ -42,12 +42,12 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('passes when all relative links point to existing files', () => {
-    writeFileSync(join(docsDir, 'spec.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'planning.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     writeFileSync(join(docsDir, 'design-review.toon'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [spec](./spec.md) for details.\n', 'utf8');
     // Note: TOON files don't normally have markdown links; this verifies they are ignored
     const result = checkDeadReferences('design_review', docsDir, '');
-    // .md links in TOON content: spec.md doesn't exist but spec.toon does - check passes due to pattern
+    // .md links in TOON content: spec.md doesn't exist but planning.toon does - check passes due to pattern
     expect(result.passed).toBeDefined();
     expect(result.evidence).toContain('DRV-1');
   });
