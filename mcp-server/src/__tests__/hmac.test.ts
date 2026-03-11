@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -41,10 +41,11 @@ describe('ensureHmacKeys', () => {
     expect(key1).toBe(key2);
   });
 
-  it('persists key in hmac-keys.json with correct structure', () => {
+  it('persists key in hmac-keys.json with correct structure including version', () => {
     const key = ensureHmacKeys(tempDir);
     const content = JSON.parse(readFileSync(join(tempDir, 'hmac-keys.json'), 'utf8'));
     expect(content.current).toBe(key);
+    expect(content.version).toBe(1);
     expect(typeof content.rotatedAt).toBe('string');
   });
 
@@ -53,6 +54,15 @@ describe('ensureHmacKeys', () => {
     const key = ensureHmacKeys(nestedDir);
     expect(typeof key).toBe('string');
     expect(existsSync(join(nestedDir, 'hmac-keys.json'))).toBe(true);
+  });
+
+  it('migrates existing file without version field by adding version: 1', () => {
+    const keysPath = join(tempDir, 'hmac-keys.json');
+    writeFileSync(keysPath, JSON.stringify({ current: 'abc123', rotatedAt: '2026-01-01T00:00:00.000Z' }));
+    const key = ensureHmacKeys(tempDir);
+    expect(key).toBe('abc123');
+    const content = JSON.parse(readFileSync(keysPath, 'utf8'));
+    expect(content.version).toBe(1);
   });
 });
 

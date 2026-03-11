@@ -10,6 +10,7 @@ import { join, dirname } from 'node:path';
 const HMAC_ALGORITHM = 'sha256';
 
 interface HmacKeys {
+  version: 1;
   current: string;
   previous?: string;
   rotatedAt: string;
@@ -32,6 +33,7 @@ export function loadHmacKeys(stateDir: string): HmacKeys {
       const last = raw[raw.length - 1];
       if (last?.key) {
         const migrated: HmacKeys = {
+          version: 1,
           current: last.key,
           rotatedAt: last.createdAt ?? new Date().toISOString(),
         };
@@ -43,13 +45,21 @@ export function loadHmacKeys(stateDir: string): HmacKeys {
       }
     }
     // Current format: { current, previous?, rotatedAt }
-    if (raw.current) return raw as HmacKeys;
+    if (raw.current) {
+      // Migrate: add version field if missing
+      if (!raw.version) {
+        raw.version = 1;
+        writeFileSync(keysPath, JSON.stringify(raw, null, 2));
+      }
+      return raw as HmacKeys;
+    }
     // Fallback: regenerate if format is unrecognized
   }
   const dir = dirname(keysPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const newKey = randomBytes(32).toString('hex');
   const keys: HmacKeys = {
+    version: 1,
     current: newKey,
     rotatedAt: new Date().toISOString(),
   };
