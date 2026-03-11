@@ -32,7 +32,7 @@ export const SUMMARY_SECTION_RULE = `TOON成果物
 ファイル: \`{docsDir}/{phase}.toon\` — TOON形式(JSONより40-50%効率的)
 ★ .toonファイルに ## ヘッダーやMarkdownテーブルを絶対に書かないこと。key: value形式のみ使用。## を書くとパーサーエラーになる。
 
-ルール: キー: 値 / カンマ・改行含む値のみ引用符 / 配列: \`名[N]{列1,列2}:\` +インデント行 / ネスト: インデント
+ルール: キー: 値 / カンマ・改行含む値のみ引用符 / 配列: \`名[N]{列1,列2}:\` + 各行カンマ区切り(例: \`  SD-1, "内容", "根拠"\`) / ネスト: インデント
 
 必須: decisions[N≥5]{id,statement,rationale} / artifacts[N]{path,role,summary} / next(criticalDecisions,readFiles,warnings)
 role: spec|design|test|impl|report|diagram。[N]は実数に置換。
