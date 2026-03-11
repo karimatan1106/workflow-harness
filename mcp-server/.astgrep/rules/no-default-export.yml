@@ -1,0 +1,9 @@
+# N-94: Enforce named exports for grep-ability.
+# Article: "named exports over default exports for discoverability"
+id: no-default-export
+language: typescript
+rule:
+  pattern: "export default $EXPR"
+message: "Use named exports instead of export default. Named exports improve grep-ability and refactoring safety."
+severity: warning
+note: "See ADR-EXPORTS: default exports are not grep-able and hinder automated refactoring."

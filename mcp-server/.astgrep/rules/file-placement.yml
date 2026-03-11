@@ -1,0 +1,15 @@
+# N-95: File placement validation for glob-ability.
+# Article: "keep file structure predictable for reliable placement/discovery/refactoring"
+# This rule catches tool files outside src/tools/ directory.
+id: tools-in-tools-dir
+language: typescript
+rule:
+  pattern: "export function $NAME($$$PARAMS): $RET"
+  inside:
+    kind: export_statement
+constraints:
+  NAME:
+    regex: "^(harness_|evaluate|validate|build)"
+message: "Harness tool functions should live in src/tools/. Move this file to maintain glob-ability."
+severity: warning
+note: "Convention: src/tools/*.ts for tool implementations, src/__tests__/*.test.ts for tests."
