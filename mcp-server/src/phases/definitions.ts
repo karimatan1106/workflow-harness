@@ -131,6 +131,7 @@ export function buildSubagentPrompt(
   userIntent: string,
   taskId?: string,
   projectTraits?: Record<string, boolean>,
+  refinedIntent?: string,
 ): string {
   const def = getPhaseDefinition(phase);
   if (!def) return `# ${phase} phase\n\nNo template defined for this phase.`;
@@ -161,8 +162,15 @@ export function buildSubagentPrompt(
   // Prepend compact header (task info + input + output in 2 lines)
   const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
   const outputFile = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? '';
-  const header = `task:${taskName} intent:${userIntent}\n`
-    + (inputFiles.length > 0 ? `in: ${inputFiles.join(', ')}\n` : '')
+  const intentStr = refinedIntent ?? userIntent;
+  const modeMap: Record<string, string> = { full: 'full', summary: 'sum', reference: 'ref' };
+  const filesWithModes = inputFiles.map(f => {
+    const bn = f.split('/').pop() ?? '';
+    const mode = (config?.inputFileModes as Record<string, string> | undefined)?.[bn] ?? 'full';
+    return `${f}[${modeMap[mode] ?? 'full'}]`;
+  });
+  const header = `task:${taskName} intent:${intentStr}\n`
+    + (inputFiles.length > 0 ? `in: ${filesWithModes.join(', ')}\n` : '')
     + (outputFile ? `out: ${outputFile}\n` : '');
 
   // Insert compact header after the phase title line

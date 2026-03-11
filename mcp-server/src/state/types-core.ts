@@ -140,6 +140,7 @@ export interface Checkpoint {
   timestamp: string;
   sha256: string;      // hash of completed artifacts
   userIntent: string;
+  refinedIntent?: string;
   scopeFiles: string[];
   acceptanceCriteria: AcceptanceCriterion[];
   rtmEntries: RTMEntry[];
@@ -151,9 +152,8 @@ export interface SubPhaseStatus {
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   completedAt?: string;
 }
-
 export type DoDExemptionType = 'exit_code_zero' | 'tdd_red_evidence';
-// ─── Phase Configuration ────────────────────────
+export type InputFileMode = 'full' | 'summary' | 'reference';
 export interface PhaseConfig {
   name: PhaseName;
   stage: number;
@@ -166,6 +166,7 @@ export interface PhaseConfig {
   bashCategories: string[];
   dodChecks: DoDCheck[];
   dodExemptions?: DoDExemptionType[];
+  inputFileModes?: Record<string, InputFileMode>;
   approvalRequired?: ApprovalType;
   parallelGroup?: ParallelGroupName;
   dependencies?: PhaseName[];

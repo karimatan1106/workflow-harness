@@ -7,6 +7,7 @@ export type {
   ControlLevel,
   DoDCheck,
   DoDExemptionType,
+  InputFileMode,
   GateContext,
   PhaseName,
   TaskSize,
@@ -72,6 +73,7 @@ export interface TaskState {
 
   // User intent
   userIntent: string;
+  refinedIntent?: string;
   openQuestions: string[];
   notInScope: string[];
 
