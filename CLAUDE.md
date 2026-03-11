@@ -10,7 +10,7 @@ Authoritative instruction set. Violations are blocked by hooks.
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
 ## Phases: 14ステージ30フェーズ (→ skill: workflow-phases.md)
-small(0-3)=~12, medium(4-7)=~22, large(8+)=30フェーズ。Default: large。
+small(0-3)=~12: ドキュメント修正不要な小規模変更のみ。medium(4-7)=~22。large(8+)=30。Default: large。
 
 ## Forbidden Actions (hooks enforce)
 - フェーズスキップ/research中コード編集/テスト前実装/直接編集(DoD失敗時)禁止
