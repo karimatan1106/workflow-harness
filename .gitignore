@@ -1,7 +1,10 @@
 node_modules/
 dist/
+.claude/state/
 mcp-server/.claude/state/
 mcp-server/.claude/generated-files.json
+**/docs/workflows/
+*.tmp
 *.local
 .env
 
