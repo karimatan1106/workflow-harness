@@ -80,7 +80,7 @@ find . -maxdepth 4 -type f \\( -name "*.md" -o -name "*.rst" -o -name "*.adoc" \
 
 Step 3: スコープ設定
 1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル、projectTraits + docPaths含む）
-2. リスクスコアの算出根拠を記録
+2. リスクスコアの算出根拠を記録。リファクタ時は呼び出し元なしの未使用ファイルも記録（削除候補）
 3. スコープ外の項目を明示
 
 出力
@@ -104,12 +104,10 @@ Step 3: スコープ設定
 task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon out:{docsDir}/research.toon
 
 作業内容
-1. 関連コードの読み込みと分析
+1. 関連コードの読み込みと分析。リファクタ時は未使用コード・重複パターン・共通化候補も特定
 2. 既存の設計パターン・技術的制約の特定
-3. 暗黙の制約・Magic Number一覧（S1-16）: | 値 | 用途 | 根拠 | 形式で記録
-4. 依存バージョン固有挙動（S1-17）: node --version / tsc --version / npm --version を記録
-5. {docsDir}/init.sh 生成（S1-10）: ビルド・テスト・セットアップコマンド
-6. raw JSON/JSONL 直接出力禁止（S1-14）: 構造化サマリーにまとめること
+3. 暗黙の制約・Magic Number一覧（S1-16）: | 値 | 用途 | 根拠 | で記録
+4. 依存バージョン固有挙動（S1-17）: node --version / tsc / npm 記録。init.sh生成（S1-10）。JSON/JSONL禁止（S1-14）
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

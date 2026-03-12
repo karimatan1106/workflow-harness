@@ -4,6 +4,7 @@
  */
 
 import type { PhaseDefinition } from './definitions-shared.js';
+import { REFACTORING_STRATEGY } from './definitions-shared.js';
 
 export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
   test_impl: {
@@ -92,13 +93,12 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 タスク情報
 - タスク名: {taskName}
 
-作業内容
-テストを維持しながらコード品質を改善してください（/simplify 手順 S1-6）。
+${REFACTORING_STRATEGY}
 
-以下の3観点でコードを評価・改善すること:
-1. code quality: コードの重複排除・命名改善・関数責務分離
-2. code efficiency: パフォーマンス改善・不要な処理の削除
-3. CLAUDE.md compliance: 200行ファイル制限・禁止パターン・フォーマット準拠
+評価観点（/simplify S1-6）:
+1. code quality: 重複排除・命名改善・関数責務分離
+2. code efficiency: 不要な処理の削除
+3. CLAUDE.md compliance: 200行制限・禁止パターン準拠
 
 テストが引き続き全てパスすることを確認してください。
 ツール呼び出し結果をraw JSON/JONSLで出力しないこと（S1-14）。
