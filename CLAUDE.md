@@ -8,7 +8,9 @@ Authoritative instruction set. Violations are blocked by hooks.
 - L1-L4決定的ゲートのみ。L5(LLM判断)はゲート使用禁止。
   - L1=file_exists L2=exit_code L3=numeric_threshold L4=regex_match → 全て決定的・再現可能
   - L5禁止理由(PSC-5): 検証容易性=改善能力。LLM判断は非決定的→再現不可→改善不可→品質劣化。
-- 全ソースファイル≤200行=責務分離の指標。超過=責務混在→階層化/正規化/分解で対応（行数削減がゴールではない）。TOON形式(.toon)で成果物生成。
+- 全ソースファイル≤200行=責務分離の指標。超過=責務混在→階層化/正規化/分解で対応（行数削減がゴールではない）。
+  - 禁止: 1行に複数文を詰め込む圧縮（`a(); b(); return c;`）。可読性は行数制限より優先。超過時は責務分割で対応。
+  - TOON形式(.toon)で成果物生成。
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
 ## Phases: 14ステージ30フェーズ (→ skill: workflow-phases.md)

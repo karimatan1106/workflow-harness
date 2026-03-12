@@ -50,6 +50,7 @@ IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requi
 // Refactoring methodology — referenced by refactoring phase template
 export const REFACTORING_STRATEGY = `リファクタリング方針（優先順に実施）
 ★ 分割は最後の手段。先に1〜4を実施すれば分割の必要量は激減する。
+★ 可読性は行数制限より優先。1行に複数文を詰め込む圧縮は禁止。超過時は責務分割で対応。
 
 1. 削除: 未使用コード・デッドコードを除去。呼び出し元のないファイル/関数を特定。
 2. 正規化: 複数ファイル横断の重複パターンを shared/ に抽出。設定読込・バリデーション・エラー処理・ログ等。

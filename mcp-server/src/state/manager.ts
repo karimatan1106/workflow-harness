@@ -1,25 +1,46 @@
 /**
- * StateManager — thin orchestrator delegating to manager-read / manager-write
+ * StateManager — thin orchestrator delegating to specialized modules:
+ *   manager-read, manager-write, manager-lifecycle, manager-records, manager-invariant
  * @spec docs/spec/features/workflow-harness.md
  */
 
 import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
 import type { Invariant, InvariantStatus } from './types-invariant.js';
 import { ensureHmacKeys } from '../utils/hmac.js';
-import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
 import { loadTaskFromDisk, listTasksFromDisk } from './manager-read.js';
 import {
   persistState, ensureStateDirs, writeTaskIndex, createTaskState, signAndPersist,
-  updateCheckpoint, applyAddAC, applyAddRTM, applyUpdateACStatus, applyUpdateRTMStatus,
-  appendProgressLog,
+  applyAddAC, applyAddRTM, applyUpdateACStatus, applyUpdateRTMStatus,
 } from './manager-write.js';
-import { writeProgressJSON } from './progress-json.js';
+import {
+  advancePhase as doAdvance, approveGate as doApprove, completeSubPhase as doComplete,
+  goBack as doGoBack, resetTask as doReset,
+} from './manager-lifecycle.js';
 import {
   applyAddInvariant, applyUpdateInvariantStatus, applyGetKnownBugs,
   applyIncrementRetryCount, applyGetRetryCount, applyResetRetryCount, applyRecordArtifactHash,
 } from './manager-invariant.js';
+import {
+  applyRecordFeedback, applyRecordBaseline, applyRecordTestResult,
+  applyAddProof, applyRecordTestFile, applyRecordKnownBug, applySetRefinedIntent,
+} from './manager-records.js';
 
-function getStateDir(): string { return process.env.STATE_DIR || '.claude/state'; }
+function getStateDir(): string {
+  return process.env.STATE_DIR || '.claude/state';
+}
+
+/** Shared load→mutate→sign→persist pattern. Returns false if task not found or fn returns false. */
+function withTask(
+  taskId: string, hmacKey: string, fn: (s: TaskState) => boolean | void, index = false,
+): boolean {
+  const state = loadTaskFromDisk(taskId);
+  if (!state) return false;
+  if (fn(state) === false) return false;
+  state.updatedAt = new Date().toISOString();
+  signAndPersist(state, hmacKey);
+  if (index) writeTaskIndex();
+  return true;
+}
 
 export class StateManager {
   private hmacKey: string;
@@ -27,182 +48,130 @@ export class StateManager {
 
   createTask(taskName: string, userIntent: string, files: string[] = [], dirs: string[] = []): TaskState {
     const state = createTaskState(taskName, userIntent, this.hmacKey, files, dirs);
-    persistState(state); ensureStateDirs(state); writeTaskIndex(); return state;
+    persistState(state);
+    ensureStateDirs(state);
+    writeTaskIndex();
+    return state;
   }
 
-  loadTask(taskId: string): TaskState | null { return loadTaskFromDisk(taskId); }
-
-  advancePhase(taskId: string): { success: boolean; nextPhase?: PhaseName; error?: string } {
-    const state = this.loadTask(taskId);
-    if (!state) return { success: false, error: 'Task not found or HMAC verification failed' };
-    if (state.integrityWarning) return { success: false, error: 'Task has integrity warning — write operations blocked. Re-sign or reset HMAC keys.' };
-    const nextPhase = getNextPhase(state.phase, state.size);
-    if (!nextPhase) return { success: false, error: 'No next phase available' };
-    const prevPhase = state.phase;
-    state.completedPhases.push(state.phase); state.phase = nextPhase;
-    state.updatedAt = new Date().toISOString(); updateCheckpoint(state, nextPhase);
-    signAndPersist(state, this.hmacKey); writeTaskIndex();
-    appendProgressLog(state, prevPhase, nextPhase);
-    try { writeProgressJSON(state, prevPhase, nextPhase); } catch { /* non-blocking */ }
-    return { success: true, nextPhase };
+  loadTask(taskId: string): TaskState | null {
+    return loadTaskFromDisk(taskId);
   }
 
-  approveGate(taskId: string, approvalType: string): { success: boolean; error?: string } {
-    const state = this.loadTask(taskId);
-    if (!state) return { success: false, error: 'Task not found' };
-    if (state.integrityWarning) return { success: false, error: 'Task has integrity warning — write operations blocked.' };
-    if (!state.approvals) state.approvals = {};
-    state.approvals[approvalType] = { approvedAt: new Date().toISOString() };
-    state.updatedAt = new Date().toISOString();
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return { success: true };
+  // Lifecycle delegates (→ manager-lifecycle.ts)
+  advancePhase(taskId: string) { return doAdvance(taskId, this.hmacKey); }
+  approveGate(taskId: string, approvalType: string) { return doApprove(taskId, this.hmacKey, approvalType); }
+  completeSubPhase(taskId: string, subPhase: string) { return doComplete(taskId, this.hmacKey, subPhase); }
+  goBack(taskId: string, targetPhase: PhaseName) { return doGoBack(taskId, this.hmacKey, targetPhase); }
+  resetTask(taskId: string, targetPhase: PhaseName, reason: string) { return doReset(taskId, this.hmacKey, targetPhase, reason); }
+
+  listTasks(): Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> {
+    return listTasksFromDisk();
   }
 
-  completeSubPhase(taskId: string, subPhase: string): { success: boolean; error?: string } {
-    const state = this.loadTask(taskId);
-    if (!state) return { success: false, error: 'Task not found' };
-    if (!state.subPhaseStatus) state.subPhaseStatus = {};
-    if (state.subPhaseStatus[subPhase]?.status === 'completed') return { success: false, error: `Sub-phase "${subPhase}" is already completed (PCM-1)` };
-    const phaseConfig = PHASE_REGISTRY[subPhase as PhaseName];
-    if (phaseConfig?.dependencies?.length) {
-      for (const dep of phaseConfig.dependencies) {
-        const ds = state.subPhaseStatus[dep];
-        if (!ds || ds.status !== 'completed')
-          return { success: false, error: `Dependency "${dep}" must be completed before "${subPhase}"` };
+  updateScope(
+    taskId: string, files: string[], dirs: string[], glob?: string,
+    addMode = false, projectTraits?: Record<string, boolean>, docPaths?: string[],
+  ): boolean {
+    return withTask(taskId, this.hmacKey, state => {
+      if (addMode) {
+        state.scopeFiles = [...new Set([...state.scopeFiles, ...files])];
+        state.scopeDirs = [...new Set([...state.scopeDirs, ...dirs])];
+      } else {
+        state.scopeFiles = files;
+        state.scopeDirs = dirs;
       }
-    }
-    state.subPhaseStatus[subPhase] = { name: subPhase, status: 'completed', completedAt: new Date().toISOString() };
-    state.updatedAt = new Date().toISOString();
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return { success: true };
+      if (glob) state.scopeGlob = glob;
+      if (projectTraits) (state as any).projectTraits = projectTraits;
+      if (docPaths) (state as any).docPaths = docPaths;
+    });
   }
 
-  goBack(taskId: string, targetPhase: PhaseName): { success: boolean; error?: string } {
-    const state = this.loadTask(taskId);
-    if (!state) return { success: false, error: 'Task not found' };
-    const idx = state.completedPhases.indexOf(targetPhase);
-    if (idx === -1 && state.phase !== targetPhase) return { success: false, error: 'Target phase was not in completed phases' };
-    if (idx !== -1) state.completedPhases = state.completedPhases.slice(0, idx);
-    state.phase = targetPhase; state.retryCount = {}; state.updatedAt = new Date().toISOString();
-    updateCheckpoint(state, targetPhase);
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return { success: true };
-  }
-
-  resetTask(taskId: string, targetPhase: PhaseName, reason: string): { success: boolean; error?: string } {
-    const state = this.loadTask(taskId);
-    if (!state) return { success: false, error: 'Task not found' };
-    state.completedPhases = []; state.subPhaseStatus = {}; state.retryCount = {}; state.phase = targetPhase;
-    state.updatedAt = new Date().toISOString(); updateCheckpoint(state, targetPhase);
-    if (!state.resetHistory) state.resetHistory = [];
-    state.resetHistory.push({ reason, resetAt: state.updatedAt, targetPhase });
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return { success: true };
-  }
-
+  // AC / RTM delegates (→ manager-write.ts)
   addAcceptanceCriterion(taskId: string, criterion: AcceptanceCriterion): boolean {
-    const s = this.loadTask(taskId); if (!s) return false; applyAddAC(s, criterion); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyAddAC(s, criterion); });
   }
   addRTMEntry(taskId: string, entry: RTMEntry): boolean {
-    const s = this.loadTask(taskId); if (!s) return false; applyAddRTM(s, entry); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyAddRTM(s, entry); });
+  }
+  updateAcceptanceCriterionStatus(
+    taskId: string, acId: string, status: 'open' | 'met' | 'not_met', testCaseId?: string,
+  ): boolean {
+    return withTask(taskId, this.hmacKey, s => applyUpdateACStatus(s, acId, status, testCaseId), true);
+  }
+  updateRTMEntryStatus(
+    taskId: string, rtmId: string, status: 'pending' | 'implemented' | 'tested' | 'verified',
+    codeRef?: string, testRef?: string,
+  ): boolean {
+    return withTask(taskId, this.hmacKey, s => applyUpdateRTMStatus(s, rtmId, status, codeRef, testRef), true);
   }
 
+  // Recording delegates (→ manager-records.ts)
   recordFeedback(taskId: string, feedback: string): boolean {
-    const s = this.loadTask(taskId); if (!s) return false;
-    if (s.integrityWarning) return false;
-    if (!s.feedbackLog) s.feedbackLog = [];
-    s.feedbackLog.push({ feedback, recordedAt: new Date().toISOString() });
-    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => applyRecordFeedback(s, feedback));
   }
   recordBaseline(taskId: string, totalTests: number, passedTests: number, failedTests: string[]): boolean {
-    const s = this.loadTask(taskId); if (!s) return false;
-    s.baseline = { capturedAt: new Date().toISOString(), totalTests, passedTests, failedTests };
-    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyRecordBaseline(s, totalTests, passedTests, failedTests); });
   }
-
   recordTestResult(taskId: string, exitCode: number, output: string, summary?: string): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!state.testResults) state.testResults = [];
-    state.testResults.push({ recordedAt: new Date().toISOString(), phase: state.phase, exitCode, output: output.slice(0, 5000), summary });
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyRecordTestResult(s, exitCode, output, summary); });
   }
-
   addProof(taskId: string, entry: ProofEntry): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    state.proofLog.push(entry); state.updatedAt = new Date().toISOString();
-    signAndPersist(state, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyAddProof(s, entry); });
   }
-
-  updateScope(taskId: string, files: string[], dirs: string[], glob?: string, addMode: boolean = false, projectTraits?: Record<string, boolean>, docPaths?: string[]): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (addMode) {
-      state.scopeFiles = [...new Set([...state.scopeFiles, ...files])];
-      state.scopeDirs = [...new Set([...state.scopeDirs, ...dirs])];
-    } else { state.scopeFiles = files; state.scopeDirs = dirs; }
-    if (glob) state.scopeGlob = glob;
-    if (projectTraits) (state as any).projectTraits = projectTraits;
-    if (docPaths) (state as any).docPaths = docPaths;
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
-  }
-
-  listTasks(): Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> { return listTasksFromDisk(); }
-
   recordTestFile(taskId: string, testFile: string): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!state.testFiles) state.testFiles = [];
-    if (!state.testFiles.includes(testFile)) state.testFiles.push(testFile);
-    state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyRecordTestFile(s, testFile); });
   }
-
-  getTestInfo(taskId: string): { testFiles: string[]; baseline: TaskState['baseline'] | null } | null {
-    const state = this.loadTask(taskId);
-    if (!state) return null;
-    return { testFiles: state.testFiles ?? [], baseline: state.baseline ?? null };
-  }
-
-  updateAcceptanceCriterionStatus(taskId: string, acId: string, status: 'open' | 'met' | 'not_met', testCaseId?: string): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!applyUpdateACStatus(state, acId, status, testCaseId)) return false;
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return true;
-  }
-
-  updateRTMEntryStatus(taskId: string, rtmId: string, status: 'pending' | 'implemented' | 'tested' | 'verified', codeRef?: string, testRef?: string): boolean {
-    const state = this.loadTask(taskId);
-    if (!state) return false;
-    if (!applyUpdateRTMStatus(state, rtmId, status, codeRef, testRef)) return false;
-    signAndPersist(state, this.hmacKey); writeTaskIndex(); return true;
-  }
-
-  recordKnownBug(taskId: string, bug: { testName: string; description: string; severity: string; targetPhase?: string; issueUrl?: string }): boolean {
-    const s = this.loadTask(taskId); if (!s) return false; if (!s.knownBugs) s.knownBugs = [];
-    s.knownBugs.push({ ...bug, severity: bug.severity as 'low' | 'medium' | 'high' | 'critical', recordedAt: new Date().toISOString() });
-    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
-  }
-  getKnownBugs(taskId: string) { const s = this.loadTask(taskId); return s ? applyGetKnownBugs(s) : []; }
-  incrementRetryCount(taskId: string, phase: string): number {
-    const s = this.loadTask(taskId); if (!s) return -1;
-    const c = applyIncrementRetryCount(s, phase); s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return c;
-  }
-  getRetryCount(taskId: string, phase: string): number { const s = this.loadTask(taskId); return s ? applyGetRetryCount(s, phase) : 0; }
-  resetRetryCount(taskId: string, phase: string): void {
-    const s = this.loadTask(taskId); if (!s) return;
-    if (applyResetRetryCount(s, phase)) { s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); }
+  recordKnownBug(
+    taskId: string,
+    bug: { testName: string; description: string; severity: string; targetPhase?: string; issueUrl?: string },
+  ): boolean {
+    return withTask(taskId, this.hmacKey, s => { applyRecordKnownBug(s, bug); });
   }
   recordArtifactHash(taskId: string, fp: string, hash: string): boolean {
-    const s = this.loadTask(taskId); if (!s) return false; applyRecordArtifactHash(s, fp, hash); s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applyRecordArtifactHash(s, fp, hash); });
   }
   setRefinedIntent(taskId: string, refinedIntent: string): boolean {
-    const s = this.loadTask(taskId); if (!s) return false;
-    s.refinedIntent = refinedIntent;
-    s.updatedAt = new Date().toISOString(); signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => { applySetRefinedIntent(s, refinedIntent); });
   }
+
+  // Invariant delegates (→ manager-invariant.ts)
   addInvariant(taskId: string, invariant: Invariant): boolean {
-    const s = this.loadTask(taskId); if (!s) return false;
-    if (!applyAddInvariant(s, invariant)) return false; signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => applyAddInvariant(s, invariant));
   }
   updateInvariantStatus(taskId: string, invId: string, status: InvariantStatus, evidence?: string): boolean {
-    const s = this.loadTask(taskId); if (!s) return false;
-    if (!applyUpdateInvariantStatus(s, invId, status, evidence)) return false; signAndPersist(s, this.hmacKey); return true;
+    return withTask(taskId, this.hmacKey, s => applyUpdateInvariantStatus(s, invId, status, evidence));
+  }
+
+  // Query / retry (read-only or special return types)
+  getTestInfo(taskId: string): { testFiles: string[]; baseline: TaskState['baseline'] | null } | null {
+    const s = this.loadTask(taskId);
+    return s ? { testFiles: s.testFiles ?? [], baseline: s.baseline ?? null } : null;
+  }
+  getKnownBugs(taskId: string) {
+    const s = this.loadTask(taskId);
+    return s ? applyGetKnownBugs(s) : [];
+  }
+  getRetryCount(taskId: string, phase: string): number {
+    const s = this.loadTask(taskId);
+    return s ? applyGetRetryCount(s, phase) : 0;
+  }
+
+  incrementRetryCount(taskId: string, phase: string): number {
+    const s = this.loadTask(taskId);
+    if (!s) return -1;
+    const count = applyIncrementRetryCount(s, phase);
+    s.updatedAt = new Date().toISOString();
+    signAndPersist(s, this.hmacKey);
+    return count;
+  }
+
+  resetRetryCount(taskId: string, phase: string): void {
+    const s = this.loadTask(taskId);
+    if (!s) return;
+    if (applyResetRetryCount(s, phase)) {
+      s.updatedAt = new Date().toISOString();
+      signAndPersist(s, this.hmacKey);
+    }
   }
 }
