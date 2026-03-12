@@ -95,7 +95,7 @@ function errorToImprovement(errorMessage: string): string[] {
   if (/NOT_IN_SCOPE/i.test(errorMessage) || /スコープ外/i.test(errorMessage))
     improvements.push('requirements.mdに ## NOT_IN_SCOPE セクションを追加し、スコープ外の項目を明示してください。');
   if (/OPEN_QUESTIONS/i.test(errorMessage))
-    improvements.push('requirements.mdに ## OPEN_QUESTIONS セクションを追加してください。不明点がなければ「なし」と記載。');
+    improvements.push('requirements.toonのopenQuestionsに未解決の質問が残っています。全て解決するか、openQuestions: なし に変更してください。');
   if (/No baseline captured/i.test(errorMessage))
     improvements.push('testingフェーズでharness_capture_baselineを実行してテストベースラインを記録してください。');
   // Generic fallback
@@ -170,15 +170,11 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
   const suggestModelEscalation = ctx.retryCount >= 2 && ctx.model === 'haiku';
   const errorClass = classifyFromChecks(ctx.errorMessage, checks);
   const complexity = classifyComplexity(checks ?? [], errorClass);
-  // N-26: Plankton routing — complexity-based model selection
   const suggestedModel: 'opus' | 'sonnet' | 'haiku' =
     complexity === 'critical' ? 'opus' : complexity === 'moderate' ? 'sonnet' : 'haiku';
   const tag = '[' + complexity.toUpperCase() + ']';
-  const improvementLines = improvements.map((imp, i) => (i + 1) + '. ' + imp).join('\n');
-  // N-28: Find matching ADR IDs from error message
   const mappedAdrIds = Object.entries(ERROR_ADR_MAP)
     .filter(([pat]) => ctx.errorMessage.includes(pat)).flatMap(([, ids]) => ids);
-  // N-02: Append relevant ADR rationale to help guide retry
   let adrSection = '';
   try {
     const activeADRs = getActiveADRs();
@@ -186,15 +182,11 @@ export function buildRetryPrompt(ctx: RetryContext, checks?: DoDCheckResult[]): 
       ? [...activeADRs.filter(a => mappedAdrIds.includes(a.id)), ...activeADRs.filter(a => !mappedAdrIds.includes(a.id))]
       : activeADRs;
     if (prioritized.length > 0) {
-      const relevant = prioritized.slice(0, 3);
-      const adrLines = relevant.map(a => `- ${a.id}: ${a.statement} — ${a.rationale}`).join('\n');
-      adrSection = '\n## 関連アーキテクチャ決定\n' + adrLines + '\n';
+      adrSection = '\n## 関連アーキテクチャ決定\n' + prioritized.slice(0, 3).map(a => `- ${a.id}: ${a.statement} — ${a.rationale}`).join('\n') + '\n';
     }
   } catch { /* ADR store unavailable — continue without */ }
-  // N-67: Format each improvement as structured ERROR/WHY/FIX
   const structuredErrors = improvements.map((imp, i) => {
-    const relAdrs = mappedAdrIds.length > 0 ? mappedAdrIds : ['N/A'];
-    return formatStructuredError(`DoD check #${i + 1} failed`, ctx.docsDir, relAdrs, imp);
+    return formatStructuredError(`DoD check #${i + 1} failed`, ctx.docsDir, mappedAdrIds.length > 0 ? mappedAdrIds : ['N/A'], imp);
   }).join('\n\n');
   const prompt = '# ' + tag + ' ' + ctx.phase + ' リトライ' + ctx.retryCount + '回目\n'
     + 'task:' + ctx.taskName + ' out:' + ctx.docsDir + '/\n\n'

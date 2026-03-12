@@ -60,6 +60,32 @@ export function checkAcTcMapping(phase: string, docsDir: string): DoDCheckResult
   };
 }
 
+/** RTM-AC: Cross-phase AC chain continuity — verify all AC-IDs appear in phase-specific mapping */
+export function checkAcChainContinuity(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
+  const acs = state.acceptanceCriteria;
+  if (!acs || acs.length === 0) {
+    return { level: 'L4', check: 'ac_chain_continuity', passed: true, evidence: 'No ACs defined; AC chain continuity check skipped' };
+  }
+  let filePath: string;
+  let keyName: string;
+  if (phase === 'design_review') { filePath = docsDir + '/design-review.toon'; keyName = 'acDesignMapping'; }
+  else if (phase === 'test_design') { filePath = docsDir + '/test-design.toon'; keyName = 'acTcMapping'; }
+  else if (phase === 'code_review') { filePath = docsDir + '/code-review.toon'; keyName = 'acAchievementStatus'; }
+  else { return { level: 'L4', check: 'ac_chain_continuity', passed: true, evidence: 'AC chain continuity check not required for phase: ' + phase }; }
+  if (!existsSync(filePath)) {
+    return { level: 'L4', check: 'ac_chain_continuity', passed: false, evidence: filePath + ' not found for AC chain continuity check', fix: phase + 'フェーズの成果物を作成してください。' };
+  }
+  const content = readFileSync(filePath, 'utf8');
+  let record: Record<string, unknown>;
+  try { record = toonDecode(content) as Record<string, unknown>; } catch { record = {}; }
+  const raw = JSON.stringify(record[keyName] ?? '');
+  const missing = acs.filter(ac => !raw.includes(ac.id)).map(ac => ac.id);
+  if (missing.length > 0) {
+    return { level: 'L4', check: 'ac_chain_continuity', passed: false, evidence: 'AC chain continuity: missing AC IDs in ' + keyName + ': ' + missing.join(', '), fix: keyName + 'に全AC-IDのエントリを追加してください。' };
+  }
+  return { level: 'L4', check: 'ac_chain_continuity', passed: true, evidence: 'AC chain continuity OK: all AC IDs found in ' + keyName };
+}
+
 /** CRV-1 (S3-30): test-design.toon must have TC count >= AC count */
 export function checkTCCoverage(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'test_design') {

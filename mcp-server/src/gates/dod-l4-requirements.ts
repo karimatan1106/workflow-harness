@@ -107,6 +107,17 @@ export function checkIntentConsistency(state: TaskState, phase: string, docsDir:
   return { level: 'L4', check: 'intent_consistency', passed: true, evidence: `Intent consistency OK: ${keywords.length - missing.length}/${keywords.length} keywords found, ${lineCount} lines (min ${minLineCount})` };
 }
 
+export function isOpenQuestion(q: unknown): boolean {
+  if (q === null || q === undefined) return false;
+  if (typeof q === 'string') return q !== '' && q !== 'なし';
+  if (typeof q === 'object' && !Array.isArray(q)) {
+    const obj = q as Record<string, unknown>;
+    const question = obj['question'];
+    if (typeof question === 'string') return question !== '' && question !== 'なし';
+  }
+  return false;
+}
+
 export function checkOpenQuestions(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'OPEN_QUESTIONS check not required for phase: ' + phase };
@@ -119,12 +130,18 @@ export function checkOpenQuestions(state: TaskState, phase: string, docsDir: str
   if (!toon) {
     return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon could not be decoded at: ' + reqPath, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' };
   }
-  const hasOpenQuestions = 'openQuestions' in toon;
-  return {
-    level: 'L4', check: 'open_questions_section', passed: hasOpenQuestions,
-    evidence: hasOpenQuestions
-      ? 'openQuestions key found in requirements.toon'
-      : 'requirements.toon is missing openQuestions key\n修正方法: requirements.toon に openQuestions[N]{id,question}: テーブルを追加してください。未解決の場合は空配列にしてください。',
-    ...(!hasOpenQuestions && { fix: 'openQuestionsセクションを追加してください。不明点がなければ空配列。', example: 'openQuestions[0]{id,question}:\n  OQ-1\n  パフォーマンス要件の具体的な数値は？' }),
-  };
+  if (!('openQuestions' in toon)) {
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon is missing openQuestions key\n修正方法: requirements.toon に openQuestions[N]{id,question}: テーブルを追加してください。未解決の場合は空配列にしてください。', fix: 'openQuestionsセクションを追加してください。不明点がなければ空配列。', example: 'openQuestions[0]{id,question}:\n  OQ-1\n  パフォーマンス要件の具体的な数値は？' };
+  }
+  const oq = toon['openQuestions'];
+  let hasOpen = false;
+  if (Array.isArray(oq)) {
+    hasOpen = oq.some(item => isOpenQuestion(item));
+  } else {
+    hasOpen = isOpenQuestion(oq);
+  }
+  if (hasOpen) {
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'openQuestionsに未解決の質問が残っています。全て解決するか、openQuestions: なし に変更してください。', fix: 'openQuestionsの未解決質問を解決してください。' };
+  }
+  return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'openQuestions key found in requirements.toon with no open items' };
 }
