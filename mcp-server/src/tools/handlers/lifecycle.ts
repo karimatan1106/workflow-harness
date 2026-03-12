@@ -56,6 +56,7 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
     };
     if (task.integrityWarning) core.integrityWarning = true;
     if ((task as any).projectTraits) core.projectTraits = (task as any).projectTraits;
+    if ((task as any).docPaths) core.docPaths = (task as any).docPaths;
     if (!verbose) return respond(core);
     return respond({
       ...core, completedPhases: task.completedPhases, skippedPhases: task.skippedPhases,

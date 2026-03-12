@@ -25,7 +25,8 @@ export async function handleHarnessSetScope(args: Record<string, unknown>, sm: S
   if (files.length === 0 && dirs.length === 0 && !glob) return respondError('At least one file, directory, or glob pattern must be specified');
   const addMode = Boolean(args.addMode ?? false);
   const traits = (args.projectTraits && typeof args.projectTraits === 'object') ? args.projectTraits as Record<string, boolean> : undefined;
-  const ok = sm.updateScope(taskId, files, dirs, glob, addMode, traits);
+  const docPaths = Array.isArray(args.docPaths) ? args.docPaths as string[] : undefined;
+  const ok = sm.updateScope(taskId, files, dirs, glob, addMode, traits, docPaths);
   if (!ok) return respondError('Failed to update scope for task: ' + taskId);
   const updatedTask = sm.loadTask(taskId);
   return respond({ taskId, scope: { files, dirs, glob }, phase: updatedTask?.phase });

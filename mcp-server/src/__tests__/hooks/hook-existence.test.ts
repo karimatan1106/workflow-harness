@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, statSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 // Project root (parent repo)
@@ -10,8 +10,11 @@ const SETTINGS_PATH = resolve(PROJECT_ROOT, '.claude/settings.json');
 const HOOK_FILES = [
   'post-tool-lint.sh',
   'pre-tool-config-guard.sh',
-  'stop-test-enforcer.sh',
   'pre-compact-context-save.sh',
+  'context-watchdog.sh',
+  'pre-tool-orchestrator-edit-guard.sh',
+  'pre-tool-no-verify-block.sh',
+  'handoff-reader.sh',
 ];
 
 describe('G-01~04: Hook existence and settings', () => {
@@ -40,28 +43,20 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(postToolUse).toBeDefined();
     expect(postToolUse).toHaveLength(1);
     expect(postToolUse[0].matcher).toBe('Write|Edit');
-    expect(postToolUse[0].command.join(' ')).toContain('post-tool-lint.sh');
+    expect(postToolUse[0].hooks[0].command).toContain('post-tool-lint.sh');
   });
 
-  it('settings.json has PreToolUse hooks (config-guard + no-verify-block)', () => {
+  it('settings.json has PreToolUse hooks (config-guard + watchdog + orchestrator-edit-guard + no-verify-block)', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const preToolUse = settings.hooks.PreToolUse;
     expect(preToolUse).toBeDefined();
-    expect(preToolUse.length).toBeGreaterThanOrEqual(2);
-    const configGuard = preToolUse.find((h: any) => h.command.join(' ').includes('pre-tool-config-guard.sh'));
+    expect(preToolUse.length).toBeGreaterThanOrEqual(3);
+    const configGuard = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-config-guard.sh'));
     expect(configGuard).toBeDefined();
     expect(configGuard.matcher).toBe('Write|Edit');
-    const noVerify = preToolUse.find((h: any) => h.command.join(' ').includes('pre-tool-no-verify-block.sh'));
+    const noVerify = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-no-verify-block.sh'));
     expect(noVerify).toBeDefined();
     expect(noVerify.matcher).toBe('Bash');
-  });
-
-  it('settings.json has Stop hook', () => {
-    const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
-    const stop = settings.hooks.Stop;
-    expect(stop).toBeDefined();
-    expect(stop).toHaveLength(1);
-    expect(stop[0].command.join(' ')).toContain('stop-test-enforcer.sh');
   });
 
   it('settings.json has Notification hook for compact', () => {
@@ -70,20 +65,14 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(notification).toBeDefined();
     expect(notification).toHaveLength(1);
     expect(notification[0].matcher).toBe('compact');
-    expect(notification[0].command.join(' ')).toContain('pre-compact-context-save.sh');
+    expect(notification[0].hooks[0].command).toContain('pre-compact-context-save.sh');
   });
 
-  it('settings.json preserves existing UserPromptSubmit hooks', () => {
+  it('settings.json has UserPromptSubmit hook', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const ups = settings.hooks.UserPromptSubmit;
     expect(ups).toBeDefined();
-    expect(ups).toHaveLength(2);
-  });
-
-  it('settings.json preserves existing PreToolCall hook', () => {
-    const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
-    const ptc = settings.hooks.PreToolCall;
-    expect(ptc).toBeDefined();
-    expect(ptc).toHaveLength(1);
+    expect(ups).toHaveLength(1);
+    expect(ups[0].hooks[0].command).toContain('handoff-reader.sh');
   });
 });

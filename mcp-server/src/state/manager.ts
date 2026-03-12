@@ -131,7 +131,7 @@ export class StateManager {
     signAndPersist(state, this.hmacKey); return true;
   }
 
-  updateScope(taskId: string, files: string[], dirs: string[], glob?: string, addMode: boolean = false, projectTraits?: Record<string, boolean>): boolean {
+  updateScope(taskId: string, files: string[], dirs: string[], glob?: string, addMode: boolean = false, projectTraits?: Record<string, boolean>, docPaths?: string[]): boolean {
     const state = this.loadTask(taskId);
     if (!state) return false;
     if (addMode) {
@@ -140,6 +140,7 @@ export class StateManager {
     } else { state.scopeFiles = files; state.scopeDirs = dirs; }
     if (glob) state.scopeGlob = glob;
     if (projectTraits) (state as any).projectTraits = projectTraits;
+    if (docPaths) (state as any).docPaths = docPaths;
     state.updatedAt = new Date().toISOString(); signAndPersist(state, this.hmacKey); return true;
   }
 
