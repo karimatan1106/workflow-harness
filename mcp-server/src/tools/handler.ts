@@ -7,14 +7,16 @@
 import type { StateManager } from '../state/manager.js';
 import { TOOL_DEFS_A } from './defs-a.js';
 import { TOOL_DEFS_B } from './defs-b.js';
+import { TOOL_DEFS_C } from './defs-c.js';
 import { respondError } from './handler-shared.js';
 import { handleHarnessStart, handleHarnessStatus, handleHarnessNext } from './handlers/lifecycle.js';
 import { handleHarnessApprove } from './handlers/approval.js';
 import { handleHarnessSetScope, handleHarnessCompleteSub, handleHarnessBack, handleHarnessReset } from './handlers/scope-nav.js';
 import { handleHarnessRecordProof, handleHarnessAddAc, handleHarnessAddRtm, handleHarnessRecordFeedback, handleHarnessCaptureBaseline, handleHarnessRecordTestResult, handleHarnessRecordTest } from './handlers/recording.js';
 import { handleHarnessGetTestInfo, handleHarnessRecordKnownBug, handleHarnessGetKnownBugs, handleHarnessGetSubphaseTemplate, handleHarnessPreValidate, handleHarnessUpdateAcStatus, handleHarnessUpdateRtmStatus } from './handlers/query.js';
+import { handleDciBuildIndex, handleDciQueryDocs, handleDciQueryFiles, handleDciValidate } from './handlers/dci.js';
 
-export const TOOL_DEFINITIONS = [...TOOL_DEFS_A, ...TOOL_DEFS_B];
+export const TOOL_DEFINITIONS = [...TOOL_DEFS_A, ...TOOL_DEFS_B, ...TOOL_DEFS_C];
 
 export async function handleToolCall(
   name: string,
@@ -45,6 +47,10 @@ export async function handleToolCall(
       case 'harness_pre_validate':       return handleHarnessPreValidate(args, stateManager);
       case 'harness_update_ac_status':   return handleHarnessUpdateAcStatus(args, stateManager);
       case 'harness_update_rtm_status':  return handleHarnessUpdateRtmStatus(args, stateManager);
+      case 'dci_build_index':            return handleDciBuildIndex(args);
+      case 'dci_query_docs':             return handleDciQueryDocs(args);
+      case 'dci_query_files':            return handleDciQueryFiles(args);
+      case 'dci_validate':               return handleDciValidate();
       default: return respondError('Unknown tool: ' + name);
     }
   } catch (err) {

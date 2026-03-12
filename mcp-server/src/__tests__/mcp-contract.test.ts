@@ -41,9 +41,9 @@ describe('MCP tool contract', () => {
     expect(start!.inputSchema.required).toContain('userIntent');
   });
 
-  it('tool names follow snake_case convention with harness_ prefix', () => {
+  it('tool names follow snake_case convention with harness_ or dci_ prefix', () => {
     for (const def of TOOL_DEFINITIONS) {
-      expect(def.name).toMatch(/^harness_[a-z_]+$/);
+      expect(def.name).toMatch(/^(harness|dci)_[a-z_]+$/);
     }
   });
 

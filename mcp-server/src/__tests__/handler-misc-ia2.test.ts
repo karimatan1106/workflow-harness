@@ -76,8 +76,8 @@ describe('IA-2 AC count requirement', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('TOOL_DEFINITIONS', () => {
-  it('has exactly 22 entries', () => {
-    expect(ctx.TOOL_DEFINITIONS).toHaveLength(22);
+  it('has exactly 26 entries', () => {
+    expect(ctx.TOOL_DEFINITIONS).toHaveLength(26);
   });
 
   it('does not contain harness_add_invariant', () => {
@@ -94,9 +94,9 @@ describe('TOOL_DEFINITIONS', () => {
     expect(ctx.TOOL_DEFINITIONS[0].name).toBe('harness_start');
   });
 
-  it('contains harness_update_rtm_status as the last entry', () => {
+  it('contains dci_validate as the last entry', () => {
     const last = ctx.TOOL_DEFINITIONS[ctx.TOOL_DEFINITIONS.length - 1];
-    expect(last.name).toBe('harness_update_rtm_status');
+    expect(last.name).toBe('dci_validate');
   });
 
   it('all entries have a name and inputSchema', () => {
