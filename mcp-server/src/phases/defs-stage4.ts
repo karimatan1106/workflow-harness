@@ -66,6 +66,15 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 テストが通るように実装コードを作成してください。
 全てのテストが成功する（Green）状態にしてください。
 
+★必須: @specコメント（DCI連携）
+新規作成する .ts ファイルには、ファイル先頭（最初の50行以内）に @spec コメントを付与すること:
+\\\`\\\`\\\`typescript
+// @spec docs/spec/features/xxx.md
+\\\`\\\`\\\`
+- 対応する設計書・仕様書のパスを指定（なければ最も近い設計ドキュメント）
+- テストファイル（*.test.ts, *.spec.ts）にも @spec を付与（testedBy として追跡される）
+- 既存ファイルの修正時は、@spec がなければ追加を推奨（必須ではない）
+
 {BASH_CATEGORIES}
 {EXIT_CODE_RULE}`,
   },
