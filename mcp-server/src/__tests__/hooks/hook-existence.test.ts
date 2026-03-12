@@ -46,17 +46,25 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(postToolUse[0].hooks[0].command).toContain('post-tool-lint.sh');
   });
 
-  it('settings.json has PreToolUse hooks (config-guard + watchdog + orchestrator-edit-guard + no-verify-block)', () => {
+  it('settings.json has PreToolUse hooks (config-guard + no-verify-block)', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const preToolUse = settings.hooks.PreToolUse;
     expect(preToolUse).toBeDefined();
-    expect(preToolUse.length).toBeGreaterThanOrEqual(3);
+    expect(preToolUse.length).toBeGreaterThanOrEqual(2);
     const configGuard = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-config-guard.sh'));
     expect(configGuard).toBeDefined();
     expect(configGuard.matcher).toBe('Write|Edit');
     const noVerify = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-no-verify-block.sh'));
     expect(noVerify).toBeDefined();
     expect(noVerify.matcher).toBe('Bash');
+  });
+
+  it('user-level hooks exist (watchdog + coordinator-recorder + orchestrator-edit-guard)', () => {
+    const home = process.env.HOME || process.env.USERPROFILE || '';
+    const userHooksDir = resolve(home, '.claude/hooks');
+    for (const f of ['context-watchdog.sh', 'coordinator-recorder.sh', 'pre-tool-orchestrator-edit-guard.sh']) {
+      expect(existsSync(resolve(userHooksDir, f))).toBe(true);
+    }
   });
 
   it('settings.json has Notification hook for compact', () => {
