@@ -116,33 +116,20 @@ export function promoteStashedFailure(taskId: string, phase: string, retryCount:
   return true;
 }
 
-/**
- * G-08: Generate a prevention rule from an error pattern.
- * Maps known error patterns to actionable prevention instructions.
- */
+/** G-08: Pattern→prevention rule mapping table */
+const PREVENTION_RULES: Array<[RegExp, string]> = [
+  [/Forbidden patterns? found/i, '禁止語(TODO/WIP/FIXME等)の使用禁止。具体的な計画・説明に置き換えること。'],
+  [/Section density/i, '実質行密度30%未満禁止。各セクションの密度30%以上を維持し、構造要素でなく説明文を追加すること。'],
+  [/Missing required sections/i, '必須セクション省略禁止。テンプレートの全セクションヘッダーを維持すること。'],
+  [/Duplicate lines/i, '同一行の3回以上の繰り返し禁止。各行に文脈固有の情報を含めること。'],
+  [/Bracket placeholder/i, '[#xxx#]形式のプレースホルダー禁止。具体的な内容に置き換えること。'],
+  [/[Cc]ontent lines/i, '実質行数不足禁止。空行・構造要素でなく説明・分析・根拠を追加すること。'],
+  [/No baseline captured/i, 'テストベースライン未記録禁止。testingフェーズでharness_capture_baselineを実行すること。'],
+];
+
 function generatePreventionRule(errorPattern: string): string {
-  if (/Forbidden patterns? found/i.test(errorPattern)) {
-    return '禁止語(TODO/WIP/FIXME等)の使用禁止。具体的な計画・説明に置き換えること。';
-  }
-  if (/Section density/i.test(errorPattern)) {
-    return '各セクションの実質行密度30%以上を維持禁止違反。構造要素でなく説明文を追加すること。';
-  }
-  if (/Missing required sections/i.test(errorPattern)) {
-    return '必須セクション省略禁止。テンプレートの全セクションヘッダーを維持すること。';
-  }
-  if (/Duplicate lines/i.test(errorPattern)) {
-    return '同一行の3回以上の繰り返し禁止。各行に文脈固有の情報を含めること。';
-  }
-  if (/Bracket placeholder/i.test(errorPattern)) {
-    return '[#xxx#]形式のプレースホルダー禁止。具体的な内容に置き換えること。';
-  }
-  if (/Content lines/i.test(errorPattern) || /content lines/i.test(errorPattern)) {
-    return '実質行数不足禁止。空行・構造要素でなく説明・分析・根拠を追加すること。';
-  }
-  if (/No baseline captured/i.test(errorPattern)) {
-    return 'テストベースライン未記録禁止。testingフェーズでharness_capture_baselineを実行すること。';
-  }
-  return `同一エラーパターン「${errorPattern.substring(0, 40)}」の再発禁止。成果物品質要件を確認すること。`;
+  const match = PREVENTION_RULES.find(([re]) => re.test(errorPattern));
+  return match ? match[1] : `同一エラーパターン「${errorPattern.substring(0, 40)}」の再発禁止。成果物品質要件を確認すること。`;
 }
 
 /**
