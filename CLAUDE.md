@@ -6,6 +6,8 @@ Authoritative instruction set. Violations are blocked by hooks.
 ## Core Principles
 - Phases = context compression. 各成果物が次フェーズへの完全な引き継ぎ。
 - L1-L4決定的ゲートのみ。L5(LLM判断)はゲート使用禁止。
+  - L1=file_exists L2=exit_code L3=numeric_threshold L4=regex_match → 全て決定的・再現可能
+  - L5禁止理由(PSC-5): 検証容易性=改善能力。LLM判断は非決定的→再現不可→改善不可→品質劣化。
 - 全ソースファイル≤200行=責務分離の指標。超過=責務混在→階層化/正規化/分解で対応（行数削減がゴールではない）。TOON形式(.toon)で成果物生成。
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
