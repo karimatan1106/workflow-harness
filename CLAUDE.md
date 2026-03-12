@@ -22,6 +22,9 @@ small(0-3)=~12: ドキュメント修正不要な小規模変更のみ。medium(
 ## Orchestrator (→ skill: workflow-orchestrator.md)
 harness_next→hasTemplate→harness_get_subphase_template→Task(template)→harness_next(DoD)
 テンプレート自作禁止。報告: `[Phase] complete. Next: [next]. Remaining: [N] phases.`
+**2層構造**: オーケストレーター→末端サブエージェント。中間層禁止。末端のみがファイル編集する。
+  - 末端サブエージェント内からAgent(Explore)は可（読み取り専用、編集不可）
+  - 末端サブエージェント内からAgent(Edit/Write)の再委譲は禁止
 
 ## Retry (→ skill: workflow-rules.md)
 DoD失敗→サブエージェント再起動(直接編集禁止)。retryCount渡す。5回→ユーザー確認。
