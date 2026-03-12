@@ -47,6 +47,19 @@ role: spec|design|test|impl|report|diagram。[N]は実数に置換。
 
 IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requirements=REQ,threat_modeling=TM,planning=PL,state_machine=SM,flowchart=FC,ui_design=UID,design_review=DR,test_design=TD,test_selection=TS,code_review=CR,acceptance_verification=AV,manual_test=MT,security_scan=SS,performance_test=PT,e2e_test=E2E,health_observation=HO`;
 
+// Refactoring methodology — referenced by refactoring phase template
+export const REFACTORING_STRATEGY = `リファクタリング方針（優先順に実施）
+★ 分割は最後の手段。先に1〜4を実施すれば分割の必要量は激減する。
+
+1. 削除: 未使用コード・デッドコードを除去。呼び出し元のないファイル/関数を特定。
+2. 正規化: 複数ファイル横断の重複パターンを shared/ に抽出。設定読込・バリデーション・エラー処理・ログ等。
+3. インターフェース設計: 抽出モジュールの公開APIを最小化。型で契約を定義。index.ts re-exportのみ公開。
+4. 階層化: 依存方向を一方向に整理（entry→logic→data）。循環依存=設計ミス。
+5. 構造化: 関連ファイルをモジュール境界でディレクトリ整理。
+6. 分割: 上記5つでまだ200行超のファイルのみ物理分割。
+
+漸進ルール: 各ステップでテストが通る状態を維持。ビッグバン置換禁止。`;
+
 // AGT-1: Subagent termination detection tag + return format
 export const EXIT_CODE_RULE = `完了時の戻り値(AGT-1)
 成果物全文は含めない。最後にTOONサマリーのみ出力:
