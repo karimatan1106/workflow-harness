@@ -75,6 +75,7 @@ export const TOOL_DEFS_A = [
             hasEvents: { type: 'boolean' }, hasI18n: { type: 'boolean' }, hasDesignSystem: { type: 'boolean' },
           },
         },
+        docPaths: { type: 'array', items: { type: 'string' }, description: 'Existing project document paths discovered during scope_definition.' },
         sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'sessionToken'],

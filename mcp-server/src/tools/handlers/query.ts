@@ -48,15 +48,16 @@ export async function handleHarnessGetSubphaseTemplate(args: Record<string, unkn
   const taskId = args.taskId ? String(args.taskId) : undefined;
   let taskName = '', docsDir = '', workflowDir = '', userIntent = '';
   let projectTraits: Record<string, boolean> | undefined;
+  let docPaths: string[] | undefined;
   if (taskId) {
     const task = sm.loadTask(taskId);
-    if (task) { taskName = task.taskName; docsDir = task.docsDir ?? ''; workflowDir = task.workflowDir ?? ''; userIntent = task.userIntent ?? ''; projectTraits = (task as any).projectTraits; }
+    if (task) { taskName = task.taskName; docsDir = task.docsDir ?? ''; workflowDir = task.workflowDir ?? ''; userIntent = task.userIntent ?? ''; projectTraits = (task as any).projectTraits; docPaths = (task as any).docPaths; }
   }
   const phaseDef = getPhaseDefinition(phase);
   const registryDef = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   if (!phaseDef && !registryDef) return respondError('No definition found for phase: ' + phase);
   const prompt = phaseDef
-    ? buildSubagentPrompt(phase, taskName || '{taskName}', docsDir || '{docsDir}', workflowDir || '{workflowDir}', userIntent || '{userIntent}', taskId, projectTraits)
+    ? buildSubagentPrompt(phase, taskName || '{taskName}', docsDir || '{docsDir}', workflowDir || '{workflowDir}', userIntent || '{userIntent}', taskId, projectTraits, undefined, docPaths)
     : '# ' + phase + ' phase\n\nNo subagent template defined. Use phase registry for configuration.';
   return respond({
     phase,

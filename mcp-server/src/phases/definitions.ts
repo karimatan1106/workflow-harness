@@ -105,17 +105,22 @@ const FALLBACK_ITEMS = [
   'docs/workflows/ -- 永続パスへの反映',
 ];
 
-export function buildDocCategories(traits?: Record<string, boolean>): string {
+export function buildDocCategories(traits?: Record<string, boolean>, docPaths?: string[]): string {
   const lines = FALLBACK_ITEMS.map((item, i) => `${i + 1}. ${item}`);
+  const seen = new Set<string>();
+  for (const item of FALLBACK_ITEMS) seen.add(item.split(' -- ')[0]);
   if (traits && typeof traits === 'object') {
-    const seen = new Set<string>();
-    for (const item of FALLBACK_ITEMS) seen.add(item.split(' -- ')[0]);
     for (const [flag, cats] of Object.entries(loadTraitCategories())) {
       if (traits[flag]) {
         for (const cat of cats) {
           if (!seen.has(cat)) { seen.add(cat); lines.push(`${lines.length + 1}. ${cat}`); }
         }
       }
+    }
+  }
+  if (docPaths && docPaths.length > 0) {
+    for (const dp of docPaths) {
+      if (!seen.has(dp)) { seen.add(dp); lines.push(`${lines.length + 1}. ${dp} -- 既存プロジェクトドキュメント`); }
     }
   }
   return lines.join('\n');
@@ -132,6 +137,7 @@ export function buildSubagentPrompt(
   taskId?: string,
   projectTraits?: Record<string, boolean>,
   refinedIntent?: string,
+  docPaths?: string[],
 ): string {
   const def = getPhaseDefinition(phase);
   if (!def) return `# ${phase} phase\n\nNo template defined for this phase.`;
@@ -158,7 +164,7 @@ export function buildSubagentPrompt(
   prompt = prompt.replace(/\{userIntent\}/g, userIntent);
   prompt = prompt.replace(/\{taskId\}/g, taskId ?? '');
   prompt = prompt.replace(/\{phase\}/g, phase);
-  prompt = prompt.replace(/\{docCategories\}/g, buildDocCategories(projectTraits));
+  prompt = prompt.replace(/\{docCategories\}/g, buildDocCategories(projectTraits, docPaths));
   // Prepend compact header (task info + input + output in 2 lines)
   const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
   const outputFile = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? '';
