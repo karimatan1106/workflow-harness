@@ -1,8 +1,8 @@
 # Workflow Harness - Project Instructions
 
 Authoritative instruction set. Violations are blocked by hooks.
-**ワークフロー強制**: コード変更タスクは `/harness start <タスク名>` で開始。
-**探索委譲**: 調査・分析もAgent(Explore)に委譲。1-2ファイル参照の簡単な質問のみ直接回答可。
+**ワークフロー強制**: バグ報告・機能要求・リファクタ等は即座に `/harness start <タスク名>` で開始。事前調査禁止（scope_definition/researchフェーズで実施）。純粋な質問のみ直接回答可。
+**探索委譲**: 調査・分析はAgent(Explore)に委譲。1-2ファイル参照の簡単な質問のみオーケストレーター直接回答可。
 
 ## Core Principles
 - Phases = context compression. 各成果物が次フェーズへの完全な引き継ぎ。
