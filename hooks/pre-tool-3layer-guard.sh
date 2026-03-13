@@ -4,6 +4,12 @@
 # Layer 2 (Coordinator): Agent + non-lifecycle MCP only
 # Layer 3 (Worker): Standard tools + Agent only, no MCP
 
+# Prevent inherited strict mode from causing crashes (grep returns 1 on no-match)
+set +e
+
+# Safety net: any unexpected exit code becomes 0 (allow) rather than "hook error"
+trap 'code=$?; if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit 0; fi' EXIT
+
 INPUT=$(cat)
 
 # Empty stdin — allow
@@ -12,9 +18,9 @@ if [ -z "$INPUT" ]; then exit 0; fi
 # Bypass via environment variable
 if [ "$ORCHESTRATOR_GUARD_DISABLE" = "true" ]; then exit 0; fi
 
-# Extract fields
-TOOL_NAME=$(echo "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tool_name"[[:space:]]*:[[:space:]]*"//;s/"$//')
-AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_id"[[:space:]]*:[[:space:]]*"//;s/"$//')
+# Extract fields (|| true guards against grep exit code 1 on no-match)
+TOOL_NAME=$(echo "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"tool_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"agent_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 
 # Empty tool — allow
 if [ -z "$TOOL_NAME" ]; then exit 0; fi
@@ -29,7 +35,7 @@ log_obs() {
 LAYER="orchestrator"
 if [ -n "$AGENT_ID" ]; then
   COORD_FILE=".agent/.coordinator-ids"
-  if [ -f "$COORD_FILE" ] && grep -qF "$AGENT_ID" "$COORD_FILE"; then
+  if [ -f "$COORD_FILE" ] && grep -qF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
     LAYER="coordinator"
   else
     LAYER="worker"
