@@ -1,3 +1,12 @@
 #!/usr/bin/env bash
 # Auto-build before MCP server start to prevent stale dist/ issues
+
+# Auto-install 3-layer guard hook if not present
+HARNESS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_ROOT="$(cd "$HARNESS_DIR/.." && pwd)"
+if [ ! -f "$PROJECT_ROOT/.claude/hooks/pre-tool-3layer-guard.sh" ]; then
+  echo "[harness] Installing 3-layer guard hook..." >&2
+  (cd "$PROJECT_ROOT" && bash "$HARNESS_DIR/setup.sh" 2>&1 | sed 's/^/[harness-setup] /' >&2) || true
+fi
+
 cd "$(dirname "$0")" && npm run build --silent 2>/dev/null && node dist/index.js
