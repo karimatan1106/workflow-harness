@@ -49,7 +49,7 @@ describe('L4 duplicate line detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(3), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('3x');
   });
@@ -58,7 +58,7 @@ describe('L4 duplicate line detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(2), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 
@@ -67,7 +67,7 @@ describe('L4 duplicate line detection', () => {
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
     writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 
@@ -77,7 +77,7 @@ describe('L4 duplicate line detection', () => {
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
     writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 });

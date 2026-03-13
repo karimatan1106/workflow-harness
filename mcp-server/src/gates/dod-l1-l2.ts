@@ -4,6 +4,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import type { TaskState, PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
@@ -96,6 +97,22 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   };
 }
 
+/** Resolve @spec path: try CWD first, then ancestor directories of the source file */
+function resolveSpecPath(specPath: string, sourceFile: string): boolean {
+  if (existsSync(specPath)) return true;
+  // Walk up from source file's directory to find subproject root
+  let dir = dirname(sourceFile);
+  const seen = new Set<string>();
+  while (dir && !seen.has(dir)) {
+    seen.add(dir);
+    if (existsSync(join(dir, specPath))) return true;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
+}
+
 /** Validate that @spec paths in scope files actually exist on filesystem */
 export function checkSpecPathsExist(state: TaskState, phase: string): DoDCheckResult {
   if (!SPEC_CHECK_PHASES.has(phase)) {
@@ -115,7 +132,7 @@ export function checkSpecPathsExist(state: TaskState, phase: string): DoDCheckRe
     let match: RegExpExecArray | null;
     while ((match = regex.exec(lines)) !== null) {
       const specPath = match[1].replace(/\*\/$/, '');
-      if (specPath && !existsSync(specPath)) {
+      if (specPath && !resolveSpecPath(specPath, filePath)) {
         broken.push(`${filePath} → @spec ${specPath}`);
       }
     }

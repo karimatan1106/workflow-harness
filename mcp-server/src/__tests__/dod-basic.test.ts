@@ -50,14 +50,15 @@ describe('runDoDChecks for phases with no output file', () => {
   it('always returns 24 check results', async () => {
     const state = makeMinimalState('refactoring', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
-    expect(result.checks).toHaveLength(24);
-    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L1', 'L2', 'L3', 'L4', 'L3', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L4']);
+    expect(result.checks).toHaveLength(25);
+    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L1', 'L2', 'L3', 'L4', 'L4', 'L3', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L4']);
     expect(result.checks[2].check).toBe('spec_paths_exist');
-    expect(result.checks[19].check).toBe('tc_coverage');
-    expect(result.checks[20].check).toBe('artifact_drift');
-    expect(result.checks[21].check).toBe('package_lock_sync');
-    expect(result.checks[22].check).toBe('tdd_red_evidence');
-    expect(result.checks[23].check).toBe('dead_references');
+    expect(result.checks[5].check).toBe('toon_safety');
+    expect(result.checks[20].check).toBe('tc_coverage');
+    expect(result.checks[21].check).toBe('artifact_drift');
+    expect(result.checks[22].check).toBe('package_lock_sync');
+    expect(result.checks[23].check).toBe('tdd_red_evidence');
+    expect(result.checks[24].check).toBe('dead_references');
   });
 });
 

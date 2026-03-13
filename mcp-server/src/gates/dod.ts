@@ -15,6 +15,7 @@ import { checkAcDesignMapping, checkAcTcMapping, checkAcAchievementTable, checkT
 import { checkArtifactDrift } from './dod-l4-art.js';
 import { checkPackageLockSync } from './dod-l4-commit.js';
 import { checkDeadReferences } from './dod-l4-refs.js';
+import { checkToonSafety } from './dod-l4-toon.js';
 
 export type { DoDCheckResult, DoDResult } from './dod-types.js';
 
@@ -37,6 +38,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkSpecPathsExist(state, phase), 'L1');
   push(checkL2ExitCode(state), 'L2');
   push(checkL3Quality(phase, docsDir, workflowDir), 'L3');
+  push(checkToonSafety(phase, docsDir, workflowDir), 'L4');
   push(checkL4ContentValidation(phase, docsDir, workflowDir), 'L4');
   push(checkRTMCompleteness(state, phase), 'L3');
   push(checkACCompleteness(state, phase), 'L3');

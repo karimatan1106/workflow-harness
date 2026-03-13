@@ -74,7 +74,7 @@ describe('L4 forbidden pattern detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('This item requires TODO work before completion.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('TODO');
   });
@@ -83,7 +83,7 @@ describe('L4 forbidden pattern detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('この値は未定です。後で決定する。'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('未定');
   });
@@ -92,7 +92,7 @@ describe('L4 forbidden pattern detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Value is TBD and not yet determined.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('TBD');
   });
@@ -102,7 +102,7 @@ describe('L4 forbidden pattern detection', () => {
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
     writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 
@@ -111,7 +111,7 @@ describe('L4 forbidden pattern detection', () => {
     // The inline backtick stripping in extractNonCodeLines removes `TODO` from line
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Use `TODO` comments to mark placeholders in code.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 });
@@ -123,7 +123,7 @@ describe('L4 bracket placeholder detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('The value is [#insert-value-here#].'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('[#');
   });
@@ -132,7 +132,7 @@ describe('L4 bracket placeholder detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('See RFC-1234 for reference documentation.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 
@@ -141,7 +141,7 @@ describe('L4 bracket placeholder detection', () => {
     // Inline backtick stripping in extractNonCodeLines removes `[#placeholder#]` from line
     writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Use `[#placeholder#]` pattern in templates.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 });
