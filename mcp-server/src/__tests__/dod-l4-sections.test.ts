@@ -43,7 +43,7 @@ describe('L4 required sections check', () => {
     });
     writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('artifacts');
   });
@@ -53,7 +53,7 @@ describe('L4 required sections check', () => {
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
     writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
   });
 
@@ -76,7 +76,7 @@ describe('L4 required sections check', () => {
     });
     writeFileSync(join(docsDir, 'planning.toon'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
-    const l4 = result.checks.find(c => c.level === 'L4')!;
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
     expect(l4.evidence).toContain('next');
   });
