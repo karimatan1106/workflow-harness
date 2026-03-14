@@ -27,17 +27,18 @@ import {
   getLessonsForPhase, formatLessonsForPrompt,
   extractErrorPattern, getPreventionRules,
 } from '../tools/reflector.js';
+import { serializeStore, parseStore } from '../tools/reflector-toon.js';
 
-const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
+const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.toon');
 
 function clearStore() { fsStore.clear(); }
-function setReflectorStore(data: object) {
-  fsStore.set(REFLECTOR_PATH, JSON.stringify(data));
+function setReflectorStore(data: any) {
+  fsStore.set(REFLECTOR_PATH, serializeStore(data));
 }
 function getReflectorStore(): any {
   const v = fsStore.get(REFLECTOR_PATH);
   if (!v) throw new Error('reflector store not found');
-  return JSON.parse(v);
+  return parseStore(v);
 }
 
 describe('G-08: Prevention rule generation', () => {

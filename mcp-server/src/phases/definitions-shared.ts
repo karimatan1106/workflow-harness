@@ -80,3 +80,55 @@ export function bashCategoryHelp(categories: string[]): string {
   };
   return `Bash制限\n許可: ${categories.map(c => `${c}(${defs[c] ?? '?'})`).join(' / ')}\n他はRead/Write/Edit/Glob/Grep使用。`;
 }
+
+// ─── Dynamic Doc Categories ─────────────────────
+
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const DEFAULT_TRAIT_CATEGORIES: Record<string, string[]> = {
+  hasUI: ['docs/spec/screens/', 'docs/spec/wireframes/', 'docs/spec/components/', 'docs/spec/interactions/', 'docs/spec/responsive/', 'docs/spec/accessibility/'],
+  hasAPI: ['docs/spec/api/'],
+  hasDB: ['docs/spec/database/'],
+  hasEvents: ['docs/spec/events/', 'docs/spec/messages/'],
+  hasI18n: ['docs/spec/i18n/', 'docs/spec/seo/', 'docs/spec/sitemap.md'],
+  hasDesignSystem: ['docs/spec/design-system/', 'docs/spec/components/'],
+};
+
+export function loadTraitCategories(configDir?: string): Record<string, string[]> {
+  try {
+    const p = join(configDir ?? '.', '.harness.json');
+    const parsed = JSON.parse(readFileSync(p, 'utf8'));
+    if (parsed.traitCategories && typeof parsed.traitCategories === 'object') return parsed.traitCategories;
+  } catch { /* fallback */ }
+  return DEFAULT_TRAIT_CATEGORIES;
+}
+
+const FALLBACK_ITEMS = [
+  'docs/architecture/overview.md -- システム概要の更新',
+  'docs/operations/ -- environments/deployment/monitoring/runbooks配下の運用ドキュメント更新',
+  'CHANGELOG.md -- 変更履歴の追記',
+  'README.md -- プロジェクト概要の更新',
+  'docs/workflows/ -- 永続パスへの反映',
+];
+
+export function buildDocCategories(traits?: Record<string, boolean>, docPaths?: string[]): string {
+  const lines = FALLBACK_ITEMS.map((item, i) => `${i + 1}. ${item}`);
+  const seen = new Set<string>();
+  for (const item of FALLBACK_ITEMS) seen.add(item.split(' -- ')[0]);
+  if (traits && typeof traits === 'object') {
+    for (const [flag, cats] of Object.entries(loadTraitCategories())) {
+      if (traits[flag]) {
+        for (const cat of cats) {
+          if (!seen.has(cat)) { seen.add(cat); lines.push(`${lines.length + 1}. ${cat}`); }
+        }
+      }
+    }
+  }
+  if (docPaths && docPaths.length > 0) {
+    for (const dp of docPaths) {
+      if (!seen.has(dp)) { seen.add(dp); lines.push(`${lines.length + 1}. ${dp} -- 既存プロジェクトドキュメント`); }
+    }
+  }
+  return lines.join('\n');
+}

@@ -18,6 +18,9 @@ import { readProgressJSON } from '../../state/progress-json.js';
 import { buildPhaseTimings, type PhaseTimingsResult } from '../phase-timings.js';
 import { buildAnalytics } from '../phase-analytics.js';
 import { writeAnalyticsToon } from '../analytics-toon.js';
+import { appendErrorToon } from '../error-toon.js';
+import { writeMetricsToon } from '../metrics-toon.js';
+import { getTaskMetrics } from '../metrics.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'など', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -140,6 +143,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
       const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
       try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
       try { recordRetry(taskId, task.phase, dodResult.errors.join('\n')); recordDoDFailure(taskId, task.phase, dodResult.errors); } catch { /* non-blocking */ }
+      try { appendErrorToon(docsDir, { timestamp: new Date().toISOString(), phase: task.phase, retryCount, errors: dodResult.errors, checks: dodResult.checks.map(c => ({ name: c.check, passed: c.passed, message: c.evidence })) }); } catch { /* non-blocking */ }
       // VDB-1: Suspect validator bug after 3+ retries on same phase
       const vdb1Warning = retryCount >= 3
         ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. Same validation error recurring. Diagnose the validator before retrying. Check if the DoD check itself has a bug.`
@@ -178,6 +182,13 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
         responseObj.totalElapsed = timingsResult.totalElapsed;
       }
     } catch { /* non-blocking — omit analytics if unavailable */ }
+    // Write phase-metrics.toon on completion
+    try {
+      const taskMetrics = getTaskMetrics(taskId);
+      if (taskMetrics) {
+        writeMetricsToon(freshTask.docsDir, taskMetrics);
+      }
+    } catch { /* non-blocking */ }
   }
   return respond(responseObj);
 }

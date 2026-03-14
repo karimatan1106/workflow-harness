@@ -32,21 +32,22 @@ import {
 import { runCuratorCycle } from '../tools/curator.js';
 import { extractAndStoreBullets, getTopCrossTaskBullets } from '../tools/ace-context.js';
 import { computeQualityScore, computePatternSimilarity } from '../tools/curator-helpers.js';
+import { serializeStore, parseStore } from '../tools/reflector-toon.js';
 
 // Paths must match what the modules compute (Windows uses backslashes via path.join)
-const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
+const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.toon');
 const ACE_PATH = join(TEST_STATE_DIR, 'ace-context.json');
 
 function clearStore() { fsStore.clear(); }
 
-function setReflectorStore(data: object) {
-  fsStore.set(REFLECTOR_PATH, JSON.stringify(data));
+function setReflectorStore(data: any) {
+  fsStore.set(REFLECTOR_PATH, serializeStore(data));
 }
 
 function getReflectorStore(): any {
   const v = fsStore.get(REFLECTOR_PATH);
   if (!v) throw new Error(`reflector store not found at ${REFLECTOR_PATH}. Keys: ${[...fsStore.keys()].join(', ')}`);
-  return JSON.parse(v);
+  return parseStore(v);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -68,7 +69,8 @@ describe('AC-1: ReflectorLessonのACEフィールド追加', () => {
   });
 
   it('TC-AC1-02: v2 storeがv3形式に透過的にマイグレーションされる', () => {
-    fsStore.set(REFLECTOR_PATH, JSON.stringify({
+    const LEGACY_JSON = join(TEST_STATE_DIR, 'reflector-log.json');
+    fsStore.set(LEGACY_JSON, JSON.stringify({
       version: 2,
       lessons: [
         { phase: 'research', errorPattern: 'timeout', lesson: 'increase timeout', createdAt: new Date().toISOString(), hitCount: 2 },
