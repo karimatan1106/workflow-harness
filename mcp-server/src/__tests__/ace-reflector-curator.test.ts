@@ -26,20 +26,25 @@ import { runCuratorCycle } from '../tools/curator.js';
 import { extractAndStoreBullets, getTopCrossTaskBullets } from '../tools/ace-context.js';
 import { computeQualityScore, computePatternSimilarity } from '../tools/curator-helpers.js';
 import { serializeBullets } from '../tools/ace-context-toon.js';
+import { serializeStore, parseStore } from '../tools/reflector-toon.js';
 
-const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
+const REFLECTOR_JSON_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
+const REFLECTOR_TOON_PATH = join(TEST_STATE_DIR, 'reflector-log.toon');
 const ACE_PATH = join(TEST_STATE_DIR, 'ace-context.toon');
 
 function clearStore() { fsStore.clear(); }
 
 function setReflectorStore(data: object) {
-  fsStore.set(REFLECTOR_PATH, JSON.stringify(data));
+  fsStore.set(REFLECTOR_JSON_PATH, JSON.stringify(data));
 }
 
 function getReflectorStore(): any {
-  const v = fsStore.get(REFLECTOR_PATH);
-  if (!v) throw new Error(`reflector store not found at ${REFLECTOR_PATH}`);
-  return JSON.parse(v);
+  // After curator cycle, data is saved to .toon path via saveStore
+  const toon = fsStore.get(REFLECTOR_TOON_PATH);
+  if (toon) return parseStore(toon);
+  const json = fsStore.get(REFLECTOR_JSON_PATH);
+  if (json) return JSON.parse(json);
+  throw new Error(`reflector store not found`);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
