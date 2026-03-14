@@ -17,6 +17,7 @@ import { recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure, record
 import { readProgressJSON } from '../../state/progress-json.js';
 import { buildPhaseTimings, type PhaseTimingsResult } from '../phase-timings.js';
 import { buildAnalytics } from '../phase-analytics.js';
+import { writeAnalyticsToon } from '../analytics-toon.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'など', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -78,13 +79,13 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
         verboseData.totalElapsed = timingsResult.totalElapsed;
       }
     } catch { /* non-blocking — omit timings if unavailable */ }
-    // Phase analytics (non-blocking)
+    // Phase analytics → TOON file (non-blocking)
     try {
       const analytics = buildAnalytics(task, timingsResult);
-      if (analytics.errorAnalysis.length > 0) verboseData.errorAnalysis = analytics.errorAnalysis;
-      if (Object.keys(analytics.bottlenecks).length > 0) verboseData.bottlenecks = analytics.bottlenecks;
-      if (analytics.advice.length > 0) verboseData.advice = analytics.advice;
-      if (analytics.hookObsStats) verboseData.hookObsStats = analytics.hookObsStats;
+      const toonPath = writeAnalyticsToon(
+        task.docsDir, task.taskName, task.taskId, analytics, timingsResult,
+      );
+      verboseData.analyticsFile = toonPath;
     } catch { /* non-blocking — omit analytics if unavailable */ }
     return respond(verboseData);
   }
