@@ -1,6 +1,6 @@
 ---
 name: harness
-description: Intent-driven 30-phase workflow harness. Start here for all code change tasks.
+description: Intent-driven 30-phase workflow harness for code changes. Start here for requirements, design, implementation, testing, or code review tasks. Provides phase-by-phase guidance with L1-L4 deterministic gates.
 user-invocable: true
 ---
 
