@@ -175,10 +175,59 @@ fs.writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
 " "$SETTINGS"
 fi
 
-# 4. Create .agent directory for coordinator-ids tracking
+# 4. Register harness MCP server in .mcp.json
+MCPJSON="$PROJECT_DIR/.mcp.json"
+
+if [ ! -f "$MCPJSON" ]; then
+  # Create new .mcp.json with harness entry
+  # NOTE: Unquoted EOF so $HARNESS_DIR is expanded at setup time (baked path).
+  cat > "$MCPJSON" << EOF
+{
+  "mcpServers": {
+    "harness": {
+      "command": "bash",
+      "args": ["$HARNESS_DIR/mcp-server/start.sh"],
+      "cwd": "$HARNESS_DIR/mcp-server",
+      "env": {
+        "STATE_DIR": "$HARNESS_DIR/mcp-server/.claude/state"
+      }
+    }
+  }
+}
+EOF
+  echo "Created $MCPJSON with harness MCP server"
+else
+  # Auto-add harness entry to existing .mcp.json using node
+  node -e "
+const fs = require('fs');
+const path = process.argv[1];
+const harnessDir = process.argv[2];
+const mcp = JSON.parse(fs.readFileSync(path, 'utf8'));
+if (!mcp.mcpServers) mcp.mcpServers = {};
+
+if (!mcp.mcpServers.harness) {
+  mcp.mcpServers.harness = {
+    command: 'bash',
+    args: [harnessDir + '/mcp-server/start.sh'],
+    cwd: harnessDir + '/mcp-server',
+    env: {
+      STATE_DIR: harnessDir + '/mcp-server/.claude/state'
+    }
+  };
+  console.log('Added harness MCP server');
+} else {
+  console.log('harness MCP server already registered');
+}
+
+fs.writeFileSync(path, JSON.stringify(mcp, null, 2) + '\n');
+" "$MCPJSON" "$HARNESS_DIR"
+fi
+
+# 5. Create .agent directory for coordinator-ids tracking
 mkdir -p "$PROJECT_DIR/.agent"
 
 echo ""
 echo "=== Setup Complete ==="
 echo "3-layer guard + coordinator-recorder + coordinator-cleanup installed."
+echo "harness MCP server registered in .mcp.json."
 echo "Orchestrator/Coordinator/Worker access control active."
