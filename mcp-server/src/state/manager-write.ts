@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import type { TaskState, PhaseName, Checkpoint, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
@@ -12,6 +12,8 @@ import { writeProgressJSON } from './progress-json.js';
 import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-classifier.js';
 import { getActivePhases, SIZE_SKIP_MAP } from '../phases/registry.js';
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
+import { serializeState } from './state-toon-io.js';
+import { serializeTaskIndex } from './index-toon-io.js';
 
 function getStateDir(): string { return process.env.STATE_DIR || '.claude/state'; }
 
@@ -21,10 +23,11 @@ export function computeCheckpointHash(checkpoint: Checkpoint): string {
 }
 
 export function persistState(state: TaskState): void {
-  const statePath = getStatePath(state.taskId, state.taskName);
-  const dir = dirname(statePath);
+  const jsonPath = getStatePath(state.taskId, state.taskName);
+  const toonPath = jsonPath.replace(/\.json$/, '.toon');
+  const dir = dirname(toonPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(statePath, JSON.stringify(state, null, 2));
+  writeFileSync(toonPath, serializeState(state));
 }
 
 export function ensureStateDirs(state: TaskState): void {
@@ -35,10 +38,10 @@ export function ensureStateDirs(state: TaskState): void {
 export function writeTaskIndex(): void {
   const sd = getStateDir();
   const tasks = buildTaskIndex(sd);
-  const indexPath = join(sd, 'task-index.json');
+  const indexPath = join(sd, 'task-index.toon');
   const indexDir = dirname(indexPath);
   if (!existsSync(indexDir)) mkdirSync(indexDir, { recursive: true });
-  writeFileSync(indexPath, JSON.stringify({ tasks, updatedAt: new Date().toISOString() }, null, 2));
+  writeFileSync(indexPath, serializeTaskIndex({ tasks, updatedAt: new Date().toISOString() }));
 }
 
 export function createTaskState(taskName: string, userIntent: string, hmacKey: string, files: string[] = [], dirs: string[] = []): TaskState {
@@ -62,7 +65,25 @@ export function createTaskState(taskName: string, userIntent: string, hmacKey: s
   return state;
 }
 
+/**
+ * Normalize optional table-like fields so that the in-memory state matches
+ * what the TOON serializer produces.  The serializer omits empty tables
+ * (retryCount, subPhaseStatus, approvals, etc.) entirely, so after a
+ * serialize→parse roundtrip these keys are absent.  We delete them before
+ * signing to ensure HMAC consistency.
+ */
+function normalizeForSigning(state: TaskState): void {
+  const emptyObj = (v: unknown): boolean =>
+    typeof v === 'object' && v !== null && !Array.isArray(v) && Object.keys(v as object).length === 0;
+  if (emptyObj(state.retryCount)) delete state.retryCount;
+  if (emptyObj(state.subPhaseStatus)) delete state.subPhaseStatus;
+  if (emptyObj(state.approvals)) delete state.approvals;
+  if (emptyObj(state.artifactTimestamps)) delete state.artifactTimestamps;
+  if (emptyObj(state.artifactHashes)) delete state.artifactHashes;
+}
+
 export function signAndPersist(state: TaskState, hmacKey: string): void {
+  normalizeForSigning(state);
   state.stateIntegrity = signState(state as unknown as Record<string, unknown>, hmacKey);
   persistState(state);
 }
@@ -116,7 +137,7 @@ export function appendProgressLog(state: TaskState, completedPhase: string, next
 /** N-25: Sanitize task name to prevent path traversal, XSS, and injection */
 export function sanitizeTaskName(name: string): string {
   if (name.length > 10000) throw new Error('Task name exceeds maximum length');
-  let result = name.replace(/\.\./g, '').replace(/[/\\:*?<>|'";\-]+/g, ' ').replace(/<[^>]*>/g, '').trim().replace(/\s+/g, ' ');
+  let result = name.replace(/\.\./g, '').replace(/[/\\:*?<>|'";-]+/g, ' ').replace(/<[^>]*>/g, '').trim().replace(/\s+/g, ' ');
   if (result.length === 0) throw new Error('Task name is empty after sanitization');
   return result;
 }

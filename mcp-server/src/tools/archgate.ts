@@ -9,9 +9,11 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { isADRActive } from './adr.js';
 import { runJscpd, runAstGrepPattern } from './linter-runner.js';
+import { serializeRuleStore, parseRuleStore } from './archgate-toon-io.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
-const ARCHGATE_PATH = join(STATE_DIR, 'archgate-rules.json');
+const ARCHGATE_TOON_PATH = join(STATE_DIR, 'archgate-rules.toon');
+const ARCHGATE_JSON_PATH = join(STATE_DIR, 'archgate-rules.json');
 
 export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern' | 'comment_ratio';
 
@@ -53,25 +55,36 @@ export interface FileInfo {
   lineCount?: number;
   content?: string;
 }
-
-interface ArchRuleStore {
+export interface ArchRuleStore {
   version: 1;
   rules: ArchRule[];
 }
 
+function migrateJsonToToon(): void {
+  if (!existsSync(ARCHGATE_TOON_PATH) && existsSync(ARCHGATE_JSON_PATH)) {
+    try {
+      const json = JSON.parse(readFileSync(ARCHGATE_JSON_PATH, 'utf-8')) as ArchRuleStore;
+      const dir = dirname(ARCHGATE_TOON_PATH);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(ARCHGATE_TOON_PATH, serializeRuleStore(json), 'utf-8');
+    } catch { /* migration failed — will start fresh */ }
+  }
+}
+
 function loadRuleStore(): ArchRuleStore {
+  migrateJsonToToon();
   try {
-    if (existsSync(ARCHGATE_PATH)) {
-      return JSON.parse(readFileSync(ARCHGATE_PATH, 'utf-8')) as ArchRuleStore;
+    if (existsSync(ARCHGATE_TOON_PATH)) {
+      return parseRuleStore(readFileSync(ARCHGATE_TOON_PATH, 'utf-8'));
     }
   } catch { /* corrupted */ }
   return { version: 1, rules: [] };
 }
 
 function saveRuleStore(store: ArchRuleStore): void {
-  const dir = dirname(ARCHGATE_PATH);
+  const dir = dirname(ARCHGATE_TOON_PATH);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(ARCHGATE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  writeFileSync(ARCHGATE_TOON_PATH, serializeRuleStore(store), 'utf-8');
 }
 
 export function registerArchRule(input: ArchRuleInput): ArchRule {
@@ -184,11 +197,4 @@ export function runArchGateChecks(
     checks,
   };
 }
-
-/** N-27: Feedback speed layers for PostToolUse → CI → human-review pipeline */
-export const FEEDBACK_SPEED_LAYERS = {
-  ms: { name: 'PostToolUse', tools: ['biome', 'oxlint', 'tsc'], maxTime: '100ms' },
-  s: { name: 'pre-commit', tools: ['lefthook', 'full-lint', 'type-check'], maxTime: '10s' },
-  min: { name: 'CI', tools: ['vitest', 'playwright', 'build'], maxTime: '5min' },
-  h: { name: 'human-review', tools: ['code-review', 'acceptance'], maxTime: 'async' },
-} as const;
+export { FEEDBACK_SPEED_LAYERS } from './archgate-toon-io.js';

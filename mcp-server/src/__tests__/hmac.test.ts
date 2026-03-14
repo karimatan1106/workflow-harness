@@ -27,12 +27,12 @@ afterEach(() => {
 });
 
 describe('ensureHmacKeys', () => {
-  it('creates hmac-keys.json and returns a hex key when file does not exist', () => {
+  it('creates hmac-keys.toon and returns a hex key when file does not exist', () => {
     const key = ensureHmacKeys(tempDir);
     expect(typeof key).toBe('string');
     expect(key.length).toBe(64); // 32 bytes => 64 hex chars
     expect(/^[0-9a-f]{64}$/.test(key)).toBe(true);
-    expect(existsSync(join(tempDir, 'hmac-keys.json'))).toBe(true);
+    expect(existsSync(join(tempDir, 'hmac-keys.toon'))).toBe(true);
   });
 
   it('returns the same key on subsequent calls (reuses existing file)', () => {
@@ -41,28 +41,31 @@ describe('ensureHmacKeys', () => {
     expect(key1).toBe(key2);
   });
 
-  it('persists key in hmac-keys.json with correct structure including version', () => {
+  it('persists key in hmac-keys.toon with correct structure including version', () => {
     const key = ensureHmacKeys(tempDir);
-    const content = JSON.parse(readFileSync(join(tempDir, 'hmac-keys.json'), 'utf8'));
-    expect(content.current).toBe(key);
-    expect(content.version).toBe(1);
-    expect(typeof content.rotatedAt).toBe('string');
+    const raw = readFileSync(join(tempDir, 'hmac-keys.toon'), 'utf8');
+    expect(raw).toContain(`current: ${key}`);
+    expect(raw).toContain('version: 1');
+    expect(raw).toMatch(/rotatedAt: .+/);
   });
 
   it('creates nested directories if stateDir does not exist', () => {
     const nestedDir = join(tempDir, 'a', 'b', 'c');
     const key = ensureHmacKeys(nestedDir);
     expect(typeof key).toBe('string');
-    expect(existsSync(join(nestedDir, 'hmac-keys.json'))).toBe(true);
+    expect(existsSync(join(nestedDir, 'hmac-keys.toon'))).toBe(true);
   });
 
-  it('migrates existing file without version field by adding version: 1', () => {
-    const keysPath = join(tempDir, 'hmac-keys.json');
-    writeFileSync(keysPath, JSON.stringify({ current: 'abc123', rotatedAt: '2026-01-01T00:00:00.000Z' }));
+  it('migrates legacy JSON without version field to TOON with version: 1', () => {
+    const jsonPath = join(tempDir, 'hmac-keys.json');
+    writeFileSync(jsonPath, JSON.stringify({ current: 'abc123', rotatedAt: '2026-01-01T00:00:00.000Z' }));
     const key = ensureHmacKeys(tempDir);
     expect(key).toBe('abc123');
-    const content = JSON.parse(readFileSync(keysPath, 'utf8'));
-    expect(content.version).toBe(1);
+    const toonPath = join(tempDir, 'hmac-keys.toon');
+    expect(existsSync(toonPath)).toBe(true);
+    const raw = readFileSync(toonPath, 'utf8');
+    expect(raw).toContain('version: 1');
+    expect(raw).toContain('current: abc123');
   });
 });
 

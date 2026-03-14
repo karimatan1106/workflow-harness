@@ -2,7 +2,7 @@
  * Tests for StateManager — createTask, loadTask
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { StateManager as StateManagerType } from '../state/manager.js';
@@ -54,16 +54,16 @@ describe('createTask', () => {
   it('creates the workflow state file on disk', () => {
     const mgr = createMgr();
     const state = mgr.createTask('ct-disk-task', 'Intent for the disk task with sufficient length here ok.');
-    const expectedFile = join(STATE_DIR, 'workflows', `${state.taskId}_ct-disk-task`, 'workflow-state.json');
+    const expectedFile = join(STATE_DIR, 'workflows', `${state.taskId}_ct-disk-task`, 'workflow-state.toon');
     expect(existsSync(expectedFile)).toBe(true);
   });
-  it('writes a valid JSON file with correct taskId', () => {
+  it('writes a valid TOON file with correct taskId', () => {
     const mgr = createMgr();
     const state = mgr.createTask('ct-json-task', 'Intent for the json task with sufficient length here ok.');
-    const expectedFile = join(STATE_DIR, 'workflows', `${state.taskId}_ct-json-task`, 'workflow-state.json');
-    const parsed = JSON.parse(readFileSync(expectedFile, 'utf8'));
-    expect(parsed.taskId).toBe(state.taskId);
-    expect(parsed.taskName).toBe('ct-json-task');
+    const loaded = mgr.loadTask(state.taskId);
+    expect(loaded).not.toBeNull();
+    expect(loaded!.taskId).toBe(state.taskId);
+    expect(loaded!.taskName).toBe('ct-json-task');
   });
   it('sets stateIntegrity (HMAC) on the created state', () => {
     const mgr = createMgr();
@@ -142,10 +142,11 @@ describe('loadTask', () => {
   it('verifies HMAC and returns integrityWarning when state file is tampered with', () => {
     const mgr = createMgr();
     const state = mgr.createTask('lt-tamper-task', 'Intent for tamper task with sufficient length text.');
-    const stateFile = join(STATE_DIR, 'workflows', `${state.taskId}_lt-tamper-task`, 'workflow-state.json');
-    const raw = JSON.parse(readFileSync(stateFile, 'utf8'));
-    raw.taskName = 'tampered-name';
-    writeFileSync(stateFile, JSON.stringify(raw, null, 2));
+    const toonFile = join(STATE_DIR, 'workflows', `${state.taskId}_lt-tamper-task`, 'workflow-state.toon');
+    const raw = readFileSync(toonFile, 'utf8');
+    // Tamper: replace taskName value in the TOON content
+    const tampered = raw.replace(/taskName: lt-tamper-task/, 'taskName: tampered-name');
+    writeFileSync(toonFile, tampered);
     const result = mgr.loadTask(state.taskId);
     expect(result).not.toBeNull();
     expect((result as any).integrityWarning).toBe(true);
