@@ -3,11 +3,12 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { DCIIndex, DCICodeEntry, DCIDesignEntry } from './types.js';
 
 const SPEC_REGEX = /[/*]\s*@spec\s+(\S+)/g;
+const RELATED_FILES_REGEX = /@related-files?\s+(.+)/g;
 const DEFAULT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git', '.claude', '.agent', 'coverage']);
 const MAX_SCAN_LINES = 50;
@@ -55,6 +56,39 @@ function isTestFile(filePath: string): boolean {
   return name.includes('.test.') || name.includes('.spec.') || name.startsWith('test-');
 }
 
+function findSpecWithoutCode(
+  projectRoot: string,
+  codeToDesign: Record<string, DCICodeEntry>,
+): string[] {
+  const specDir = join(projectRoot, 'docs', 'spec');
+  if (!existsSync(specDir)) return [];
+  const specFiles = walkDir(specDir, ['.md']);
+  const linkedSpecs = new Set(
+    Object.values(codeToDesign).flatMap(e => e.specs),
+  );
+  const result: string[] = [];
+  for (const absPath of specFiles) {
+    const relPath = relative(projectRoot, absPath).replace(/\\/g, '/');
+    if (linkedSpecs.has(relPath)) continue;
+    // Check if spec references code files via @related-files
+    let content: string;
+    try { content = readFileSync(absPath, 'utf8'); } catch { continue; }
+    const header = content.split('\n').slice(0, MAX_SCAN_LINES).join('\n');
+    const regex = new RegExp(RELATED_FILES_REGEX.source, 'g');
+    let match: RegExpExecArray | null;
+    let hasValidRef = false;
+    while ((match = regex.exec(header)) !== null) {
+      const paths = match[1].split(/[,\s]+/).filter(Boolean);
+      for (const p of paths) {
+        if (existsSync(join(projectRoot, p))) { hasValidRef = true; break; }
+      }
+      if (hasValidRef) break;
+    }
+    if (!hasValidRef) result.push(relPath);
+  }
+  return result;
+}
+
 export function buildIndex(projectRoot: string, opts?: { extensions?: string[] }): DCIIndex {
   const extensions = opts?.extensions ?? DEFAULT_EXTENSIONS;
   const files = walkDir(join(projectRoot, 'src'), extensions);
@@ -93,6 +127,9 @@ export function buildIndex(projectRoot: string, opts?: { extensions?: string[] }
     projectRoot,
     codeToDesign,
     designToCode,
-    orphans: { codeWithoutSpec, specWithoutCode: [] },
+    orphans: {
+      codeWithoutSpec,
+      specWithoutCode: findSpecWithoutCode(projectRoot, codeToDesign),
+    },
   };
 }
