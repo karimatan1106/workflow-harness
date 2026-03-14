@@ -16,6 +16,7 @@ import { checkArtifactDrift } from './dod-l4-art.js';
 import { checkPackageLockSync } from './dod-l4-commit.js';
 import { checkDeadReferences } from './dod-l4-refs.js';
 import { checkToonSafety } from './dod-l4-toon.js';
+import { checkDCIValidation } from './dod-l4-dci.js';
 
 export type { DoDCheckResult, DoDResult } from './dod-types.js';
 
@@ -58,6 +59,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkPackageLockSync(phase), 'L4');
   push(checkTDDRedEvidence(state, phase), 'L2');
   push(checkDeadReferences(phase, docsDir, workflowDir ?? ''), 'L4');
+  for (const r of checkDCIValidation(state, phase)) push(r, 'L4');
 
   return { passed: errors.length === 0, checks, errors };
 }
