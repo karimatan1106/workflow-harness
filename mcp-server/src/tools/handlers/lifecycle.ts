@@ -165,6 +165,19 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   if (nextPhase === 'completed' && freshTask) {
     try { recordTaskCompletion(taskId); } catch { /* non-blocking */ }
     try { const r = runCuratorCycle(taskId, freshTask.taskName); responseObj.curatorReport = { lessonsBefore: r.lessonsBefore, lessonsAfter: r.lessonsAfter, actionCount: r.actions.length }; } catch { /* non-blocking */ }
+    // Auto-generate phase-analytics.toon on task completion
+    try {
+      const progress = readProgressJSON(freshTask.docsDir);
+      if (progress && freshTask.createdAt) {
+        const timingsResult = buildPhaseTimings(freshTask.createdAt, progress, nextPhase);
+        const analytics = buildAnalytics(freshTask, timingsResult);
+        const toonPath = writeAnalyticsToon(
+          freshTask.docsDir, freshTask.taskName, freshTask.taskId, analytics, timingsResult,
+        );
+        responseObj.analyticsFile = toonPath;
+        responseObj.totalElapsed = timingsResult.totalElapsed;
+      }
+    } catch { /* non-blocking — omit analytics if unavailable */ }
   }
   return respond(responseObj);
 }
