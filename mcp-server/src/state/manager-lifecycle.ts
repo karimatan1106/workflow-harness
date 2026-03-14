@@ -6,7 +6,7 @@
 import type { TaskState, PhaseName } from './types.js';
 import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
 import { loadTaskFromDisk } from './manager-read.js';
-import { signAndPersist, writeTaskIndex, updateCheckpoint, appendProgressLog } from './manager-write.js';
+import { signAndPersist, writeTaskIndex, updateCheckpoint } from './manager-write.js';
 import { writeProgressJSON } from './progress-json.js';
 
 type PhaseResult = { success: boolean; nextPhase?: PhaseName; error?: string };
@@ -40,7 +40,6 @@ export function advancePhase(taskId: string, hmacKey: string): PhaseResult {
   updateCheckpoint(state, nextPhase);
   signAndPersist(state, hmacKey);
   writeTaskIndex();
-  appendProgressLog(state, prevPhase, nextPhase);
   try { writeProgressJSON(state, prevPhase, nextPhase); } catch { /* non-blocking */ }
   return { success: true, nextPhase };
 }

@@ -43,7 +43,7 @@ export function loadStore(): ReflectorStore {
   return { version: 3, nextLessonId: 1, lessons: [], stashedFailures: [] };
 }
 
-function saveStore(store: ReflectorStore): void {
+export function saveStore(store: ReflectorStore): void {
   const dir = dirname(REFLECTOR_PATH);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(REFLECTOR_PATH, serializeStore(store), 'utf-8');

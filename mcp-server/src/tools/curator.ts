@@ -12,16 +12,13 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
 import { normalizePattern, computePatternSimilarity, computeQualityScore, saveCuratorReport } from './curator-helpers.js';
 import type { CuratorReport } from './curator-helpers.js';
 import { extractAndStoreBullets } from './ace-context.js';
+import { loadStore, saveStore } from './reflector.js';
 
 export type { CuratorReport, CuratorAction } from './curator-helpers.js';
 
-const STATE_DIR = process.env.STATE_DIR || '.claude/state';
-const REFLECTOR_PATH = join(STATE_DIR, 'reflector-log.json');
 const MAX_LESSONS_AFTER_CURATION = 40; // More aggressive than reflector's 50
 const STALE_THRESHOLD_DAYS = 30;
 const FUZZY_DEDUP_THRESHOLD = 0.7;
@@ -39,17 +36,8 @@ export function runCuratorCycle(taskId: string, taskName: string): CuratorReport
     actions: [],
   };
 
-  if (!existsSync(REFLECTOR_PATH)) return report;
-
-  let store: any;
-  try {
-    const raw = readFileSync(REFLECTOR_PATH, 'utf-8');
-    store = JSON.parse(raw);
-    if (!store.lessons) store.lessons = [];
-    if (!store.stashedFailures) store.stashedFailures = [];
-  } catch {
-    return report;
-  }
+  const store = loadStore();
+  if (store.lessons.length === 0 && store.stashedFailures.length === 0) return report;
 
   report.lessonsBefore = store.lessons.length;
   report.stashedBefore = store.stashedFailures.length;
@@ -127,11 +115,9 @@ export function runCuratorCycle(taskId: string, taskName: string): CuratorReport
   report.lessonsAfter = store.lessons.length;
   report.stashedAfter = store.stashedFailures.length;
 
-  // Save cleaned store
+  // Save cleaned store via TOON-based saveStore
   try {
-    const dir = dirname(REFLECTOR_PATH);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(REFLECTOR_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    saveStore(store);
   } catch { /* Non-fatal: store might be locked */ }
 
   saveCuratorReport(report);

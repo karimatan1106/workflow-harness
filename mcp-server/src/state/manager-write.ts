@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { writeFileSync, appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import type { TaskState, PhaseName, Checkpoint, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
@@ -123,16 +123,6 @@ export function applyUpdateACStatus(state: TaskState, acId: string, status: 'ope
   state.updatedAt = new Date().toISOString(); refreshCheckpointTraceability(state); return true;
 }
 
-// ANT-4: Write phase progress to {docsDir}/claude-progress.txt for session recovery
-export function appendProgressLog(state: TaskState, completedPhase: string, nextPhase: string): void {
-  try {
-    const logPath = join(state.docsDir, 'claude-progress.txt');
-    if (!existsSync(state.docsDir)) return;
-    const completedCount = state.completedPhases.length;
-    const line = `[${state.updatedAt}] COMPLETED: ${completedPhase} → NEXT: ${nextPhase} | Task: ${state.taskName} | Done: ${completedCount} phases\n`;
-    appendFileSync(logPath, line, 'utf8');
-  } catch { /* non-blocking */ }
-}
 
 /** N-25: Sanitize task name to prevent path traversal, XSS, and injection */
 export function sanitizeTaskName(name: string): string {
