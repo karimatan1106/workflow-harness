@@ -8,7 +8,7 @@
 set +e
 
 # Safety net: any unexpected exit code becomes 0 (allow) rather than "hook error"
-trap 'code=$?; if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit 0; fi' EXIT
+trap 'code=$?; if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit 2; fi' EXIT
 
 INPUT=$(cat)
 
@@ -31,10 +31,13 @@ log_obs() {
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] 3layer-guard tool=$TOOL_NAME agent=$AGENT_ID layer=$LAYER $1" >> "$LOG_FILE" 2>/dev/null
 }
 
+# --- Determine project root (absolute path for COORD_FILE) ---
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
 # --- Determine layer ---
 LAYER="orchestrator"
 if [ -n "$AGENT_ID" ]; then
-  COORD_FILE=".agent/.coordinator-ids"
+  COORD_FILE="$PROJECT_ROOT/.agent/.coordinator-ids"
   if [ -f "$COORD_FILE" ] && grep -qF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
     LAYER="coordinator"
   else
