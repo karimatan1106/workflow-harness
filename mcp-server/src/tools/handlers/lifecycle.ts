@@ -14,6 +14,9 @@ import { stashFailure, promoteStashedFailure } from '../reflector.js';
 import { runCuratorCycle } from '../curator.js';
 import { respond, respondError, validateSession, buildPhaseGuide, PHASE_APPROVAL_GATES, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
 import { recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure, recordTaskCompletion } from '../metrics.js';
+import { readProgressJSON } from '../../state/progress-json.js';
+import { buildPhaseTimings, type PhaseTimingsResult } from '../phase-timings.js';
+import { buildAnalytics } from '../phase-analytics.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'など', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -58,13 +61,32 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
     if ((task as any).projectTraits) core.projectTraits = (task as any).projectTraits;
     if ((task as any).docPaths) core.docPaths = (task as any).docPaths;
     if (!verbose) return respond(core);
-    return respond({
+    const verboseData: Record<string, unknown> = {
       ...core, completedPhases: task.completedPhases, skippedPhases: task.skippedPhases,
       subPhaseStatus: task.subPhaseStatus, userIntent: task.userIntent,
       scopeFiles: task.scopeFiles, scopeDirs: task.scopeDirs, scopeGlob: task.scopeGlob,
       acceptanceCriteria: task.acceptanceCriteria, rtmEntries: task.rtmEntries,
       baseline: task.baseline, testFiles: task.testFiles, createdAt: task.createdAt, updatedAt: task.updatedAt,
-    });
+    };
+    // Phase timings from progress-json (non-blocking)
+    let timingsResult: PhaseTimingsResult | undefined;
+    try {
+      const progress = readProgressJSON(task.docsDir);
+      if (progress && task.createdAt) {
+        timingsResult = buildPhaseTimings(task.createdAt, progress, task.phase);
+        verboseData.phaseTimings = timingsResult.phaseTimings;
+        verboseData.totalElapsed = timingsResult.totalElapsed;
+      }
+    } catch { /* non-blocking — omit timings if unavailable */ }
+    // Phase analytics (non-blocking)
+    try {
+      const analytics = buildAnalytics(task, timingsResult);
+      if (analytics.errorAnalysis.length > 0) verboseData.errorAnalysis = analytics.errorAnalysis;
+      if (Object.keys(analytics.bottlenecks).length > 0) verboseData.bottlenecks = analytics.bottlenecks;
+      if (analytics.advice.length > 0) verboseData.advice = analytics.advice;
+      if (analytics.hookObsStats) verboseData.hookObsStats = analytics.hookObsStats;
+    } catch { /* non-blocking — omit analytics if unavailable */ }
+    return respond(verboseData);
   }
   return respond({ tasks: sm.listTasks() });
 }
