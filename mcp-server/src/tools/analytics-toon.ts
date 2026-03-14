@@ -23,12 +23,12 @@ function headerBlock(taskName: string, taskId: string): string {
 }
 
 function timingsBlock(timings: PhaseTimingsResult): string {
-  const lines: string[] = ['', `totalElapsed: ${timings.totalElapsed.display}`];
+  const lines: string[] = ['', `totalElapsed: ${timings.totalElapsed.seconds}s`];
   const entries = Object.entries(timings.phaseTimings);
   if (entries.length === 0) return lines.join('\n');
   lines.push('', `phaseTimings[${entries.length}]{phase,duration,current}:`);
   for (const [phase, t] of entries) {
-    lines.push(`  ${phase}, ${t.display}, ${!!t.current}`);
+    lines.push(`  ${phase}, ${t.seconds}s, ${!!t.current}`);
   }
   return lines.join('\n');
 }
@@ -49,7 +49,7 @@ function bottleneckBlock(a: AnalyticsResult): string {
   const b = a.bottlenecks;
   if (!b.slowestPhase && !b.mostRetried && !b.mostFailedCheck) return '';
   const lines: string[] = ['', 'bottlenecks:'];
-  if (b.slowestPhase) lines.push(`  slowestPhase: ${b.slowestPhase.phase} (${b.slowestPhase.display})`);
+  if (b.slowestPhase) lines.push(`  slowestPhase: ${b.slowestPhase.phase} (${b.slowestPhase.seconds}s)`);
   if (b.mostRetried) lines.push(`  mostRetriedPhase: ${b.mostRetried.phase} (${b.mostRetried.retries} retries)`);
   if (b.mostFailedCheck) lines.push(`  mostFailedCheck: ${b.mostFailedCheck.check} (${b.mostFailedCheck.count} failures)`);
   return lines.join('\n');
