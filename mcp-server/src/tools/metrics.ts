@@ -11,7 +11,6 @@ import { serializeMetrics, parseMetrics, freshStore } from './metrics-toon-io.js
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const METRICS_PATH = join(STATE_DIR, 'metrics.toon');
-const LEGACY_JSON = join(STATE_DIR, 'metrics.json');
 
 export interface PhaseMetrics {
   startedAt: string;
@@ -56,14 +55,6 @@ export interface MetricsStore {
 
 export function loadMetrics(): MetricsStore {
   try {
-    // Migration: JSON → TOON
-    if (!existsSync(METRICS_PATH) && existsSync(LEGACY_JSON)) {
-      const store = JSON.parse(readFileSync(LEGACY_JSON, 'utf-8')) as MetricsStore;
-      const dir = dirname(METRICS_PATH);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(METRICS_PATH, serializeMetrics(store), 'utf-8');
-      return store;
-    }
     if (existsSync(METRICS_PATH)) return parseMetrics(readFileSync(METRICS_PATH, 'utf-8'));
   } catch { /* corrupted — start fresh */ }
   return freshStore();

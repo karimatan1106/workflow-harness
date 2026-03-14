@@ -1,7 +1,7 @@
 /**
  * ACE cross-task knowledge store.
  * Promotes high-quality lessons (quality score >= 0.6) to a persistent
- * ace-context.json for injection into future tasks (OpenSage-style).
+ * ace-context.toon for injection into future tasks (OpenSage-style).
  * All operations are non-blocking — exceptions are caught and not re-thrown.
  * @spec docs/spec/features/workflow-harness.md
  */
@@ -14,7 +14,6 @@ import { serializeBullets, parseBullets } from './ace-context-toon.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const ACE_TOON_PATH = join(STATE_DIR, 'ace-context.toon');
-const ACE_JSON_PATH = join(STATE_DIR, 'ace-context.json');
 const PROMOTE_THRESHOLD = 0.6;
 
 export interface AceBullet {
@@ -27,23 +26,8 @@ export interface AceBullet {
   createdAt: string;
 }
 
-/** Migrate ace-context.json → ace-context.toon if needed. */
-function migrateJsonToToon(): void {
-  try {
-    if (!existsSync(ACE_TOON_PATH) && existsSync(ACE_JSON_PATH)) {
-      const raw = readFileSync(ACE_JSON_PATH, 'utf-8');
-      const bullets = JSON.parse(raw) as AceBullet[];
-      mkdirSync(STATE_DIR, { recursive: true });
-      writeFileSync(ACE_TOON_PATH, serializeBullets(bullets), 'utf-8');
-    }
-  } catch {
-    // Non-fatal
-  }
-}
-
 function loadBullets(): AceBullet[] {
   try {
-    migrateJsonToToon();
     const raw = readFileSync(ACE_TOON_PATH, 'utf-8');
     return parseBullets(raw);
   } catch {

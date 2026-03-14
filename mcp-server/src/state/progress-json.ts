@@ -1,6 +1,6 @@
 /**
  * Progress TOON — structured progress recording for session recovery.
- * Writes claude-progress.toon; migrates from .json if needed.
+ * Writes claude-progress.toon (TOON-only, no JSON fallback).
  * @spec docs/spec/features/workflow-harness.md
  */
 
@@ -26,7 +26,6 @@ export interface ProgressData {
 }
 
 const TOON_FILE = 'claude-progress.toon';
-const JSON_FILE = 'claude-progress.json';
 
 function serializeProgress(data: ProgressData): string {
   const L: string[] = [];
@@ -84,19 +83,6 @@ function parseProgress(content: string): ProgressData {
   return data;
 }
 
-/** Migrate .json → .toon if only .json exists. Returns existing ProgressData or undefined. */
-function migrateIfNeeded(docsDir: string): ProgressData | undefined {
-  const toonPath = join(docsDir, TOON_FILE);
-  const jsonPath = join(docsDir, JSON_FILE);
-  if (existsSync(toonPath)) return undefined; // already migrated
-  if (!existsSync(jsonPath)) return undefined;
-  try {
-    const jsonData = JSON.parse(readFileSync(jsonPath, 'utf-8')) as ProgressData;
-    writeFileSync(toonPath, serializeProgress(jsonData), 'utf-8');
-    return jsonData;
-  } catch { return undefined; }
-}
-
 export function writeProgressJSON(state: TaskState, completedPhase: string, nextPhase: string): void {
   try {
     if (!existsSync(state.docsDir)) return;
@@ -106,8 +92,6 @@ export function writeProgressJSON(state: TaskState, completedPhase: string, next
     try {
       if (existsSync(filePath)) {
         existing = parseProgress(readFileSync(filePath, 'utf-8'));
-      } else {
-        existing = migrateIfNeeded(state.docsDir);
       }
     } catch { /* corrupted — overwrite */ }
 
@@ -137,9 +121,6 @@ export function readProgressJSON(docsDir: string): ProgressData | undefined {
     if (existsSync(toonPath)) {
       return parseProgress(readFileSync(toonPath, 'utf-8'));
     }
-    // Migration: .json → .toon
-    const migrated = migrateIfNeeded(docsDir);
-    if (migrated) return migrated;
     return undefined;
   } catch { return undefined; }
 }

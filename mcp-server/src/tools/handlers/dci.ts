@@ -1,6 +1,6 @@
 /**
  * DCI (Design-Code Index) MCP tool handlers
- * Writes/reads .toon format; migrates from .json if needed.
+ * Writes/reads .toon format (TOON-only, no JSON fallback).
  * @spec docs/spec/features/workflow-harness.md
  */
 
@@ -13,23 +13,9 @@ import type { DCIIndex } from '../../dci/types.js';
 import { respond, respondError, type HandlerResult } from '../handler-shared.js';
 
 const INDEX_TOON = '.claude/state/design-code-index.toon';
-const INDEX_JSON = '.claude/state/design-code-index.json';
 
 function getProjectRoot(): string {
   return process.cwd();
-}
-
-/** Migrate .json → .toon if only .json exists. */
-function migrateIfNeeded(projectRoot: string): void {
-  const toonPath = join(projectRoot, INDEX_TOON);
-  const jsonPath = join(projectRoot, INDEX_JSON);
-  if (existsSync(toonPath) || !existsSync(jsonPath)) return;
-  try {
-    const index = JSON.parse(readFileSync(jsonPath, 'utf8')) as DCIIndex;
-    const dir = dirname(toonPath);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(toonPath, serializeDCI(index), 'utf8');
-  } catch { /* migration failed — will rebuild */ }
 }
 
 function writeIndex(projectRoot: string, index: DCIIndex): void {
@@ -41,10 +27,6 @@ function writeIndex(projectRoot: string, index: DCIIndex): void {
 
 function loadOrBuildIndex(projectRoot: string): DCIIndex {
   const toonPath = join(projectRoot, INDEX_TOON);
-  if (existsSync(toonPath)) {
-    try { return parseDCI(readFileSync(toonPath, 'utf8')); } catch { /* rebuild */ }
-  }
-  migrateIfNeeded(projectRoot);
   if (existsSync(toonPath)) {
     try { return parseDCI(readFileSync(toonPath, 'utf8')); } catch { /* rebuild */ }
   }

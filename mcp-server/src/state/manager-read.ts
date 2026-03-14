@@ -3,12 +3,11 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TaskState, PhaseName, TaskSize } from './types.js';
 import { verifyStateWithRotation } from '../utils/hmac.js';
 import { parseState } from './state-toon-parse.js';
-import { serializeState } from './state-toon-io.js';
 
 function getStateDir(): string {
   return process.env.STATE_DIR || '.claude/state';
@@ -32,20 +31,9 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
     if (entry.isDirectory() && entry.name.startsWith(taskId)) {
       const dir = join(workflowsDir, entry.name);
       const toonPath = join(dir, 'workflow-state.toon');
-      const jsonPath = join(dir, 'workflow-state.json');
 
-      let state: TaskState;
-      if (existsSync(toonPath)) {
-        const raw = readFileSync(toonPath, 'utf8');
-        state = parseState(raw);
-      } else if (existsSync(jsonPath)) {
-        // Migration: read JSON, write TOON
-        const raw = readFileSync(jsonPath, 'utf8');
-        state = JSON.parse(raw) as TaskState;
-        writeFileSync(toonPath, serializeState(state));
-      } else {
-        continue;
-      }
+      if (!existsSync(toonPath)) continue;
+      const state: TaskState = parseState(readFileSync(toonPath, 'utf8'));
 
       // RC-3: Version migration chain entry point
       if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
@@ -77,18 +65,11 @@ export function listTasksFromDisk(): Array<{ taskId: string; taskName: string; p
   return results;
 }
 
-/** Load state from a workflow directory, preferring .toon, falling back to .json with migration. */
 function loadStateFromDir(dir: string): TaskState | null {
   const toonPath = join(dir, 'workflow-state.toon');
-  const jsonPath = join(dir, 'workflow-state.json');
   try {
     if (existsSync(toonPath)) {
       return parseState(readFileSync(toonPath, 'utf8'));
-    }
-    if (existsSync(jsonPath)) {
-      const state = JSON.parse(readFileSync(jsonPath, 'utf8')) as TaskState;
-      writeFileSync(toonPath, serializeState(state));
-      return state;
     }
   } catch { /* skip corrupt entries */ }
   return null;

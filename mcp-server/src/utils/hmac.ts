@@ -20,10 +20,6 @@ function getToonPath(stateDir: string): string {
   return join(stateDir, 'hmac-keys.toon');
 }
 
-function getLegacyJsonPath(stateDir: string): string {
-  return join(stateDir, 'hmac-keys.json');
-}
-
 /** Serialize HmacKeys to TOON KV format. */
 function serializeHmacToon(keys: HmacKeys): string {
   const lines: string[] = [];
@@ -51,58 +47,16 @@ function parseHmacToon(content: string): HmacKeys {
   return result as HmacKeys;
 }
 
-/** Migrate legacy JSON (array or object) to TOON. Returns HmacKeys or null. */
-function migrateFromJson(stateDir: string): HmacKeys | null {
-  const jsonPath = getLegacyJsonPath(stateDir);
-  if (!existsSync(jsonPath)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(jsonPath, 'utf8'));
-    let keys: HmacKeys | null = null;
-    // Legacy array format: [{ key, generation, createdAt, ... }]
-    if (Array.isArray(raw) && raw.length >= 1) {
-      const last = raw[raw.length - 1];
-      if (last?.key) {
-        keys = {
-          version: 1,
-          current: last.key,
-          rotatedAt: last.createdAt ?? new Date().toISOString(),
-        };
-        if (raw.length >= 2) keys.previous = raw[raw.length - 2].key;
-      }
-    }
-    // V1 object format: { current, previous?, rotatedAt, version? }
-    if (!keys && raw.current) {
-      keys = {
-        version: 1,
-        current: raw.current,
-        previous: raw.previous,
-        rotatedAt: raw.rotatedAt,
-      };
-      if (!keys.previous) delete keys.previous;
-    }
-    if (keys) {
-      const toonPath = getToonPath(stateDir);
-      writeFileSync(toonPath, serializeHmacToon(keys));
-      return keys;
-    }
-  } catch { /* corrupted JSON — skip */ }
-  return null;
-}
-
 /**
  * Load the full HmacKeys object (current + previous) from the state directory.
  * Creates a new key file if none exists. Migrates from .json on first load.
  */
 export function loadHmacKeys(stateDir: string): HmacKeys {
   const toonPath = getToonPath(stateDir);
-  // 1. Try TOON file first
   if (existsSync(toonPath)) {
     return parseHmacToon(readFileSync(toonPath, 'utf8'));
   }
-  // 2. Migrate from legacy JSON if it exists
-  const migrated = migrateFromJson(stateDir);
-  if (migrated) return migrated;
-  // 3. Create new keys
+  // Create new keys
   const dir = dirname(toonPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const newKey = randomBytes(32).toString('hex');
