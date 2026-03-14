@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'fs';
 import type { TaskState } from '../state/types.js';
 import type { PhaseTimingsResult } from './phase-timings.js';
 import { getTaskMetrics, type TaskMetrics } from './metrics.js';
+import { readErrorToon } from './error-toon.js';
 
 export interface CheckFailure { check: string; level: string; count: number }
 export interface PhaseErrorStats { phase: string; retries: number; failures: CheckFailure[] }
@@ -35,6 +36,18 @@ function buildErrorAnalysis(task: TaskState, metrics?: TaskMetrics): PhaseErrorS
     if (!pm.has(p)) pm.set(p, { retries: 0, checks: new Map() });
     return pm.get(p)!;
   };
+  // Read from phase-errors.toon (primary source)
+  const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
+  const toonErrors = readErrorToon(docsDir);
+  for (const entry of toonErrors) {
+    const pd = ensure(entry.phase);
+    for (const check of entry.checks) {
+      const ex = pd.checks.get(check.name);
+      if (ex) ex.count += 1;
+      else pd.checks.set(check.name, { level: 'L1', count: 1 });
+    }
+  }
+  // Fallback: proofLog for legacy data
   for (const entry of task.proofLog ?? []) {
     if (entry.result) continue;
     const pd = ensure(entry.phase);

@@ -1,15 +1,17 @@
 /**
  * Metrics — collects harness performance data for continuous improvement.
  * Records phase timing, retry counts, DoD failure patterns, task completion.
- * Data persisted as JSON for analysis.
+ * Data persisted as TOON for analysis.
  * @spec docs/spec/features/workflow-harness.md
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { serializeMetrics, parseMetrics, freshStore } from './metrics-toon-io.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
-const METRICS_PATH = join(STATE_DIR, 'metrics.json');
+const METRICS_PATH = join(STATE_DIR, 'metrics.toon');
+const LEGACY_JSON = join(STATE_DIR, 'metrics.json');
 
 export interface PhaseMetrics {
   startedAt: string;
@@ -54,32 +56,30 @@ export interface MetricsStore {
 
 export function loadMetrics(): MetricsStore {
   try {
-    if (existsSync(METRICS_PATH)) {
-      return JSON.parse(readFileSync(METRICS_PATH, 'utf-8')) as MetricsStore;
+    // Migration: JSON → TOON
+    if (!existsSync(METRICS_PATH) && existsSync(LEGACY_JSON)) {
+      const store = JSON.parse(readFileSync(LEGACY_JSON, 'utf-8')) as MetricsStore;
+      const dir = dirname(METRICS_PATH);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(METRICS_PATH, serializeMetrics(store), 'utf-8');
+      return store;
     }
+    if (existsSync(METRICS_PATH)) return parseMetrics(readFileSync(METRICS_PATH, 'utf-8'));
   } catch { /* corrupted — start fresh */ }
-  return {
-    version: 1,
-    tasks: {},
-    aggregate: { totalTasks: 0, completedTasks: 0, totalRetries: 0, totalDoDFailures: 0, totalPhaseTransitions: 0, firstPassPhases: 0, phaseTimings: {} },
-  };
+  return freshStore();
 }
 
 function saveMetrics(store: MetricsStore): void {
   const dir = dirname(METRICS_PATH);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(METRICS_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  writeFileSync(METRICS_PATH, serializeMetrics(store), 'utf-8');
 }
 
 function ensureTask(store: MetricsStore, taskId: string, taskName?: string): TaskMetrics {
   if (!store.tasks[taskId]) {
     store.tasks[taskId] = {
-      taskName: taskName || taskId,
-      phases: {},
-      retries: 0,
-      dodFailures: 0,
-      startedAt: new Date().toISOString(),
-      completedAt: null,
+      taskName: taskName || taskId, phases: {}, retries: 0, dodFailures: 0,
+      startedAt: new Date().toISOString(), completedAt: null,
     };
     store.aggregate.totalTasks += 1;
   }
@@ -108,7 +108,6 @@ export function recordPhaseEnd(taskId: string, phase: string): void {
   pm.endedAt = new Date().toISOString();
   pm.durationMs = new Date(pm.endedAt).getTime() - new Date(pm.startedAt).getTime();
   if (pm.durationMs < 0) pm.durationMs = 0;
-  // Update aggregate phase timing
   if (!store.aggregate.phaseTimings[phase]) {
     store.aggregate.phaseTimings[phase] = { count: 0, totalMs: 0, avgMs: 0 };
   }
@@ -139,9 +138,7 @@ export function recordDoDFailure(taskId: string, phase: string, errors: string[]
   task.dodFailures += 1;
   store.aggregate.totalDoDFailures += 1;
   for (const err of errors) {
-    if (!pm.dodFailurePatterns.includes(err)) {
-      pm.dodFailurePatterns.push(err);
-    }
+    if (!pm.dodFailurePatterns.includes(err)) pm.dodFailurePatterns.push(err);
   }
   saveMetrics(store);
 }
@@ -155,8 +152,7 @@ export function recordTaskCompletion(taskId: string): void {
 }
 
 export function getTaskMetrics(taskId: string): TaskMetrics | undefined {
-  const store = loadMetrics();
-  return store.tasks[taskId];
+  return loadMetrics().tasks[taskId];
 }
 
 export function getAggregateMetrics(): AggregateMetrics {
@@ -168,7 +164,6 @@ export function getEffectivenessMetrics(): EffectivenessMetrics {
   const store = loadMetrics();
   const agg = store.aggregate;
   const tasks = Object.values(store.tasks);
-  // Calculate date span
   const dates = tasks.map(t => new Date(t.startedAt).getTime()).filter(d => !isNaN(d));
   const daySpan = dates.length >= 2
     ? Math.max(1, (Math.max(...dates) - Math.min(...dates)) / 86_400_000)

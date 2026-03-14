@@ -28,14 +28,15 @@ import {
   recordRetry, recordDoDFailure, recordTaskCompletion,
   getTaskMetrics, getAggregateMetrics,
 } from '../tools/metrics.js';
+import { parseMetrics, serializeMetrics } from '../tools/metrics-toon-io.js';
 
-const METRICS_PATH = join(TEST_STATE_DIR, 'metrics.json');
+const METRICS_PATH = join(TEST_STATE_DIR, 'metrics.toon');
 
 function clearStore() { fsStore.clear(); }
 function getMetricsStore(): any {
   const v = fsStore.get(METRICS_PATH);
   if (!v) throw new Error('metrics store not found');
-  return JSON.parse(v);
+  return parseMetrics(v);
 }
 
 describe('Metrics store lifecycle', () => {
@@ -50,10 +51,10 @@ describe('Metrics store lifecycle', () => {
   });
 
   it('loadMetrics loads existing store from disk', () => {
-    fsStore.set(METRICS_PATH, JSON.stringify({
+    fsStore.set(METRICS_PATH, serializeMetrics({
       version: 1,
       tasks: { 't1': { taskName: 'test', phases: {}, retries: 0, dodFailures: 0, startedAt: '', completedAt: null } },
-      aggregate: { totalTasks: 1, completedTasks: 0, totalRetries: 0, totalDoDFailures: 0, phaseTimings: {} },
+      aggregate: { totalTasks: 1, completedTasks: 0, totalRetries: 0, totalDoDFailures: 0, totalPhaseTransitions: 0, firstPassPhases: 0, phaseTimings: {} },
     }));
     const store = loadMetrics();
     expect(store.tasks['t1']).toBeDefined();
