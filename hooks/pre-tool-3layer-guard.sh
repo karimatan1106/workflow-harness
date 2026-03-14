@@ -53,11 +53,13 @@ is_lifecycle() {
   esac
 }
 
-# --- Agent is always allowed ---
-if [ "$TOOL_NAME" = "Agent" ]; then
-  log_obs "ALLOWED(Agent)"
-  exit 0
-fi
+# --- Agent/Skill/ToolSearch are always allowed ---
+case "$TOOL_NAME" in
+  Agent|Skill|ToolSearch)
+    log_obs "ALLOWED($TOOL_NAME)"
+    exit 0
+    ;;
+esac
 
 # === Orchestrator rules ===
 if [ "$LAYER" = "orchestrator" ]; then
