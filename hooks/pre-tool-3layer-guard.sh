@@ -59,7 +59,7 @@ fi
 # === Orchestrator rules ===
 if [ "$LAYER" = "orchestrator" ]; then
   case "$TOOL_NAME" in
-    mcp__harness__*|mcp__workflow__*)
+    mcp__harness__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "ALLOWED(lifecycle-mcp)"
         exit 0
@@ -84,7 +84,7 @@ if [ "$LAYER" = "coordinator" ]; then
       echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。ワーカーサブエージェントに委譲してください。" >&2
       exit 2
       ;;
-    mcp__harness__*|mcp__workflow__*)
+    mcp__harness__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "BLOCKED(lifecycle-mcp)"
         echo "BLOCKED: コーディネーター層はライフサイクルMCPツール($TOOL_NAME)使用禁止。オーケストレーターのみ許可。" >&2
@@ -107,7 +107,7 @@ if [ "$LAYER" = "worker" ]; then
       log_obs "ALLOWED(standard-tool)"
       exit 0
       ;;
-    mcp__harness__*|mcp__workflow__*)
+    mcp__harness__*)
       log_obs "BLOCKED(mcp-tool)"
       echo "BLOCKED: ワーカー層はMCPツール($TOOL_NAME)使用禁止。コーディネーター経由で実行してください。" >&2
       exit 2
