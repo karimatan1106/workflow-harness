@@ -70,8 +70,25 @@ else
   if grep -q "3layer-guard" "$SETTINGS"; then
     echo "3-layer guard already registered in settings.json"
   else
-    echo "WARNING: $SETTINGS exists. Please manually add this PreToolUse hook entry:"
-    echo '  {"matcher": "", "hooks": [{"type": "command", "command": "bash .claude/hooks/pre-tool-3layer-guard.sh"}]}'
+    # Auto-add 3-layer guard hook to existing settings.json using node
+    node -e "
+const fs = require('fs');
+const path = process.argv[1];
+const settings = JSON.parse(fs.readFileSync(path, 'utf8'));
+if (!settings.hooks) settings.hooks = {};
+if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
+const entry = {matcher: '', hooks: [{type: 'command', command: 'bash .claude/hooks/pre-tool-3layer-guard.sh'}]};
+const exists = settings.hooks.PreToolUse.some(h =>
+  h.hooks && h.hooks.some(hh => typeof hh === 'object' ? (hh.command && hh.command.includes('3layer-guard')) : (typeof hh === 'string' && hh.includes('3layer-guard')))
+);
+if (!exists) {
+  settings.hooks.PreToolUse.push(entry);
+  fs.writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
+  console.log('Added 3-layer guard hook to existing settings.json');
+} else {
+  console.log('3-layer guard already registered in settings.json');
+}
+" "$SETTINGS"
   fi
 fi
 
