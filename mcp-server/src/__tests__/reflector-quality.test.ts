@@ -24,12 +24,13 @@ vi.mock('fs', () => ({
 import {
   getLessonsForPhase, formatLessonsForPrompt, MIN_QUALITY_SCORE,
 } from '../tools/reflector.js';
+import { serializeStore } from '../tools/reflector-toon.js';
 
-const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
+const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.toon');
 
 function clearStore() { fsStore.clear(); }
-function setReflectorStore(data: object) {
-  fsStore.set(REFLECTOR_PATH, JSON.stringify(data));
+function setReflectorStore(data: any) {
+  fsStore.set(REFLECTOR_PATH, serializeStore(data));
 }
 
 describe('N-07: Reflector quality score filtering', () => {

@@ -41,19 +41,7 @@ export interface ADRCreateInput {
   taskId: string;
 }
 
-function migrateJsonToToon(): void {
-  if (!existsSync(ADR_TOON_PATH) && existsSync(ADR_JSON_PATH)) {
-    try {
-      const json = JSON.parse(readFileSync(ADR_JSON_PATH, 'utf-8')) as ADRStore;
-      const dir = dirname(ADR_TOON_PATH);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(ADR_TOON_PATH, serializeADRStore(json), 'utf-8');
-    } catch { /* migration failed — will start fresh */ }
-  }
-}
-
 export function loadADRStore(): ADRStore {
-  migrateJsonToToon();
   try {
     if (existsSync(ADR_TOON_PATH)) {
       return parseADRStore(readFileSync(ADR_TOON_PATH, 'utf-8'));

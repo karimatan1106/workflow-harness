@@ -9,7 +9,6 @@ import { serializeReports, parseReports } from './curator-toon.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const CURATOR_TOON_PATH = join(STATE_DIR, 'curator-log.toon');
-const CURATOR_JSON_PATH = join(STATE_DIR, 'curator-log.json');
 
 export interface CuratorAction {
   action: 'pruned' | 'merged' | 'kept';
@@ -70,26 +69,10 @@ export function computePatternSimilarity(a: string, b: string): number {
   return matchLen / Math.max(na.length, nb.length);
 }
 
-/** Migrate curator-log.json → curator-log.toon if needed. */
-function migrateJsonToToon(): void {
-  try {
-    if (!existsSync(CURATOR_TOON_PATH) && existsSync(CURATOR_JSON_PATH)) {
-      const raw = readFileSync(CURATOR_JSON_PATH, 'utf-8');
-      const reports = JSON.parse(raw) as CuratorReport[];
-      const dir = dirname(CURATOR_TOON_PATH);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(CURATOR_TOON_PATH, serializeReports(reports), 'utf-8');
-    }
-  } catch {
-    // Non-fatal
-  }
-}
-
 /**
  * Save curator report to the log file (keeps last 20 reports).
  */
 export function saveCuratorReport(report: CuratorReport): void {
-  migrateJsonToToon();
   let reports: CuratorReport[] = [];
   try {
     if (existsSync(CURATOR_TOON_PATH)) {

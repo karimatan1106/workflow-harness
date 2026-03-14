@@ -13,7 +13,6 @@ import { serializeRuleStore, parseRuleStore } from './archgate-toon-io.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const ARCHGATE_TOON_PATH = join(STATE_DIR, 'archgate-rules.toon');
-const ARCHGATE_JSON_PATH = join(STATE_DIR, 'archgate-rules.json');
 
 export type ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern' | 'comment_ratio';
 
@@ -60,19 +59,7 @@ export interface ArchRuleStore {
   rules: ArchRule[];
 }
 
-function migrateJsonToToon(): void {
-  if (!existsSync(ARCHGATE_TOON_PATH) && existsSync(ARCHGATE_JSON_PATH)) {
-    try {
-      const json = JSON.parse(readFileSync(ARCHGATE_JSON_PATH, 'utf-8')) as ArchRuleStore;
-      const dir = dirname(ARCHGATE_TOON_PATH);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(ARCHGATE_TOON_PATH, serializeRuleStore(json), 'utf-8');
-    } catch { /* migration failed — will start fresh */ }
-  }
-}
-
 function loadRuleStore(): ArchRuleStore {
-  migrateJsonToToon();
   try {
     if (existsSync(ARCHGATE_TOON_PATH)) {
       return parseRuleStore(readFileSync(ARCHGATE_TOON_PATH, 'utf-8'));

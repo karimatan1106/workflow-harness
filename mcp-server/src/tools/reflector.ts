@@ -9,14 +9,12 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import type { ReflectorLesson, StashedFailure, ReflectorStore } from './reflector-types.js';
-import { isV2Store, migrateV2toV3 } from './reflector-types.js';
 import { serializeStore, parseStore } from './reflector-toon.js';
 
 export type { ReflectorLesson } from './reflector-types.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
 const REFLECTOR_PATH = join(STATE_DIR, 'reflector-log.toon');
-const LEGACY_JSON_PATH = join(STATE_DIR, 'reflector-log.json');
 const MAX_LESSONS = 50;
 
 /** N-07: Minimum quality score for lesson injection. */
@@ -26,16 +24,6 @@ export const MIN_QUALITY_SCORE = 0.3;
 
 export function loadStore(): ReflectorStore {
   try {
-    // Migration: JSON → TOON
-    if (!existsSync(REFLECTOR_PATH) && existsSync(LEGACY_JSON_PATH)) {
-      const raw = readFileSync(LEGACY_JSON_PATH, 'utf-8');
-      const parsed = JSON.parse(raw);
-      const migrated = isV2Store(parsed) ? migrateV2toV3(parsed) : parsed as ReflectorStore;
-      if (!migrated.stashedFailures) migrated.stashedFailures = [];
-      if (!migrated.nextLessonId) migrated.nextLessonId = migrated.lessons.length + 1;
-      saveStore(migrated);
-      return migrated;
-    }
     if (existsSync(REFLECTOR_PATH)) {
       return parseStore(readFileSync(REFLECTOR_PATH, 'utf-8'));
     }

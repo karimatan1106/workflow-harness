@@ -35,27 +35,21 @@ function daysSince(isoDate: string): number {
   return Math.floor((Date.now() - new Date(isoDate).getTime()) / (24 * 60 * 60 * 1000));
 }
 
-/** Read file content with TOON-first, JSON-fallback strategy. */
-function readWithFallback(stateDir: string, baseName: string): { content: string; path: string; isToon: boolean } | null {
+/** Read TOON file content. */
+function readToon(stateDir: string, baseName: string): { content: string; path: string } | null {
   const toonPath = join(stateDir, `${baseName}.toon`);
   if (existsSync(toonPath)) {
-    return { content: readFileSync(toonPath, 'utf-8'), path: toonPath, isToon: true };
-  }
-  const jsonPath = join(stateDir, `${baseName}.json`);
-  if (existsSync(jsonPath)) {
-    return { content: readFileSync(jsonPath, 'utf-8'), path: jsonPath, isToon: false };
+    return { content: readFileSync(toonPath, 'utf-8'), path: toonPath };
   }
   return null;
 }
 
 function scanReflector(stateDir: string): GCCandidate[] {
   const candidates: GCCandidate[] = [];
-  const file = readWithFallback(stateDir, 'reflector-log');
+  const file = readToon(stateDir, 'reflector-log');
   if (!file) return candidates;
   try {
-    const store = file.isToon
-      ? parseReflectorStore(file.content)
-      : JSON.parse(file.content);
+    const store = parseReflectorStore(file.content);
     if (Array.isArray(store.lessons)) {
       for (const lesson of store.lessons) {
         const age = daysSince(lesson.createdAt);
@@ -90,12 +84,10 @@ function scanReflector(stateDir: string): GCCandidate[] {
 
 function scanMetrics(stateDir: string): GCCandidate[] {
   const candidates: GCCandidate[] = [];
-  const file = readWithFallback(stateDir, 'metrics');
+  const file = readToon(stateDir, 'metrics');
   if (!file) return candidates;
   try {
-    const store = file.isToon
-      ? parseMetrics(file.content)
-      : JSON.parse(file.content);
+    const store = parseMetrics(file.content);
     if (store.tasks && typeof store.tasks === 'object') {
       for (const [taskId, task] of Object.entries(store.tasks) as [string, any][]) {
         const dateStr = task.completedAt ?? task.startedAt;
@@ -118,12 +110,10 @@ function scanMetrics(stateDir: string): GCCandidate[] {
 
 function scanADR(stateDir: string): GCCandidate[] {
   const candidates: GCCandidate[] = [];
-  const file = readWithFallback(stateDir, 'adr-store');
+  const file = readToon(stateDir, 'adr-store');
   if (!file) return candidates;
   try {
-    const store = file.isToon
-      ? parseADRStore(file.content)
-      : JSON.parse(file.content);
+    const store = parseADRStore(file.content);
     if (Array.isArray(store.entries)) {
       for (const entry of store.entries) {
         if (entry.status === 'deprecated' || entry.status === 'superseded') {

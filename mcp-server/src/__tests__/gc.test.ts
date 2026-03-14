@@ -41,6 +41,8 @@ vi.mock('fs', () => ({
 import {
   runGCScan, type GCReport, type GCCandidate,
 } from '../tools/gc.js';
+import { serializeStore as serializeReflectorStore } from '../tools/reflector-toon.js';
+import { serializeMetrics } from '../tools/metrics-toon-io.js';
 
 function clearStore() { fsStore.clear(); statStore.clear(); }
 
@@ -56,7 +58,7 @@ describe('G-15: Garbage collection scan', () => {
 
   it('detects stale reflector lessons older than 30 days with low hitCount', () => {
     const old = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
-    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.json'), JSON.stringify({
+    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.toon'), serializeReflectorStore({
       version: 3, nextLessonId: 2,
       lessons: [{
         id: 'L-001', phase: 'research', errorPattern: 'old error',
@@ -72,7 +74,7 @@ describe('G-15: Garbage collection scan', () => {
 
   it('does not flag active lessons with high hitCount', () => {
     const old = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
-    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.json'), JSON.stringify({
+    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.toon'), serializeReflectorStore({
       version: 3, nextLessonId: 2,
       lessons: [{
         id: 'L-001', phase: 'research', errorPattern: 'active error',
@@ -88,7 +90,7 @@ describe('G-15: Garbage collection scan', () => {
 
   it('detects expired stashed failures older than 7 days', () => {
     const old = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.json'), JSON.stringify({
+    fsStore.set(join(TEST_STATE_DIR, 'reflector-log.toon'), serializeReflectorStore({
       version: 3, nextLessonId: 1, lessons: [],
       stashedFailures: [{
         phase: 'research', taskId: 'old-task',
@@ -103,7 +105,7 @@ describe('G-15: Garbage collection scan', () => {
 
   it('detects stale metrics entries older than 90 days', () => {
     const old = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString();
-    fsStore.set(join(TEST_STATE_DIR, 'metrics.json'), JSON.stringify({
+    fsStore.set(join(TEST_STATE_DIR, 'metrics.toon'), serializeMetrics({
       version: 1,
       tasks: { 'old-task': { taskName: 'old', phases: {}, retries: 0, dodFailures: 0, startedAt: old, completedAt: old } },
       aggregate: { totalTasks: 1, completedTasks: 1, totalRetries: 0, totalDoDFailures: 0, phaseTimings: {} },

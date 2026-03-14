@@ -7,8 +7,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ensureHmacKeys, signState, loadHmacKeys, verifyStateWithRotation } from '../utils/hmac.js';
+import { ensureHmacKeys, signState } from '../utils/hmac.js';
 import { loadTaskFromDisk, listTasksFromDisk, buildTaskIndex } from '../state/manager-read.js';
+import { serializeState } from '../state/state-toon-io.js';
+import type { TaskState } from '../state/types.js';
 
 let tempDir: string;
 const origSD = process.env.STATE_DIR;
@@ -37,17 +39,15 @@ function createSignedState(sd: string, o: { taskId: string; taskName: string; ph
 function writeToDisk(sd: string, s: Record<string, unknown>) {
   const d = join(sd, 'workflows', `${s.taskId}_${s.taskName}`);
   mkdirSync(d, { recursive: true });
-  writeFileSync(join(d, 'workflow-state.json'), JSON.stringify(s, null, 2));
+  const toon = serializeState(s as unknown as TaskState);
+  writeFileSync(join(d, 'workflow-state.toon'), toon);
 }
 
 function overwriteKey(sd: string, keyHex: string) {
   writeFileSync(join(sd, 'hmac-keys.toon'), `version: 1\ncurrent: ${keyHex}\nrotatedAt: ${new Date().toISOString()}\n`);
 }
 
-function writeLegacy(sd: string, entries: Array<{ key: string; createdAt: string }>) {
-  mkdirSync(sd, { recursive: true });
-  writeFileSync(join(sd, 'hmac-keys.json'), JSON.stringify(entries.map((e, i) => ({ ...e, generation: i + 1 }))));
-}
+// writeLegacy removed — JSON migration code was deleted.
 
 beforeEach(() => { tempDir = mkdtempSync(join(tmpdir(), 'stale-hmac-')); process.env.STATE_DIR = tempDir; });
 afterEach(() => { rmSync(tempDir, { recursive: true, force: true }); origSD ? (process.env.STATE_DIR = origSD) : delete process.env.STATE_DIR; });
@@ -138,46 +138,4 @@ describe('AC-3: HMAC failure returns integrityWarning', () => {
   });
 });
 
-describe('AC-4: Legacy hmac-keys.json → hmac-keys.toon migration', () => {
-  it('TC-4-01: 2-element array preserves previous key', () => {
-    writeLegacy(tempDir, [{ key: 'oldKey', createdAt: '2026-01-01T00:00:00Z' }, { key: 'newKey', createdAt: '2026-02-01T00:00:00Z' }]);
-    const r = loadHmacKeys(tempDir);
-    expect(r.current).toBe('newKey');
-    expect(r.previous).toBe('oldKey');
-  });
-
-  it('TC-4-02: 1-element array has no previous', () => {
-    writeLegacy(tempDir, [{ key: 'onlyKey', createdAt: '2026-01-01T00:00:00Z' }]);
-    const r = loadHmacKeys(tempDir);
-    expect(r.current).toBe('onlyKey');
-    expect(r.previous).toBeUndefined();
-  });
-
-  it('TC-4-03: 3-element array uses last 2 keys', () => {
-    writeLegacy(tempDir, [{ key: 'oldest', createdAt: '2026-01-01T00:00:00Z' }, { key: 'middle', createdAt: '2026-02-01T00:00:00Z' }, { key: 'newest', createdAt: '2026-03-01T00:00:00Z' }]);
-    const r = loadHmacKeys(tempDir);
-    expect(r.current).toBe('newest');
-    expect(r.previous).toBe('middle');
-  });
-
-  it('TC-4-04: migration writes TOON file in new format', () => {
-    writeLegacy(tempDir, [{ key: 'oldKey', createdAt: '2026-01-01T00:00:00Z' }, { key: 'newKey', createdAt: '2026-02-01T00:00:00Z' }]);
-    loadHmacKeys(tempDir);
-    const toonPath = join(tempDir, 'hmac-keys.toon');
-    expect(existsSync(toonPath)).toBe(true);
-    const raw = readFileSync(toonPath, 'utf8');
-    expect(raw).toContain('current: newKey');
-    expect(raw).toContain('previous: oldKey');
-    expect(raw).toContain('rotatedAt:');
-  });
-
-  it('TC-4-05: previousKey verifies state signed with old key', () => {
-    mkdirSync(tempDir, { recursive: true });
-    const oldKey = 'old-key-for-signing-verification';
-    const s: Record<string, unknown> = { taskId: 'mv-01', taskName: 'mv-t', phase: 'research', version: 4, stateIntegrity: '' };
-    s.stateIntegrity = signState(s, oldKey);
-    writeLegacy(tempDir, [{ key: oldKey, createdAt: '2026-01-01T00:00:00Z' }, { key: 'new-key-rotated', createdAt: '2026-02-01T00:00:00Z' }]);
-    loadHmacKeys(tempDir);
-    expect(verifyStateWithRotation(s, tempDir)).toBe(true);
-  });
-});
+// AC-4: Legacy hmac-keys.json migration tests removed — migration code was deleted.

@@ -56,17 +56,7 @@ describe('ensureHmacKeys', () => {
     expect(existsSync(join(nestedDir, 'hmac-keys.toon'))).toBe(true);
   });
 
-  it('migrates legacy JSON without version field to TOON with version: 1', () => {
-    const jsonPath = join(tempDir, 'hmac-keys.json');
-    writeFileSync(jsonPath, JSON.stringify({ current: 'abc123', rotatedAt: '2026-01-01T00:00:00.000Z' }));
-    const key = ensureHmacKeys(tempDir);
-    expect(key).toBe('abc123');
-    const toonPath = join(tempDir, 'hmac-keys.toon');
-    expect(existsSync(toonPath)).toBe(true);
-    const raw = readFileSync(toonPath, 'utf8');
-    expect(raw).toContain('version: 1');
-    expect(raw).toContain('current: abc123');
-  });
+  // Legacy JSON migration test removed — migration code was deleted.
 });
 
 describe('computeHmac', () => {
