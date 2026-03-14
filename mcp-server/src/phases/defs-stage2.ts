@@ -34,6 +34,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 {docsDir}/threat-model.toon に保存してください。
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_THREAT_MODELING}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
@@ -68,6 +69,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 {docsDir}/planning.toon に保存してください。
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_PLANNING}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
@@ -165,6 +167,7 @@ UI設計とコンポーネント仕様を作成してください。
 {docsDir}/ui-design.toon に保存してください。
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_UI_DESIGN}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,

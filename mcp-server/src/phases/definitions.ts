@@ -15,6 +15,8 @@ import {
   PROCEDURE_ORDER_RULE,
   bashCategoryHelp,
 } from './definitions-shared.js';
+import * as skelA from './toon-skeletons-a.js';
+import * as skelB from './toon-skeletons-b.js';
 import { DEFS_STAGE1 } from './defs-stage1.js';
 import { DEFS_STAGE2 } from './defs-stage2.js';
 import { DEFS_STAGE3 } from './defs-stage3.js';
@@ -157,6 +159,11 @@ export function buildSubagentPrompt(
   prompt = prompt.replace(/\{ARTIFACT_QUALITY\}/g, ARTIFACT_QUALITY_RULES);
   prompt = prompt.replace(/\{EXIT_CODE_RULE\}/g, EXIT_CODE_RULE);
   prompt = prompt.replace(/\{PROCEDURE_ORDER\}/g, PROCEDURE_ORDER_RULE);
+  // TOON skeleton expansion
+  const skeletons: Record<string, string> = { ...skelA, ...skelB };
+  for (const [key, val] of Object.entries(skeletons)) {
+    prompt = prompt.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+  }
   // Variable substitution AFTER (so variables inside fragments are also replaced)
   prompt = prompt.replace(/\{taskName\}/g, taskName);
   prompt = prompt.replace(/\{docsDir\}/g, docsDir);

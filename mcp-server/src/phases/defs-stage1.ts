@@ -86,6 +86,7 @@ Step 3: スコープ設定
 出力
 {docsDir}/scope-definition.toon に保存してください。
 {SUMMARY_SECTION}
+{TOON_SKELETON_SCOPE_DEFINITION}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {PROCEDURE_ORDER}
@@ -110,6 +111,7 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon out:{docs
 4. 依存バージョン固有挙動（S1-17）: node --version / tsc / npm 記録。init.sh生成（S1-10）。JSON/JSONL禁止（S1-14）
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_RESEARCH}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
@@ -139,6 +141,7 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon,{docsDir}
 5. DCI designDocsToReview: dci_query_docs を実行し、更新が必要な設計書を designDocsToReview フィールドに記録
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_IMPACT_ANALYSIS}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
@@ -191,6 +194,7 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon,{docsDir}
 {docsDir}/requirements.toon に保存してください。
 
 {SUMMARY_SECTION}
+{TOON_SKELETON_REQUIREMENTS}
 {BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
