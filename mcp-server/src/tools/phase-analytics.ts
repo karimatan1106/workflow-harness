@@ -10,7 +10,7 @@ import { getTaskMetrics, type TaskMetrics } from './metrics.js';
 export interface CheckFailure { check: string; level: string; count: number }
 export interface PhaseErrorStats { phase: string; retries: number; failures: CheckFailure[] }
 export interface BottleneckResult {
-  slowestPhase?: { phase: string; seconds: number; display: string };
+  slowestPhase?: { phase: string; seconds: number };
   mostRetried?: { phase: string; retries: number };
   mostFailedCheck?: { check: string; count: number };
 }
@@ -70,7 +70,7 @@ function findBottlenecks(errors: PhaseErrorStats[], timings?: PhaseTimingsResult
     for (const [phase, t] of Object.entries(timings.phaseTimings)) {
       if (!t.current && t.seconds > maxSec) {
         maxSec = t.seconds;
-        r.slowestPhase = { phase, seconds: t.seconds, display: t.display };
+        r.slowestPhase = { phase, seconds: t.seconds };
       }
     }
   }
@@ -113,10 +113,10 @@ function generateAdvice(errors: PhaseErrorStats[], timings?: PhaseTimingsResult)
   }
   if (timings) {
     for (const [phase, t] of Object.entries(timings.phaseTimings)) {
-      if (!t.current && t.seconds > 600) advice.push(`フェーズ分割またはスコープ縮小を検討: ${phase} (${t.display})`);
+      if (!t.current && t.seconds > 600) advice.push(`フェーズ分割またはスコープ縮小を検討: ${phase} (${t.seconds}s)`);
     }
     if (timings.totalElapsed.seconds > 1800) {
-      advice.push(`タスクサイズの見直しを推奨 (総所要時間: ${timings.totalElapsed.display})`);
+      advice.push(`タスクサイズの見直しを推奨 (総所要時間: ${timings.totalElapsed.seconds}s)`);
     }
   }
   return advice;
