@@ -13,9 +13,9 @@ const DCI_PHASES = ['code_impl', 'code_review'];
 
 /**
  * Check DCI validation for code_impl and code_review phases.
- * - orphanCode: L4 warning (passed: true) - code files without @spec
+ * - orphanCode: L4 failure (passed: false) - code files without @spec
  * - brokenLinks: L4 failure (passed: false) - broken @spec references
- * - specWithoutCode: L4 warning (passed: true) - spec files without implementation
+ * - specWithoutCode: L4 failure (passed: false) - spec files without implementation
  */
 export function checkDCIValidation(
   state: TaskState,
@@ -47,8 +47,9 @@ export function checkDCIValidation(
     results.push({
       level: 'L4',
       check: 'dci_orphan_code',
-      passed: true,
-      evidence: `warning: ${scopeOrphans.length} code file(s) without @spec: ${scopeOrphans.slice(0, 5).join(', ')}`,
+      passed: false,
+      evidence: `${scopeOrphans.length} code file(s) without @spec: ${scopeOrphans.slice(0, 5).join(', ')}`,
+      fix: 'Add @spec annotations to the listed code files pointing to their design documents.',
     });
   }
 
@@ -70,13 +71,14 @@ export function checkDCIValidation(
     });
   }
 
-  // specWithoutCode is informational warning
+  // specWithoutCode is a failure - blocks phase transition
   if (validation.orphanDesign.length > 0) {
     results.push({
       level: 'L4',
       check: 'dci_spec_without_code',
-      passed: true,
-      evidence: `info: ${validation.orphanDesign.length} spec(s) without implementation: ${validation.orphanDesign.slice(0, 5).join(', ')}`,
+      passed: false,
+      evidence: `${validation.orphanDesign.length} spec(s) without implementation: ${validation.orphanDesign.slice(0, 5).join(', ')}`,
+      fix: 'Implement code for the listed specs or remove unused spec entries.',
     });
   }
 
