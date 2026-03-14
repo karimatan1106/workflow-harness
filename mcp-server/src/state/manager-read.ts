@@ -3,17 +3,19 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TaskState, PhaseName, TaskSize } from './types.js';
 import { verifyStateWithRotation } from '../utils/hmac.js';
+import { parseState } from './state-toon-parse.js';
+import { serializeState } from './state-toon-io.js';
 
 function getStateDir(): string {
   return process.env.STATE_DIR || '.claude/state';
 }
 
 export function getStatePath(taskId: string, taskName: string): string {
-  return join(getStateDir(), 'workflows', `${taskId}_${taskName}`, 'workflow-state.json');
+  return join(getStateDir(), 'workflows', `${taskId}_${taskName}`, 'workflow-state.toon');
 }
 
 export function getDocsPath(taskName: string): string {
@@ -28,19 +30,30 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
   const entries = readdirSync(workflowsDir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.isDirectory() && entry.name.startsWith(taskId)) {
-      const statePath = join(workflowsDir, entry.name, 'workflow-state.json');
-      if (existsSync(statePath)) {
-        const raw = readFileSync(statePath, 'utf8');
-        const state = JSON.parse(raw) as TaskState;
-        // RC-3: Version migration chain entry point
-        // When version 5 is introduced, add: if (state.version === 4) migrateV4ToV5(state);
-        if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
-          return state;
-        }
-        // PL-D-04: return data with integrityWarning instead of null
-        state.integrityWarning = true;
+      const dir = join(workflowsDir, entry.name);
+      const toonPath = join(dir, 'workflow-state.toon');
+      const jsonPath = join(dir, 'workflow-state.json');
+
+      let state: TaskState;
+      if (existsSync(toonPath)) {
+        const raw = readFileSync(toonPath, 'utf8');
+        state = parseState(raw);
+      } else if (existsSync(jsonPath)) {
+        // Migration: read JSON, write TOON
+        const raw = readFileSync(jsonPath, 'utf8');
+        state = JSON.parse(raw) as TaskState;
+        writeFileSync(toonPath, serializeState(state));
+      } else {
+        continue;
+      }
+
+      // RC-3: Version migration chain entry point
+      if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
         return state;
       }
+      // PL-D-04: return data with integrityWarning instead of null
+      state.integrityWarning = true;
+      return state;
     }
   }
   return null;
@@ -54,24 +67,31 @@ export function listTasksFromDisk(): Array<{ taskId: string; taskName: string; p
   const entries = readdirSync(workflowsDir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.isDirectory()) {
-      const statePath = join(workflowsDir, entry.name, 'workflow-state.json');
-      if (existsSync(statePath)) {
-        try {
-          const raw = readFileSync(statePath, 'utf8');
-          const state = JSON.parse(raw) as TaskState;
-          // PL-D-01: check phase before HMAC verification; skip completed tasks entirely
-          if (state.phase === 'completed') continue;
-          // HMAC verification for active tasks (non-fatal: include with warning)
-          if (!verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {
-            results.push({ taskId: state.taskId, taskName: state.taskName, phase: state.phase, size: state.size });
-            continue;
-          }
-          results.push({ taskId: state.taskId, taskName: state.taskName, phase: state.phase, size: state.size });
-        } catch { }
-      }
+      const state = loadStateFromDir(join(workflowsDir, entry.name));
+      if (!state) continue;
+      // PL-D-01: check phase before HMAC verification; skip completed tasks entirely
+      if (state.phase === 'completed') continue;
+      results.push({ taskId: state.taskId, taskName: state.taskName, phase: state.phase, size: state.size });
     }
   }
   return results;
+}
+
+/** Load state from a workflow directory, preferring .toon, falling back to .json with migration. */
+function loadStateFromDir(dir: string): TaskState | null {
+  const toonPath = join(dir, 'workflow-state.toon');
+  const jsonPath = join(dir, 'workflow-state.json');
+  try {
+    if (existsSync(toonPath)) {
+      return parseState(readFileSync(toonPath, 'utf8'));
+    }
+    if (existsSync(jsonPath)) {
+      const state = JSON.parse(readFileSync(jsonPath, 'utf8')) as TaskState;
+      writeFileSync(toonPath, serializeState(state));
+      return state;
+    }
+  } catch { /* skip corrupt entries */ }
+  return null;
 }
 
 export function buildTaskIndex(STATE_DIR_PARAM: string): Array<{ taskId: string; taskName: string; phase: string; size: string; status: string }> {
@@ -82,20 +102,13 @@ export function buildTaskIndex(STATE_DIR_PARAM: string): Array<{ taskId: string;
     const entries = readdirSync(workflowsDir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        const statePath = join(workflowsDir, entry.name, 'workflow-state.json');
-        if (existsSync(statePath)) {
-          try {
-            const raw = readFileSync(statePath, 'utf8');
-            const state = JSON.parse(raw) as TaskState;
-            tasks.push({
-              taskId: state.taskId,
-              taskName: state.taskName,
-              phase: state.phase,
-              size: state.size,
-              status: state.phase === 'completed' ? 'completed' : 'active',
-            });
-          } catch { }
-        }
+        const state = loadStateFromDir(join(workflowsDir, entry.name));
+        if (!state) continue;
+        tasks.push({
+          taskId: state.taskId, taskName: state.taskName,
+          phase: state.phase, size: state.size,
+          status: state.phase === 'completed' ? 'completed' : 'active',
+        });
       }
     }
   } catch { }

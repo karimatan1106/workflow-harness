@@ -1,6 +1,6 @@
 /**
  * progress-json.test.ts — Tests for G-16 structured progress recording.
- * Replaces plain text progress log with JSON format.
+ * Progress is now stored in TOON format (claude-progress.toon).
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
@@ -49,27 +49,28 @@ describe('G-16: Progress JSON', () => {
   beforeEach(clearStore);
   afterEach(() => vi.clearAllMocks());
 
-  it('writeProgressJSON creates a structured JSON file', () => {
+  it('writeProgressJSON creates a structured TOON file', () => {
     const state = makeTaskState();
     writeProgressJSON(state, 'research', 'implementation');
-    const path = join('docs/workflows/test-task', 'claude-progress.json');
+    const path = join('docs/workflows/test-task', 'claude-progress.toon');
     const raw = fsStore.get(path);
     expect(raw).toBeDefined();
-    const data = JSON.parse(raw!);
-    expect(data.taskId).toBe('t1');
-    expect(data.taskName).toBe('test-task');
-    expect(data.currentPhase).toBe('implementation');
+    const data = readProgressJSON('docs/workflows/test-task');
+    expect(data).toBeDefined();
+    expect(data!.taskId).toBe('t1');
+    expect(data!.taskName).toBe('test-task');
+    expect(data!.currentPhase).toBe('implementation');
   });
 
   it('writeProgressJSON includes completed phases and transition history', () => {
     const state = makeTaskState();
     writeProgressJSON(state, 'research', 'implementation');
-    const path = join('docs/workflows/test-task', 'claude-progress.json');
-    const data = JSON.parse(fsStore.get(path)!);
-    expect(data.completedPhases).toEqual(['scope_definition', 'research']);
-    expect(data.transitions.length).toBe(1);
-    expect(data.transitions[0].from).toBe('research');
-    expect(data.transitions[0].to).toBe('implementation');
+    const data = readProgressJSON('docs/workflows/test-task');
+    expect(data).toBeDefined();
+    expect(data!.completedPhases).toEqual(['scope_definition', 'research']);
+    expect(data!.transitions.length).toBe(1);
+    expect(data!.transitions[0].from).toBe('research');
+    expect(data!.transitions[0].to).toBe('implementation');
   });
 
   it('writeProgressJSON appends to existing transitions', () => {
@@ -79,9 +80,9 @@ describe('G-16: Progress JSON', () => {
     state.phase = 'implementation' as any;
     state.completedPhases = ['scope_definition', 'research'] as any;
     writeProgressJSON(state, 'research', 'implementation');
-    const path = join('docs/workflows/test-task', 'claude-progress.json');
-    const data = JSON.parse(fsStore.get(path)!);
-    expect(data.transitions.length).toBe(2);
+    const data = readProgressJSON('docs/workflows/test-task');
+    expect(data).toBeDefined();
+    expect(data!.transitions.length).toBe(2);
   });
 
   it('readProgressJSON returns parsed data', () => {
@@ -101,9 +102,9 @@ describe('G-16: Progress JSON', () => {
   it('writeProgressJSON includes remaining phase count', () => {
     const state = makeTaskState();
     writeProgressJSON(state, 'research', 'implementation');
-    const path = join('docs/workflows/test-task', 'claude-progress.json');
-    const data = JSON.parse(fsStore.get(path)!);
-    expect(typeof data.completedCount).toBe('number');
-    expect(data.completedCount).toBe(2);
+    const data = readProgressJSON('docs/workflows/test-task');
+    expect(data).toBeDefined();
+    expect(typeof data!.completedCount).toBe('number');
+    expect(data!.completedCount).toBe(2);
   });
 });

@@ -25,9 +25,10 @@ vi.mock('fs', () => ({
 import { runCuratorCycle } from '../tools/curator.js';
 import { extractAndStoreBullets, getTopCrossTaskBullets } from '../tools/ace-context.js';
 import { computeQualityScore, computePatternSimilarity } from '../tools/curator-helpers.js';
+import { serializeBullets } from '../tools/ace-context-toon.js';
 
 const REFLECTOR_PATH = join(TEST_STATE_DIR, 'reflector-log.json');
-const ACE_PATH = join(TEST_STATE_DIR, 'ace-context.json');
+const ACE_PATH = join(TEST_STATE_DIR, 'ace-context.toon');
 
 function clearStore() { fsStore.clear(); }
 
@@ -106,7 +107,7 @@ describe('AC-5: cross-task knowledge', () => {
   beforeEach(clearStore);
   afterEach(() => vi.clearAllMocks());
 
-  it('TC-AC5-01: quality score>=0.6のlessonがace-context.jsonに昇格される', () => {
+  it('TC-AC5-01: quality score>=0.6のlessonがace-context.toonに昇格される', () => {
     const lessons = [
       { id: 'L-001', phase: 'research', errorPattern: 'timeout', lesson: 'increase timeout', createdAt: new Date().toISOString(), hitCount: 5, helpfulCount: 4, harmfulCount: 1, category: 'failure' as const },
       { id: 'L-002', phase: 'research', errorPattern: 'other', lesson: 'other fix', createdAt: new Date().toISOString(), hitCount: 5, helpfulCount: 0, harmfulCount: 5, category: 'failure' as const },
@@ -114,7 +115,7 @@ describe('AC-5: cross-task knowledge', () => {
     extractAndStoreBullets(lessons);
     const raw = fsStore.get(ACE_PATH);
     expect(raw).toBeDefined();
-    const stored = JSON.parse(raw!);
+    const stored = getTopCrossTaskBullets(100);
     expect(stored.length).toBe(1);
     expect(stored[0].helpfulCount).toBe(4);
   });
@@ -126,7 +127,7 @@ describe('AC-5: cross-task knowledge', () => {
       phase: 'research', createdAt: new Date().toISOString(),
       helpfulCount: i + 1, harmfulCount: 0,
     }));
-    fsStore.set(ACE_PATH, JSON.stringify(bullets));
+    fsStore.set(ACE_PATH, serializeBullets(bullets));
 
     const result = getTopCrossTaskBullets(5);
     expect(result.length).toBe(5);
@@ -135,12 +136,12 @@ describe('AC-5: cross-task knowledge', () => {
   });
 
   it('TC-AC5-03: ace-context.ts操作がfsエラー時にthrowしない', () => {
-    fsStore.set(ACE_PATH, 'INVALID JSON {{{{');
+    fsStore.set(ACE_PATH, 'INVALID TOON {{{{');
     const lessons = [
       { id: 'L-001', phase: 'r', errorPattern: 'e', lesson: 'l', createdAt: '', hitCount: 5, helpfulCount: 5, harmfulCount: 0, category: 'failure' as const },
     ];
     expect(() => extractAndStoreBullets(lessons)).not.toThrow();
-    fsStore.set(ACE_PATH, 'NOT JSON');
+    fsStore.set(ACE_PATH, 'NOT TOON');
     const result = getTopCrossTaskBullets(5);
     expect(Array.isArray(result)).toBe(true);
   });

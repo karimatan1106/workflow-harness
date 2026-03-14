@@ -7,9 +7,11 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { serializeADRStore, parseADRStore } from './adr-toon-io.js';
 
 const STATE_DIR = process.env.STATE_DIR || '.claude/state';
-const ADR_PATH = join(STATE_DIR, 'adr-store.json');
+const ADR_TOON_PATH = join(STATE_DIR, 'adr-store.toon');
+const ADR_JSON_PATH = join(STATE_DIR, 'adr-store.json');
 
 export type ADRStatus = 'proposed' | 'accepted' | 'superseded' | 'deprecated';
 
@@ -39,19 +41,31 @@ export interface ADRCreateInput {
   taskId: string;
 }
 
+function migrateJsonToToon(): void {
+  if (!existsSync(ADR_TOON_PATH) && existsSync(ADR_JSON_PATH)) {
+    try {
+      const json = JSON.parse(readFileSync(ADR_JSON_PATH, 'utf-8')) as ADRStore;
+      const dir = dirname(ADR_TOON_PATH);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(ADR_TOON_PATH, serializeADRStore(json), 'utf-8');
+    } catch { /* migration failed — will start fresh */ }
+  }
+}
+
 export function loadADRStore(): ADRStore {
+  migrateJsonToToon();
   try {
-    if (existsSync(ADR_PATH)) {
-      return JSON.parse(readFileSync(ADR_PATH, 'utf-8')) as ADRStore;
+    if (existsSync(ADR_TOON_PATH)) {
+      return parseADRStore(readFileSync(ADR_TOON_PATH, 'utf-8'));
     }
   } catch { /* corrupted — start fresh */ }
   return { version: 1, entries: [] };
 }
 
 function saveADRStore(store: ADRStore): void {
-  const dir = dirname(ADR_PATH);
+  const dir = dirname(ADR_TOON_PATH);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(ADR_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  writeFileSync(ADR_TOON_PATH, serializeADRStore(store), 'utf-8');
 }
 
 export function addADR(input: ADRCreateInput): ADREntry {

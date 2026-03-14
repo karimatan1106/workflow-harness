@@ -4,7 +4,7 @@
  * AC-3: HMAC fail → integrityWarning | AC-4: Legacy migration
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ensureHmacKeys, signState, loadHmacKeys, verifyStateWithRotation } from '../utils/hmac.js';
@@ -15,14 +15,19 @@ const origSD = process.env.STATE_DIR;
 
 function createSignedState(sd: string, o: { taskId: string; taskName: string; phase?: string }) {
   const key = ensureHmacKeys(sd);
+  const now = new Date().toISOString();
+  const phase = o.phase ?? 'research';
   const s: Record<string, unknown> = {
-    version: 4, phase: o.phase ?? 'research', completedPhases: [], skippedPhases: [],
-    size: 'large', riskScore: 5, userIntent: 'test', openQuestions: [], notInScope: [],
+    version: 4, phase, completedPhases: [], skippedPhases: [],
+    size: 'large',
+    riskScore: { total: 5, factors: { fileCount: 5, hasTests: false, hasConfig: false, hasInfra: false, hasSecurity: false, hasDatabase: false, codeLineEstimate: 0 } },
+    userIntent: 'test', openQuestions: [], notInScope: [],
     scopeFiles: [], scopeDirs: [], plannedFiles: [], acceptanceCriteria: [], rtmEntries: [],
-    proofLog: [], invariants: [], checkpoint: { phase: 'research', savedAt: new Date().toISOString() },
+    proofLog: [], invariants: [],
+    checkpoint: { taskId: o.taskId, phase, completedPhases: [], timestamp: now, sha256: '', userIntent: 'test', scopeFiles: [], acceptanceCriteria: [], rtmEntries: [] },
     docsDir: 'docs/workflows/' + o.taskName, sessionToken: 'tok', stateIntegrity: '',
     workflowDir: join(sd, 'workflows', `${o.taskId}_${o.taskName}`),
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    createdAt: now, updatedAt: now,
     taskId: o.taskId, taskName: o.taskName,
   };
   s.stateIntegrity = signState(s, key);
@@ -36,7 +41,7 @@ function writeToDisk(sd: string, s: Record<string, unknown>) {
 }
 
 function overwriteKey(sd: string, keyHex: string) {
-  writeFileSync(join(sd, 'hmac-keys.json'), JSON.stringify({ current: keyHex, rotatedAt: new Date().toISOString() }));
+  writeFileSync(join(sd, 'hmac-keys.toon'), `version: 1\ncurrent: ${keyHex}\nrotatedAt: ${new Date().toISOString()}\n`);
 }
 
 function writeLegacy(sd: string, entries: Array<{ key: string; createdAt: string }>) {
@@ -133,7 +138,7 @@ describe('AC-3: HMAC failure returns integrityWarning', () => {
   });
 });
 
-describe('AC-4: Legacy hmac-keys.json migration', () => {
+describe('AC-4: Legacy hmac-keys.json → hmac-keys.toon migration', () => {
   it('TC-4-01: 2-element array preserves previous key', () => {
     writeLegacy(tempDir, [{ key: 'oldKey', createdAt: '2026-01-01T00:00:00Z' }, { key: 'newKey', createdAt: '2026-02-01T00:00:00Z' }]);
     const r = loadHmacKeys(tempDir);
@@ -155,13 +160,15 @@ describe('AC-4: Legacy hmac-keys.json migration', () => {
     expect(r.previous).toBe('middle');
   });
 
-  it('TC-4-04: migration rewrites file in new format', () => {
+  it('TC-4-04: migration writes TOON file in new format', () => {
     writeLegacy(tempDir, [{ key: 'oldKey', createdAt: '2026-01-01T00:00:00Z' }, { key: 'newKey', createdAt: '2026-02-01T00:00:00Z' }]);
     loadHmacKeys(tempDir);
-    const raw = JSON.parse(readFileSync(join(tempDir, 'hmac-keys.json'), 'utf8'));
-    expect(Array.isArray(raw)).toBe(false);
-    expect(raw.current).toBeDefined();
-    expect(raw.rotatedAt).toBeDefined();
+    const toonPath = join(tempDir, 'hmac-keys.toon');
+    expect(existsSync(toonPath)).toBe(true);
+    const raw = readFileSync(toonPath, 'utf8');
+    expect(raw).toContain('current: newKey');
+    expect(raw).toContain('previous: oldKey');
+    expect(raw).toContain('rotatedAt:');
   });
 
   it('TC-4-05: previousKey verifies state signed with old key', () => {

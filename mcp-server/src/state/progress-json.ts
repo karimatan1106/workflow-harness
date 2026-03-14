@@ -1,12 +1,13 @@
 /**
- * Progress JSON — structured progress recording for session recovery.
- * Replaces plain-text claude-progress.txt with machine-parseable JSON.
+ * Progress TOON — structured progress recording for session recovery.
+ * Writes claude-progress.toon; migrates from .json if needed.
  * @spec docs/spec/features/workflow-harness.md
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { TaskState } from './types.js';
+import { esc, splitRow, parseKV, parseTableHeader } from './toon-io.js';
 
 export interface ProgressTransition {
   from: string;
@@ -24,17 +25,89 @@ export interface ProgressData {
   transitions: ProgressTransition[];
 }
 
-const PROGRESS_FILE = 'claude-progress.json';
+const TOON_FILE = 'claude-progress.toon';
+const JSON_FILE = 'claude-progress.json';
+
+function serializeProgress(data: ProgressData): string {
+  const L: string[] = [];
+  L.push(`taskId: ${data.taskId}`);
+  L.push(`taskName: ${esc(data.taskName)}`);
+  L.push(`currentPhase: ${data.currentPhase}`);
+  L.push(`completedCount: ${data.completedCount}`);
+  L.push(`updatedAt: ${data.updatedAt}`);
+  L.push('');
+  L.push(`completedPhases: ${data.completedPhases.join(';')}`);
+  L.push('');
+  const tc = data.transitions.length;
+  L.push(`transitions[${tc}]{from,to,timestamp}:`);
+  for (const t of data.transitions) {
+    L.push(`  ${esc(t.from)}, ${esc(t.to)}, ${t.timestamp}`);
+  }
+  L.push('');
+  return L.join('\n');
+}
+
+function parseProgress(content: string): ProgressData {
+  const data: ProgressData = {
+    taskId: '', taskName: '', currentPhase: '',
+    completedPhases: [], completedCount: 0, updatedAt: '',
+    transitions: [],
+  };
+  const lines = content.split('\n');
+  let inTransitions = false;
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line === '') { inTransitions = false; continue; }
+    if (line.startsWith('transitions[')) {
+      inTransitions = true;
+      continue;
+    }
+    if (inTransitions && line.startsWith('  ')) {
+      const cells = splitRow(line.trim());
+      if (cells.length >= 3) {
+        data.transitions.push({ from: cells[0], to: cells[1], timestamp: cells[2] });
+      }
+      continue;
+    }
+    const kv = parseKV(line);
+    if (!kv) continue;
+    const [k, v] = kv;
+    if (k === 'taskId') data.taskId = v;
+    else if (k === 'taskName') data.taskName = v;
+    else if (k === 'currentPhase') data.currentPhase = v;
+    else if (k === 'completedCount') data.completedCount = Number(v);
+    else if (k === 'updatedAt') data.updatedAt = v;
+    else if (k === 'completedPhases') {
+      data.completedPhases = v ? v.split(';').filter(Boolean) : [];
+    }
+  }
+  return data;
+}
+
+/** Migrate .json → .toon if only .json exists. Returns existing ProgressData or undefined. */
+function migrateIfNeeded(docsDir: string): ProgressData | undefined {
+  const toonPath = join(docsDir, TOON_FILE);
+  const jsonPath = join(docsDir, JSON_FILE);
+  if (existsSync(toonPath)) return undefined; // already migrated
+  if (!existsSync(jsonPath)) return undefined;
+  try {
+    const jsonData = JSON.parse(readFileSync(jsonPath, 'utf-8')) as ProgressData;
+    writeFileSync(toonPath, serializeProgress(jsonData), 'utf-8');
+    return jsonData;
+  } catch { return undefined; }
+}
 
 export function writeProgressJSON(state: TaskState, completedPhase: string, nextPhase: string): void {
   try {
     if (!existsSync(state.docsDir)) return;
-    const filePath = join(state.docsDir, PROGRESS_FILE);
+    const filePath = join(state.docsDir, TOON_FILE);
 
     let existing: ProgressData | undefined;
     try {
       if (existsSync(filePath)) {
-        existing = JSON.parse(readFileSync(filePath, 'utf-8')) as ProgressData;
+        existing = parseProgress(readFileSync(filePath, 'utf-8'));
+      } else {
+        existing = migrateIfNeeded(state.docsDir);
       }
     } catch { /* corrupted — overwrite */ }
 
@@ -54,14 +127,19 @@ export function writeProgressJSON(state: TaskState, completedPhase: string, next
       transitions: [...(existing?.transitions ?? []), transition],
     };
 
-    writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+    writeFileSync(filePath, serializeProgress(data), 'utf-8');
   } catch { /* non-blocking */ }
 }
 
 export function readProgressJSON(docsDir: string): ProgressData | undefined {
   try {
-    const filePath = join(docsDir, PROGRESS_FILE);
-    if (!existsSync(filePath)) return undefined;
-    return JSON.parse(readFileSync(filePath, 'utf-8')) as ProgressData;
+    const toonPath = join(docsDir, TOON_FILE);
+    if (existsSync(toonPath)) {
+      return parseProgress(readFileSync(toonPath, 'utf-8'));
+    }
+    // Migration: .json → .toon
+    const migrated = migrateIfNeeded(docsDir);
+    if (migrated) return migrated;
+    return undefined;
   } catch { return undefined; }
 }

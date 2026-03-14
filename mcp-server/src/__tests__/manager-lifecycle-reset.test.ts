@@ -68,9 +68,11 @@ describe('resetTask', () => {
     mgr.completeSubPhase(state.taskId, 'threat_modeling');
     expect(mgr.loadTask(state.taskId)!.subPhaseStatus!['threat_modeling']?.status).toBe('completed');
     mgr.resetTask(state.taskId, 'scope_definition', 'clearing subs');
-    expect(mgr.loadTask(state.taskId)!.subPhaseStatus).toEqual({});
+    const loaded = mgr.loadTask(state.taskId)!;
+    // After reset, subPhaseStatus is empty (normalized away during TOON roundtrip)
+    expect(loaded.subPhaseStatus === undefined || Object.keys(loaded.subPhaseStatus).length === 0).toBe(true);
   });
-  it('clears retryCount to empty object on reset', () => {
+  it('clears retryCount on reset', () => {
     const mgr = createMgr();
     const state = mgr.createTask('rt-retry-reset', 'Intent for retryCount reset test with sufficient length text ok.');
     mgr.incrementRetryCount(state.taskId, 'planning');
@@ -78,12 +80,13 @@ describe('resetTask', () => {
     expect(mgr.getRetryCount(state.taskId, 'planning')).toBe(1);
     mgr.resetTask(state.taskId, 'scope_definition' as any, 'clearing retry counts');
     const loaded = mgr.loadTask(state.taskId);
-    expect(loaded!.retryCount).toEqual({});
+    // After reset, retryCount is empty (normalized away during TOON roundtrip)
+    expect(loaded!.retryCount === undefined || Object.keys(loaded!.retryCount).length === 0).toBe(true);
   });
 });
 
 describe('goBack', () => {
-  it('clears retryCount to empty object on goBack', () => {
+  it('clears retryCount on goBack', () => {
     const mgr = createMgr();
     const state = mgr.createTask('gb-retry-clear', 'Intent for goBack retryCount clear test with sufficient length.');
     mgr.advancePhase(state.taskId);
@@ -92,7 +95,8 @@ describe('goBack', () => {
     const result = mgr.goBack(state.taskId, 'scope_definition' as any);
     expect(result.success).toBe(true);
     const loaded = mgr.loadTask(state.taskId);
-    expect(loaded!.retryCount).toEqual({});
+    // After goBack, retryCount is empty (normalized away during TOON roundtrip)
+    expect(loaded!.retryCount === undefined || Object.keys(loaded!.retryCount).length === 0).toBe(true);
   });
 });
 
