@@ -62,6 +62,23 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
   if (approvalType === 'requirements' && task.acceptanceCriteria && task.acceptanceCriteria.length >= 3) {
     sm.setRefinedIntent(taskId, task.acceptanceCriteria.map(ac => ac.description).join(' / '));
   }
+  // IA-6: Block acceptance approval when AC-N or RTM entries are incomplete
+  if (approvalType === 'acceptance') {
+    const acList = task.acceptanceCriteria ?? [];
+    const unmetACs = acList.filter(ac => ac.status !== 'met');
+    if (unmetACs.length !== 0) {
+      return respondError('Cannot approve acceptance: ' + unmetACs.length + ' AC(s) not met. ' +
+        'All acceptance criteria must have status "met". ' +
+        'Failing: ' + unmetACs.map(ac => ac.id + '(' + ac.status + ')').join(', '));
+    }
+    const rtmList = task.rtmEntries ?? [];
+    const untestedRTMs = rtmList.filter(e => e.status !== 'tested' && e.status !== 'verified');
+    if (untestedRTMs.length !== 0) {
+      return respondError('Cannot approve acceptance: ' + untestedRTMs.length + ' RTM entry/entries not tested. ' +
+        'All RTM entries must have status "tested" or "verified". ' +
+        'Failing: ' + untestedRTMs.map(e => e.id + '(' + e.status + ')').join(', '));
+    }
+  }
   const approvalResult = sm.approveGate(taskId, approvalType);
   if (!approvalResult.success) return respondError(approvalResult.error ?? 'Failed to record approval');
   // ART-1 (S2-6): Record SHA-256 of approved artifact for drift detection

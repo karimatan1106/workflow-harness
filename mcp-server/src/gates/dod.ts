@@ -7,7 +7,7 @@
 import type { TaskState } from '../state/types.js';
 import { checkL1FileExists, checkL2ExitCode, checkInputFilesExist, checkTDDRedEvidence, checkSpecPathsExist } from './dod-l1-l2.js';
 import { OUTPUT_FILE_TO_PHASE } from '../phases/definitions.js';
-import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkBaselineRequired, checkArtifactFreshness, checkInvariantCompleteness } from './dod-l3.js';
+import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkRTMRequired, checkBaselineRequired, checkArtifactFreshness, checkInvariantCompleteness } from './dod-l3.js';
 import { checkL4ContentValidation } from './dod-l4-content.js';
 import { checkACFormat, checkNotInScope, checkOpenQuestions, checkIntentConsistency } from './dod-l4-requirements.js';
 import { checkDeltaEntryFormat } from './dod-l4-delta.js';
@@ -42,6 +42,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkToonSafety(phase, docsDir, workflowDir), 'L4');
   push(checkL4ContentValidation(phase, docsDir, workflowDir), 'L4');
   push(checkRTMCompleteness(state, phase), 'L3');
+  push(checkRTMRequired(state, phase), 'L3');
   push(checkACCompleteness(state, phase), 'L3');
   push(checkInvariantCompleteness(state, phase), 'L3');
   push(checkACFormat(state, phase, docsDir), 'L4');

@@ -124,6 +124,41 @@ export function checkInvariantCompleteness(state: TaskState, phase: string): DoD
   };
 }
 
+/** RTM-REQ: requirements phase must have at least one RTM entry referencing an AC-N */
+export function checkRTMRequired(state: TaskState, phase: string): DoDCheckResult {
+  if (phase !== 'requirements') {
+    return { level: 'L3', check: 'rtm_required', passed: true, evidence: 'RTM required check not applicable for phase: ' + phase };
+  }
+  if (!state.rtmEntries || state.rtmEntries.length === 0) {
+    return {
+      level: 'L3', check: 'rtm_required', passed: false,
+      evidence: 'requirements phase requires at least one F-NNN RTM entry',
+      fix: 'harness_add_rtm で少なくとも1つの F-NNN RTMエントリを登録してください。',
+      example: 'harness_add_rtm({ id: "F-001", requirement: "AC-1: ...", designRef: "-", codeRef: "-", testRef: "-" })',
+    };
+  }
+  // Verify at least one RTM entry references an AC-N
+  const acIds = (state.acceptanceCriteria ?? []).map(ac => ac.id);
+  if (acIds.length > 0) {
+    const acPattern = /AC-\d+/g;
+    const referencedACs = new Set<string>();
+    for (const entry of state.rtmEntries) {
+      const matches = entry.requirement.match(acPattern);
+      if (matches) matches.forEach(m => referencedACs.add(m));
+    }
+    const unreferenced = acIds.filter(id => !referencedACs.has(id));
+    if (unreferenced.length > 0) {
+      return {
+        level: 'L3', check: 'rtm_required', passed: false,
+        evidence: 'RTM entries do not reference these ACs: ' + unreferenced.join(', '),
+        fix: 'RTMエントリの requirement フィールドに対応する AC-N ID を含めてください。',
+        example: 'harness_add_rtm({ id: "F-001", requirement: "AC-1: ユーザーがログインできる", ... })',
+      };
+    }
+  }
+  return { level: 'L3', check: 'rtm_required', passed: true, evidence: `${state.rtmEntries.length} RTM entries with AC-N references present` };
+}
+
 export function checkBaselineRequired(state: TaskState, phase: string): DoDCheckResult {
   if (phase !== 'regression_test') {
     return { level: 'L3', check: 'baseline_required', passed: true, evidence: 'Baseline check not required for phase: ' + phase };
