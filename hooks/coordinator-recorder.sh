@@ -28,7 +28,8 @@ if [ "$SUBAGENT_TYPE" = "Explore" ]; then
 fi
 
 # コーディネーターとして記録（重複排除）
-COORD_FILE=".agent/.coordinator-ids"
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+COORD_FILE="$PROJECT_ROOT/.agent/.coordinator-ids"
 mkdir -p "$(dirname "$COORD_FILE")"
 if ! grep -qF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
   echo "$AGENT_ID" >> "$COORD_FILE"
