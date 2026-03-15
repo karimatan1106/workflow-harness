@@ -5,7 +5,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, utimesSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskState } from '../../state/types.js';
@@ -75,10 +75,11 @@ function findMcpConfig(): string | undefined {
 let logPaneCounter = 0;
 
 function writeSignal(signalPath: string, data: Record<string, unknown>): void {
+  // Delete then recreate to trigger VS Code FileSystemWatcher onDidCreate event
+  if (existsSync(signalPath)) {
+    unlinkSync(signalPath);
+  }
   writeFileSync(signalPath, JSON.stringify(data));
-  // Force mtime update to trigger VS Code FileSystemWatcher on Windows
-  const now = new Date();
-  utimesSync(signalPath, now, now);
 }
 
 function openLogPane(logFile: string): string {
