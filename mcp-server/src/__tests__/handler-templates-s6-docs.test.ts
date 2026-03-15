@@ -89,10 +89,10 @@ describe('AC-2: registry.ts docs_update config', () => {
     expect(config.model).toBe('sonnet');
   });
 
-  it('TC-AC2-06: bashCategories contains readonly and implementation', () => {
+  it('TC-AC2-06: bashCategories contains readonly only (no implementation)', () => {
     const cats = config.bashCategories as string[];
     expect(cats).toContain('readonly');
-    expect(cats).toContain('implementation');
+    expect(cats).not.toContain('implementation');
   });
 });
 
