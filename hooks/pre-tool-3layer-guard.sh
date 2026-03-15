@@ -49,6 +49,8 @@ fi
 is_lifecycle() {
   case "$1" in
     *_start|*_next|*_approve|*_status|*_back|*_reset) return 0 ;;
+    *_set_scope|*_get_subphase_template|*_get_test_info) return 0 ;;
+    *_get_known_bugs|*_pre_validate|*_capture_baseline) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -70,7 +72,7 @@ if [ "$LAYER" = "orchestrator" ]; then
         exit 0
       fi
       log_obs "BLOCKED(non-lifecycle-mcp)"
-      echo "BLOCKED: オーケストレーター層はライフサイクルMCPツール(start/next/approve/status/back/reset)のみ許可。サブエージェントに委譲してください。" >&2
+      echo "BLOCKED: オーケストレーター層はライフサイクルMCPツールのみ許可。サブエージェントに委譲してください。" >&2
       exit 2
       ;;
     *)
