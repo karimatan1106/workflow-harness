@@ -49,7 +49,7 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
     if (dirty) gitWarning = `Git working tree has uncommitted changes (${dirty.split('\n').length} file(s)). Consider committing or stashing before starting a workflow.`;
   } catch { /* not in a git repo or git not available */ }
   try { recordPhaseStart(task.taskId, task.taskName, task.phase); } catch { /* non-blocking */ }
-  try { writeAllowedToolsFile(task.phase); } catch { /* non-blocking */ }
+  try { writeAllowedToolsFile(task.phase); } catch (e) { console.error('writeAllowedToolsFile failed:', e); }
   return respond({ taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size, docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken, ...(gitWarning ? { gitWarning } : {}) });
 }
 
@@ -168,7 +168,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: (PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model) ?? 'sonnet' }));
   }
   try { recordPhaseStart(taskId, freshTask?.taskName ?? '', nextPhase); } catch { /* non-blocking */ }
-  if (nextPhase) { try { writeAllowedToolsFile(nextPhase as Parameters<typeof writeAllowedToolsFile>[0]); } catch { /* non-blocking */ } }
+  if (nextPhase) { try { writeAllowedToolsFile(nextPhase as Parameters<typeof writeAllowedToolsFile>[0]); } catch (e) { console.error('writeAllowedToolsFile failed:', e); } }
   if (nextPhase === 'completed' && freshTask) {
     try { recordTaskCompletion(taskId); } catch { /* non-blocking */ }
     try { const r = runCuratorCycle(taskId, freshTask.taskName); responseObj.curatorReport = { lessonsBefore: r.lessonsBefore, lessonsAfter: r.lessonsAfter, actionCount: r.actions.length }; } catch { /* non-blocking */ }
