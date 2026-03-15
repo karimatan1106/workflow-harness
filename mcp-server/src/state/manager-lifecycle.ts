@@ -4,6 +4,7 @@
  */
 
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import type { TaskState, PhaseName } from './types.js';
 import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
@@ -13,6 +14,17 @@ import { writeProgressJSON } from './progress-json.js';
 
 const DEFAULT_ALLOWED_TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
 
+function getProjectRoot(): string {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    return process.cwd();
+  }
+}
+
 /**
  * Write allowed tools for the given phase to .agent/.worker-allowed-tools.
  * Non-blocking — errors are silently ignored.
@@ -20,7 +32,7 @@ const DEFAULT_ALLOWED_TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
 export function writeAllowedToolsFile(phase: PhaseName): void {
   const config = PHASE_REGISTRY[phase];
   const tools = config?.allowedTools ?? DEFAULT_ALLOWED_TOOLS;
-  const dir = join(process.cwd(), '.agent');
+  const dir = join(getProjectRoot(), '.agent');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, '.worker-allowed-tools'), tools.join(','), 'utf8');
 }

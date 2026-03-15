@@ -85,7 +85,7 @@ function spawnAsync(
     const child = spawn(command, args, {
       ...options,
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: true,
+      shell: false,
     });
 
     let stdout = '';
@@ -129,6 +129,12 @@ export async function handleDelegateWork(
   const phaseGuide = buildPhaseGuide(task.phase);
 
   const files = args.files as string[] | undefined;
+
+  let fullInstruction = instruction;
+  if (files?.length) {
+    fullInstruction += '\n\n対象ファイル:\n' + files.map((f: string) => '- ' + f).join('\n');
+  }
+
   const allowedTools = String(args.allowedTools ?? buildAllowedTools(phaseGuide));
   const disallowedTools = String(args.disallowedTools ?? DEFAULT_DISALLOWED_TOOLS);
   const systemPrompt = String(args.systemPrompt ?? buildCoordinatorPrompt(task, phaseGuide));
@@ -139,7 +145,7 @@ export async function handleDelegateWork(
   // Build claude -p command args
   const cmdArgs: string[] = [
     '-p',
-    JSON.stringify(instruction),
+    JSON.stringify(fullInstruction),
     '--print',
     '--output-format', 'text',
     '--setting-sources', 'user',

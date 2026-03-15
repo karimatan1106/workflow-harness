@@ -104,6 +104,7 @@ if [ "$LAYER" = "subagent" ]; then
   if [ -f "$ALLOWED_TOOLS_FILE" ]; then
     ALLOWED_TOOLS=$(cat "$ALLOWED_TOOLS_FILE" 2>/dev/null || echo "Read,Glob,Grep,Write,Edit,Bash")
   else
+    # No file = no active task = full access. Per-phase restrictions written by harness_start/harness_next.
     ALLOWED_TOOLS="Read,Glob,Grep,Write,Edit,Bash"
   fi
 
