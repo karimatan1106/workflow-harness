@@ -48,7 +48,7 @@ export const TOOL_DEFS_C = [
   },
   {
     name: 'harness_delegate_work',
-    description: 'Delegate phase work to an isolated coordinator process (3-layer model). Coordinator reads files and performs MCP operations; file edits are delegated to workers via Agent. Default: allowedTools=Agent,Read,Glob,Grep with harness MCP enabled.',
+    description: 'Delegate phase work to an isolated coordinator process (3-layer model). Phase-aware context injection: auto-selects allowedTools, model, and system prompt from PHASE_REGISTRY. Implementation/testing phases get Write,Edit,Bash; read-only phases get Agent,Read,Glob,Grep only. sessionToken/taskId propagated via env vars.',
     inputSchema: {
       type: 'object',
       properties: {

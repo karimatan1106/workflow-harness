@@ -4,42 +4,113 @@
  * Coordinator: reads files + MCP ops + delegates file edits to workers via Agent.
  */
 
+import { spawn } from 'node:child_process';
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
-import { respond, respondError, validateSession, type HandlerResult } from '../handler-shared.js';
+import type { TaskState } from '../../state/types.js';
+import {
+  buildPhaseGuide,
+  respond,
+  respondError,
+  validateSession,
+  type HandlerResult,
+} from '../handler-shared.js';
 
-const DEFAULT_ALLOWED_TOOLS = 'Agent,Read,Glob,Grep';
-const DEFAULT_SYSTEM_PROMPT = 'フェーズ作業を管理するcoordinatorです。ファイルの読み取りとMCPツール操作を行い、ファイル編集はAgentでworkerを生成して委譲してください。workerへの指示には対象ファイルパスと具体的な変更内容を含めてください。';
 const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work';
 const WORKER_TIMEOUT_MS = 300_000; // 5 minutes
 
+// ─── Phase-aware allowed tools ────────────────────
+type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
+
+function buildAllowedTools(phaseGuide: PhaseGuide): string {
+  const cats = phaseGuide.bashCategories;
+  const needsEdit = cats.some(
+    (c) => c === 'implementation' || c === 'testing' || c === 'git',
+  );
+  return needsEdit
+    ? 'Agent,Read,Glob,Grep,Write,Edit,Bash'
+    : 'Agent,Read,Glob,Grep';
+}
+
+// ─── Phase-aware coordinator system prompt ────────
+function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
+  const lines: string[] = [
+    'Role: coordinatorとしてフェーズ作業を管理。ファイル読み取りとMCP操作を行い、ファイル編集はAgentでworkerを生成して委譲。',
+    `Phase: ${task.phase}`,
+    `DocsDir: ${task.docsDir}`,
+    'TOON format: key: value形式。カンマ含む値は引用符必須。バックスラッシュ禁止。ファイル名はハイフン区切り。',
+    `AllowedExtensions: ${pg.allowedExtensions.join(', ')}`,
+    `OutputFile: ${task.docsDir}/${task.phase}.toon`,
+    'workerへの指示には対象ファイルパスと具体的な変更内容を含めること。',
+    'MCPツール呼び出し時は環境変数 HARNESS_TASK_ID と HARNESS_SESSION_TOKEN を使用すること。',
+  ];
+  return lines.join('\n');
+}
+
+// ─── Project root detection ───────────────────────
 function getProjectRoot(): string {
   try {
-    return execSync('git rev-parse --show-toplevel', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    return execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
   } catch {
     return process.cwd();
   }
 }
 
+// ─── MCP config detection ─────────────────────────
 function findMcpConfig(): string | undefined {
   const cwd = process.cwd();
   const projectRoot = getProjectRoot();
-  // Check current directory first, then try git root
-  const candidates = [
-    join(cwd, '.mcp.json'),
-  ];
+  const candidates = [join(cwd, '.mcp.json')];
   if (projectRoot !== cwd) {
     candidates.push(join(projectRoot, '.mcp.json'));
   }
-
   for (const candidate of candidates) {
     if (existsSync(candidate)) return resolve(candidate);
   }
   return undefined;
 }
 
+// ─── Async spawn wrapper ──────────────────────────
+function spawnAsync(
+  command: string,
+  args: string[],
+  options: { cwd: string; env: Record<string, string | undefined> },
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      ...options,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: true,
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+    child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('Timeout'));
+    }, WORKER_TIMEOUT_MS);
+
+    child.on('close', (code: number | null) => {
+      clearTimeout(timer);
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`Exit code ${code}\nstderr: ${stderr}`));
+    });
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+// ─── Handler ──────────────────────────────────────
 export async function handleDelegateWork(
   args: Record<string, unknown>,
   sm: StateManager,
@@ -54,17 +125,19 @@ export async function handleDelegateWork(
   const instruction = String(args.instruction ?? '');
   if (!instruction) return respondError('instruction is required');
 
+  // Phase-aware defaults (Fix #1, #2, #5, #6, #7)
+  const phaseGuide = buildPhaseGuide(task.phase);
+
   const files = args.files as string[] | undefined;
-  const allowedTools = String(args.allowedTools ?? DEFAULT_ALLOWED_TOOLS);
+  const allowedTools = String(args.allowedTools ?? buildAllowedTools(phaseGuide));
   const disallowedTools = String(args.disallowedTools ?? DEFAULT_DISALLOWED_TOOLS);
-  const systemPrompt = String(args.systemPrompt ?? DEFAULT_SYSTEM_PROMPT);
-  const model = args.model ? String(args.model) : undefined;
+  const systemPrompt = String(args.systemPrompt ?? buildCoordinatorPrompt(task, phaseGuide));
+  const model = args.model ? String(args.model) : phaseGuide.model;
   const addDirs = args.addDirs as string[] | undefined;
   const mcpConfig = args.mcpConfig ? String(args.mcpConfig) : findMcpConfig();
 
-  // Build claude -p command
-  const cmdParts: string[] = [
-    'claude',
+  // Build claude -p command args
+  const cmdArgs: string[] = [
     '-p',
     JSON.stringify(instruction),
     '--print',
@@ -78,47 +151,49 @@ export async function handleDelegateWork(
   ];
 
   if (disallowedTools) {
-    cmdParts.push('--disallowedTools', JSON.stringify(disallowedTools));
+    cmdArgs.push('--disallowedTools', JSON.stringify(disallowedTools));
   }
 
   if (mcpConfig) {
-    cmdParts.push('--mcp-config', JSON.stringify(mcpConfig));
+    cmdArgs.push('--mcp-config', JSON.stringify(mcpConfig));
   }
 
   if (model) {
-    cmdParts.push('--model', model);
+    cmdArgs.push('--model', model);
   }
 
   if (addDirs?.length) {
     for (const dir of addDirs) {
-      cmdParts.push('--add-dir', JSON.stringify(dir));
+      cmdArgs.push('--add-dir', JSON.stringify(dir));
     }
   }
 
-  const cmd = cmdParts.join(' ');
   const projectRoot = getProjectRoot();
 
+  // Fix #3: sessionToken propagation via env
+  const childEnv: Record<string, string | undefined> = {
+    ...process.env,
+    HARNESS_SESSION_TOKEN: String(args.sessionToken),
+    HARNESS_TASK_ID: taskId,
+  };
+
+  // Fix #4: async spawn instead of execSync
   try {
     const startTime = Date.now();
-    const output = execSync(cmd, {
+    const { stdout } = await spawnAsync('claude', cmdArgs, {
       cwd: projectRoot,
-      encoding: 'utf8',
-      timeout: WORKER_TIMEOUT_MS,
-      maxBuffer: 10 * 1024 * 1024, // 10MB
-      stdio: ['pipe', 'pipe', 'pipe'],
+      env: childEnv,
     });
     const durationMs = Date.now() - startTime;
 
     return respond({
       success: true,
-      output: output.trim(),
+      output: stdout.trim(),
       durationMs,
       filesHint: files ?? [],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const stderr = (err as { stderr?: string | Buffer })?.stderr;
-    const stderrText = stderr ? String(stderr).trim() : undefined;
-    return respondError(`Worker failed: ${message}${stderrText ? `\nstderr: ${stderrText}` : ''}`);
+    return respondError(`Worker failed: ${message}`);
   }
 }
