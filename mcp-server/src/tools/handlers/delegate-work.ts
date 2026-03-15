@@ -127,7 +127,13 @@ function spawnAsync(
         appendFileSync(options.logFile, text);
       }
     });
-    child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      stderr += text;
+      if (options.logFile) {
+        appendFileSync(options.logFile, text);
+      }
+    });
 
     child.on('close', (code: number | null) => {
       if (code === 0) resolve({ stdout, stderr });
