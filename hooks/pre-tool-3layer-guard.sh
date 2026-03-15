@@ -15,9 +15,6 @@ INPUT=$(cat)
 # Empty stdin — allow
 if [ -z "$INPUT" ]; then exit 0; fi
 
-# Bypass via environment variable
-if [ "$ORCHESTRATOR_GUARD_DISABLE" = "true" ]; then exit 0; fi
-
 # Extract fields (|| true guards against grep exit code 1 on no-match)
 TOOL_NAME=$(echo "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"tool_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"agent_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
