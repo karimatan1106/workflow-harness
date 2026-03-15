@@ -1,9 +1,9 @@
 #!/bin/bash
-# Test suite for pre-tool-3layer-guard.sh
+# Test suite for pre-tool-guard.sh
 # Tests: Orchestrator (TC-O), Coordinator (TC-C), Worker (TC-W), Edge (TC-E)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TARGET_SCRIPT="$SCRIPT_DIR/pre-tool-3layer-guard.sh"
+TARGET_SCRIPT="$SCRIPT_DIR/pre-tool-guard.sh"
 
 PASS_COUNT=0
 FAIL_COUNT=0

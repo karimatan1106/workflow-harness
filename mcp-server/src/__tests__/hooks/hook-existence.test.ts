@@ -12,11 +12,9 @@ const HOOK_FILES = [
   'pre-tool-config-guard.sh',
   'pre-compact-context-save.sh',
   'context-watchdog.sh',
-  'pre-tool-3layer-guard.sh',
+  'pre-tool-guard.sh',
   'pre-tool-no-verify-block.sh',
   'handoff-reader.sh',
-  'coordinator-recorder.sh',
-  'coordinator-cleanup.sh',
 ];
 
 describe('G-01~04: Hook existence and settings', () => {
@@ -39,17 +37,13 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(settings.hooks).toBeDefined();
   });
 
-  it('settings.json has PostToolUse hooks for Write|Edit and Agent', () => {
+  it('settings.json has PostToolUse hooks for Write|Edit', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const postToolUse = settings.hooks.PostToolUse;
     expect(postToolUse).toBeDefined();
-    expect(postToolUse).toHaveLength(2);
     const lintHook = postToolUse.find((h: any) => h.matcher === 'Write|Edit');
     expect(lintHook).toBeDefined();
     expect(lintHook.hooks[0].command).toContain('post-tool-lint.sh');
-    const cleanupHook = postToolUse.find((h: any) => h.matcher === 'Agent');
-    expect(cleanupHook).toBeDefined();
-    expect(cleanupHook.hooks[0].command).toContain('coordinator-cleanup.sh');
   });
 
   it('settings.json has PreToolUse hooks (config-guard + no-verify-block)', () => {
