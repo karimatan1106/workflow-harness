@@ -5,7 +5,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskState } from '../../state/types.js';
@@ -54,8 +54,6 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN（環境変数から取得）"',
     'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
     'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業内容, files-changed: 変更ファイル一覧"',
-    'progress-output: "作業の各ステップでstdoutに進捗マーカーを出力すること。形式: [PROGRESS] ステップ内容"',
-    'worker-progress: "Agent toolでWorkerに委譲する前後に進捗を出力。[PROGRESS] Worker開始: {内容} / [PROGRESS] Worker完了: {結果}"',
   ];
   return lines.join('\n');
 }
@@ -78,9 +76,7 @@ function findMcpConfig(): string | undefined {
 function spawnAsync(
   command: string,
   args: string[],
-  options: { cwd: string; env: Record<string, string | undefined> },
-  extra?: { sendNotification?: (notification: any) => Promise<void> },
-  progressToken?: string,
+  options: { cwd: string; env: Record<string, string | undefined>; logFile?: string },
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -94,23 +90,9 @@ function spawnAsync(
     child.stdout?.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
       stdout += text;
-      process.stderr.write(text);
-
-      // [PROGRESS]マーカーを検出してprogress通知に含める
-      const progressLines = text.split('\n').filter((l: string) => l.includes('[PROGRESS]'));
-      if (extra?.sendNotification && progressToken !== undefined) {
-        const message = progressLines.length > 0
-          ? progressLines[progressLines.length - 1].replace('[PROGRESS]', '').trim()
-          : undefined;
-        extra.sendNotification({
-          method: 'notifications/progress',
-          params: {
-            progressToken,
-            progress: stdout.length,
-            total: 0,
-            ...(message ? { message } : {}),
-          }
-        }).catch(() => {});
+      process.stderr.write(chunk);
+      if (options.logFile) {
+        appendFileSync(options.logFile, text);
       }
     });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
@@ -136,7 +118,6 @@ function spawnAsync(
 export async function handleDelegateWork(
   args: Record<string, unknown>,
   sm: StateManager,
-  extra?: { sendNotification?: (notification: any) => Promise<void> },
 ): Promise<HandlerResult> {
   const taskId = String(args.taskId ?? '');
   if (!taskId) return respondError('taskId is required');
@@ -205,6 +186,10 @@ export async function handleDelegateWork(
 
   const projectRoot = getProjectRoot();
 
+  // Initialize log file for coordinator output
+  const logFile = join(projectRoot, '.agent', 'delegate-work.log');
+  writeFileSync(logFile, `[${new Date().toISOString()}] delegate-work started: phase=${task.phase}\n`);
+
   // Fix #3: sessionToken propagation via env
   const childEnv: Record<string, string | undefined> = {
     ...process.env,
@@ -215,11 +200,11 @@ export async function handleDelegateWork(
   // Fix #4: async spawn instead of execSync
   try {
     const startTime = Date.now();
-    const progressToken = (args._meta as any)?.progressToken as string | undefined;
     const { stdout } = await spawnAsync('claude', cmdArgs, {
       cwd: projectRoot,
       env: childEnv,
-    }, extra, progressToken);
+      logFile,
+    });
     const durationMs = Date.now() - startTime;
 
     const toonResult = [

@@ -23,7 +23,6 @@ export async function handleToolCall(
   name: string,
   args: Record<string, unknown>,
   stateManager: StateManager,
-  extra?: { sendNotification?: (notification: any) => Promise<void> },
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     switch (name) {
@@ -53,7 +52,7 @@ export async function handleToolCall(
       case 'dci_query_docs':             return handleDciQueryDocs(args);
       case 'dci_query_files':            return handleDciQueryFiles(args);
       case 'dci_validate':               return handleDciValidate();
-      case 'harness_delegate_work':      return handleDelegateWork(args, stateManager, extra);
+      case 'harness_delegate_work':      return handleDelegateWork(args, stateManager);
       default: return respondError('Unknown tool: ' + name);
     }
   } catch (err) {
