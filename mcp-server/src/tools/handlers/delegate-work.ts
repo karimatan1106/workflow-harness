@@ -223,7 +223,7 @@ export async function handleDelegateWork(
   };
 
   // Signal log pane open (VS Code extension watches signal file)
-  const paneId = openLogPane(logFile);
+  const paneId = openLogPane('.agent/delegate-work.log');
 
   // Fix #4: async spawn instead of execSync
   try {
