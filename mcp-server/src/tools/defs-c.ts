@@ -48,7 +48,7 @@ export const TOOL_DEFS_C = [
   },
   {
     name: 'harness_delegate_work',
-    description: 'Spawn isolated claude -p coordinator for phase work (3-layer model). Coordinator reads files, performs MCP operations, and delegates file edits to workers via Agent. Default: allowedTools=Agent,Read,Glob,Grep with harness MCP enabled.',
+    description: 'Delegate phase work to an isolated coordinator process (3-layer model). Coordinator reads files and performs MCP operations; file edits are delegated to workers via Agent. Default: allowedTools=Agent,Read,Glob,Grep with harness MCP enabled.',
     inputSchema: {
       type: 'object',
       properties: {

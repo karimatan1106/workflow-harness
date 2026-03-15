@@ -1,5 +1,5 @@
 /**
- * harness_delegate_work — Spawn isolated claude -p coordinator for phase work.
+ * harness_delegate_work — Spawn isolated coordinator process for phase work.
  * 3-layer model: Orchestrator → delegate_work (Coordinator) → Agent (Worker)
  * Coordinator: reads files + MCP ops + delegates file edits to workers via Agent.
  */
