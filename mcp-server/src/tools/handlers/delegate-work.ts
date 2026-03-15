@@ -19,7 +19,6 @@ import {
 import { getProjectRoot } from '../../utils/project-root.js';
 
 const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work';
-const WORKER_TIMEOUT_MS = 300_000; // 5 minutes
 
 // ─── Phase-aware allowed tools ────────────────────
 type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
@@ -97,18 +96,11 @@ function spawnAsync(
     });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
 
-    const timer = setTimeout(() => {
-      child.kill();
-      reject(new Error('Timeout'));
-    }, WORKER_TIMEOUT_MS);
-
     child.on('close', (code: number | null) => {
-      clearTimeout(timer);
       if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(`Exit code ${code}\nstderr: ${stderr}`));
     });
     child.on('error', (err) => {
-      clearTimeout(timer);
       reject(err);
     });
   });

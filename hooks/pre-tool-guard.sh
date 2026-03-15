@@ -49,7 +49,7 @@ is_lifecycle() {
 # === Orchestrator rules ===
 if [ "$LAYER" = "orchestrator" ]; then
   case "$TOOL_NAME" in
-    Skill|ToolSearch|AskUserQuestion)
+    Agent|Skill|ToolSearch|AskUserQuestion)
       log_obs "ALLOWED($TOOL_NAME)"
       exit 0
       ;;
@@ -88,6 +88,11 @@ if [ "$LAYER" = "subagent" ]; then
   esac
 
   # MCP tools: allow non-lifecycle, block lifecycle
+  # Subagent: allow harness_delegate_work (bridge pattern)
+  if [[ "$TOOL_NAME" == "mcp__harness__harness_delegate_work" ]]; then
+    log_obs "ALLOWED(delegate_work-bridge)"
+    exit 0
+  fi
   case "$TOOL_NAME" in
     mcp__harness__*|mcp__ide__*|mcp__vision-ocr__*)
       if is_lifecycle "$TOOL_NAME"; then
