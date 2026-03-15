@@ -5,6 +5,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { normalize } from 'node:path';
 import type { PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
@@ -29,7 +30,7 @@ function checkColonSpacing(lines: string[]): DoDCheckResult | null {
     // Exclude URLs in the value portion
     const colonIdx = line.indexOf(':');
     const afterColon = line.slice(colonIdx);
-    if (/^:\/\//.test(afterColon)) continue;
+    if (afterColon.startsWith('://')) continue;
     offending.push(line);
     if (offending.length >= 3) break;
   }
@@ -80,7 +81,7 @@ export function checkToonSafety(phase: string, docsDir: string, workflowDir: str
   if (!config || !config.outputFile) {
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'No output file for this phase' };
   }
-  const outputFile = config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
+  const outputFile = normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'Output file not found; skipped (L1 handles)' };
   }

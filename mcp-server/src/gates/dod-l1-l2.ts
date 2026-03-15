@@ -4,7 +4,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, normalize } from 'node:path';
 import type { TaskState, PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
@@ -19,9 +19,9 @@ export function checkL1FileExists(phase: string, docsDir: string, workflowDir: s
   if (!config || !config.outputFile) {
     return { level: 'L1', check: 'output_file_exists', passed: true, evidence: 'No output file required for this phase' };
   }
-  const outputFile = config.outputFile
+  const outputFile = normalize(config.outputFile
     .replace('{docsDir}', docsDir)
-    .replace('{workflowDir}', workflowDir);
+    .replace('{workflowDir}', workflowDir));
   const exists = existsSync(outputFile);
   return {
     level: 'L1',
@@ -43,7 +43,7 @@ export function checkInputFilesExist(phase: string, docsDir: string, workflowDir
     const basename = inputFile.split('/').pop() ?? '';
     const sourcePhase = fileToPhaseMap[basename];
     if (sourcePhase && skippedPhases.includes(sourcePhase)) continue;
-    const filePath = inputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir);
+    const filePath = normalize(inputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
     if (!existsSync(filePath)) missing.push(filePath);
   }
   const passed = missing.length === 0;
