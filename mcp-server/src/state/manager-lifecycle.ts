@@ -116,6 +116,7 @@ export function goBack(taskId: string, hmacKey: string, targetPhase: PhaseName):
   if (idx !== -1) state.completedPhases = state.completedPhases.slice(0, idx);
   state.phase = targetPhase;
   state.retryCount = {};
+  state.integrityWarning = false;
   state.updatedAt = new Date().toISOString();
   updateCheckpoint(state, targetPhase);
   signAndPersist(state, hmacKey);
@@ -134,6 +135,7 @@ export function resetTask(
   state.completedPhases = [];
   state.subPhaseStatus = {};
   state.retryCount = {};
+  state.integrityWarning = false;
   state.phase = targetPhase;
   state.updatedAt = new Date().toISOString();
   updateCheckpoint(state, targetPhase);
