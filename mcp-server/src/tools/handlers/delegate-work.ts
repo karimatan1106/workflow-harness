@@ -5,7 +5,6 @@
  */
 
 import { spawn } from 'node:child_process';
-import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
@@ -17,6 +16,7 @@ import {
   validateSession,
   type HandlerResult,
 } from '../handler-shared.js';
+import { getProjectRoot } from '../../utils/project-root.js';
 
 const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work';
 const WORKER_TIMEOUT_MS = 300_000; // 5 minutes
@@ -54,25 +54,6 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     'MCPツール呼び出し時は環境変数 HARNESS_TASK_ID と HARNESS_SESSION_TOKEN を使用すること。',
   ];
   return lines.join('\n');
-}
-
-// ─── Project root detection ───────────────────────
-function getProjectRoot(): string {
-  try {
-    // If running inside a submodule, get the parent project root
-    const superproject = execSync('git rev-parse --show-superproject-working-tree', {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    if (superproject) return superproject;
-    // Otherwise, get the current repo root
-    return execSync('git rev-parse --show-toplevel', {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-  } catch {
-    return process.cwd();
-  }
 }
 
 // ─── MCP config detection ─────────────────────────

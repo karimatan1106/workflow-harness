@@ -4,33 +4,15 @@
  */
 
 import { writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import type { TaskState, PhaseName } from './types.js';
 import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
 import { loadTaskFromDisk } from './manager-read.js';
 import { signAndPersist, writeTaskIndex, updateCheckpoint } from './manager-write.js';
 import { writeProgressJSON } from './progress-json.js';
+import { getProjectRoot } from '../utils/project-root.js';
 
 const DEFAULT_ALLOWED_TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
-
-function getProjectRoot(): string {
-  try {
-    // If running inside a submodule, get the parent project root
-    const superproject = execSync('git rev-parse --show-superproject-working-tree', {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    if (superproject) return superproject;
-    // Otherwise, get the current repo root
-    return execSync('git rev-parse --show-toplevel', {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-  } catch {
-    return process.cwd();
-  }
-}
 
 /**
  * Write allowed tools for the given phase to .agent/.worker-allowed-tools.

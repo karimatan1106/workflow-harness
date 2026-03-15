@@ -147,6 +147,6 @@ fi
 
 echo ""
 echo "=== Setup Complete ==="
-echo "2-layer guard installed (orchestrator + subagent)."
+echo "2-layer per-process guard installed (orchestrator + subagent, part of 3-layer architecture)."
 echo "harness MCP server registered in .mcp.json."
 echo "Orchestrator/Subagent access control active."

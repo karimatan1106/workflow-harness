@@ -1,5 +1,5 @@
 #!/bin/bash
-# 2-Layer Tool Access Control Guard
+# 2-Layer per-process guard (part of 3-layer architecture via delegate_work)
 # Layer 1 (Orchestrator): No AGENT_ID → Agent/Skill/ToolSearch/AskUserQuestion + lifecycle MCP only
 # Layer 2 (Subagent):     Has AGENT_ID → phase-restricted standard tools + non-lifecycle MCP + ToolSearch
 
