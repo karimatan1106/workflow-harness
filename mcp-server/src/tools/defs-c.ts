@@ -48,7 +48,7 @@ export const TOOL_DEFS_C = [
   },
   {
     name: 'harness_delegate_work',
-    description: 'Spawn isolated claude -p worker for file operations. Worker runs with fresh context (no CLAUDE.md, no hooks, no MCP). Use for implementation, editing, and file creation tasks that benefit from context isolation.',
+    description: 'Spawn isolated claude -p coordinator for phase work (3-layer model). Coordinator reads files, performs MCP operations, and delegates file edits to workers via Agent. Default: allowedTools=Agent,Read,Glob,Grep with harness MCP enabled.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -78,6 +78,14 @@ export const TOOL_DEFS_C = [
           type: 'array',
           items: { type: 'string' },
           description: 'Additional directories the worker can access.',
+        },
+        mcpConfig: {
+          type: 'string',
+          description: 'Path to .mcp.json for MCP server configuration. Default: auto-detected from project root.',
+        },
+        disallowedTools: {
+          type: 'string',
+          description: 'Comma-separated tool blocklist. Default: lifecycle MCP tools + delegate_work (prevent recursion).',
         },
       },
       required: ['instruction'],
