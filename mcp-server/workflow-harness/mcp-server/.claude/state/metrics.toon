@@ -1,0 +1,15 @@
+version: 1
+totalTasks: 1
+completedTasks: 0
+totalRetries: 0
+totalDoDFailures: 0
+totalPhaseTransitions: 0
+firstPassPhases: 0
+
+aggregatePhaseTimings[0]{phase,count,totalMs,avgMs}:
+
+tasks[1]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
+  449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, 0, 0, 2026-03-15T14:27:21.801Z, null
+
+taskPhases_449737a1-c619-4d66-808f-06adf184131c[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
+  scope_definition, 2026-03-15T14:27:21.801Z, null, 0, 0, 

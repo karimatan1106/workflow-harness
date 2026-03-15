@@ -1,0 +1,34 @@
+taskId: 449737a1-c619-4d66-808f-06adf184131c
+taskName: delegate-work-e2e-test
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: harness_delegate_workのE2Eテスト。3層構造（Orchestrator→Coordinator→Worker）が正しく機能するか検証する。
+docsDir: docs\workflows\delegate-work-e2e-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\449737a1-c619-4d66-808f-06adf184131c_delegate-work-e2e-test
+sessionToken: cd91296b1950db4db97bc81f29cbccd19a746089db08161fcb2e086923159afc
+stateIntegrity: 930e39310bfb6108c0cdfb543cb2b6db7b6259af254de74960e3e7940472bf8f
+createdAt: 2026-03-15T14:27:21.704Z
+updatedAt: 2026-03-15T14:27:21.704Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 449737a1-c619-4d66-808f-06adf184131c
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T14:27:21.704Z
+checkpoint.sha256: f4232d22319ff9d5bd05c1f3791cc13855d7e50c37dcc12477b32bd9e1d488cf
+checkpoint.userIntent: harness_delegate_workのE2Eテスト。3層構造（Orchestrator→Coordinator→Worker）が正しく機能するか検証する。
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

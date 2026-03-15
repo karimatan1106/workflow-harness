@@ -1,0 +1,4 @@
+updatedAt: 2026-03-15T14:27:21.710Z
+
+tasks[1]{taskId,taskName,phase,size,status}:
+  449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, scope_definition, small, active

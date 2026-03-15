@@ -52,6 +52,13 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
 // ─── Project root detection ───────────────────────
 function getProjectRoot(): string {
   try {
+    // If running inside a submodule, get the parent project root
+    const superproject = execSync('git rev-parse --show-superproject-working-tree', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (superproject) return superproject;
+    // Otherwise, get the current repo root
     return execSync('git rev-parse --show-toplevel', {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -84,7 +91,7 @@ function spawnAsync(
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       ...options,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     });
 
@@ -145,23 +152,23 @@ export async function handleDelegateWork(
   // Build claude -p command args
   const cmdArgs: string[] = [
     '-p',
-    JSON.stringify(fullInstruction),
+    fullInstruction,
     '--print',
     '--output-format', 'text',
     '--setting-sources', 'user',
     '--disable-slash-commands',
-    '--allowedTools', JSON.stringify(allowedTools),
+    '--allowedTools', allowedTools,
     '--permission-mode', 'bypassPermissions',
     '--no-session-persistence',
-    '--system-prompt', JSON.stringify(systemPrompt),
+    '--system-prompt', systemPrompt,
   ];
 
   if (disallowedTools) {
-    cmdArgs.push('--disallowedTools', JSON.stringify(disallowedTools));
+    cmdArgs.push('--disallowedTools', disallowedTools);
   }
 
   if (mcpConfig) {
-    cmdArgs.push('--mcp-config', JSON.stringify(mcpConfig));
+    cmdArgs.push('--mcp-config', mcpConfig);
   }
 
   if (model) {
@@ -170,7 +177,7 @@ export async function handleDelegateWork(
 
   if (addDirs?.length) {
     for (const dir of addDirs) {
-      cmdArgs.push('--add-dir', JSON.stringify(dir));
+      cmdArgs.push('--add-dir', dir);
     }
   }
 
