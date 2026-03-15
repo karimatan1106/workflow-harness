@@ -99,10 +99,10 @@ echo ""
 # ============================================================
 echo "--- Orchestrator Tests ---"
 
-# TC-O-01: Agent → exit 0
+# TC-O-01: Agent → exit 2 (blocked — must use harness_delegate_work)
 run_as_orchestrator "Agent"
-assert_exit "TC-O-01 Agent" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-O-01 stderr" "$HOOK_STDERR"
+assert_exit "TC-O-01 Agent" 2 "$HOOK_EXIT"
+assert_stderr_contains "TC-O-01 stderr" "BLOCKED" "$HOOK_STDERR"
 
 # TC-O-02: harness_start → exit 0
 run_as_orchestrator "mcp__harness__harness_start"

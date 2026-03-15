@@ -4,7 +4,8 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { normalize } from 'node:path';
+import { join, normalize } from 'node:path';
+import { getProjectRoot } from '../utils/project-root.js';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
@@ -42,7 +43,7 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   if (!config || !config.outputFile) {
     return { level: 'L4', check: 'content_validation', passed: true, evidence: 'No content validation required for this phase' };
   }
-  const outputFile = normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
+  const outputFile = join(getProjectRoot(), normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir)));
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'content_validation', passed: false, evidence: `Cannot validate content: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }

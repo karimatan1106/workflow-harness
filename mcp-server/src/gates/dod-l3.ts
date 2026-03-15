@@ -4,7 +4,8 @@
  */
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { normalize } from 'node:path';
+import { join, normalize } from 'node:path';
+import { getProjectRoot } from '../utils/project-root.js';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { TaskState, PhaseConfig, RTMEntry } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
@@ -16,7 +17,7 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
   if (!config || !config.outputFile) {
     return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'No artifact quality check required for this phase' };
   }
-  const outputFile = normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
+  const outputFile = join(getProjectRoot(), normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir)));
   if (!existsSync(outputFile)) {
     return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }
@@ -91,7 +92,7 @@ export function checkArtifactFreshness(phase: string, docsDir: string): DoDCheck
   const stale: string[] = [];
   const warnings: string[] = [];
   for (const inputFile of config.inputFiles) {
-    const filePath = normalize(inputFile.replace('{docsDir}', docsDir));
+    const filePath = join(getProjectRoot(), normalize(inputFile.replace('{docsDir}', docsDir)));
     if (!existsSync(filePath)) continue;
     const ageMs = now - statSync(filePath).mtimeMs;
     const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));

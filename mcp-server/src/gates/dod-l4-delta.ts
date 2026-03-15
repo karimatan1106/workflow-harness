@@ -4,7 +4,8 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { normalize } from 'node:path';
+import { join, normalize } from 'node:path';
+import { getProjectRoot } from '../utils/project-root.js';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
@@ -26,7 +27,7 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
   if (!config || !config.outputFile) {
     return { level: 'L4', check: 'delta_entry_format', passed: true, evidence: 'No output file for Delta Entry check' };
   }
-  const outputFile = normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
+  const outputFile = join(getProjectRoot(), normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir)));
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'delta_entry_format', passed: false, evidence: 'Cannot check Delta Entry: file missing: ' + outputFile, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }

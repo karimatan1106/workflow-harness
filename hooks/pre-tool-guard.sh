@@ -49,7 +49,7 @@ is_lifecycle() {
 # === Orchestrator rules ===
 if [ "$LAYER" = "orchestrator" ]; then
   case "$TOOL_NAME" in
-    Agent|Skill|ToolSearch|AskUserQuestion)
+    Skill|ToolSearch|AskUserQuestion)
       log_obs "ALLOWED($TOOL_NAME)"
       exit 0
       ;;

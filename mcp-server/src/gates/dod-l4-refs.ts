@@ -5,7 +5,8 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname, normalize } from 'node:path';
+import { resolve, dirname, join, normalize } from 'node:path';
+import { getProjectRoot } from '../utils/project-root.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { PhaseConfig } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
@@ -28,7 +29,7 @@ export function checkDeadReferences(phase: string, docsDir: string, workflowDir:
   if (!config?.outputFile) {
     return { level: 'L4', check: 'dead_references', passed: true, evidence: 'No output file for dead reference check' };
   }
-  const outputFile = normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
+  const outputFile = join(getProjectRoot(), normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir)));
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'dead_references', passed: true, evidence: 'Output file not found; dead reference check skipped' };
   }
