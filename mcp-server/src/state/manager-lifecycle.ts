@@ -128,6 +128,10 @@ export function goBack(taskId: string, hmacKey: string, targetPhase: PhaseName):
   if (isError(result)) return result;
   const state = result;
 
+  if (state.integrityWarning) {
+    return { success: false, error: 'Task has integrity warning — goBack blocked. Use harness_reset to clear state, or re-sign HMAC keys.' };
+  }
+
   const idx = state.completedPhases.indexOf(targetPhase);
   if (idx === -1 && state.phase !== targetPhase) {
     return { success: false, error: 'Target phase was not in completed phases' };
@@ -135,7 +139,6 @@ export function goBack(taskId: string, hmacKey: string, targetPhase: PhaseName):
   if (idx !== -1) state.completedPhases = state.completedPhases.slice(0, idx);
   state.phase = targetPhase;
   state.retryCount = {};
-  state.integrityWarning = false;
   state.updatedAt = new Date().toISOString();
   updateCheckpoint(state, targetPhase);
   signAndPersist(state, hmacKey);

@@ -6,7 +6,8 @@
 # Prevent inherited strict mode from causing crashes (grep returns 1 on no-match)
 set +e
 
-# Safety net: any unexpected exit code becomes 0 (allow) rather than "hook error"
+# Safety net: any unexpected exit code becomes 2 (block) rather than ambiguous "hook error".
+# Fail-closed: only exit 0 (explicit allow) or exit 2 (explicit block) are valid outcomes.
 trap 'code=$?; if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then exit 2; fi' EXIT
 
 INPUT=$(cat)

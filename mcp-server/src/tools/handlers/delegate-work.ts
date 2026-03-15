@@ -24,6 +24,13 @@ const WORKER_TIMEOUT_MS = 300_000; // 5 minutes
 // ─── Phase-aware allowed tools ────────────────────
 type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
 
+/**
+ * Build --allowedTools list for the coordinator subprocess.
+ * Includes Agent because coordinators spawn workers via Agent tool.
+ * This differs from writeAllowedToolsFile (manager-lifecycle.ts) which writes
+ * .worker-allowed-tools for direct subagents — those do NOT get Agent because
+ * workers should not spawn further subagents.
+ */
 function buildAllowedTools(phaseGuide: PhaseGuide): string {
   const cats = phaseGuide.bashCategories;
   const needsEdit = cats.some(
