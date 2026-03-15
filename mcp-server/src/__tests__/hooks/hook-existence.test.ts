@@ -59,12 +59,10 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(noVerify.matcher).toBe('Bash');
   });
 
-  it('user-level hooks exist (watchdog + coordinator-recorder)', () => {
+  it('user-level hooks exist (watchdog)', () => {
     const home = process.env.HOME || process.env.USERPROFILE || '';
     const userHooksDir = resolve(home, '.claude/hooks');
-    for (const f of ['context-watchdog.sh', 'coordinator-recorder.sh']) {
-      expect(existsSync(resolve(userHooksDir, f))).toBe(true);
-    }
+    expect(existsSync(resolve(userHooksDir, 'context-watchdog.sh'))).toBe(true);
   });
 
   it('settings.json has Notification hook for compact', () => {

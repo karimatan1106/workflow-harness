@@ -139,6 +139,12 @@ fi
 # 5. Create .agent directory for state tracking
 mkdir -p "$PROJECT_DIR/.agent"
 
+# 6. Create default .worker-allowed-tools if not present (bootstrap fix)
+if [ ! -f "$PROJECT_DIR/.agent/.worker-allowed-tools" ]; then
+  echo "Read,Glob,Grep,Write,Edit,Bash" > "$PROJECT_DIR/.agent/.worker-allowed-tools"
+  echo "Created .agent/.worker-allowed-tools with default tool set"
+fi
+
 echo ""
 echo "=== Setup Complete ==="
 echo "2-layer guard installed (orchestrator + subagent)."
