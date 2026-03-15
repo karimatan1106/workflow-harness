@@ -15,6 +15,7 @@ import { handleHarnessSetScope, handleHarnessCompleteSub, handleHarnessBack, han
 import { handleHarnessRecordProof, handleHarnessAddAc, handleHarnessAddRtm, handleHarnessRecordFeedback, handleHarnessCaptureBaseline, handleHarnessRecordTestResult, handleHarnessRecordTest } from './handlers/recording.js';
 import { handleHarnessGetTestInfo, handleHarnessRecordKnownBug, handleHarnessGetKnownBugs, handleHarnessGetSubphaseTemplate, handleHarnessPreValidate, handleHarnessUpdateAcStatus, handleHarnessUpdateRtmStatus } from './handlers/query.js';
 import { handleDciBuildIndex, handleDciQueryDocs, handleDciQueryFiles, handleDciValidate } from './handlers/dci.js';
+import { handleDelegateWork } from './handlers/delegate-work.js';
 
 export const TOOL_DEFINITIONS = [...TOOL_DEFS_A, ...TOOL_DEFS_B, ...TOOL_DEFS_C];
 
@@ -51,6 +52,7 @@ export async function handleToolCall(
       case 'dci_query_docs':             return handleDciQueryDocs(args);
       case 'dci_query_files':            return handleDciQueryFiles(args);
       case 'dci_validate':               return handleDciValidate();
+      case 'harness_delegate_work':      return handleDelegateWork(args);
       default: return respondError('Unknown tool: ' + name);
     }
   } catch (err) {

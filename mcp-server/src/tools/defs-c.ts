@@ -46,4 +46,41 @@ export const TOOL_DEFS_C = [
       required: [],
     },
   },
+  {
+    name: 'harness_delegate_work',
+    description: 'Spawn isolated claude -p worker for file operations. Worker runs with fresh context (no CLAUDE.md, no hooks, no MCP). Use for implementation, editing, and file creation tasks that benefit from context isolation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        instruction: {
+          type: 'string',
+          description: 'Task instruction for the worker. Be specific about file paths and expected changes.',
+          minLength: 10,
+        },
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of file paths the worker will operate on (informational, not enforced).',
+        },
+        allowedTools: {
+          type: 'string',
+          description: 'Comma-separated tool whitelist for the worker. Default: Read,Edit,Write,Bash,Glob,Grep',
+        },
+        systemPrompt: {
+          type: 'string',
+          description: 'Custom system prompt for the worker. Default: minimal worker prompt.',
+        },
+        model: {
+          type: 'string',
+          description: 'Model override for the worker (e.g., sonnet, haiku, opus).',
+        },
+        addDirs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Additional directories the worker can access.',
+        },
+      },
+      required: ['instruction'],
+    },
+  },
 ];
