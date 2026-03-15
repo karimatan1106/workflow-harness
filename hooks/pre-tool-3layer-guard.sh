@@ -40,7 +40,7 @@ fi
 # --- Helper: is this a lifecycle MCP tool? ---
 is_lifecycle() {
   case "$1" in
-    *_start|*_next|*_approve|*_status|*_back|*_reset) return 0 ;;
+    *_start|*_next|*_approve|*_status|*_back|*_reset|*_delegate_work) return 0 ;;
     *) return 1 ;;
   esac
 }

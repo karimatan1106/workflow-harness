@@ -2,7 +2,7 @@
 
 Authoritative instruction set. Violations are blocked by hooks.
 **ワークフロー強制**: バグ報告・機能要求・リファクタ等は即座に `/harness start <タスク名>` で開始。事前調査禁止（scope_definition/researchフェーズで実施）。純粋な質問のみ直接回答可。
-**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作をsubagentに委譲。オーケストレーターが使えるのはlifecycle MCP(harness_start/next/approve/status/back/reset)・Agent(subagent委譲)・Skill(/harness, /handoff等)・AskUserQuestionのみ。
+**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作をsubagentに委譲。オーケストレーターが使えるのはlifecycle MCP(harness_start/next/approve/status/back/reset/delegate_work)・Agent(subagent委譲)・Skill(/harness, /handoff等)・AskUserQuestionのみ。
 **並列最大化**: 委譲時、独立タスクは最大限並列化する。ファイル単位で分割し、同一ファイルを複数subagentが編集しない限り同時投入する。逐次実行は依存関係がある場合のみ。
 
 ## Core Principles
