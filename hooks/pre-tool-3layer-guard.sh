@@ -53,11 +53,21 @@ is_lifecycle() {
   esac
 }
 
-# --- Agent/Skill/ToolSearch are always allowed ---
+# --- Agent/Skill/ToolSearch: layer-aware access ---
 case "$TOOL_NAME" in
-  Agent|Skill|ToolSearch)
-    log_obs "ALLOWED($TOOL_NAME)"
-    exit 0
+  Agent)
+    if [ "$LAYER" = "orchestrator" ] || [ "$LAYER" = "coordinator" ]; then
+      log_obs "ALLOWED($TOOL_NAME)"
+      exit 0
+    fi
+    # worker: fall through to worker rules (blocked)
+    ;;
+  Skill|ToolSearch)
+    if [ "$LAYER" = "orchestrator" ]; then
+      log_obs "ALLOWED($TOOL_NAME)"
+      exit 0
+    fi
+    # coordinator/worker: fall through to layer rules (blocked)
     ;;
 esac
 
