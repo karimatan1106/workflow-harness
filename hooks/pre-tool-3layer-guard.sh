@@ -77,12 +77,12 @@ if [ "$LAYER" = "orchestrator" ]; then
         exit 0
       fi
       log_obs "BLOCKED(non-lifecycle-mcp)"
-      echo "BLOCKED: オーケストレーター層はライフサイクルMCPツールのみ許可。サブエージェントに委譲してください。" >&2
+      echo "BLOCKED: オーケストレーター層はライフサイクルMCPツールのみ許可。coordinatorに委譲してください（Agent経由で harness_set_scope 等を実行）" >&2
       exit 2
       ;;
     *)
       log_obs "BLOCKED(standard-tool)"
-      echo "BLOCKED: オーケストレーター層は直接ツール($TOOL_NAME)使用禁止。Agentサブエージェントに委譲してください。" >&2
+      echo "BLOCKED: オーケストレーター層は直接ツール($TOOL_NAME)使用禁止。coordinatorに委譲してください（Agent経由でファイル操作を実行）" >&2
       exit 2
       ;;
   esac
@@ -94,7 +94,7 @@ if [ "$LAYER" = "coordinator" ]; then
     mcp__harness__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "BLOCKED(lifecycle-mcp)"
-        echo "BLOCKED: コーディネーター層はライフサイクルMCPツール($TOOL_NAME)使用禁止。オーケストレーターのみ許可。" >&2
+        echo "BLOCKED: lifecycle操作はオーケストレーターのみ。coordinatorから呼び出さないでください" >&2
         exit 2
       fi
       log_obs "ALLOWED(non-lifecycle-mcp)"
@@ -102,7 +102,7 @@ if [ "$LAYER" = "coordinator" ]; then
       ;;
     *)
       log_obs "BLOCKED(standard-tool)"
-      echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。ワーカーサブエージェントに委譲してください。" >&2
+      echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。workerに委譲してください（Agent経由でファイル操作を実行）" >&2
       exit 2
       ;;
   esac
@@ -128,7 +128,7 @@ if [ "$LAYER" = "worker" ]; then
   case "$TOOL_NAME" in
     mcp__harness__*)
       log_obs "BLOCKED(mcp-tool)"
-      echo "BLOCKED: ワーカー層はMCPツール($TOOL_NAME)使用禁止。コーディネーター経由で実行してください。" >&2
+      echo "BLOCKED: ワーカー層はMCPツール($TOOL_NAME)使用禁止。MCP操作はcoordinator層のみ。coordinatorに返してください" >&2
       exit 2
       ;;
     *)

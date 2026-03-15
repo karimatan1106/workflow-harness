@@ -27,6 +27,19 @@ Orchestrator (~100 words: state management, delegation, retry tracking)
 4. Approval gates: present artifacts to user → `harness_approve`
 5. Validation failure: re-launch subagent (NEVER edit directly)
 
+### フェーズ実行フロー（委譲境界）
+```
+1. harness_start        → オーケストレーター直接実行（lifecycle）
+2. フェーズ作業          → coordinator に委譲（以下すべて coordinator が実行）
+   - harness_set_scope（scope定義）
+   - 成果物作成（TOON形式で docs/workflows/{taskName}/ に配置）
+   - harness_add_ac, harness_add_rtm 等
+3. harness_next          → オーケストレーター直接実行（lifecycle）
+4. 次フェーズ作業        → 別の coordinator に委譲
+5. 繰り返し
+```
+注意: オーケストレーターが直接実行できるのは lifecycle ツール（_start, _next, _approve, _status, _back, _reset）のみ。harness_set_scope 等の非 lifecycle ツールを直接呼ぶとフックでブロックされる。
+
 ### Template & Model Rules
 - **NEVER construct prompts from scratch.** Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
 - **opus**: code_review ONLY (SRB-1: independent model prevents self-review bias)
