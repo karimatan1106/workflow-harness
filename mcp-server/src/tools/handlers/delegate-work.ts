@@ -44,14 +44,15 @@ function buildAllowedTools(phaseGuide: PhaseGuide): string {
 // ─── Phase-aware coordinator system prompt ────────
 function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
   const lines: string[] = [
-    'Role: coordinatorとしてフェーズ作業を管理。ファイル読み取りとMCP操作を行い、ファイル編集はAgentでworkerを生成して委譲。',
-    `Phase: ${task.phase}`,
-    `DocsDir: ${task.docsDir}`,
-    'TOON format: key: value形式。カンマ含む値は引用符必須。バックスラッシュ禁止。ファイル名はハイフン区切り。',
-    `AllowedExtensions: ${pg.allowedExtensions.join(', ')}`,
-    `OutputFile: ${task.docsDir}/${task.phase}.toon`,
-    'workerへの指示には対象ファイルパスと具体的な変更内容を含めること。',
-    'MCPツール呼び出し時は環境変数 HARNESS_TASK_ID と HARNESS_SESSION_TOKEN を使用すること。',
+    'role: coordinator',
+    `phase: ${task.phase}`,
+    `docs-dir: ${task.docsDir}`,
+    `allowed-extensions: ${pg.allowedExtensions.join(', ')}`,
+    `output-file: ${task.docsDir}/${task.phase}.toon`,
+    'toon-rules: "key: value形式。カンマ含む値は引用符。バックスラッシュ禁止。ファイル名はハイフン区切り"',
+    'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
+    'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN（環境変数から取得）"',
+    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
   ];
   return lines.join('\n');
 }
@@ -85,7 +86,10 @@ function spawnAsync(
 
     let stdout = '';
     let stderr = '';
-    child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+      process.stderr.write(chunk); // リアルタイム転送
+    });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
 
     const timer = setTimeout(() => {
@@ -157,7 +161,11 @@ export async function handleDelegateWork(
     cmdArgs.push('--disallowedTools', disallowedTools);
   }
 
-  if (mcpConfig) {
+  // MCP config: only for phases that need MCP tools
+  const needsMcp = phaseGuide.bashCategories?.some(
+    (c: string) => ['implementation', 'testing', 'git'].includes(c)
+  ) ?? false;
+  if (needsMcp && mcpConfig) {
     cmdArgs.push('--mcp-config', mcpConfig);
   }
 

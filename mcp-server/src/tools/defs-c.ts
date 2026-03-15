@@ -62,7 +62,7 @@ export const TOOL_DEFS_C = [
         },
         instruction: {
           type: 'string',
-          description: 'Task instruction for the worker. Be specific about file paths and expected changes.',
+          description: 'Task instruction in TOON format (key: value pairs). Coordinator will parse as TOON.',
           minLength: 10,
         },
         files: {
