@@ -1,8 +1,7 @@
 #!/bin/bash
-# 3-Layer Tool Access Control Guard
-# Layer 1 (Orchestrator): Agent + lifecycle MCP only
-# Layer 2 (Coordinator): Agent + non-lifecycle MCP only
-# Layer 3 (Worker): Standard tools + Agent only, no MCP
+# 2-Layer Tool Access Control Guard
+# Layer 1 (Orchestrator): No AGENT_ID → Agent/Skill/ToolSearch/AskUserQuestion + lifecycle MCP only
+# Layer 2 (Subagent):     Has AGENT_ID → phase-restricted standard tools + non-lifecycle MCP + ToolSearch
 
 # Prevent inherited strict mode from causing crashes (grep returns 1 on no-match)
 set +e
@@ -25,33 +24,17 @@ if [ -z "$TOOL_NAME" ]; then exit 0; fi
 # Observability logging
 LOG_FILE="/tmp/harness-hook-obs.log"
 log_obs() {
-  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] 3layer-guard tool=$TOOL_NAME agent=$AGENT_ID layer=$LAYER $1" >> "$LOG_FILE" 2>/dev/null
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] 2layer-guard tool=$TOOL_NAME agent=$AGENT_ID layer=$LAYER $1" >> "$LOG_FILE" 2>/dev/null
 }
 
-# --- Determine project root (absolute path for COORD_FILE) ---
+# --- Determine project root ---
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
 # --- Determine layer ---
-LAYER="orchestrator"
 if [ -n "$AGENT_ID" ]; then
-  COORD_FILE="$PROJECT_ROOT/.agent/.coordinator-ids"
-  PENDING_FILE="$PROJECT_ROOT/.agent/.coordinator-pending-count"
-  if [ -f "$COORD_FILE" ] && grep -qxF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
-    LAYER="coordinator"
-  elif [ -f "$PENDING_FILE" ]; then
-    # オーケストレーターが生成した未登録agent → coordinatorとして自動登録
-    COUNT=$(cat "$PENDING_FILE" 2>/dev/null || echo 0)
-    if [ "$COUNT" -gt 0 ]; then
-      mkdir -p "$(dirname "$COORD_FILE")"
-      echo "$AGENT_ID" >> "$COORD_FILE"
-      echo $((COUNT - 1)) > "$PENDING_FILE"
-      LAYER="coordinator"
-    else
-      LAYER="worker"
-    fi
-  else
-    LAYER="worker"
-  fi
+  LAYER="subagent"
+else
+  LAYER="orchestrator"
 fi
 
 # --- Helper: is this a lifecycle MCP tool? ---
@@ -62,67 +45,61 @@ is_lifecycle() {
   esac
 }
 
-# --- Agent/Skill/ToolSearch: layer-aware access ---
-case "$TOOL_NAME" in
-  Agent)
-    if [ "$LAYER" = "orchestrator" ] || [ "$LAYER" = "coordinator" ]; then
-      log_obs "ALLOWED($TOOL_NAME)"
-      exit 0
-    fi
-    # worker: fall through to worker rules (blocked)
-    ;;
-  Skill|ToolSearch)
-    if [ "$LAYER" = "orchestrator" ]; then
-      log_obs "ALLOWED($TOOL_NAME)"
-      exit 0
-    fi
-    # coordinator/worker: fall through to layer rules (blocked)
-    ;;
-esac
-
 # === Orchestrator rules ===
 if [ "$LAYER" = "orchestrator" ]; then
   case "$TOOL_NAME" in
+    Agent|Skill|ToolSearch|AskUserQuestion)
+      log_obs "ALLOWED($TOOL_NAME)"
+      exit 0
+      ;;
     mcp__harness__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "ALLOWED(lifecycle-mcp)"
         exit 0
       fi
       log_obs "BLOCKED(non-lifecycle-mcp)"
-      echo "BLOCKED: オーケストレーター層はライフサイクルMCPツールのみ許可。coordinatorに委譲してください（Agent経由で harness_set_scope 等を実行）" >&2
+      echo "BLOCKED: 非lifecycleツール($TOOL_NAME)はsubagentに委譲してください" >&2
       exit 2
       ;;
     *)
       log_obs "BLOCKED(standard-tool)"
-      echo "BLOCKED: オーケストレーター層は直接ツール($TOOL_NAME)使用禁止。coordinatorに委譲してください（Agent経由でファイル操作を実行）" >&2
+      echo "BLOCKED: 直接ツール($TOOL_NAME)使用禁止。subagentに委譲してください" >&2
       exit 2
       ;;
   esac
 fi
 
-# === Coordinator rules ===
-if [ "$LAYER" = "coordinator" ]; then
+# === Subagent rules ===
+if [ "$LAYER" = "subagent" ]; then
+  # ToolSearch is always allowed for subagents (needed for deferred MCP tools)
+  if [ "$TOOL_NAME" = "ToolSearch" ]; then
+    log_obs "ALLOWED(ToolSearch)"
+    exit 0
+  fi
+
+  # Block Agent/Skill — orchestrator only
   case "$TOOL_NAME" in
-    mcp__harness__*)
+    Agent|Skill)
+      log_obs "BLOCKED(orchestrator-only)"
+      echo "BLOCKED: このツール($TOOL_NAME)はオーケストレーター専用です" >&2
+      exit 2
+      ;;
+  esac
+
+  # MCP tools: allow non-lifecycle, block lifecycle
+  case "$TOOL_NAME" in
+    mcp__harness__*|mcp__ide__*|mcp__vision-ocr__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "BLOCKED(lifecycle-mcp)"
-        echo "BLOCKED: lifecycle操作はオーケストレーターのみ。coordinatorから呼び出さないでください" >&2
+        echo "BLOCKED: lifecycle操作はオーケストレーターのみ。subagentから呼び出さないでください" >&2
         exit 2
       fi
       log_obs "ALLOWED(non-lifecycle-mcp)"
       exit 0
       ;;
-    *)
-      log_obs "BLOCKED(standard-tool)"
-      echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。workerに委譲してください（Agent経由でファイル操作を実行）" >&2
-      exit 2
-      ;;
   esac
-fi
 
-# === Worker rules ===
-if [ "$LAYER" = "worker" ]; then
-  # Read phase-specific allowed tools
+  # Standard tools: check phase-restricted allowlist
   ALLOWED_TOOLS_FILE="$PROJECT_ROOT/.agent/.worker-allowed-tools"
   if [ -f "$ALLOWED_TOOLS_FILE" ]; then
     ALLOWED_TOOLS=$(cat "$ALLOWED_TOOLS_FILE" 2>/dev/null || echo "Read,Glob,Grep,Write,Edit,Bash")
@@ -137,18 +114,9 @@ if [ "$LAYER" = "worker" ]; then
       ;;
   esac
 
-  case "$TOOL_NAME" in
-    mcp__harness__*)
-      log_obs "BLOCKED(mcp-tool)"
-      echo "BLOCKED: ワーカー層はMCPツール($TOOL_NAME)使用禁止。MCP操作はcoordinator層のみ。coordinatorに返してください" >&2
-      exit 2
-      ;;
-    *)
-      log_obs "BLOCKED(phase-restricted)"
-      echo "BLOCKED: 現フェーズではツール($TOOL_NAME)使用禁止。許可ツール: $ALLOWED_TOOLS" >&2
-      exit 2
-      ;;
-  esac
+  log_obs "BLOCKED(phase-restricted)"
+  echo "BLOCKED: このフェーズでは${TOOL_NAME}は許可されていません。許可ツール: $ALLOWED_TOOLS" >&2
+  exit 2
 fi
 
 exit 0

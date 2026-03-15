@@ -2,8 +2,8 @@
 
 Authoritative instruction set. Violations are blocked by hooks.
 **ワークフロー強制**: バグ報告・機能要求・リファクタ等は即座に `/harness start <タスク名>` で開始。事前調査禁止（scope_definition/researchフェーズで実施）。純粋な質問のみ直接回答可。
-**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作（ファイル読み書き・検索・git・ビルド・テスト）をAgentサブエージェントに委譲。オーケストレーターが使えるのはMCPツール(harness_*)・coordinator委譲・Skillツール（/harness, /handoff等）・AskUserQuestionのみ。1-2ファイル参照の純粋な質問のみ直接回答可。
-**並列最大化**: 委譲時、独立タスクは最大限並列化する。ファイル単位で分割し、同一ファイルを複数agentが編集しない限り同時投入する。逐次実行は依存関係がある場合のみ。
+**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作をsubagentに委譲。オーケストレーターが使えるのはlifecycle MCP(harness_start/next/approve/status/back/reset)・Agent(subagent委譲)・Skill(/harness, /handoff等)・AskUserQuestionのみ。
+**並列最大化**: 委譲時、独立タスクは最大限並列化する。ファイル単位で分割し、同一ファイルを複数subagentが編集しない限り同時投入する。逐次実行は依存関係がある場合のみ。
 
 ## Core Principles
 - Phases = context compression. 各成果物が次フェーズへの完全な引き継ぎ。
@@ -26,9 +26,8 @@ small(0-3)=~12: ドキュメント修正不要な小規模変更のみ。medium(
 ## Orchestrator (→ skill: workflow-orchestrator.md)
 harness_next→hasTemplate→harness_get_subphase_template→Task(template)→harness_next(DoD)
 テンプレート自作禁止。報告: `[Phase] complete. Next: [next]. Remaining: [N] phases.`
-**編集は末端のみ**: オーケストレーター/コーディネーター(中間層)はファイル編集禁止。末端ワーカーのみ編集可。
-  - コーディネーター = Agentを起動するサブエージェント（hooks: coordinator-recorder.sh が自動検出）
-  - 末端内のAgent(Explore)は読み取り専用で許可（コーディネーター判定から除外）
+**編集はsubagentのみ**: オーケストレーターはファイル編集禁止。subagentのみ編集可。
+  - subagent内のAgent(Explore)は読み取り専用で許可
 
 ## Retry (→ skill: workflow-rules.md)
 DoD失敗→サブエージェント再起動(直接編集禁止)。retryCount渡す。5回→ユーザー確認。

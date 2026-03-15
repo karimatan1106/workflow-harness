@@ -61,9 +61,9 @@ commitフェーズにimplementation(rm含む)なし。削除はimplementation/re
 | refactoring / parallel_quality | コード全般 | - |
 | parallel_verification / docs_update ~ deploy | .toon, .md | コード |
 
-## coordinator委譲時の必須コンテキスト
+## subagent委譲時の必須コンテキスト
 
-coordinatorに委譲する際、以下の情報をプロンプトに含めること：
+subagentに委譲する際、以下の情報をプロンプトに含めること：
 - taskId と sessionToken
 - 成果物の出力先: `docs/workflows/{taskName}/` （docsDir）
 - TOON形式: `key: value` のフラットKV。カンマ含む値は引用符必須。バックスラッシュ禁止

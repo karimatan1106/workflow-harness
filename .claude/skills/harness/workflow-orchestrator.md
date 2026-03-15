@@ -1,6 +1,6 @@
 ---
 name: harness-orchestrator
-description: Orchestrator protocol, three-layer execution model, model selection, context handoff, and MCP tool reference.
+description: Orchestrator protocol, two-layer execution model, model selection, context handoff, and MCP tool reference.
 ---
 > CLAUDE.md Sec5(Orchestrator)/Sec9(sessionToken) が権威仕様。本ファイルはプロトコル詳細とMCPツール一覧。
 
@@ -8,11 +8,10 @@ description: Orchestrator protocol, three-layer execution model, model selection
 
 Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Task tool.
 
-### Three-Layer Execution Model
+### Two-Layer Execution Model
 ```
-Orchestrator (~100 words: state management, delegation, retry tracking)
-  -> Manager (~300 words: ComponentDAG execution, parallel planning)
-    -> Worker (~500 words: reads files, writes artifacts atomically)
+Orchestrator (lifecycle MCP のみ: state management, delegation, retry tracking)
+  -> Subagent (~500 words: reads files, writes artifacts, MCP操作)
 ```
 
 ### Execution Flow
@@ -27,18 +26,24 @@ Orchestrator (~100 words: state management, delegation, retry tracking)
 4. Approval gates: present artifacts to user → `harness_approve`
 5. Validation failure: re-launch subagent (NEVER edit directly)
 
-### フェーズ実行フロー（委譲境界）
+### フェーズ実行フロー（2層モデル）
 ```
-1. harness_start        → オーケストレーター直接実行（lifecycle）
-2. フェーズ作業          → coordinator に委譲（以下すべて coordinator が実行）
-   - harness_set_scope（scope定義）
-   - 成果物作成（TOON形式で docs/workflows/{taskName}/ に配置）
-   - harness_add_ac, harness_add_rtm 等
-3. harness_next          → オーケストレーター直接実行（lifecycle）
-4. 次フェーズ作業        → 別の coordinator に委譲
-5. 繰り返し
+Orchestrator (lifecycle MCP のみ)
+│
+├─ harness_start           ← オーケストレーター直接実行
+│
+├─ Phase N のサブステップ:
+│   └─ Agent(subagent) → harness_set_scope + Read/Edit/Write + harness_add_ac 等
+│                         （MCP操作とファイル操作を同一subagentで実行）
+│
+├─ harness_next            ← オーケストレーター直接実行（DoD検証）
+│
+├─ Phase N+1 のサブステップ:
+│   └─ Agent(subagent) → 新鮮なコンテキストで次フェーズ実行
+│
+└─ 繰り返し → harness_next (completed)
 ```
-注意: オーケストレーターが直接実行できるのは lifecycle ツール（_start, _next, _approve, _status, _back, _reset）のみ。harness_set_scope 等の非 lifecycle ツールを直接呼ぶとフックでブロックされる。
+注意: subagentはlifecycle MCP (_start, _next, _approve, _status, _back, _reset) を呼べない。これらはオーケストレーターのみ。
 
 ### Template & Model Rules
 - **NEVER construct prompts from scratch.** Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
