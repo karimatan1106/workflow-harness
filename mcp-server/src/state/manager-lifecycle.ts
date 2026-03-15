@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import type { TaskState, PhaseName } from './types.js';
@@ -162,6 +162,6 @@ export function resetTask(
   state.resetHistory.push({ reason, resetAt: state.updatedAt, targetPhase });
   signAndPersist(state, hmacKey);
   writeTaskIndex();
-  try { writeAllowedToolsFile(targetPhase); } catch { /* non-blocking */ }
+  try { unlinkSync(join(getProjectRoot(), '.agent', '.worker-allowed-tools')); } catch { /* file may not exist */ }
   return { success: true };
 }
