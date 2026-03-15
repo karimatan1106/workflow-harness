@@ -9,7 +9,7 @@ import { PHASE_REGISTRY } from '../phases/registry.js';
 export type HandlerResult = { content: Array<{ type: string; text: string }> };
 
 export const respond = (obj: unknown): HandlerResult => ({
-  content: [{ type: 'text', text: JSON.stringify(obj) }],
+  content: [{ type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj) }],
 });
 
 export const respondError = (message: string): HandlerResult => ({

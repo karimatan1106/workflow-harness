@@ -53,6 +53,9 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
     'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN（環境変数から取得）"',
     'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
+    'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業内容, files-changed: 変更ファイル一覧"',
+    'progress-output: "作業の各ステップでstdoutに進捗マーカーを出力すること。形式: [PROGRESS] ステップ内容"',
+    'worker-progress: "Agent toolでWorkerに委譲する前後に進捗を出力。[PROGRESS] Worker開始: {内容} / [PROGRESS] Worker完了: {結果}"',
   ];
   return lines.join('\n');
 }
@@ -76,6 +79,8 @@ function spawnAsync(
   command: string,
   args: string[],
   options: { cwd: string; env: Record<string, string | undefined> },
+  extra?: { sendNotification?: (notification: any) => Promise<void> },
+  progressToken?: string,
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -87,8 +92,26 @@ function spawnAsync(
     let stdout = '';
     let stderr = '';
     child.stdout?.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString();
-      process.stderr.write(chunk); // リアルタイム転送
+      const text = chunk.toString();
+      stdout += text;
+      process.stderr.write(text);
+
+      // [PROGRESS]マーカーを検出してprogress通知に含める
+      const progressLines = text.split('\n').filter((l: string) => l.includes('[PROGRESS]'));
+      if (extra?.sendNotification && progressToken !== undefined) {
+        const message = progressLines.length > 0
+          ? progressLines[progressLines.length - 1].replace('[PROGRESS]', '').trim()
+          : undefined;
+        extra.sendNotification({
+          method: 'notifications/progress',
+          params: {
+            progressToken,
+            progress: stdout.length,
+            total: 0,
+            ...(message ? { message } : {}),
+          }
+        }).catch(() => {});
+      }
     });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
 
@@ -113,6 +136,7 @@ function spawnAsync(
 export async function handleDelegateWork(
   args: Record<string, unknown>,
   sm: StateManager,
+  extra?: { sendNotification?: (notification: any) => Promise<void> },
 ): Promise<HandlerResult> {
   const taskId = String(args.taskId ?? '');
   if (!taskId) return respondError('taskId is required');
@@ -191,18 +215,20 @@ export async function handleDelegateWork(
   // Fix #4: async spawn instead of execSync
   try {
     const startTime = Date.now();
+    const progressToken = (args._meta as any)?.progressToken as string | undefined;
     const { stdout } = await spawnAsync('claude', cmdArgs, {
       cwd: projectRoot,
       env: childEnv,
-    });
+    }, extra, progressToken);
     const durationMs = Date.now() - startTime;
 
-    return respond({
-      success: true,
-      output: stdout.trim(),
-      durationMs,
-      filesHint: files ?? [],
-    });
+    const toonResult = [
+      `success: true`,
+      `output: "${stdout.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
+      `duration-ms: ${durationMs}`,
+      `files-changed: ${(files ?? []).join(', ')}`,
+    ].join('\n');
+    return respond(toonResult);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return respondError(`Worker failed: ${message}`);

@@ -30,9 +30,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 
 // Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
-  return handleToolCall(name, args ?? {}, stateManager);
+  return handleToolCall(name, args ?? {}, stateManager, extra);
 });
 
 // Start server
