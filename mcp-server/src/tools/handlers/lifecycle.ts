@@ -23,7 +23,7 @@ import { writeMetricsToon } from '../metrics-toon.js';
 import { getTaskMetrics } from '../metrics.js';
 
 const AMBIGUOUS_PATTERNS = [
-  'とか', 'など', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
+  'とか', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
   'ちょっと', 'いろいろ', 'そのへん', 'うまく', 'ざっくり',
 ];
 
