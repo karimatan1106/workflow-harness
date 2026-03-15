@@ -145,6 +145,30 @@ function spawnAsync(
   });
 }
 
+// ─── stream-json result extraction ────────────────
+/**
+ * Parse stream-json (JSON Lines) output from `claude --output-format stream-json`.
+ * Each line is a JSON object with a `type` field.
+ * We extract the final result text from {type:"result", result:"..."} lines.
+ * Falls back to raw stdout if parsing fails.
+ */
+function extractResultFromStreamJson(stdout: string): string {
+  const lines = stdout.split('\n').filter((l) => l.trim());
+  // Try to find a "result" type line (last one wins)
+  let resultText: string | undefined;
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.type === 'result' && typeof obj.result === 'string') {
+        resultText = obj.result;
+      }
+    } catch {
+      // skip non-JSON lines
+    }
+  }
+  return resultText ?? stdout;
+}
+
 // ─── Handler ──────────────────────────────────────
 export async function handleDelegateWork(
   args: Record<string, unknown>,
@@ -184,7 +208,7 @@ export async function handleDelegateWork(
     '-p',
     fullInstruction,
     '--print',
-    '--output-format', 'text',
+    '--output-format', 'stream-json',
     '--setting-sources', 'user',
     '--disable-slash-commands',
     '--allowedTools', allowedTools,
@@ -244,9 +268,10 @@ export async function handleDelegateWork(
 
     closeLogPane(paneId);
 
+    const resultText = extractResultFromStreamJson(stdout);
     const toonResult = [
       `success: true`,
-      `output: "${stdout.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
+      `output: "${resultText.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
       `duration-ms: ${durationMs}`,
       `files-changed: ${(files ?? []).join(', ')}`,
     ].join('\n');
