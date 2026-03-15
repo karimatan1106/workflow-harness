@@ -36,7 +36,7 @@ function validateHandoff(content) {
 
 function injectHandoff(root) {
   const ad = agentDir(root);
-  const handoffFile = path.join(ad, 'handoff', 'HANDOFF.md');
+  const handoffFile = path.join(ad, 'handoff', 'HANDOFF.toon');
   const markerFile = path.join(ad, '.handoff-session-marker');
 
   const handoff = readFileIfExists(handoffFile);
