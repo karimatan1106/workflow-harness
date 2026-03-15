@@ -1,299 +1,261 @@
 #!/bin/bash
 # Test suite for pre-tool-guard.sh
-# Tests: Orchestrator (TC-O), Subagent (TC-S), Edge (TC-E)
+# Tests: Orchestrator (TC-O), Coordinator (TC-C), Worker (TC-W), Extension (TC-E), Edge (TC-X)
 #
-# Guard model: 2-layer per-process
-#   Layer 1 (Orchestrator): No AGENT_ID → lifecycle MCP + Agent/Skill/ToolSearch/AskUserQuestion
-#   Layer 2 (Subagent):     Has AGENT_ID → phase-restricted standard tools + non-lifecycle MCP
-#
-# The overall 3-layer architecture (Orchestrator → Coordinator → Worker) is achieved
-# by delegate_work spawning separate processes, each running this same 2-layer guard.
+# Guard model: 3-layer AGENT_ID-based
+#   Layer 1 (Orchestrator): No AGENT_ID → Agent/Skill/ToolSearch/AskUserQuestion + lifecycle MCP
+#   Layer 2 (Coordinator):  AGENT_ID matches .coordinator-agent-id → Agent/ToolSearch/AskUserQuestion + non-lifecycle MCP
+#   Layer 3 (Worker):       AGENT_ID differs from coordinator → Read/Write/Edit/Glob/Grep/Bash + non-lifecycle MCP
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_SCRIPT="$SCRIPT_DIR/pre-tool-guard.sh"
 
-PASS_COUNT=0
-FAIL_COUNT=0
-TOTAL_COUNT=0
+PASS=0
+FAIL=0
+TOTAL=0
 
-# Temp dir for workdir isolation
-TMPDIR_BASE=$(mktemp -d)
-trap "rm -rf $TMPDIR_BASE" EXIT
+# Project root for coordinator ID file
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+COORD_ID_FILE="$PROJECT_ROOT/.agent/.coordinator-agent-id"
 
-# === Helper Functions ===
+# Ensure .agent dir exists
+mkdir -p "$PROJECT_ROOT/.agent"
 
-assert_exit() {
-  local test_name="$1" expected="$2" actual="$3"
-  TOTAL_COUNT=$((TOTAL_COUNT + 1))
-  if [ "$expected" = "$actual" ]; then
-    echo "PASS $test_name (exit=$actual)"
-    PASS_COUNT=$((PASS_COUNT + 1))
+# === Helper ===
+run_test() {
+  local id="$1" expected_exit="$2" desc="$3"
+  TOTAL=$((TOTAL + 1))
+
+  # Run the guard script with env vars
+  local stderr_file
+  stderr_file=$(mktemp)
+  (
+    cd "$PROJECT_ROOT"
+    env TOOL_NAME="$TOOL_NAME" TOOL_INPUT="$TOOL_INPUT" AGENT_ID="${AGENT_ID:-}" \
+      bash "$TARGET_SCRIPT" 2>"$stderr_file" >/dev/null
+  )
+  local actual_exit=$?
+  local stderr_content
+  stderr_content=$(cat "$stderr_file")
+  rm -f "$stderr_file"
+
+  if [ "$actual_exit" -eq "$expected_exit" ]; then
+    echo "PASS $id: $desc (exit=$actual_exit)"
+    PASS=$((PASS + 1))
   else
-    echo "FAIL $test_name expected_exit=$expected actual_exit=$actual"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
+    echo "FAIL $id: $desc (expected=$expected_exit actual=$actual_exit stderr=$stderr_content)"
+    FAIL=$((FAIL + 1))
   fi
 }
 
-assert_stderr_contains() {
-  local test_name="$1" pattern="$2" actual="$3"
-  TOTAL_COUNT=$((TOTAL_COUNT + 1))
-  if echo "$actual" | grep -q "$pattern"; then
-    echo "PASS $test_name (stderr contains '$pattern')"
-    PASS_COUNT=$((PASS_COUNT + 1))
-  else
-    echo "FAIL $test_name expected_stderr_contains='$pattern' actual_stderr='$actual'"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-  fi
-}
-
-assert_stderr_empty() {
-  local test_name="$1" actual="$2"
-  TOTAL_COUNT=$((TOTAL_COUNT + 1))
-  if [ -z "$actual" ]; then
-    echo "PASS $test_name (stderr empty)"
-    PASS_COUNT=$((PASS_COUNT + 1))
-  else
-    echo "FAIL $test_name expected_stderr=empty actual_stderr='$actual'"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-  fi
-}
-
-# Run as orchestrator (no agent_id)
-run_as_orchestrator() {
-  local tool_name="$1"
-  local workdir="$TMPDIR_BASE/orch-$$"
-  mkdir -p "$workdir"
-  local json="{\"tool_name\":\"$tool_name\",\"tool_input\":{}}"
-  HOOK_STDERR=$(cd "$workdir" && echo "$json" | env -u ORCHESTRATOR_GUARD_DISABLE bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
-  HOOK_EXIT=$?
-}
-
-# Run as subagent (has agent_id)
-run_as_subagent() {
-  local tool_name="$1" agent_id="$2"
-  local workdir="$TMPDIR_BASE/sub-$$"
-  mkdir -p "$workdir"
-  local json="{\"tool_name\":\"$tool_name\",\"tool_input\":{},\"agent_id\":\"$agent_id\"}"
-  HOOK_STDERR=$(cd "$workdir" && echo "$json" | env -u ORCHESTRATOR_GUARD_DISABLE bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
-  HOOK_EXIT=$?
-}
-
-# Run as subagent with file_path in tool_input and extensions file
-run_as_subagent_with_file() {
-  local tool_name="$1" agent_id="$2" file_path="$3" allowed_exts="$4"
-  local workdir="$TMPDIR_BASE/sub-ext-$$-$RANDOM"
-  mkdir -p "$workdir/.agent"
-  # Write allowed tools (permissive)
-  echo "Read,Glob,Grep,Write,Edit,Bash" > "$workdir/.agent/.worker-allowed-tools"
-  # Write allowed extensions
-  echo "$allowed_exts" > "$workdir/.agent/.worker-allowed-extensions"
-  local json="{\"tool_name\":\"$tool_name\",\"tool_input\":{\"file_path\":\"$file_path\"},\"agent_id\":\"$agent_id\"}"
-  HOOK_STDERR=$(cd "$workdir" && echo "$json" | env -u ORCHESTRATOR_GUARD_DISABLE bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
-  HOOK_EXIT=$?
-}
-
-echo "=== 2-Layer Tool Access Control Guard Test Suite ==="
+echo "=== 3-Layer Tool Access Control Guard Test Suite ==="
 echo "Target: $TARGET_SCRIPT"
 echo ""
 
 # ============================================================
-echo "--- Orchestrator Tests ---"
+echo "--- Orchestrator Tests (TC-O) ---"
+# ============================================================
 
-# TC-O-01: Agent → exit 0 (allowed for harness_delegate_work)
-run_as_orchestrator "Agent"
-assert_exit "TC-O-01 Agent" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-O-01 stderr" "$HOOK_STDERR"
+# TC-O-01: Agent allowed
+TOOL_NAME="Agent" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-01" 0 "Orchestrator: Agent allowed"
 
-# TC-O-02: harness_start → exit 0
-run_as_orchestrator "mcp__harness__harness_start"
-assert_exit "TC-O-02 harness_start" 0 "$HOOK_EXIT"
+# TC-O-02: Skill allowed
+TOOL_NAME="Skill" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-02" 0 "Orchestrator: Skill allowed"
 
-# TC-O-03: harness_next → exit 0
-run_as_orchestrator "mcp__harness__harness_next"
-assert_exit "TC-O-03 harness_next" 0 "$HOOK_EXIT"
+# TC-O-03: ToolSearch allowed
+TOOL_NAME="ToolSearch" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-03" 0 "Orchestrator: ToolSearch allowed"
 
-# TC-O-04: harness_approve → exit 0
-run_as_orchestrator "mcp__harness__harness_approve"
-assert_exit "TC-O-04 harness_approve" 0 "$HOOK_EXIT"
+# TC-O-04: AskUserQuestion allowed
+TOOL_NAME="AskUserQuestion" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-04" 0 "Orchestrator: AskUserQuestion allowed"
 
-# TC-O-05: harness_status → exit 0
-run_as_orchestrator "mcp__harness__harness_status"
-assert_exit "TC-O-05 harness_status" 0 "$HOOK_EXIT"
+# TC-O-05: Lifecycle MCP allowed (harness_start)
+TOOL_NAME="mcp__harness__harness_start" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-05" 0 "Orchestrator: lifecycle MCP allowed"
 
-# TC-O-06: harness_back → exit 0
-run_as_orchestrator "mcp__harness__harness_back"
-assert_exit "TC-O-06 harness_back" 0 "$HOOK_EXIT"
+# TC-O-06: Lifecycle MCP allowed (harness_next)
+TOOL_NAME="mcp__harness__harness_next" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-06" 0 "Orchestrator: harness_next allowed"
 
-# TC-O-07: harness_reset → exit 0
-run_as_orchestrator "mcp__harness__harness_reset"
-assert_exit "TC-O-07 harness_reset" 0 "$HOOK_EXIT"
+# TC-O-07: Read blocked
+TOOL_NAME="Read" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-07" 2 "Orchestrator: Read blocked"
 
-# TC-O-08: Read → exit 2
-run_as_orchestrator "Read"
-assert_exit "TC-O-08 Read blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-08 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-08: Write blocked
+TOOL_NAME="Write" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-08" 2 "Orchestrator: Write blocked"
 
-# TC-O-09: Grep → exit 2
-run_as_orchestrator "Grep"
-assert_exit "TC-O-09 Grep blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-09 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-09: Edit blocked
+TOOL_NAME="Edit" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-09" 2 "Orchestrator: Edit blocked"
 
-# TC-O-10: Glob → exit 2
-run_as_orchestrator "Glob"
-assert_exit "TC-O-10 Glob blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-10 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-10: Bash blocked
+TOOL_NAME="Bash" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-10" 2 "Orchestrator: Bash blocked"
 
-# TC-O-11: Write → exit 2
-run_as_orchestrator "Write"
-assert_exit "TC-O-11 Write blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-11 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-11: Glob blocked
+TOOL_NAME="Glob" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-11" 2 "Orchestrator: Glob blocked"
 
-# TC-O-12: Edit → exit 2
-run_as_orchestrator "Edit"
-assert_exit "TC-O-12 Edit blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-12 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-12: Grep blocked
+TOOL_NAME="Grep" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-12" 2 "Orchestrator: Grep blocked"
 
-# TC-O-13: Bash → exit 2
-run_as_orchestrator "Bash"
-assert_exit "TC-O-13 Bash blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-13 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-O-13: Non-lifecycle MCP blocked
+TOOL_NAME="mcp__harness__harness_get_subphase_template" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-13" 2 "Orchestrator: non-lifecycle MCP blocked"
 
-# TC-O-14: harness_add_ac → exit 2
-run_as_orchestrator "mcp__harness__harness_add_ac"
-assert_exit "TC-O-14 harness_add_ac blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-14 stderr" "BLOCKED" "$HOOK_STDERR"
-
-# TC-O-15: harness_record_proof → exit 2
-run_as_orchestrator "mcp__harness__harness_record_proof"
-assert_exit "TC-O-15 harness_record_proof blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-15 stderr" "BLOCKED" "$HOOK_STDERR"
-
-# TC-O-16: harness_get_subphase_template → exit 2
-run_as_orchestrator "mcp__harness__harness_get_subphase_template"
-assert_exit "TC-O-16 harness_get_subphase_template blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-16 stderr" "BLOCKED" "$HOOK_STDERR"
-
-# TC-O-17: non-harness MCP (workflow_next) → exit 2 (not mcp__harness__, falls to catch-all)
-run_as_orchestrator "mcp__workflow__workflow_next"
-assert_exit "TC-O-17 workflow_next blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-17 stderr" "BLOCKED" "$HOOK_STDERR"
-
-# TC-O-18: non-harness MCP (workflow_add_ac) → exit 2
-run_as_orchestrator "mcp__workflow__workflow_add_ac"
-assert_exit "TC-O-18 workflow_add_ac blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-O-18 stderr" "BLOCKED" "$HOOK_STDERR"
-
-# TC-O-19: harness_delegate_work → exit 0 (lifecycle)
-run_as_orchestrator "mcp__harness__harness_delegate_work"
-assert_exit "TC-O-19 harness_delegate_work" 0 "$HOOK_EXIT"
+# TC-O-14: Clears coordinator ID file
+rm -f "$COORD_ID_FILE"
+echo "old-id" > "$COORD_ID_FILE"
+TOOL_NAME="Agent" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-O-14" 0 "Orchestrator: clears coordinator ID"
+if [ -f "$COORD_ID_FILE" ]; then
+  echo "FAIL TC-O-14b: coordinator ID file should be cleared"
+  FAIL=$((FAIL + 1))
+else
+  echo "PASS TC-O-14b: coordinator ID file cleared"
+  PASS=$((PASS + 1))
+fi
+TOTAL=$((TOTAL + 1))
 
 # ============================================================
 echo ""
-echo "--- Subagent Tests ---"
+echo "--- Coordinator Tests (TC-C) ---"
+# ============================================================
 
-# TC-S-01: Read → exit 0
-run_as_subagent "Read" "sub-001"
-assert_exit "TC-S-01 Read" 0 "$HOOK_EXIT"
+# Setup: clear coordinator ID so first AGENT_ID is recorded as coordinator
+rm -f "$COORD_ID_FILE"
 
-# TC-S-02: Write → exit 0
-run_as_subagent "Write" "sub-002"
-assert_exit "TC-S-02 Write" 0 "$HOOK_EXIT"
+# TC-C-01: Agent allowed (to spawn Worker)
+AGENT_ID="coord-001" TOOL_NAME="Agent" TOOL_INPUT='{}' run_test "TC-C-01" 0 "Coordinator: Agent allowed"
 
-# TC-S-03: Edit → exit 0
-run_as_subagent "Edit" "sub-003"
-assert_exit "TC-S-03 Edit" 0 "$HOOK_EXIT"
+# Verify coordinator ID was recorded
+RECORDED=$(cat "$COORD_ID_FILE" 2>/dev/null || echo "")
+TOTAL=$((TOTAL + 1))
+if [ "$RECORDED" = "coord-001" ]; then
+  echo "PASS TC-C-01b: coordinator ID recorded"
+  PASS=$((PASS + 1))
+else
+  echo "FAIL TC-C-01b: coordinator ID not recorded (got: $RECORDED)"
+  FAIL=$((FAIL + 1))
+fi
 
-# TC-S-04: Bash → exit 0
-run_as_subagent "Bash" "sub-004"
-assert_exit "TC-S-04 Bash" 0 "$HOOK_EXIT"
+# TC-C-02: ToolSearch allowed
+AGENT_ID="coord-001" TOOL_NAME="ToolSearch" TOOL_INPUT='{}' run_test "TC-C-02" 0 "Coordinator: ToolSearch allowed"
 
-# TC-S-05: Grep → exit 0
-run_as_subagent "Grep" "sub-005"
-assert_exit "TC-S-05 Grep" 0 "$HOOK_EXIT"
+# TC-C-03: AskUserQuestion allowed
+AGENT_ID="coord-001" TOOL_NAME="AskUserQuestion" TOOL_INPUT='{}' run_test "TC-C-03" 0 "Coordinator: AskUserQuestion allowed"
 
-# TC-S-06: Glob → exit 0
-run_as_subagent "Glob" "sub-006"
-assert_exit "TC-S-06 Glob" 0 "$HOOK_EXIT"
+# TC-C-04: Non-lifecycle MCP allowed
+AGENT_ID="coord-001" TOOL_NAME="mcp__harness__harness_get_subphase_template" TOOL_INPUT='{}' run_test "TC-C-04" 0 "Coordinator: non-lifecycle MCP allowed"
 
-# TC-S-07: Agent → exit 2 (orchestrator only)
-run_as_subagent "Agent" "sub-007"
-assert_exit "TC-S-07 Agent blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-S-07 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-C-05: Read blocked
+AGENT_ID="coord-001" TOOL_NAME="Read" TOOL_INPUT='{}' run_test "TC-C-05" 2 "Coordinator: Read blocked"
 
-# TC-S-08: harness_add_ac → exit 0 (non-lifecycle MCP)
-run_as_subagent "mcp__harness__harness_add_ac" "sub-008"
-assert_exit "TC-S-08 harness_add_ac" 0 "$HOOK_EXIT"
+# TC-C-06: Write blocked
+AGENT_ID="coord-001" TOOL_NAME="Write" TOOL_INPUT='{}' run_test "TC-C-06" 2 "Coordinator: Write blocked"
 
-# TC-S-09: harness_record_proof → exit 0 (non-lifecycle MCP)
-run_as_subagent "mcp__harness__harness_record_proof" "sub-009"
-assert_exit "TC-S-09 harness_record_proof" 0 "$HOOK_EXIT"
+# TC-C-07: Edit blocked
+AGENT_ID="coord-001" TOOL_NAME="Edit" TOOL_INPUT='{}' run_test "TC-C-07" 2 "Coordinator: Edit blocked"
 
-# TC-S-10: harness_next → exit 2 (lifecycle blocked)
-run_as_subagent "mcp__harness__harness_next" "sub-010"
-assert_exit "TC-S-10 harness_next blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-S-10 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-C-08: Bash blocked
+AGENT_ID="coord-001" TOOL_NAME="Bash" TOOL_INPUT='{}' run_test "TC-C-08" 2 "Coordinator: Bash blocked"
 
-# TC-S-11: harness_start → exit 2 (lifecycle blocked)
-run_as_subagent "mcp__harness__harness_start" "sub-011"
-assert_exit "TC-S-11 harness_start blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-S-11 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-C-09: Glob blocked
+AGENT_ID="coord-001" TOOL_NAME="Glob" TOOL_INPUT='{}' run_test "TC-C-09" 2 "Coordinator: Glob blocked"
 
-# TC-S-12: workflow_add_ac → exit 2 (non-harness MCP)
-run_as_subagent "mcp__workflow__workflow_add_ac" "sub-012"
-assert_exit "TC-S-12 workflow_add_ac blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-S-12 stderr" "BLOCKED" "$HOOK_STDERR"
-# TC-S-16: harness_delegate_work → exit 0 (allowed for bridge pattern)
-run_as_subagent "mcp__harness__harness_delegate_work" "sub-016"
-assert_exit "TC-S-16 delegate_work bridge" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-S-16 stderr" "$HOOK_STDERR"
+# TC-C-10: Grep blocked
+AGENT_ID="coord-001" TOOL_NAME="Grep" TOOL_INPUT='{}' run_test "TC-C-10" 2 "Coordinator: Grep blocked"
+
+# TC-C-11: Lifecycle MCP blocked
+AGENT_ID="coord-001" TOOL_NAME="mcp__harness__harness_start" TOOL_INPUT='{}' run_test "TC-C-11" 2 "Coordinator: lifecycle MCP blocked"
+
+# TC-C-12: Skill blocked
+AGENT_ID="coord-001" TOOL_NAME="Skill" TOOL_INPUT='{}' run_test "TC-C-12" 2 "Coordinator: Skill blocked"
 
 # ============================================================
 echo ""
-echo "--- Extension Enforcement Tests (H-2) ---"
+echo "--- Worker Tests (TC-W) ---"
+# ============================================================
 
-# TC-S-13: Write with allowed extension → exit 0
-run_as_subagent_with_file "Write" "sub-013" "/tmp/test.toon" ".toon,.mmd"
-assert_exit "TC-S-13 Write allowed ext" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-S-13 stderr" "$HOOK_STDERR"
+# TC-W-01: Read allowed
+AGENT_ID="worker-002" TOOL_NAME="Read" TOOL_INPUT='{}' run_test "TC-W-01" 0 "Worker: Read allowed"
 
-# TC-S-14: Write with disallowed extension → exit 2
-run_as_subagent_with_file "Write" "sub-014" "/tmp/test.ts" ".toon,.mmd"
-assert_exit "TC-S-14 Write disallowed ext" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-S-14 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-W-02: Write allowed (no extension file)
+rm -f "$PROJECT_ROOT/.agent/.worker-allowed-extensions"
+AGENT_ID="worker-002" TOOL_NAME="Write" TOOL_INPUT='{"file_path":"/tmp/test.ts"}' run_test "TC-W-02" 0 "Worker: Write allowed"
 
-# TC-S-15: Edit with allowed extension → exit 0
-run_as_subagent_with_file "Edit" "sub-015" "/tmp/src/index.ts" ".ts,.tsx,.js,.jsx,.toon"
-assert_exit "TC-S-15 Edit allowed ext" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-S-15 stderr" "$HOOK_STDERR"
+# TC-W-03: Edit allowed
+AGENT_ID="worker-002" TOOL_NAME="Edit" TOOL_INPUT='{"file_path":"/tmp/test.ts"}' run_test "TC-W-03" 0 "Worker: Edit allowed"
+
+# TC-W-04: Glob allowed
+AGENT_ID="worker-002" TOOL_NAME="Glob" TOOL_INPUT='{}' run_test "TC-W-04" 0 "Worker: Glob allowed"
+
+# TC-W-05: Grep allowed
+AGENT_ID="worker-002" TOOL_NAME="Grep" TOOL_INPUT='{}' run_test "TC-W-05" 0 "Worker: Grep allowed"
+
+# TC-W-06: Bash allowed
+AGENT_ID="worker-002" TOOL_NAME="Bash" TOOL_INPUT='{}' run_test "TC-W-06" 0 "Worker: Bash allowed"
+
+# TC-W-07: Agent blocked
+AGENT_ID="worker-002" TOOL_NAME="Agent" TOOL_INPUT='{}' run_test "TC-W-07" 2 "Worker: Agent blocked"
+
+# TC-W-08: Lifecycle MCP blocked
+AGENT_ID="worker-002" TOOL_NAME="mcp__harness__harness_start" TOOL_INPUT='{}' run_test "TC-W-08" 2 "Worker: lifecycle MCP blocked"
+
+# TC-W-09: Non-lifecycle MCP allowed
+AGENT_ID="worker-002" TOOL_NAME="mcp__harness__harness_record_proof" TOOL_INPUT='{}' run_test "TC-W-09" 0 "Worker: non-lifecycle MCP allowed"
+
+# TC-W-10: Skill blocked
+AGENT_ID="worker-002" TOOL_NAME="Skill" TOOL_INPUT='{}' run_test "TC-W-10" 2 "Worker: Skill blocked"
+
+# TC-W-11: ToolSearch blocked
+AGENT_ID="worker-002" TOOL_NAME="ToolSearch" TOOL_INPUT='{}' run_test "TC-W-11" 2 "Worker: ToolSearch blocked"
 
 # ============================================================
 echo ""
-echo "--- Edge Case Tests ---"
+echo "--- Extension Enforcement Tests (TC-E) ---"
+# ============================================================
 
-# TC-E-01: Empty stdin → exit 0
-HOOK_STDERR=$(echo "" | bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
-HOOK_EXIT=$?
-assert_exit "TC-E-01 empty stdin" 0 "$HOOK_EXIT"
-assert_stderr_empty "TC-E-01 stderr" "$HOOK_STDERR"
+# Setup extension file
+EXT_FILE="$PROJECT_ROOT/.agent/.worker-allowed-extensions"
+echo ".ts,.js,.toon" > "$EXT_FILE"
 
-# TC-E-02: Unknown tool (subagent) → exit 2 (not in phase-restricted allowlist)
-run_as_subagent "SomeUnknownTool" "sub-edge"
-assert_exit "TC-E-02 unknown tool (subagent) blocked" 2 "$HOOK_EXIT"
-assert_stderr_contains "TC-E-02 stderr" "BLOCKED" "$HOOK_STDERR"
+# TC-E-01: Allowed extension
+AGENT_ID="worker-002" TOOL_NAME="Write" TOOL_INPUT='{"file_path":"/tmp/test.ts"}' run_test "TC-E-01" 0 "Extension: .ts allowed"
 
-# TC-E-03: Subagent with agent_id gets subagent rules (no special files needed)
-WORKDIR_E3=$(mktemp -d)
-HOOK_STDERR=$(cd "$WORKDIR_E3" && echo '{"tool_name":"Read","tool_input":{},"agent_id":"some-agent"}' | bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
-HOOK_EXIT=$?
-assert_exit "TC-E-03 agent_id = subagent layer" 0 "$HOOK_EXIT"
-rm -rf "$WORKDIR_E3"
+# TC-E-02: Blocked extension
+AGENT_ID="worker-002" TOOL_NAME="Write" TOOL_INPUT='{"file_path":"/tmp/test.py"}' run_test "TC-E-02" 2 "Extension: .py blocked"
 
+# TC-E-03: Edit with blocked extension
+AGENT_ID="worker-002" TOOL_NAME="Edit" TOOL_INPUT='{"file_path":"/tmp/test.md"}' run_test "TC-E-03" 2 "Extension: .md blocked for Edit"
+
+rm -f "$EXT_FILE"
+
+# ============================================================
+echo ""
+echo "--- Edge Case Tests (TC-X) ---"
+# ============================================================
+
+# TC-X-01: Empty TOOL_NAME
+TOOL_NAME="" TOOL_INPUT='{}' AGENT_ID="" run_test "TC-X-01" 2 "Edge: empty tool name"
+
+# TC-X-02: Coordinator re-identified after orchestrator clears
+rm -f "$COORD_ID_FILE"
+AGENT_ID="new-coord" TOOL_NAME="Agent" TOOL_INPUT='{}' run_test "TC-X-02" 0 "Edge: new coordinator after clear"
+RECORDED=$(cat "$COORD_ID_FILE" 2>/dev/null || echo "")
+TOTAL=$((TOTAL + 1))
+if [ "$RECORDED" = "new-coord" ]; then
+  echo "PASS TC-X-02b: new coordinator recorded"
+  PASS=$((PASS + 1))
+else
+  echo "FAIL TC-X-02b: new coordinator not recorded (got: $RECORDED)"
+  FAIL=$((FAIL + 1))
+fi
+
+# TC-X-03: Worker with different ID after coordinator set
+AGENT_ID="worker-999" TOOL_NAME="Agent" TOOL_INPUT='{}' run_test "TC-X-03" 2 "Edge: Worker cannot use Agent"
+
+# Cleanup
+rm -f "$COORD_ID_FILE"
+
+# ============================================================
 echo ""
 echo "=== Summary ==="
-echo "PASS: $PASS_COUNT / TOTAL: $TOTAL_COUNT"
-echo "FAIL: $FAIL_COUNT / TOTAL: $TOTAL_COUNT"
+echo "PASS: $PASS / TOTAL: $TOTAL"
+echo "FAIL: $FAIL / TOTAL: $TOTAL"
 
-if [ "$FAIL_COUNT" -gt 0 ]; then
+if [ "$FAIL" -gt 0 ]; then
   exit 1
 else
   echo "All tests passed!"

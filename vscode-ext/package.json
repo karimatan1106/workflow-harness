@@ -1,0 +1,27 @@
+{
+  "name": "harness-log-pane",
+  "displayName": "Harness Log Pane",
+  "description": "Auto-split terminal for workflow harness worker logs",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:.agent"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {},
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

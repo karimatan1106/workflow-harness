@@ -5,7 +5,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, utimesSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskState } from '../../state/types.js';
@@ -69,6 +69,38 @@ function findMcpConfig(): string | undefined {
     if (existsSync(candidate)) return resolve(candidate);
   }
   return undefined;
+}
+
+// ─── Log pane signal (VS Code extension) ─────────
+let logPaneCounter = 0;
+
+function writeSignal(signalPath: string, data: Record<string, unknown>): void {
+  writeFileSync(signalPath, JSON.stringify(data));
+  // Force mtime update to trigger VS Code FileSystemWatcher on Windows
+  const now = new Date();
+  utimesSync(signalPath, now, now);
+}
+
+function openLogPane(logFile: string): string {
+  const id = `worker-${++logPaneCounter}`;
+  const projectRoot = getProjectRoot();
+  const signalPath = join(projectRoot, '.agent', 'log-pane.signal');
+  try {
+    writeSignal(signalPath, { action: 'open', id, logFile });
+  } catch {
+    // best-effort
+  }
+  return id;
+}
+
+function closeLogPane(id: string): void {
+  const projectRoot = getProjectRoot();
+  const signalPath = join(projectRoot, '.agent', 'log-pane.signal');
+  try {
+    writeSignal(signalPath, { action: 'close', id });
+  } catch {
+    // best-effort
+  }
 }
 
 // ─── Async spawn wrapper ──────────────────────────
@@ -187,7 +219,11 @@ export async function handleDelegateWork(
     ...process.env,
     HARNESS_SESSION_TOKEN: String(args.sessionToken),
     HARNESS_TASK_ID: taskId,
+    HARNESS_LAYER: 'worker',
   };
+
+  // Signal log pane open (VS Code extension watches signal file)
+  const paneId = openLogPane(logFile);
 
   // Fix #4: async spawn instead of execSync
   try {
@@ -199,6 +235,8 @@ export async function handleDelegateWork(
     });
     const durationMs = Date.now() - startTime;
 
+    closeLogPane(paneId);
+
     const toonResult = [
       `success: true`,
       `output: "${stdout.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
@@ -207,6 +245,7 @@ export async function handleDelegateWork(
     ].join('\n');
     return respond(toonResult);
   } catch (err) {
+    closeLogPane(paneId);
     const message = err instanceof Error ? err.message : String(err);
     return respondError(`Worker failed: ${message}`);
   }
