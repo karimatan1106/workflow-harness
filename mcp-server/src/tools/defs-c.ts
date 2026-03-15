@@ -72,7 +72,7 @@ export const TOOL_DEFS_C = [
         },
         allowedTools: {
           type: 'string',
-          description: 'Comma-separated tool whitelist for the worker. Default: Read,Edit,Write,Bash,Glob,Grep',
+          description: 'Comma-separated tool whitelist for the worker. Default: Agent,Read,Glob,Grep',
         },
         systemPrompt: {
           type: 'string',
