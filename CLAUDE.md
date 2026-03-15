@@ -2,7 +2,7 @@
 
 Authoritative instruction set. Violations are blocked by hooks.
 **ワークフロー強制**: バグ報告・機能要求・リファクタ等は即座に `/harness start <タスク名>` で開始。事前調査禁止（scope_definition/researchフェーズで実施）。純粋な質問のみ直接回答可。
-**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作（ファイル読み書き・検索・git・ビルド・テスト）をAgentサブエージェントに委譲。オーケストレーターが使えるのはMCPツール(harness_*)とAgent起動のみ。1-2ファイル参照の純粋な質問のみ直接回答可。
+**ツール委譲**: オーケストレーターはRead/Edit/Write/Bash/Glob/Grep等の直接ツール使用禁止。全操作（ファイル読み書き・検索・git・ビルド・テスト）をAgentサブエージェントに委譲。オーケストレーターが使えるのはMCPツール(harness_*)・Agentツール（サブエージェント生成）・Skillツール（/harness, /handoff等）・AskUserQuestionのみ。1-2ファイル参照の純粋な質問のみ直接回答可。
 
 ## Core Principles
 - Phases = context compression. 各成果物が次フェーズへの完全な引き継ぎ。
