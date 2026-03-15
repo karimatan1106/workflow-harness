@@ -112,7 +112,6 @@ export interface RTMEntry {
 // ─── Proof Tier ─────────────────────────────────
 export type ProofTier = 'T1' | 'T2' | 'T3' | 'T4';
 export const PROOF_TIERS: readonly ProofTier[] = ['T1', 'T2', 'T3', 'T4'] as const;
-
 // ─── Acceptance Criteria ────────────────────────
 export interface AcceptanceCriterion {
   id: string;          // AC-1, AC-2, ...
@@ -170,6 +169,7 @@ export interface PhaseConfig {
   approvalRequired?: ApprovalType;
   parallelGroup?: ParallelGroupName;
   dependencies?: PhaseName[];
+  allowedTools?: string[];
 }
 
 // ─── Zod Schemas for Validation ─────────────────

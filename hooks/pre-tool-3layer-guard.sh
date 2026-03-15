@@ -49,8 +49,6 @@ fi
 is_lifecycle() {
   case "$1" in
     *_start|*_next|*_approve|*_status|*_back|*_reset) return 0 ;;
-    *_set_scope|*_get_subphase_template|*_get_test_info) return 0 ;;
-    *_get_known_bugs|*_pre_validate|*_capture_baseline) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -86,11 +84,6 @@ fi
 # === Coordinator rules ===
 if [ "$LAYER" = "coordinator" ]; then
   case "$TOOL_NAME" in
-    Read|Grep|Glob|Write|Edit|Bash)
-      log_obs "BLOCKED(standard-tool)"
-      echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。ワーカーサブエージェントに委譲してください。" >&2
-      exit 2
-      ;;
     mcp__harness__*)
       if is_lifecycle "$TOOL_NAME"; then
         log_obs "BLOCKED(lifecycle-mcp)"
@@ -101,27 +94,40 @@ if [ "$LAYER" = "coordinator" ]; then
       exit 0
       ;;
     *)
-      log_obs "ALLOWED(unknown)"
-      exit 0
+      log_obs "BLOCKED(standard-tool)"
+      echo "BLOCKED: コーディネーター層は直接ツール($TOOL_NAME)使用禁止。ワーカーサブエージェントに委譲してください。" >&2
+      exit 2
       ;;
   esac
 fi
 
 # === Worker rules ===
 if [ "$LAYER" = "worker" ]; then
-  case "$TOOL_NAME" in
-    Read|Grep|Glob|Write|Edit|Bash)
-      log_obs "ALLOWED(standard-tool)"
+  # Read phase-specific allowed tools
+  ALLOWED_TOOLS_FILE="$PROJECT_ROOT/.agent/.worker-allowed-tools"
+  if [ -f "$ALLOWED_TOOLS_FILE" ]; then
+    ALLOWED_TOOLS=$(cat "$ALLOWED_TOOLS_FILE" 2>/dev/null || echo "Read,Glob,Grep,Write,Edit,Bash")
+  else
+    ALLOWED_TOOLS="Read,Glob,Grep,Write,Edit,Bash"
+  fi
+
+  case ",$ALLOWED_TOOLS," in
+    *",$TOOL_NAME,"*)
+      log_obs "ALLOWED(phase-tool)"
       exit 0
       ;;
+  esac
+
+  case "$TOOL_NAME" in
     mcp__harness__*)
       log_obs "BLOCKED(mcp-tool)"
       echo "BLOCKED: ワーカー層はMCPツール($TOOL_NAME)使用禁止。コーディネーター経由で実行してください。" >&2
       exit 2
       ;;
     *)
-      log_obs "ALLOWED(unknown)"
-      exit 0
+      log_obs "BLOCKED(phase-restricted)"
+      echo "BLOCKED: 現フェーズではツール($TOOL_NAME)使用禁止。許可ツール: $ALLOWED_TOOLS" >&2
+      exit 2
       ;;
   esac
 fi

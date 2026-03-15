@@ -147,6 +147,23 @@ export function buildSubagentPrompt(
     prompt = prompt + '\n' + header;
   }
 
+  // Layer instructions for sub-agent
+  const allowedTools = config?.allowedTools ?? ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
+  const allStandardTools = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
+  const blockedTools = allStandardTools.filter(t => !allowedTools.includes(t));
+  let layerSection = `\nlayer: worker\nallowedTools: ${allowedTools.join(', ')}`;
+  if (blockedTools.length > 0) {
+    layerSection += `\nblockedTools: ${blockedTools.join(', ')}`;
+  }
+  layerSection += '\n';
+
+  // Insert layer section after the header
+  const headerEndIdx = prompt.indexOf(header);
+  if (headerEndIdx >= 0) {
+    const insertPos = headerEndIdx + header.length;
+    prompt = prompt.slice(0, insertPos) + layerSection + prompt.slice(insertPos);
+  }
+
   // ACE TOON-first + Reflector lessons
   const toonFirst = buildToonFirstSection(phase, docsDir);
   if (toonFirst) prompt += toonFirst;
