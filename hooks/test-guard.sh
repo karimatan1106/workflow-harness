@@ -78,6 +78,20 @@ run_as_subagent() {
   HOOK_EXIT=$?
 }
 
+# Run as subagent with file_path in tool_input and extensions file
+run_as_subagent_with_file() {
+  local tool_name="$1" agent_id="$2" file_path="$3" allowed_exts="$4"
+  local workdir="$TMPDIR_BASE/sub-ext-$$-$RANDOM"
+  mkdir -p "$workdir/.agent"
+  # Write allowed tools (permissive)
+  echo "Read,Glob,Grep,Write,Edit,Bash" > "$workdir/.agent/.worker-allowed-tools"
+  # Write allowed extensions
+  echo "$allowed_exts" > "$workdir/.agent/.worker-allowed-extensions"
+  local json="{\"tool_name\":\"$tool_name\",\"tool_input\":{\"file_path\":\"$file_path\"},\"agent_id\":\"$agent_id\"}"
+  HOOK_STDERR=$(cd "$workdir" && echo "$json" | env -u ORCHESTRATOR_GUARD_DISABLE bash "$TARGET_SCRIPT" 2>&1 >/dev/null)
+  HOOK_EXIT=$?
+}
+
 echo "=== 2-Layer Tool Access Control Guard Test Suite ==="
 echo "Target: $TARGET_SCRIPT"
 echo ""
@@ -228,6 +242,25 @@ assert_stderr_contains "TC-S-11 stderr" "BLOCKED" "$HOOK_STDERR"
 run_as_subagent "mcp__workflow__workflow_add_ac" "sub-012"
 assert_exit "TC-S-12 workflow_add_ac blocked" 2 "$HOOK_EXIT"
 assert_stderr_contains "TC-S-12 stderr" "BLOCKED" "$HOOK_STDERR"
+
+# ============================================================
+echo ""
+echo "--- Extension Enforcement Tests (H-2) ---"
+
+# TC-S-13: Write with allowed extension → exit 0
+run_as_subagent_with_file "Write" "sub-013" "/tmp/test.toon" ".toon,.mmd"
+assert_exit "TC-S-13 Write allowed ext" 0 "$HOOK_EXIT"
+assert_stderr_empty "TC-S-13 stderr" "$HOOK_STDERR"
+
+# TC-S-14: Write with disallowed extension → exit 2
+run_as_subagent_with_file "Write" "sub-014" "/tmp/test.ts" ".toon,.mmd"
+assert_exit "TC-S-14 Write disallowed ext" 2 "$HOOK_EXIT"
+assert_stderr_contains "TC-S-14 stderr" "BLOCKED" "$HOOK_STDERR"
+
+# TC-S-15: Edit with allowed extension → exit 0
+run_as_subagent_with_file "Edit" "sub-015" "/tmp/src/index.ts" ".ts,.tsx,.js,.jsx,.toon"
+assert_exit "TC-S-15 Edit allowed ext" 0 "$HOOK_EXIT"
+assert_stderr_empty "TC-S-15 stderr" "$HOOK_STDERR"
 
 # ============================================================
 echo ""

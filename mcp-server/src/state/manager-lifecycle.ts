@@ -13,17 +13,20 @@ import { writeProgressJSON } from './progress-json.js';
 import { getProjectRoot } from '../utils/project-root.js';
 
 const DEFAULT_ALLOWED_TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
+const DEFAULT_ALLOWED_EXTENSIONS = ['.toon', '.md'];
 
 /**
- * Write allowed tools for the given phase to .agent/.worker-allowed-tools.
+ * Write allowed tools and extensions for the given phase to .agent/.worker-allowed-*.
  * Non-blocking — errors are silently ignored.
  */
 export function writeAllowedToolsFile(phase: PhaseName): void {
   const config = PHASE_REGISTRY[phase];
   const tools = config?.allowedTools ?? DEFAULT_ALLOWED_TOOLS;
+  const extensions = config?.allowedExtensions ?? DEFAULT_ALLOWED_EXTENSIONS;
   const dir = join(getProjectRoot(), '.agent');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, '.worker-allowed-tools'), tools.join(','), 'utf8');
+  writeFileSync(join(dir, '.worker-allowed-extensions'), extensions.join(','), 'utf8');
 }
 
 type PhaseResult = { success: boolean; nextPhase?: PhaseName; error?: string };
@@ -148,5 +151,6 @@ export function resetTask(
   signAndPersist(state, hmacKey);
   writeTaskIndex();
   try { unlinkSync(join(getProjectRoot(), '.agent', '.worker-allowed-tools')); } catch { /* file may not exist */ }
+  try { unlinkSync(join(getProjectRoot(), '.agent', '.worker-allowed-extensions')); } catch { /* file may not exist */ }
   return { success: true };
 }

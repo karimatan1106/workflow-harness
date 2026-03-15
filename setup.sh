@@ -145,6 +145,12 @@ if [ ! -f "$PROJECT_DIR/.agent/.worker-allowed-tools" ]; then
   echo "Created .agent/.worker-allowed-tools with default tool set"
 fi
 
+# 7. Create default .worker-allowed-extensions if not present (H-2: extension enforcement)
+if [ ! -f "$PROJECT_DIR/.agent/.worker-allowed-extensions" ]; then
+  echo ".ts,.tsx,.js,.jsx,.py,.go,.rs,.java,.toon,.json,.yml,.yaml,.toml,.env,.sh,.md,.mdx,.mmd" > "$PROJECT_DIR/.agent/.worker-allowed-extensions"
+  echo "Created .agent/.worker-allowed-extensions with permissive default"
+fi
+
 echo ""
 echo "=== Setup Complete ==="
 echo "2-layer per-process guard installed (orchestrator + subagent, part of 3-layer architecture)."

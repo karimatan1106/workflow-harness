@@ -111,6 +111,26 @@ if [ "$LAYER" = "subagent" ]; then
 
   case ",$ALLOWED_TOOLS," in
     *",$TOOL_NAME,"*)
+      # Tool is allowed — now check file extension for Write/Edit
+      if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
+        EXT_FILE="$PROJECT_ROOT/.agent/.worker-allowed-extensions"
+        if [ -f "$EXT_FILE" ]; then
+          ALLOWED_EXTS=$(cat "$EXT_FILE" 2>/dev/null || true)
+          if [ -n "$ALLOWED_EXTS" ]; then
+            # Extract file_path from tool input JSON
+            TOOL_INPUT=$(echo "$INPUT" | grep -o '"tool_input"[[:space:]]*:[[:space:]]*{[^}]*}' 2>/dev/null | head -1 || true)
+            FILE_PATH=$(echo "$TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || true)
+            if [ -n "$FILE_PATH" ]; then
+              FILE_EXT=".${FILE_PATH##*.}"
+              if ! echo ",$ALLOWED_EXTS," | grep -q ",$FILE_EXT,"; then
+                log_obs "BLOCKED(extension-restricted)"
+                echo "BLOCKED: Extension $FILE_EXT not allowed in current phase. Allowed: $ALLOWED_EXTS" >&2
+                exit 2
+              fi
+            fi
+          fi
+        fi
+      fi
       log_obs "ALLOWED(phase-tool)"
       exit 0
       ;;
