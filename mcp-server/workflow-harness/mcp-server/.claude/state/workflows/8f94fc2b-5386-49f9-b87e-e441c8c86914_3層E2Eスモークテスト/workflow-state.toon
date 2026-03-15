@@ -1,0 +1,41 @@
+taskId: 8f94fc2b-5386-49f9-b87e-e441c8c86914
+taskName: 3層E2Eスモークテスト
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 1
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 100
+userIntent: 3層構造（Orchestrator→Coordinator→Worker）の実タスク動作検証。HANDOFF.toonに検証結果セクションを追加する小規模変更で全フローをテストする。
+docsDir: docs\workflows\3層E2Eスモークテスト
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\8f94fc2b-5386-49f9-b87e-e441c8c86914_3層E2Eスモークテスト
+sessionToken: 552eda24bc72ee616cc90167a2d11e237847f78935932d8fbadcd8652cd3e41d
+stateIntegrity: 1f67951c7dfd8da66d01b1487f0059f0e9ac4f2f2dd12bf4aafb681a0e00854c
+createdAt: 2026-03-15T17:11:13.227Z
+updatedAt: 2026-03-15T17:54:28.647Z
+integrityWarning: true
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: .agent/handoff/HANDOFF.toon
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+proofLog[2]{phase,check,level,result,evidence,timestamp}:
+  scope_definition, reset to scope_definition, L4, true, Reset reason: 前セッションの3層E2Eスモークテスト。パスバグ修正後に再実行するため. Reset from scope_definition, 2026-03-15T17:32:43.826Z
+  scope_definition, reset to scope_definition, L4, true, Reset reason: 古いテストタスク。パスバグで失敗したもの. Reset from scope_definition, 2026-03-15T17:54:28.646Z
+checkpoint.taskId: 8f94fc2b-5386-49f9-b87e-e441c8c86914
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T17:54:28.546Z
+checkpoint.sha256: 3c4b00a5cf35ca087e563ff9ed6058c701f5226ee83dd5bc6d8b4ee4207f9ab3
+checkpoint.userIntent: 3層構造（Orchestrator→Coordinator→Worker）の実タスク動作検証。HANDOFF.toonに検証結果セクションを追加する小規模変更で全フローをテストする。
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: .agent/handoff/HANDOFF.toon
+resetHistory[2]{reason,resetAt,targetPhase}:
+  前セッションの3層E2Eスモークテスト。パスバグ修正後に再実行するため, 2026-03-15T17:32:43.730Z, scope_definition
+  古いテストタスク。パスバグで失敗したもの, 2026-03-15T17:54:28.546Z, scope_definition

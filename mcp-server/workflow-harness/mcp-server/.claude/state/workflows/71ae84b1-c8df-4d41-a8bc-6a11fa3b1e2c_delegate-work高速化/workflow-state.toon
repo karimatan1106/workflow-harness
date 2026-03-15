@@ -1,0 +1,34 @@
+taskId: 71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c
+taskName: delegate-work高速化
+version: 4
+phase: commit
+size: small
+riskScore.total: 0
+riskScore.fileCount: 1
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 100
+userIntent: harness_delegate_workの起動時間を短縮する。現状sonnet134秒、haiku15-18秒。buildCoordinatorPromptの軽量化、claude -pオプション最適化、MCP接続省略の検討。
+docsDir: docs\workflows\delegate-work高速化
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c_delegate-work高速化
+sessionToken: d9b1cee18789c939601a42f22783bc2831d841ae3d875ce770f317f82e174e6e
+stateIntegrity: d53233d26fe8f1981859546085920f65c663e15846ac56defd240585ed5c138a
+createdAt: 2026-03-15T18:00:15.186Z
+updatedAt: 2026-03-15T18:16:08.183Z
+completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+scopeDirs: workflow-harness/mcp-server/src/tools/handlers;workflow-harness/mcp-server/src/phases
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c
+checkpoint.phase: commit
+checkpoint.timestamp: 2026-03-15T18:16:08.183Z
+checkpoint.sha256: ca158be172b90f60497a83ac396ffbea00bb8b9ee23c0de8b607745965c495de
+checkpoint.userIntent: harness_delegate_workの起動時間を短縮する。現状sonnet134秒、haiku15-18秒。buildCoordinatorPromptの軽量化、claude -pオプション最適化、MCP接続省略の検討。
+checkpoint.completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing
+checkpoint.scopeFiles: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts

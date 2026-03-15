@@ -1,0 +1,9 @@
+version: 3
+nextLessonId: 1
+
+lessons[0]{id,phase,errorPattern,lesson,createdAt,hitCount,helpfulCount,harmfulCount,category,preventionRule}:
+
+stashedFailures[1]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}:
+  scope_definition, 3edce1b6-b4cf-4131-8bc4-51ca65d2d989, "[L4] decisions[] count: 1 < required 5
+修正方法: decisions[N]{id,statement,rationale", "[L4] decisions[] count: 1 < required 5
+修正方法: decisions[N]{id,statement,rationale}: テーブルにあと4エントリ追加してください。", 1, 2026-03-15T17:57:54.035Z

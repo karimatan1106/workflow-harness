@@ -87,6 +87,9 @@ async function openLogPane(root, id, logFile) {
     const fullPath = (0, path_1.join)(root, logFile).replace(/\\/g, "/");
     const parent = vscode.window.activeTerminal ??
         vscode.window.terminals.find((t) => !t.name.startsWith("Worker:"));
+    const wslPath = fullPath.replace(/^([A-Za-z]):/, (_, d) => `/mnt/${d.toLowerCase()}`).replace(/\\/g, "/");
+    const gitBashPath = fullPath.replace(/^([A-Za-z]):/, (_, d) => `/${d.toLowerCase()}`).replace(/\\/g, "/");
+    const tailCmd = `tail -f "${wslPath}" 2>/dev/null || tail -f "${gitBashPath}"`;
     if (parent) {
         parent.show(false);
         await vscode.commands.executeCommand("workbench.action.terminal.split", {
@@ -98,7 +101,7 @@ async function openLogPane(root, id, logFile) {
         await new Promise((r) => setTimeout(r, 500));
         const term = vscode.window.activeTerminal;
         if (term) {
-            term.sendText(`tail -f "${fullPath}"`);
+            term.sendText(tailCmd);
             logTerminals.set(id, term);
         }
     }
@@ -109,7 +112,7 @@ async function openLogPane(root, id, logFile) {
             shellPath: "C:\\Program Files\\Git\\bin\\bash.exe",
         });
         term.show(true);
-        term.sendText(`tail -f "${fullPath}"`);
+        term.sendText(tailCmd);
         logTerminals.set(id, term);
     }
 }

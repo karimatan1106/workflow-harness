@@ -1,15 +1,39 @@
 version: 1
-totalTasks: 1
-completedTasks: 0
-totalRetries: 0
-totalDoDFailures: 0
-totalPhaseTransitions: 0
-firstPassPhases: 0
+totalTasks: 14
+completedTasks: 1
+totalRetries: 2
+totalDoDFailures: 2
+totalPhaseTransitions: 46
+firstPassPhases: 46
 
-aggregatePhaseTimings[0]{phase,count,totalMs,avgMs}:
+aggregatePhaseTimings[11]{phase,count,totalMs,avgMs}:
+  scope_definition, 6, 0, 0
+  research, 5, 0, 0
+  requirements, 5, 0, 0
+  planning, 5, 0, 0
+  test_design, 5, 0, 0
+  test_impl, 5, 0, 0
+  implementation, 5, 0, 0
+  build_check, 4, 0, 0
+  testing, 4, 0, 0
+  commit, 1, 0, 0
+  push, 1, 0, 0
 
-tasks[1]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
+tasks[14]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
   449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, 0, 0, 2026-03-15T14:27:21.801Z, null
+  8f94fc2b-5386-49f9-b87e-e441c8c86914, 3層E2Eスモークテスト, 0, 0, 2026-03-15T17:11:13.286Z, null
+  2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, 0, 0, 2026-03-15T17:16:07.613Z, 2026-03-15T17:24:50.814Z
+  09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5, 3層E2Eスモークテスト-v2, 0, 0, 2026-03-15T17:32:54.700Z, null
+  3edce1b6-b4cf-4131-8bc4-51ca65d2d989, 3層E2E検証-v3, 2, 2, 2026-03-15T17:54:40.496Z, null
+  dbe2dd2b-ff23-4365-b31f-39d963a0f632, HANDOFF更新, 0, 0, 2026-03-15T17:58:47.680Z, null
+  71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c, delegate-work高速化, 0, 0, 2026-03-15T18:00:15.234Z, null
+  175345eb-5fb9-477f-805d-d61bc92ad417, guard-agent-bridge-visibility, 0, 0, 2026-03-15T18:37:47.772Z, null
+  b452aaef-8ed3-43fd-8d2c-83c4fca00b5d, 3層guard-AGENT-ID判別, 0, 0, 2026-03-15T19:28:05.705Z, null
+  df9a5add-3eaa-46eb-bad1-358f0185e461, 3層ガードE2Eテスト, 0, 0, 2026-03-15T21:16:15.237Z, null
+  7d7590b1-6021-4879-aa31-2a1b8ef4dc38, log-pane-debug, 0, 0, 2026-03-15T21:28:48.633Z, null
+  4a15a5d1-4abb-4297-bf19-018ae8eac526, log-pane-e2e-v2, 0, 0, 2026-03-15T21:46:48.245Z, null
+  87b9ddca-d21e-4370-9d2c-ab59206a1156, log-pane-e2e-final, 0, 0, 2026-03-15T21:59:01.491Z, null
+  58159541-727a-40ac-9172-e5676d6591a2, log-pane-final-test, 0, 0, 2026-03-15T22:03:45.465Z, null
 
-taskPhases_449737a1-c619-4d66-808f-06adf184131c[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
-  scope_definition, 2026-03-15T14:27:21.801Z, null, 0, 0, 
+taskPhases_58159541-727a-40ac-9172-e5676d6591a2[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
+  scope_definition, 2026-03-15T22:03:45.465Z, null, 0, 0, 

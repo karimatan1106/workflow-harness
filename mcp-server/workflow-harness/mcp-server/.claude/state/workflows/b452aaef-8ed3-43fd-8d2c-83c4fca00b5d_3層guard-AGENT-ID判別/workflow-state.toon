@@ -1,0 +1,34 @@
+taskId: b452aaef-8ed3-43fd-8d2c-83c4fca00b5d
+taskName: 3層guard-AGENT-ID判別
+version: 4
+phase: commit
+size: small
+riskScore.total: 3
+riskScore.fileCount: 2
+riskScore.hasTests: true
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 200
+userIntent: pre-tool-guard.shをAGENT_IDベースの3層判別に改修。Orchestrator/Coordinator/Workerの3層でツール制限を分離する。CoordinatorはAgent+MCPのみ、WorkerはRead/Write/Edit/Bash、OrchestratorはlifecycleMCP+Agent。
+docsDir: docs\workflows\3層guard-AGENT-ID判別
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\b452aaef-8ed3-43fd-8d2c-83c4fca00b5d_3層guard-AGENT-ID判別
+sessionToken: e9e63b6299b39ad31560e91263120f6bb00693cb9a5278f3623d1671a7d205e6
+stateIntegrity: 3e1fde1c1fb1ee57e69215f8328f74419901311b7d8801bfde789713f4b526a7
+createdAt: 2026-03-15T19:28:05.643Z
+updatedAt: 2026-03-15T19:33:02.448Z
+completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: workflow-harness/hooks/pre-tool-guard.sh;workflow-harness/hooks/test-guard.sh
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: b452aaef-8ed3-43fd-8d2c-83c4fca00b5d
+checkpoint.phase: commit
+checkpoint.timestamp: 2026-03-15T19:33:02.448Z
+checkpoint.sha256: ab1a5dfb07e85ae3d8290e940db2d8baf45acaaffcde028c8489cf95a4932c7f
+checkpoint.userIntent: pre-tool-guard.shをAGENT_IDベースの3層判別に改修。Orchestrator/Coordinator/Workerの3層でツール制限を分離する。CoordinatorはAgent+MCPのみ、WorkerはRead/Write/Edit/Bash、OrchestratorはlifecycleMCP+Agent。
+checkpoint.completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing
+checkpoint.scopeFiles: workflow-harness/hooks/pre-tool-guard.sh;workflow-harness/hooks/test-guard.sh

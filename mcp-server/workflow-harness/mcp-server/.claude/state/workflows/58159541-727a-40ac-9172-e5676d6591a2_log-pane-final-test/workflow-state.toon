@@ -1,0 +1,34 @@
+taskId: 58159541-727a-40ac-9172-e5676d6591a2
+taskName: log-pane-final-test
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: unlinkSync修正後のログペイン最終テスト。ターミナル分割+ログ表示確認。
+docsDir: docs\workflows\log-pane-final-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\58159541-727a-40ac-9172-e5676d6591a2_log-pane-final-test
+sessionToken: 3cd116f29b66b0a38023eaf47d32d18a25587614b922a16575025d0245a979ea
+stateIntegrity: 47b1e979a381e39e47638719e96b10b20fbbab20d556e973cb44189055c92496
+createdAt: 2026-03-15T22:03:45.406Z
+updatedAt: 2026-03-15T22:03:45.406Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 58159541-727a-40ac-9172-e5676d6591a2
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T22:03:45.406Z
+checkpoint.sha256: 5b1e9e0810598b9527c8f0dd2f679cde8de7e6f160ca01eb9f1840990c8506b3
+checkpoint.userIntent: unlinkSync修正後のログペイン最終テスト。ターミナル分割+ログ表示確認。
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

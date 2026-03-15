@@ -1,0 +1,34 @@
+taskId: 7d7590b1-6021-4879-aa31-2a1b8ef4dc38
+taskName: log-pane-debug
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: ログペインシグナルのデバッグ。delegate_work実行時にlog-pane.signalが書き込まれるか、LOG_PANE_ERRORが出力されるか確認する。
+docsDir: docs\workflows\log-pane-debug
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\7d7590b1-6021-4879-aa31-2a1b8ef4dc38_log-pane-debug
+sessionToken: 81c805c9cb89284f74fe1d174f8628741710b60d4ff6e13814fddc28ec61531b
+stateIntegrity: 9115169c94a3bb1f35552ba92542b274ccc82540df8759313d002193b2fb8cb1
+createdAt: 2026-03-15T21:28:48.575Z
+updatedAt: 2026-03-15T21:28:48.575Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 7d7590b1-6021-4879-aa31-2a1b8ef4dc38
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T21:28:48.575Z
+checkpoint.sha256: e564d214ce2f2cd407f4fd2b9914c3766b435e6ed2d4cb2a3ad1a8a423bba19f
+checkpoint.userIntent: ログペインシグナルのデバッグ。delegate_work実行時にlog-pane.signalが書き込まれるか、LOG_PANE_ERRORが出力されるか確認する。
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 
