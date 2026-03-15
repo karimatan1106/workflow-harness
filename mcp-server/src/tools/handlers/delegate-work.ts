@@ -208,6 +208,7 @@ export async function handleDelegateWork(
     '-p',
     fullInstruction,
     '--print',
+    '--verbose',
     '--output-format', 'stream-json',
     '--setting-sources', 'user',
     '--disable-slash-commands',
