@@ -52,6 +52,14 @@ export const TOOL_DEFS_C = [
     inputSchema: {
       type: 'object',
       properties: {
+        taskId: {
+          type: 'string',
+          description: 'Active task ID.',
+        },
+        sessionToken: {
+          type: 'string',
+          description: 'Session token for validation.',
+        },
         instruction: {
           type: 'string',
           description: 'Task instruction for the worker. Be specific about file paths and expected changes.',
@@ -88,7 +96,7 @@ export const TOOL_DEFS_C = [
           description: 'Comma-separated tool blocklist. Default: lifecycle MCP tools + delegate_work (prevent recursion).',
         },
       },
-      required: ['instruction'],
+      required: ['taskId', 'sessionToken', 'instruction'],
     },
   },
 ];

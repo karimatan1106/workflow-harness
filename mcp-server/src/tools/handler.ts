@@ -52,7 +52,7 @@ export async function handleToolCall(
       case 'dci_query_docs':             return handleDciQueryDocs(args);
       case 'dci_query_files':            return handleDciQueryFiles(args);
       case 'dci_validate':               return handleDciValidate();
-      case 'harness_delegate_work':      return handleDelegateWork(args);
+      case 'harness_delegate_work':      return handleDelegateWork(args, stateManager);
       default: return respondError('Unknown tool: ' + name);
     }
   } catch (err) {

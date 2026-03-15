@@ -7,23 +7,32 @@
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { respond, respondError, type HandlerResult } from '../handler-shared.js';
+import type { StateManager } from '../../state/manager.js';
+import { respond, respondError, validateSession, type HandlerResult } from '../handler-shared.js';
 
 const DEFAULT_ALLOWED_TOOLS = 'Agent,Read,Glob,Grep';
 const DEFAULT_SYSTEM_PROMPT = 'フェーズ作業を管理するcoordinatorです。ファイルの読み取りとMCPツール操作を行い、ファイル編集はAgentでworkerを生成して委譲してください。workerへの指示には対象ファイルパスと具体的な変更内容を含めてください。';
 const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work';
 const WORKER_TIMEOUT_MS = 300_000; // 5 minutes
 
+function getProjectRoot(): string {
+  try {
+    return execSync('git rev-parse --show-toplevel', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return process.cwd();
+  }
+}
+
 function findMcpConfig(): string | undefined {
   const cwd = process.cwd();
+  const projectRoot = getProjectRoot();
   // Check current directory first, then try git root
   const candidates = [
     join(cwd, '.mcp.json'),
   ];
-  try {
-    const gitRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-    candidates.push(join(gitRoot, '.mcp.json'));
-  } catch { /* not a git repo */ }
+  if (projectRoot !== cwd) {
+    candidates.push(join(projectRoot, '.mcp.json'));
+  }
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) return resolve(candidate);
@@ -33,7 +42,15 @@ function findMcpConfig(): string | undefined {
 
 export async function handleDelegateWork(
   args: Record<string, unknown>,
+  sm: StateManager,
 ): Promise<HandlerResult> {
+  const taskId = String(args.taskId ?? '');
+  if (!taskId) return respondError('taskId is required');
+  const task = sm.loadTask(taskId);
+  if (!task) return respondError('Task not found: ' + taskId);
+  const sessionErr = validateSession(task, args.sessionToken);
+  if (sessionErr) return respondError(sessionErr);
+
   const instruction = String(args.instruction ?? '');
   if (!instruction) return respondError('instruction is required');
 
@@ -79,10 +96,12 @@ export async function handleDelegateWork(
   }
 
   const cmd = cmdParts.join(' ');
+  const projectRoot = getProjectRoot();
 
   try {
     const startTime = Date.now();
     const output = execSync(cmd, {
+      cwd: projectRoot,
       encoding: 'utf8',
       timeout: WORKER_TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024, // 10MB
