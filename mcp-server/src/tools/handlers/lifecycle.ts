@@ -168,6 +168,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: (PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model) ?? 'sonnet' }));
   }
   try { recordPhaseStart(taskId, freshTask?.taskName ?? '', nextPhase); } catch { /* non-blocking */ }
+  if (nextPhase) { try { writeAllowedToolsFile(nextPhase as Parameters<typeof writeAllowedToolsFile>[0]); } catch { /* non-blocking */ } }
   if (nextPhase === 'completed' && freshTask) {
     try { recordTaskCompletion(taskId); } catch { /* non-blocking */ }
     try { const r = runCuratorCycle(taskId, freshTask.taskName); responseObj.curatorReport = { lessonsBefore: r.lessonsBefore, lessonsAfter: r.lessonsAfter, actionCount: r.actions.length }; } catch { /* non-blocking */ }
