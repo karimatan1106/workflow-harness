@@ -48,7 +48,7 @@ export const TOOL_DEFS_C = [
   },
   {
     name: 'harness_delegate_work',
-    description: 'Delegate phase work to an isolated coordinator process (3-layer model). Phase-aware context injection: auto-selects allowedTools, model, and system prompt from PHASE_REGISTRY. Implementation/testing phases get Write,Edit,Bash; read-only phases get Agent,Read,Glob,Grep only. sessionToken/taskId propagated via env vars.',
+    description: 'Delegate phase work to an isolated coordinator process (3-layer model). Phase-aware context injection: auto-selects allowedTools, disallowedTools, model, and system prompt from PHASE_REGISTRY (server-enforced, not overridable). Implementation/testing phases get Write,Edit,Bash; read-only phases get Agent,Read,Glob,Grep only. sessionToken/taskId propagated via env vars.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -70,14 +70,6 @@ export const TOOL_DEFS_C = [
           items: { type: 'string' },
           description: 'List of file paths the worker will operate on (informational, not enforced).',
         },
-        allowedTools: {
-          type: 'string',
-          description: 'Comma-separated tool whitelist for the worker. Default: Agent,Read,Glob,Grep',
-        },
-        systemPrompt: {
-          type: 'string',
-          description: 'Custom system prompt for the worker. Default: minimal worker prompt.',
-        },
         model: {
           type: 'string',
           description: 'Model override for the worker (e.g., sonnet, haiku, opus).',
@@ -90,10 +82,6 @@ export const TOOL_DEFS_C = [
         mcpConfig: {
           type: 'string',
           description: 'Path to .mcp.json for MCP server configuration. Default: auto-detected from project root.',
-        },
-        disallowedTools: {
-          type: 'string',
-          description: 'Comma-separated tool blocklist. Default: lifecycle MCP tools + delegate_work (prevent recursion).',
         },
       },
       required: ['taskId', 'sessionToken', 'instruction'],

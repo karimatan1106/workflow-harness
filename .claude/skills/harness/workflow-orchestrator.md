@@ -6,7 +6,7 @@ description: Orchestrator protocol, two-layer execution model, model selection, 
 
 ## 1. Orchestrator Protocol
 
-Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Task tool.
+Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Agent tool.
 
 ### Two-Layer Execution Model
 ```
@@ -19,10 +19,10 @@ Orchestrator (lifecycle MCP のみ: state management, delegation, retry tracking
 2. For each phase:
    a. `harness_next` → advance (returns hasTemplate flag)
    b. If hasTemplate: `harness_get_subphase_template` → get prompt
-   c. `Task(prompt=template)` — テンプレートをそのまま使用
+   c. `Agent(prompt=template)` — テンプレートをそのまま使用
    d. Subagent reads inputs, does work, writes output
    e. `harness_next` → DoD検証+遷移
-3. Parallel phases: launch multiple Task calls simultaneously → `harness_complete_sub`
+3. Parallel phases: launch multiple Agent calls simultaneously → `harness_complete_sub`
 4. Approval gates: present artifacts to user → `harness_approve`
 5. Validation failure: re-launch subagent (NEVER edit directly)
 

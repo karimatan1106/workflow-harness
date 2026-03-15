@@ -142,9 +142,11 @@ export async function handleDelegateWork(
     fullInstruction += '\n\n対象ファイル:\n' + files.map((f: string) => '- ' + f).join('\n');
   }
 
-  const allowedTools = String(args.allowedTools ?? buildAllowedTools(phaseGuide));
-  const disallowedTools = String(args.disallowedTools ?? DEFAULT_DISALLOWED_TOOLS);
-  const systemPrompt = String(args.systemPrompt ?? buildCoordinatorPrompt(task, phaseGuide));
+  // C-3: allowedTools/disallowedTools are server-side enforced, not overridable
+  const allowedTools = buildAllowedTools(phaseGuide);
+  const disallowedTools = DEFAULT_DISALLOWED_TOOLS;
+  // C-4: systemPrompt is server-side enforced, not overridable
+  const systemPrompt = buildCoordinatorPrompt(task, phaseGuide);
   const model = args.model ? String(args.model) : phaseGuide.model;
   const addDirs = args.addDirs as string[] | undefined;
   const mcpConfig = args.mcpConfig ? String(args.mcpConfig) : findMcpConfig();
