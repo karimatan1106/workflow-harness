@@ -3,11 +3,27 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { TaskState, PhaseName } from './types.js';
 import { PHASE_REGISTRY, getNextPhase } from '../phases/registry.js';
 import { loadTaskFromDisk } from './manager-read.js';
 import { signAndPersist, writeTaskIndex, updateCheckpoint } from './manager-write.js';
 import { writeProgressJSON } from './progress-json.js';
+
+const DEFAULT_ALLOWED_TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash'];
+
+/**
+ * Write allowed tools for the given phase to .agent/.worker-allowed-tools.
+ * Non-blocking — errors are silently ignored.
+ */
+export function writeAllowedToolsFile(phase: PhaseName): void {
+  const config = PHASE_REGISTRY[phase];
+  const tools = config?.allowedTools ?? DEFAULT_ALLOWED_TOOLS;
+  const dir = join(process.cwd(), '.agent');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, '.worker-allowed-tools'), tools.join(','), 'utf8');
+}
 
 type PhaseResult = { success: boolean; nextPhase?: PhaseName; error?: string };
 type GateResult = { success: boolean; error?: string };
@@ -41,6 +57,7 @@ export function advancePhase(taskId: string, hmacKey: string): PhaseResult {
   signAndPersist(state, hmacKey);
   writeTaskIndex();
   try { writeProgressJSON(state, prevPhase, nextPhase); } catch { /* non-blocking */ }
+  try { writeAllowedToolsFile(nextPhase); } catch { /* non-blocking */ }
   return { success: true, nextPhase };
 }
 
@@ -103,6 +120,7 @@ export function goBack(taskId: string, hmacKey: string, targetPhase: PhaseName):
   updateCheckpoint(state, targetPhase);
   signAndPersist(state, hmacKey);
   writeTaskIndex();
+  try { writeAllowedToolsFile(targetPhase); } catch { /* non-blocking */ }
   return { success: true };
 }
 
@@ -123,5 +141,6 @@ export function resetTask(
   state.resetHistory.push({ reason, resetAt: state.updatedAt, targetPhase });
   signAndPersist(state, hmacKey);
   writeTaskIndex();
+  try { writeAllowedToolsFile(targetPhase); } catch { /* non-blocking */ }
   return { success: true };
 }

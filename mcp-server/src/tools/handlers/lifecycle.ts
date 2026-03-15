@@ -15,6 +15,7 @@ import { runCuratorCycle } from '../curator.js';
 import { respond, respondError, validateSession, buildPhaseGuide, PHASE_APPROVAL_GATES, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
 import { recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure, recordTaskCompletion } from '../metrics.js';
 import { readProgressJSON } from '../../state/progress-json.js';
+import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
 import { buildPhaseTimings, type PhaseTimingsResult } from '../phase-timings.js';
 import { buildAnalytics } from '../phase-analytics.js';
 import { writeAnalyticsToon } from '../analytics-toon.js';
@@ -48,6 +49,7 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
     if (dirty) gitWarning = `Git working tree has uncommitted changes (${dirty.split('\n').length} file(s)). Consider committing or stashing before starting a workflow.`;
   } catch { /* not in a git repo or git not available */ }
   try { recordPhaseStart(task.taskId, task.taskName, task.phase); } catch { /* non-blocking */ }
+  try { writeAllowedToolsFile(task.phase); } catch { /* non-blocking */ }
   return respond({ taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size, docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken, ...(gitWarning ? { gitWarning } : {}) });
 }
 
