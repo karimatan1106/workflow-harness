@@ -8,8 +8,9 @@
 #   Agent(Explore) は読み取り専用のため除外。
 #
 # NOTE: PreToolUse 時点ではスポーンされる新エージェントのIDは未生成。
-#   そのため「Agent ツールを呼び出した側の agent_id」を記録する。
-#   オーケストレーター（agent_id なし）からの呼び出しは記録しない。
+#   - agent_id あり: 呼び出し元をcoordinatorとして記録（既存ロジック）
+#   - agent_id なし（オーケストレーター）: pendingカウンターをインクリメント。
+#     ガードが未知のagentを初検出時にcoordinatorとして自動登録する。
 
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tool_name"[[:space:]]*:[[:space:]]*"//;s/"$//')
@@ -22,6 +23,13 @@ fi
 # agent_id がなければオーケストレーター（コーディネーター判定対象外）
 AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_id"[[:space:]]*:[[:space:]]*"//;s/"$//')
 if [ -z "$AGENT_ID" ]; then
+  # オーケストレーターからのAgent呼び出し → pendingカウンターをインクリメント
+  # 次にガードに現れる未知のagentをcoordinatorとして登録するため
+  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  PENDING_FILE="$PROJECT_ROOT/.agent/.coordinator-pending-count"
+  mkdir -p "$(dirname "$PENDING_FILE")"
+  CURRENT=$(cat "$PENDING_FILE" 2>/dev/null || echo 0)
+  echo $((CURRENT + 1)) > "$PENDING_FILE"
   exit 0
 fi
 

@@ -35,8 +35,20 @@ PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 LAYER="orchestrator"
 if [ -n "$AGENT_ID" ]; then
   COORD_FILE="$PROJECT_ROOT/.agent/.coordinator-ids"
-  if [ -f "$COORD_FILE" ] && grep -qF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
+  PENDING_FILE="$PROJECT_ROOT/.agent/.coordinator-pending-count"
+  if [ -f "$COORD_FILE" ] && grep -qxF "$AGENT_ID" "$COORD_FILE" 2>/dev/null; then
     LAYER="coordinator"
+  elif [ -f "$PENDING_FILE" ]; then
+    # オーケストレーターが生成した未登録agent → coordinatorとして自動登録
+    COUNT=$(cat "$PENDING_FILE" 2>/dev/null || echo 0)
+    if [ "$COUNT" -gt 0 ]; then
+      mkdir -p "$(dirname "$COORD_FILE")"
+      echo "$AGENT_ID" >> "$COORD_FILE"
+      echo $((COUNT - 1)) > "$PENDING_FILE"
+      LAYER="coordinator"
+    else
+      LAYER="worker"
+    fi
   else
     LAYER="worker"
   fi
