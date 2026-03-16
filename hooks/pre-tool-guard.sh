@@ -34,8 +34,7 @@ fi
 is_lifecycle_mcp() {
   case "$1" in
     mcp__harness__harness_start|mcp__harness__harness_next|mcp__harness__harness_back|\
-    mcp__harness__harness_reset|mcp__harness__harness_status|mcp__harness__harness_approve|\
-    mcp__harness__harness_delegate_work)
+       mcp__harness__harness_reset|mcp__harness__harness_status|mcp__harness__harness_approve)
       return 0 ;;
     *) return 1 ;;
   esac
@@ -119,7 +118,7 @@ case "$TOOL_NAME" in
 esac
 
 # Lifecycle MCP allowed (except delegate_work — that's for Coordinator)
-if [ "$TOOL_NAME" != "mcp__harness__harness_delegate_work" ] && is_lifecycle_mcp "$TOOL_NAME"; then
+if is_lifecycle_mcp "$TOOL_NAME"; then
   exit 0
 fi
 

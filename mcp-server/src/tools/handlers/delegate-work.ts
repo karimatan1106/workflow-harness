@@ -1,6 +1,6 @@
 /**
- * harness_delegate_work — Spawn isolated coordinator process for phase work.
- * 3-layer model: Orchestrator → delegate_work (Coordinator) → Agent (Worker)
+ * harness_delegate_work  ESpawn isolated coordinator process for phase work.
+ * 3-layer model: Orchestrator ↁEdelegate_work (Coordinator) ↁEAgent (Worker)
  * Coordinator: reads files + MCP ops + delegates file edits to workers via Agent.
  */
 
@@ -18,7 +18,7 @@ import {
 } from '../handler-shared.js';
 import { getProjectRoot } from '../../utils/project-root.js';
 
-const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work';
+const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,Agent,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion,ToolSearch';
 
 // ─── Phase-aware allowed tools ────────────────────
 type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
@@ -27,7 +27,7 @@ type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
  * Build --allowedTools list for the coordinator subprocess.
  * Includes Agent because coordinators spawn workers via Agent tool.
  * This differs from writeAllowedToolsFile (manager-lifecycle.ts) which writes
- * .worker-allowed-tools for direct subagents — those do NOT get Agent because
+ * .worker-allowed-tools for direct subagents  Ethose do NOT get Agent because
  * workers should not spawn further subagents.
  */
 function buildAllowedTools(phaseGuide: PhaseGuide): string {
@@ -48,11 +48,11 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     `docs-dir: ${task.docsDir}`,
     `allowed-extensions: ${pg.allowedExtensions.join(', ')}`,
     `output-file: ${task.docsDir}/${task.phase}.toon`,
-    'toon-rules: "key: value形式。カンマ含む値は引用符。バックスラッシュ禁止。ファイル名はハイフン区切り"',
-    'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
-    'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN（環境変数から取得）"',
-    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
-    'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業内容, files-changed: 変更ファイル一覧"',
+    'toon-rules: "key: value形式。カンマ含む値は引用符。バチE��スラチE��ュ禁止。ファイル名�Eハイフン区刁E��"',
+    'instruction-format: "TOON形式で受信。key: valueペアをパースして作業冁E��を理解すること"',
+    'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN�E�環墁E��数から取得！E',
+    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期征E��る変更を含めること"',
+    'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業冁E��, files-changed: 変更ファイル一覧"',
   ];
   return lines.join('\n');
 }
@@ -104,6 +104,98 @@ function closeLogPane(id: string): void {
   }
 }
 
+// ─── Human-readable log formatting ────────────────
+function formatTimestamp(): string {
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function formatContentItem(ts: string, item: Record<string, unknown>): string {
+  if (item.type === 'thinking') {
+    const chars = typeof item.thinking === 'string' ? (item.thinking as string).length : 0;
+    return `[${ts}] thinking... (${chars} chars)
+`;
+  }
+  if (item.type === 'tool_use') {
+    const name = String(item.name ?? 'unknown');
+    const inputStr = JSON.stringify(item.input ?? {});
+    const truncated = inputStr.length > 80 ? inputStr.slice(0, 80) + '...' : inputStr;
+    return `[${ts}] tool_use: ${name}(${truncated})
+`;
+  }
+  if (item.type === 'text') {
+    const txt = String(item.text ?? '');
+    const truncated = txt.length > 80 ? txt.slice(0, 80) + '...' : txt;
+    return `[${ts}] text: ${truncated}
+`;
+  }
+  return '';
+}
+
+function formatStreamJsonLine(text: string): string {
+  const ts = formatTimestamp();
+  try {
+    const obj = JSON.parse(text);
+
+    if (obj.type === 'system' && obj.subtype === 'init') {
+      const model = obj.model ?? 'unknown';
+      const tools = Array.isArray(obj.tools) ? obj.tools.length : 0;
+      return `[${ts}] init: model=${model}, tools=${tools}
+`;
+    }
+
+    if (obj.type === 'assistant' && Array.isArray(obj.message?.content)) {
+      const lines = (obj.message.content as Record<string, unknown>[])
+        .map((item) => formatContentItem(ts, item))
+        .filter((l) => l.length > 0);
+      return lines.length > 0 ? lines.join('') : `[${ts}] assistant: (empty content)
+`;
+    }
+
+    if (obj.type === 'user') {
+      const content = obj.message?.content;
+      if (Array.isArray(content)) {
+        for (const item of content as Record<string, unknown>[]) {
+          if (item.type === 'tool_result') {
+            const output = typeof item.content === 'string'
+              ? item.content
+              : JSON.stringify(item.content ?? '');
+            const truncated = output.length > 80 ? output.slice(0, 80) + '...' : output;
+            return `[${ts}] tool_result: ${truncated}
+`;
+          }
+        }
+      }
+      return `[${ts}] user: (message)
+`;
+    }
+
+    if (obj.type === 'rate_limit_event') {
+      const status = String(obj.status ?? obj.subtype ?? 'unknown');
+      return `[${ts}] rate_limit: status=${status}
+`;
+    }
+
+    if (obj.type === 'result') {
+      const result = String(obj.result ?? '');
+      const truncated = result.length > 100 ? result.slice(0, 100) + '...' : result;
+      return `[${ts}] result: ${truncated}
+`;
+    }
+
+    const truncated = text.length > 120 ? text.slice(0, 120) + '...' : text;
+    return `[${ts}] ${truncated}
+`;
+  } catch {
+    const truncated = text.length > 120 ? text.slice(0, 120) + '...' : text;
+    return `[${ts}] ${truncated}
+`;
+  }
+}
+
 // ─── Async spawn wrapper ──────────────────────────
 function spawnAsync(
   command: string,
@@ -124,7 +216,10 @@ function spawnAsync(
       stdout += text;
       process.stderr.write(chunk);
       if (options.logFile) {
-        appendFileSync(options.logFile, text);
+        const lines = text.split('\n').filter((l) => l.trim());
+        for (const line of lines) {
+          appendFileSync(options.logFile, formatStreamJsonLine(line));
+        }
       }
     });
     child.stderr?.on('data', (chunk: Buffer) => {
@@ -210,7 +305,7 @@ export async function handleDelegateWork(
     '--print',
     '--verbose',
     '--output-format', 'stream-json',
-    '--setting-sources', 'user',
+    '--setting-sources', 'project',
     '--disable-slash-commands',
     '--allowedTools', allowedTools,
     '--permission-mode', 'bypassPermissions',
@@ -244,7 +339,10 @@ export async function handleDelegateWork(
 
   // Initialize log file for coordinator output
   const logFile = join(projectRoot, '.agent', 'delegate-work.log');
-  writeFileSync(logFile, `[${new Date().toISOString()}] delegate-work started: phase=${task.phase}\n`);
+  appendFileSync(logFile, `
+--- delegate-work session ---
+`);
+  appendFileSync(logFile, `[${new Date().toISOString()}] delegate-work started: phase=${task.phase}\n`);
 
   // Fix #3: sessionToken propagation via env
   const childEnv: Record<string, string | undefined> = {

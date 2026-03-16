@@ -1,25 +1,25 @@
 version: 1
-totalTasks: 14
+totalTasks: 29
 completedTasks: 1
-totalRetries: 2
-totalDoDFailures: 2
-totalPhaseTransitions: 46
-firstPassPhases: 46
+totalRetries: 7
+totalDoDFailures: 7
+totalPhaseTransitions: 54
+firstPassPhases: 54
 
 aggregatePhaseTimings[11]{phase,count,totalMs,avgMs}:
-  scope_definition, 6, 0, 0
-  research, 5, 0, 0
+  scope_definition, 7, 0, 0
+  research, 6, 0, 0
   requirements, 5, 0, 0
-  planning, 5, 0, 0
-  test_design, 5, 0, 0
-  test_impl, 5, 0, 0
-  implementation, 5, 0, 0
-  build_check, 4, 0, 0
-  testing, 4, 0, 0
+  planning, 6, 0, 0
+  test_design, 6, 0, 0
+  test_impl, 6, 0, 0
+  implementation, 6, 0, 0
+  build_check, 5, 0, 0
+  testing, 5, 0, 0
   commit, 1, 0, 0
   push, 1, 0, 0
 
-tasks[14]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
+tasks[29]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
   449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, 0, 0, 2026-03-15T14:27:21.801Z, null
   8f94fc2b-5386-49f9-b87e-e441c8c86914, 3層E2Eスモークテスト, 0, 0, 2026-03-15T17:11:13.286Z, null
   2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, 0, 0, 2026-03-15T17:16:07.613Z, 2026-03-15T17:24:50.814Z
@@ -34,6 +34,21 @@ tasks[14]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
   4a15a5d1-4abb-4297-bf19-018ae8eac526, log-pane-e2e-v2, 0, 0, 2026-03-15T21:46:48.245Z, null
   87b9ddca-d21e-4370-9d2c-ab59206a1156, log-pane-e2e-final, 0, 0, 2026-03-15T21:59:01.491Z, null
   58159541-727a-40ac-9172-e5676d6591a2, log-pane-final-test, 0, 0, 2026-03-15T22:03:45.465Z, null
+  6e08c57b-b642-413f-a5cb-f6784cde5273, delegate-workログリアルタイム表示修正, 5, 5, 2026-03-15T22:18:34.130Z, null
+  88b8914a-4b41-4957-8516-17a3306b4b40, session-restore, 0, 0, 2026-03-15T23:21:24.391Z, null
+  8f2a7dec-47db-49d7-af82-aeb24a7b4b7d, 3layer-e2e-verify, 0, 0, 2026-03-15T23:36:03.537Z, null
+  ec6391ef-efdb-40f1-b5c8-5bef15008e52, 3layer-e2e-final, 0, 0, 2026-03-15T23:52:49.626Z, null
+  f2c2cf90-ba3a-4ba7-8fe4-44c8447f0dec, log-pane-verify, 0, 0, 2026-03-16T00:10:55.219Z, null
+  1cb488bf-b766-41ac-b04b-176439a625e9, log-append-verify, 0, 0, 2026-03-16T00:20:18.687Z, null
+  cc2e9ef1-d9e2-4797-9ce5-f8c68e54f75b, log-pane-test, 0, 0, 2026-03-16T00:33:40.091Z, null
+  b108538b-dc64-489f-b4cd-7ad0e2160e95, realtime-log-test, 0, 0, 2026-03-16T00:37:16.560Z, null
+  e78b7d80-2119-40f9-9fe2-b22820828bb2, output-channel-test, 0, 0, 2026-03-16T00:45:46.638Z, null
+  00070fd4-e85f-4859-aec9-fd29d774c9c7, terminal-pane-test, 0, 0, 2026-03-16T01:01:16.477Z, null
+  369d5267-9ebf-4a27-8e20-31a60413ecbd, pane-test-v2, 0, 0, 2026-03-16T01:08:24.059Z, null
+  36fcf348-79d5-4931-b898-1c06f27b0341, realtime-final, 0, 0, 2026-03-16T01:19:15.610Z, null
+  9fc52f33-1850-4f1b-90fa-6fff1cf2962e, extension-final-test, 0, 0, 2026-03-16T01:26:45.685Z, null
+  fc64d740-55e3-43b7-8ec6-b4c6f4c3894e, final-pane-test, 0, 0, 2026-03-16T01:33:41.484Z, null
+  b948b00f-3c91-43b5-bcc7-fd1e77d004c8, gitbash-pane-test, 0, 0, 2026-03-16T01:36:11.723Z, null
 
-taskPhases_58159541-727a-40ac-9172-e5676d6591a2[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
-  scope_definition, 2026-03-15T22:03:45.465Z, null, 0, 0, 
+taskPhases_b948b00f-3c91-43b5-bcc7-fd1e77d004c8[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
+  scope_definition, 2026-03-16T01:36:11.723Z, null, 0, 0, 

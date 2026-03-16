@@ -1,0 +1,34 @@
+taskId: b108538b-dc64-489f-b4cd-7ad0e2160e95
+taskName: realtime-log-test
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: ログペインのリアルタイム表示を確認するため、段階的に遅延付き出力を実行する
+docsDir: docs\workflows\realtime-log-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\b108538b-dc64-489f-b4cd-7ad0e2160e95_realtime-log-test
+sessionToken: 07aaae82567b4de838ae1c3a11fd5d19c33c3c3c2816487d0e3b339e83d8f654
+stateIntegrity: 15c01e4fc4ba232079c455acad96f387effd57cdbc0730d556bfca0b8830fe83
+createdAt: 2026-03-16T00:37:16.495Z
+updatedAt: 2026-03-16T00:37:16.495Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: b108538b-dc64-489f-b4cd-7ad0e2160e95
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-16T00:37:16.495Z
+checkpoint.sha256: 6a28e55785d1c5ece7fa2cabbc7df06efb77d0a26f6f8a2e0a965a28de466149
+checkpoint.userIntent: ログペインのリアルタイム表示を確認するため、段階的に遅延付き出力を実行する
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

@@ -1,0 +1,34 @@
+taskId: 369d5267-9ebf-4a27-8e20-31a60413ecbd
+taskName: pane-test-v2
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: 拡張有効化後のターミナルペイン表示テスト
+docsDir: docs\workflows\pane-test-v2
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\369d5267-9ebf-4a27-8e20-31a60413ecbd_pane-test-v2
+sessionToken: 7af199c7718428470df3a9a80a022de845c055403c9201385f92fd98c8cc31d6
+stateIntegrity: 1735e116390a00811ae5e1ce91b3350ab951b89ad5ed530136b4b2b51255e214
+createdAt: 2026-03-16T01:08:23.999Z
+updatedAt: 2026-03-16T01:08:23.999Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 369d5267-9ebf-4a27-8e20-31a60413ecbd
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-16T01:08:23.999Z
+checkpoint.sha256: 30af6dfecfed56bc381e94385e820b56874c7d39b4414f5ab3417b2b90c0027c
+checkpoint.userIntent: 拡張有効化後のターミナルペイン表示テスト
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

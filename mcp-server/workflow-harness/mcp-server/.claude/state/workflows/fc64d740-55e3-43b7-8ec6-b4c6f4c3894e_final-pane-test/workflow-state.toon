@@ -1,0 +1,34 @@
+taskId: fc64d740-55e3-43b7-8ec6-b4c6f4c3894e
+taskName: final-pane-test
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: 拡張最終テスト：分割ターミナル+node watcher+リアルタイム表示
+docsDir: docs\workflows\final-pane-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\fc64d740-55e3-43b7-8ec6-b4c6f4c3894e_final-pane-test
+sessionToken: a13423d1dc112ecda993505df6d2e1f3147636ee1d54af821a846f8d8424fe5d
+stateIntegrity: aec24ba487113d01f8a7a191f4cd7295ad600eb8fab4aad13dcd3b2c1dd646d3
+createdAt: 2026-03-16T01:33:41.424Z
+updatedAt: 2026-03-16T01:33:41.424Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: fc64d740-55e3-43b7-8ec6-b4c6f4c3894e
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-16T01:33:41.424Z
+checkpoint.sha256: a4264eb014db601286b2719d1225207e18fcdd1f698d97246ef0ebd7af063db1
+checkpoint.userIntent: 拡張最終テスト：分割ターミナル+node watcher+リアルタイム表示
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

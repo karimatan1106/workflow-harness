@@ -1,0 +1,34 @@
+taskId: 8f2a7dec-47db-49d7-af82-aeb24a7b4b7d
+taskName: 3layer-e2e-verify
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: setting-sources none変更後の3層E2Eテスト。Workerのツールリストからskill等が消えているか確認
+docsDir: docs\workflows\3layer-e2e-verify
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\8f2a7dec-47db-49d7-af82-aeb24a7b4b7d_3layer-e2e-verify
+sessionToken: aa79185127fe14deaa805eceb582b852196e9466982d4516acf7801afd1a8cc5
+stateIntegrity: 8c2ecaa40c8021625acbd54e0a30efbede4109f5b1550c2fe998f57c1afe5fa9
+createdAt: 2026-03-15T23:36:03.332Z
+updatedAt: 2026-03-15T23:36:03.332Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 8f2a7dec-47db-49d7-af82-aeb24a7b4b7d
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T23:36:03.332Z
+checkpoint.sha256: cb02421b7c534258e1f42d5f4fdf81d323f310509ec046a160b93f7aca0d919e
+checkpoint.userIntent: setting-sources none変更後の3層E2Eテスト。Workerのツールリストからskill等が消えているか確認
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

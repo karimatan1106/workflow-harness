@@ -4,6 +4,7 @@ nextLessonId: 1
 lessons[0]{id,phase,errorPattern,lesson,createdAt,hitCount,helpfulCount,harmfulCount,category,preventionRule}:
 
 stashedFailures[1]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}:
-  scope_definition, 3edce1b6-b4cf-4131-8bc4-51ca65d2d989, "[L4] decisions[] count: 1 < required 5
-修正方法: decisions[N]{id,statement,rationale", "[L4] decisions[] count: 1 < required 5
-修正方法: decisions[N]{id,statement,rationale}: テーブルにあと4エントリ追加してください。", 1, 2026-03-15T17:57:54.035Z
+  planning, 6e08c57b-b642-413f-a5cb-f6784cde5273, "[L3] TOON parse failed: Expected 8 list array items, but got 0
+[L4] TOON parse e", "[L3] TOON parse failed: Expected 8 list array items, but got 0
+[L4] TOON parse error: Expected 8 list array items, but got 0. Ensure file uses TOON format (key: value), not Markdown or JSON.
+[L4] TOON decode failed: Expected 8 list array items, but got 0", 1, 2026-03-15T22:39:08.841Z

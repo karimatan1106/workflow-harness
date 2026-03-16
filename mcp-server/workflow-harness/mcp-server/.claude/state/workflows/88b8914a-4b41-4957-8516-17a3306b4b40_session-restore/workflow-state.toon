@@ -1,0 +1,34 @@
+taskId: 88b8914a-4b41-4957-8516-17a3306b4b40
+taskName: session-restore
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: セッション復元のためHANDOFF.toonを読み込む
+docsDir: docs\workflows\session-restore
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\88b8914a-4b41-4957-8516-17a3306b4b40_session-restore
+sessionToken: c08c1789c39bb35f8c835a4c44797036a1246f371d4710572ecf708463de1fa3
+stateIntegrity: 1489d7da87cf88aa3517dc866d4f6d4d314177ce6fa1ce4e1d399c0bb89d297a
+createdAt: 2026-03-15T23:21:24.332Z
+updatedAt: 2026-03-15T23:21:24.332Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: 88b8914a-4b41-4957-8516-17a3306b4b40
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-15T23:21:24.332Z
+checkpoint.sha256: 30e414dee8a9187c0706e7a1aeee6b0422efc13b12a388eba5e2d0b33ff7c6e1
+checkpoint.userIntent: セッション復元のためHANDOFF.toonを読み込む
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 

@@ -38,18 +38,16 @@ exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const fs_1 = require("fs");
 const path_1 = require("path");
-// Multiple log panes tracked by ID
 const logTerminals = new Map();
 function activate(context) {
     const folders = vscode.workspace.workspaceFolders;
     if (!folders)
         return;
     const root = folders[0].uri.fsPath;
-    const signalPattern = new vscode.RelativePattern((0, path_1.join)(root, ".agent"), "log-pane.signal");
+    const signalPattern = new vscode.RelativePattern((0, path_1.join)(root, '.agent'), 'log-pane.signal');
     const watcher = vscode.workspace.createFileSystemWatcher(signalPattern);
     watcher.onDidChange((uri) => handleSignal(root, uri.fsPath));
     watcher.onDidCreate((uri) => handleSignal(root, uri.fsPath));
-    // Clean up map when terminals are closed manually
     vscode.window.onDidCloseTerminal((t) => {
         for (const [id, term] of logTerminals) {
             if (term === t) {
@@ -64,16 +62,16 @@ function handleSignal(root, signalPath) {
     if (!(0, fs_1.existsSync)(signalPath))
         return;
     try {
-        const content = (0, fs_1.readFileSync)(signalPath, "utf-8").trim();
+        const content = (0, fs_1.readFileSync)(signalPath, 'utf-8').trim();
         const signal = JSON.parse(content);
-        const id = signal.id || "default";
-        if (signal.action === "open") {
-            openLogPane(root, id, signal.logFile || ".agent/delegate-work.log");
+        const id = signal.id || 'default';
+        if (signal.action === 'open') {
+            openLogPane(root, id, signal.logFile || '.agent/delegate-work.log');
         }
-        else if (signal.action === "close") {
+        else if (signal.action === 'close') {
             closeLogPane(id);
         }
-        else if (signal.action === "close-all") {
+        else if (signal.action === 'close-all') {
             closeAllLogPanes();
         }
     }
@@ -81,38 +79,31 @@ function handleSignal(root, signalPath) {
         // ignore parse errors
     }
 }
-async function openLogPane(root, id, logFile) {
-    // Close existing pane with same ID
+async function openLogPane(_root, id, _logFile) {
     closeLogPane(id);
-    const fullPath = (0, path_1.join)(root, logFile).replace(/\\/g, "/");
-    const parent = vscode.window.activeTerminal ??
-        vscode.window.terminals.find((t) => !t.name.startsWith("Worker:"));
-    const wslPath = fullPath.replace(/^([A-Za-z]):/, (_, d) => `/mnt/${d.toLowerCase()}`).replace(/\\/g, "/");
-    const gitBashPath = fullPath.replace(/^([A-Za-z]):/, (_, d) => `/${d.toLowerCase()}`).replace(/\\/g, "/");
-    const tailCmd = `tail -f "${wslPath}" 2>/dev/null || tail -f "${gitBashPath}"`;
+    const watchCmd = 'node .agent/log-watcher.js';
+    // Split from active terminal
+    const parent = vscode.window.activeTerminal
+        ?? vscode.window.terminals.find((t) => !t.name.startsWith('Worker:'));
     if (parent) {
         parent.show(false);
-        await vscode.commands.executeCommand("workbench.action.terminal.split", {
-            config: {
-                name: `Worker: ${id}`,
-                shellPath: "C:\\Program Files\\Git\\bin\\bash.exe",
-            },
-        });
-        await new Promise((r) => setTimeout(r, 500));
+        await vscode.commands.executeCommand('workbench.action.terminal.split');
+        await new Promise((r) => setTimeout(r, 600));
         const term = vscode.window.activeTerminal;
-        if (term) {
-            term.sendText(tailCmd);
+        if (term && term !== parent) {
+            term.sendText(watchCmd);
             logTerminals.set(id, term);
+            // Rename terminal
+            await vscode.commands.executeCommand('workbench.action.terminal.renameWithArg', { name: `Worker: ${id}` });
         }
     }
     else {
         const term = vscode.window.createTerminal({
             name: `Worker: ${id}`,
             location: vscode.TerminalLocation.Panel,
-            shellPath: "C:\\Program Files\\Git\\bin\\bash.exe",
         });
         term.show(true);
-        term.sendText(tailCmd);
+        term.sendText(watchCmd);
         logTerminals.set(id, term);
     }
 }
