@@ -5,7 +5,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, unlinkSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskState } from '../../state/types.js';
@@ -53,6 +53,7 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN�E�環墁E��数から取得！E',
     'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期征E��る変更を含めること"',
     'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業冁E��, files-changed: 変更ファイル一覧"',
+    'output-rule: "Agent toolの結果を受け取ったら、必ず最終テキストとして結果をまとめて出力すること。ツール呼び出しだけで終了しないこと"',
   ];
   return lines.join('\n');
 }
@@ -71,39 +72,11 @@ function findMcpConfig(): string | undefined {
   return undefined;
 }
 
-// ─── Log pane signal (VS Code extension) ─────────
+// ─── Worker ID allocation ─────────────────────────
 let logPaneCounter = 0;
-
-function writeSignal(signalPath: string, data: Record<string, unknown>): void {
-  // Delete then recreate to trigger VS Code FileSystemWatcher onDidCreate event
-  if (existsSync(signalPath)) {
-    unlinkSync(signalPath);
-  }
-  writeFileSync(signalPath, JSON.stringify(data));
-}
 
 function allocateWorkerId(): string {
   return `worker-${++logPaneCounter}`;
-}
-
-function openLogPane(id: string, logFile: string): void {
-  const projectRoot = getProjectRoot();
-  const signalPath = join(projectRoot, '.agent', 'log-pane.signal');
-  try {
-    writeSignal(signalPath, { action: 'open', id, logFile });
-  } catch {
-    // best-effort
-  }
-}
-
-function closeLogPane(id: string): void {
-  const projectRoot = getProjectRoot();
-  const signalPath = join(projectRoot, '.agent', 'log-pane.signal');
-  try {
-    writeSignal(signalPath, { action: 'close', id });
-  } catch {
-    // best-effort
-  }
 }
 
 // ─── Async spawn wrapper ──────────────────────────
@@ -149,13 +122,28 @@ function spawnAsync(
 // ─── Extract result from stream-json output ──────
 function extractResult(stdout: string): string {
   const lines = stdout.split('\n').filter(l => l.trim());
+
+  // 1. Look for result event with non-empty result
   for (let i = lines.length - 1; i >= 0; i--) {
     try {
       const obj = JSON.parse(lines[i]);
-      if (obj.type === 'result') return obj.result || '';
+      if (obj.type === 'result' && obj.result) return obj.result;
     } catch { /* not JSON */ }
   }
-  return stdout.trim();
+
+  // 2. If result is empty, reconstruct from content_block_delta text
+  const textParts: string[] = [];
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj.type === 'content_block_delta' && obj.delta?.text) {
+        textParts.push(obj.delta.text);
+      }
+    } catch { /* skip */ }
+  }
+  if (textParts.length) return textParts.join('');
+
+  return '(no extractable result)';
 }
 
 // ─── Handler ──────────────────────────────────────
@@ -234,7 +222,6 @@ export async function handleDelegateWork(
   // Allocate worker ID first, then create worker-specific log file
   const paneId = allocateWorkerId();
   const logFile = join(projectRoot, '.agent', `delegate-work-${paneId}.log`);
-  const logFileRelative = `.agent/delegate-work-${paneId}.log`;
   writeFileSync(logFile, '');
 
   // Fix #3: sessionToken propagation via env
@@ -245,9 +232,6 @@ export async function handleDelegateWork(
     HARNESS_LAYER: 'worker',
     FORCE_COLOR: '1',
   };
-
-  // Signal log pane open with worker-specific log file
-  openLogPane(paneId, logFileRelative);
 
   // Fix #4: async spawn instead of execSync
   try {
@@ -260,6 +244,7 @@ export async function handleDelegateWork(
     const durationMs = Date.now() - startTime;
 
     const resultText = extractResult(stdout);
+
     const toonResult = [
       `success: true`,
       `output: "${resultText.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,

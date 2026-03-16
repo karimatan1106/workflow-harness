@@ -1,110 +1,77 @@
-import * as vscode from 'vscode';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
-const logTerminals = new Map<string, vscode.Terminal>();
+const panes = new Map<string, vscode.Terminal>();
+let watcher: vscode.FileSystemWatcher | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders) return;
+	const ws = vscode.workspace.workspaceFolders?.[0];
+	if (!ws) return;
 
-  const root = folders[0].uri.fsPath;
-  const signalPattern = new vscode.RelativePattern(
-    join(root, '.agent'),
-    'log-pane.signal',
-  );
+	const signalPath = path.join(ws.uri.fsPath, ".agent", "log-pane.signal");
+	const pattern = new vscode.RelativePattern(
+		vscode.Uri.file(path.join(ws.uri.fsPath, ".agent")),
+		"log-pane.signal",
+	);
+	watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-  const watcher = vscode.workspace.createFileSystemWatcher(signalPattern);
-  watcher.onDidChange((uri) => handleSignal(root, uri.fsPath));
-  watcher.onDidCreate((uri) => handleSignal(root, uri.fsPath));
+	const handle = () => {
+		try {
+			const raw = fs.readFileSync(signalPath, "utf8").trim();
+			if (!raw) return;
+			const sig = JSON.parse(raw);
+			if (sig.action === "open" && sig.id && sig.logFile)
+				openLogPane(sig.id, sig.logFile);
+			else if (sig.action === "close" && sig.id) closeLogPane(sig.id);
+			else if (sig.action === "close-all") {
+				for (const [id] of panes) closeLogPane(id);
+			}
+		} catch {}
+	};
 
-  vscode.window.onDidCloseTerminal((t) => {
-    for (const [id, term] of logTerminals) {
-      if (term === t) {
-        logTerminals.delete(id);
-        break;
-      }
-    }
-  });
+	watcher.onDidChange(handle);
+	watcher.onDidCreate(handle);
+	context.subscriptions.push(watcher);
 
-  context.subscriptions.push(watcher);
+	// Clean up panes map when terminal is closed externally
+	context.subscriptions.push(
+		vscode.window.onDidCloseTerminal((t) => {
+			for (const [id, term] of panes) {
+				if (term === t) {
+					panes.delete(id);
+					break;
+				}
+			}
+		}),
+	);
 }
 
-function handleSignal(root: string, signalPath: string) {
-  if (!existsSync(signalPath)) return;
+function openLogPane(id: string, logFile: string) {
+	if (panes.has(id)) return;
 
-  try {
-    const content = readFileSync(signalPath, 'utf-8').trim();
-    const signal = JSON.parse(content);
-    const id: string = signal.id || 'default';
-
-    if (signal.action === 'open') {
-      openLogPane(root, id, signal.logFile || '.agent/delegate-work.log');
-    } else if (signal.action === 'close') {
-      closeLogPane(id);
-    } else if (signal.action === 'close-all') {
-      closeAllLogPanes();
-    }
-  } catch {
-    // ignore parse errors
-  }
-}
-
-async function openLogPane(_root: string, id: string, logFile: string) {
-  closeLogPane(id);
-
-  const watchCmd = `node .agent/log-watcher.js ${logFile}`;
-
-  const parent = vscode.window.activeTerminal
-    ?? vscode.window.terminals.find((t) => !t.name.startsWith('Worker:'));
-
-  if (parent) {
-    // Use onDidOpenTerminal to reliably detect the new split terminal
-    const termPromise = new Promise<vscode.Terminal>((resolve) => {
-      const disposable = vscode.window.onDidOpenTerminal((newTerm) => {
-        disposable.dispose();
-        resolve(newTerm);
-      });
-      // Timeout fallback after 3 seconds
-      setTimeout(() => {
-        disposable.dispose();
-        resolve(vscode.window.activeTerminal!);
-      }, 3000);
-    });
-
-    parent.show(false);
-    await vscode.commands.executeCommand('workbench.action.terminal.split');
-    const term = await termPromise;
-    if (term) {
-      term.sendText(watchCmd);
-      logTerminals.set(id, term);
-    }
-  } else {
-    const term = vscode.window.createTerminal({
-      name: `Worker: ${id}`,
-      location: vscode.TerminalLocation.Panel,
-    });
-    term.show(true);
-    term.sendText(watchCmd);
-    logTerminals.set(id, term);
-  }
+	const active = vscode.window.activeTerminal;
+	const terminal = vscode.window.createTerminal({
+		name: "Worker " + id,
+		env: { FORCE_COLOR: "1" },
+		location: active
+			? { parentTerminal: active }
+			: vscode.TerminalLocation.Panel,
+	});
+	terminal.sendText("node .agent/log-watcher.js " + logFile + " ; exit");
+	panes.set(id, terminal);
 }
 
 function closeLogPane(id: string) {
-  const term = logTerminals.get(id);
-  if (term) {
-    term.dispose();
-    logTerminals.delete(id);
-  }
-}
-
-function closeAllLogPanes() {
-  for (const term of logTerminals.values()) {
-    term.dispose();
-  }
-  logTerminals.clear();
+	const t = panes.get(id);
+	if (t) {
+		t.dispose();
+		panes.delete(id);
+	}
 }
 
 export function deactivate() {
-  closeAllLogPanes();
+	watcher?.dispose();
+	for (const [, t] of panes) t.dispose();
+	panes.clear();
 }

@@ -1,25 +1,25 @@
 version: 1
-totalTasks: 33
+totalTasks: 35
 completedTasks: 1
 totalRetries: 7
 totalDoDFailures: 7
-totalPhaseTransitions: 54
-firstPassPhases: 54
+totalPhaseTransitions: 66
+firstPassPhases: 66
 
 aggregatePhaseTimings[11]{phase,count,totalMs,avgMs}:
-  scope_definition, 7, 0, 0
-  research, 6, 0, 0
-  requirements, 5, 0, 0
-  planning, 6, 0, 0
-  test_design, 6, 0, 0
-  test_impl, 6, 0, 0
+  scope_definition, 9, 0, 0
+  research, 8, 1, 0
+  requirements, 7, 0, 0
+  planning, 8, 0, 0
+  test_design, 8, 0, 0
+  test_impl, 8, 0, 0
   implementation, 6, 0, 0
   build_check, 5, 0, 0
   testing, 5, 0, 0
   commit, 1, 0, 0
   push, 1, 0, 0
 
-tasks[33]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
+tasks[35]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
   449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, 0, 0, 2026-03-15T14:27:21.801Z, null
   8f94fc2b-5386-49f9-b87e-e441c8c86914, 3層E2Eスモークテスト, 0, 0, 2026-03-15T17:11:13.286Z, null
   2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, 0, 0, 2026-03-15T17:16:07.613Z, 2026-03-15T17:24:50.814Z
@@ -53,6 +53,8 @@ tasks[33]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
   56a545b1-89fd-40e7-86b1-65e3c24740ea, verbose-passthrough-test, 0, 0, 2026-03-16T06:28:19.912Z, null
   4af65db4-099f-4fc3-a03b-73ee47db3712, stream-render-test, 0, 0, 2026-03-16T06:43:36.609Z, null
   e9d7e103-4648-4923-8a26-925edc6ea4ae, pane-sendtext-test, 0, 0, 2026-03-16T06:56:38.065Z, null
+  27a3413e-3850-45b9-a1cd-bd77869f0450, md-preview-log-pane, 0, 0, 2026-03-16T07:20:49.449Z, null
+  366612b8-730b-4208-8733-eecb97b9fcdc, fix-delegate-work-extractResult, 0, 0, 2026-03-16T08:59:12.313Z, null
 
-taskPhases_e9d7e103-4648-4923-8a26-925edc6ea4ae[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
-  scope_definition, 2026-03-16T06:56:38.065Z, null, 0, 0, 
+taskPhases_366612b8-730b-4208-8733-eecb97b9fcdc[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
+  implementation, 2026-03-16T08:59:55.361Z, null, 0, 0, 

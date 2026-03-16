@@ -1,12 +1,14 @@
-updatedAt: 2026-03-16T06:56:38.017Z
+updatedAt: 2026-03-16T08:59:55.207Z
 
-tasks[33]{taskId,taskName,phase,size,status}:
+tasks[35]{taskId,taskName,phase,size,status}:
   00070fd4-e85f-4859-aec9-fd29d774c9c7, terminal-pane-test, scope_definition, small, active
   09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5, 3層E2Eスモークテスト-v2, scope_definition, small, active
   12cd6424-14eb-4024-93d4-44858c4e8c16, log-truncate-fix, scope_definition, small, active
   175345eb-5fb9-477f-805d-d61bc92ad417, guard-agent-bridge-visibility, build_check, small, active
   1cb488bf-b766-41ac-b04b-176439a625e9, log-append-verify, scope_definition, small, active
   2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, completed, small, completed
+  27a3413e-3850-45b9-a1cd-bd77869f0450, md-preview-log-pane, implementation, small, active
+  366612b8-730b-4208-8733-eecb97b9fcdc, fix-delegate-work-extractResult, implementation, small, active
   369d5267-9ebf-4a27-8e20-31a60413ecbd, pane-test-v2, scope_definition, small, active
   36fcf348-79d5-4931-b898-1c06f27b0341, realtime-final, scope_definition, small, active
   3edce1b6-b4cf-4131-8bc4-51ca65d2d989, 3層E2E検証-v3, scope_definition, small, active
