@@ -52,6 +52,8 @@ function isBypassPath(filePath) {
   if (n.includes('workflow-harness/')) return true;
   if (n.includes('.claude/projects/') && n.includes('/memory/')) return true;
   if (/\.claude\/settings/.test(n)) return true;
+  if (n.includes('.claude/state/')) return true;
+  if (n.includes('.agent/')) return true;
   return false;
 }
 

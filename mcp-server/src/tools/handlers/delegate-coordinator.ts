@@ -1,6 +1,6 @@
 /**
- * harness_delegate_work  ESpawn isolated coordinator process for phase work.
- * 3-layer model: Orchestrator ↁEdelegate_work (Coordinator) ↁEAgent (Worker)
+ * harness_delegate_coordinator  ESpawn isolated coordinator process for phase work.
+ * 3-layer model: Orchestrator ↁEdelegate_coordinator (Coordinator) ↁEAgent (Worker)
  * Coordinator: reads files + MCP ops + delegates file edits to workers via Agent.
  */
 
@@ -18,26 +18,23 @@ import {
 } from '../handler-shared.js';
 import { getProjectRoot } from '../../utils/project-root.js';
 
-const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_work,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,Agent,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion,ToolSearch';
+const DEFAULT_DISALLOWED_TOOLS = 'Write,Edit,Bash,mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_coordinator,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion';
 
 // ─── Phase-aware allowed tools ────────────────────
 type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
 
 /**
  * Build --allowedTools list for the coordinator subprocess.
- * Includes Agent because coordinators spawn workers via Agent tool.
+ * Includes Agent Teams tools because coordinators (L2) manage teams:
+ *   Agent (spawn L3 workers), TeamCreate/TeamDelete (team lifecycle),
+ *   TaskCreate/TaskUpdate/TaskList/TaskGet (progress tracking),
+ *   SendMessage (intra-team communication), ToolSearch (deferred tools).
  * This differs from writeAllowedToolsFile (manager-lifecycle.ts) which writes
  * .worker-allowed-tools for direct subagents  Ethose do NOT get Agent because
  * workers should not spawn further subagents.
  */
-function buildAllowedTools(phaseGuide: PhaseGuide): string {
-  const cats = phaseGuide.bashCategories;
-  const needsEdit = cats.some(
-    (c) => c === 'implementation' || c === 'testing' || c === 'git',
-  );
-  return needsEdit
-    ? 'Agent,Read,Glob,Grep,Write,Edit,Bash'
-    : 'Agent,Read,Glob,Grep';
+function buildAllowedTools(_phaseGuide: PhaseGuide): string {
+  return 'Agent,TeamCreate,TeamDelete,TaskCreate,TaskUpdate,TaskList,TaskGet,SendMessage,ToolSearch,Read,Glob,Grep';
 }
 
 // ─── Phase-aware coordinator system prompt ────────
@@ -48,11 +45,12 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     `docs-dir: ${task.docsDir}`,
     `allowed-extensions: ${pg.allowedExtensions.join(', ')}`,
     `output-file: ${task.docsDir}/${task.phase}.toon`,
-    'toon-rules: "key: value形式。カンマ含む値は引用符。バチE��スラチE��ュ禁止。ファイル名�Eハイフン区刁E��"',
-    'instruction-format: "TOON形式で受信。key: valueペアをパースして作業冁E��を理解すること"',
-    'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKEN�E�環墁E��数から取得！E',
-    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期征E��る変更を含めること"',
-    'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業冁E��, files-changed: 変更ファイル一覧"',
+    'toon-rules: "key: value形式。カンマ含む値は引用符。バックスラッシュ禁止。ファイル名はハイフン区切り"',
+    'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
+    'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKENは環境変数から取得"',
+    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
+    'team-management: "TeamCreateでチームを作成し、Agentでworkerをspawn。TaskCreateで進捗管理。workerにはSendMessageで指示"',
+    'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業内容, files-changed: 変更ファイル一覧"',
     'output-rule: "Agent toolの結果を受け取ったら、必ず最終テキストとして結果をまとめて出力すること。ツール呼び出しだけで終了しないこと"',
   ];
   return lines.join('\n');
@@ -147,7 +145,7 @@ function extractResult(stdout: string): string {
 }
 
 // ─── Handler ──────────────────────────────────────
-export async function handleDelegateWork(
+export async function handleDelegateCoordinator(
   args: Record<string, unknown>,
   sm: StateManager,
 ): Promise<HandlerResult> {
@@ -199,11 +197,8 @@ export async function handleDelegateWork(
     cmdArgs.push('--disallowedTools', disallowedTools);
   }
 
-  // MCP config: only for phases that need MCP tools
-  const needsMcp = phaseGuide.bashCategories?.some(
-    (c: string) => ['implementation', 'testing', 'git'].includes(c)
-  ) ?? false;
-  if (needsMcp && mcpConfig) {
+  // MCP config: always needed for coordinator (non-lifecycle harness MCP tools)
+  if (mcpConfig) {
     cmdArgs.push('--mcp-config', mcpConfig);
   }
 
@@ -221,7 +216,7 @@ export async function handleDelegateWork(
 
   // Allocate worker ID first, then create worker-specific log file
   const paneId = allocateWorkerId();
-  const logFile = join(projectRoot, '.agent', `delegate-work-${paneId}.log`);
+  const logFile = join(projectRoot, '.agent', `delegate-coordinator-${paneId}.log`);
   writeFileSync(logFile, '');
 
   // Fix #3: sessionToken propagation via env
@@ -229,7 +224,7 @@ export async function handleDelegateWork(
     ...process.env,
     HARNESS_SESSION_TOKEN: String(args.sessionToken),
     HARNESS_TASK_ID: taskId,
-    HARNESS_LAYER: 'worker',
+    HARNESS_LAYER: 'coordinator',
     FORCE_COLOR: '1',
   };
 
