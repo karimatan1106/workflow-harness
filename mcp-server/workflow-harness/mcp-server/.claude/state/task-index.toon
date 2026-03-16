@@ -1,8 +1,9 @@
-updatedAt: 2026-03-16T01:36:11.671Z
+updatedAt: 2026-03-16T06:56:38.017Z
 
-tasks[29]{taskId,taskName,phase,size,status}:
+tasks[33]{taskId,taskName,phase,size,status}:
   00070fd4-e85f-4859-aec9-fd29d774c9c7, terminal-pane-test, scope_definition, small, active
   09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5, 3層E2Eスモークテスト-v2, scope_definition, small, active
+  12cd6424-14eb-4024-93d4-44858c4e8c16, log-truncate-fix, scope_definition, small, active
   175345eb-5fb9-477f-805d-d61bc92ad417, guard-agent-bridge-visibility, build_check, small, active
   1cb488bf-b766-41ac-b04b-176439a625e9, log-append-verify, scope_definition, small, active
   2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, completed, small, completed
@@ -11,6 +12,8 @@ tasks[29]{taskId,taskName,phase,size,status}:
   3edce1b6-b4cf-4131-8bc4-51ca65d2d989, 3層E2E検証-v3, scope_definition, small, active
   449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, scope_definition, small, active
   4a15a5d1-4abb-4297-bf19-018ae8eac526, log-pane-e2e-v2, scope_definition, small, active
+  4af65db4-099f-4fc3-a03b-73ee47db3712, stream-render-test, scope_definition, small, active
+  56a545b1-89fd-40e7-86b1-65e3c24740ea, verbose-passthrough-test, scope_definition, small, active
   58159541-727a-40ac-9172-e5676d6591a2, log-pane-final-test, scope_definition, small, active
   6e08c57b-b642-413f-a5cb-f6784cde5273, delegate-workログリアルタイム表示修正, commit, small, active
   71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c, delegate-work高速化, commit, small, active
@@ -27,6 +30,7 @@ tasks[29]{taskId,taskName,phase,size,status}:
   dbe2dd2b-ff23-4365-b31f-39d963a0f632, HANDOFF更新, scope_definition, small, active
   df9a5add-3eaa-46eb-bad1-358f0185e461, 3層ガードE2Eテスト, scope_definition, small, active
   e78b7d80-2119-40f9-9fe2-b22820828bb2, output-channel-test, scope_definition, small, active
+  e9d7e103-4648-4923-8a26-925edc6ea4ae, pane-sendtext-test, scope_definition, small, active
   ec6391ef-efdb-40f1-b5c8-5bef15008e52, 3layer-e2e-final, scope_definition, small, active
   f2c2cf90-ba3a-4ba7-8fe4-44c8447f0dec, log-pane-verify, scope_definition, small, active
   fc64d740-55e3-43b7-8ec6-b4c6f4c3894e, final-pane-test, scope_definition, small, active

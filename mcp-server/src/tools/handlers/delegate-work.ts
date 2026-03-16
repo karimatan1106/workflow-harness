@@ -82,8 +82,11 @@ function writeSignal(signalPath: string, data: Record<string, unknown>): void {
   writeFileSync(signalPath, JSON.stringify(data));
 }
 
-function openLogPane(logFile: string): string {
-  const id = `worker-${++logPaneCounter}`;
+function allocateWorkerId(): string {
+  return `worker-${++logPaneCounter}`;
+}
+
+function openLogPane(id: string, logFile: string): void {
   const projectRoot = getProjectRoot();
   const signalPath = join(projectRoot, '.agent', 'log-pane.signal');
   try {
@@ -91,7 +94,6 @@ function openLogPane(logFile: string): string {
   } catch {
     // best-effort
   }
-  return id;
 }
 
 function closeLogPane(id: string): void {
@@ -101,98 +103,6 @@ function closeLogPane(id: string): void {
     writeSignal(signalPath, { action: 'close', id });
   } catch {
     // best-effort
-  }
-}
-
-// ─── Human-readable log formatting ────────────────
-function formatTimestamp(): string {
-  const d = new Date();
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
-}
-
-function formatContentItem(ts: string, item: Record<string, unknown>): string {
-  if (item.type === 'thinking') {
-    const chars = typeof item.thinking === 'string' ? (item.thinking as string).length : 0;
-    return `[${ts}] thinking... (${chars} chars)
-`;
-  }
-  if (item.type === 'tool_use') {
-    const name = String(item.name ?? 'unknown');
-    const inputStr = JSON.stringify(item.input ?? {});
-    const truncated = inputStr.length > 80 ? inputStr.slice(0, 80) + '...' : inputStr;
-    return `[${ts}] tool_use: ${name}(${truncated})
-`;
-  }
-  if (item.type === 'text') {
-    const txt = String(item.text ?? '');
-    const truncated = txt.length > 80 ? txt.slice(0, 80) + '...' : txt;
-    return `[${ts}] text: ${truncated}
-`;
-  }
-  return '';
-}
-
-function formatStreamJsonLine(text: string): string {
-  const ts = formatTimestamp();
-  try {
-    const obj = JSON.parse(text);
-
-    if (obj.type === 'system' && obj.subtype === 'init') {
-      const model = obj.model ?? 'unknown';
-      const tools = Array.isArray(obj.tools) ? obj.tools.length : 0;
-      return `[${ts}] init: model=${model}, tools=${tools}
-`;
-    }
-
-    if (obj.type === 'assistant' && Array.isArray(obj.message?.content)) {
-      const lines = (obj.message.content as Record<string, unknown>[])
-        .map((item) => formatContentItem(ts, item))
-        .filter((l) => l.length > 0);
-      return lines.length > 0 ? lines.join('') : `[${ts}] assistant: (empty content)
-`;
-    }
-
-    if (obj.type === 'user') {
-      const content = obj.message?.content;
-      if (Array.isArray(content)) {
-        for (const item of content as Record<string, unknown>[]) {
-          if (item.type === 'tool_result') {
-            const output = typeof item.content === 'string'
-              ? item.content
-              : JSON.stringify(item.content ?? '');
-            const truncated = output.length > 80 ? output.slice(0, 80) + '...' : output;
-            return `[${ts}] tool_result: ${truncated}
-`;
-          }
-        }
-      }
-      return `[${ts}] user: (message)
-`;
-    }
-
-    if (obj.type === 'rate_limit_event') {
-      const status = String(obj.status ?? obj.subtype ?? 'unknown');
-      return `[${ts}] rate_limit: status=${status}
-`;
-    }
-
-    if (obj.type === 'result') {
-      const result = String(obj.result ?? '');
-      const truncated = result.length > 100 ? result.slice(0, 100) + '...' : result;
-      return `[${ts}] result: ${truncated}
-`;
-    }
-
-    const truncated = text.length > 120 ? text.slice(0, 120) + '...' : text;
-    return `[${ts}] ${truncated}
-`;
-  } catch {
-    const truncated = text.length > 120 ? text.slice(0, 120) + '...' : text;
-    return `[${ts}] ${truncated}
-`;
   }
 }
 
@@ -214,12 +124,8 @@ function spawnAsync(
     child.stdout?.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
       stdout += text;
-      process.stderr.write(chunk);
       if (options.logFile) {
-        const lines = text.split('\n').filter((l) => l.trim());
-        for (const line of lines) {
-          appendFileSync(options.logFile, formatStreamJsonLine(line));
-        }
+        appendFileSync(options.logFile, text);
       }
     });
     child.stderr?.on('data', (chunk: Buffer) => {
@@ -240,28 +146,16 @@ function spawnAsync(
   });
 }
 
-// ─── stream-json result extraction ────────────────
-/**
- * Parse stream-json (JSON Lines) output from `claude --output-format stream-json`.
- * Each line is a JSON object with a `type` field.
- * We extract the final result text from {type:"result", result:"..."} lines.
- * Falls back to raw stdout if parsing fails.
- */
-function extractResultFromStreamJson(stdout: string): string {
-  const lines = stdout.split('\n').filter((l) => l.trim());
-  // Try to find a "result" type line (last one wins)
-  let resultText: string | undefined;
-  for (const line of lines) {
+// ─── Extract result from stream-json output ──────
+function extractResult(stdout: string): string {
+  const lines = stdout.split('\n').filter(l => l.trim());
+  for (let i = lines.length - 1; i >= 0; i--) {
     try {
-      const obj = JSON.parse(line);
-      if (obj.type === 'result' && typeof obj.result === 'string') {
-        resultText = obj.result;
-      }
-    } catch {
-      // skip non-JSON lines
-    }
+      const obj = JSON.parse(lines[i]);
+      if (obj.type === 'result') return obj.result || '';
+    } catch { /* not JSON */ }
   }
-  return resultText ?? stdout;
+  return stdout.trim();
 }
 
 // ─── Handler ──────────────────────────────────────
@@ -337,12 +231,11 @@ export async function handleDelegateWork(
 
   const projectRoot = getProjectRoot();
 
-  // Initialize log file for coordinator output
-  const logFile = join(projectRoot, '.agent', 'delegate-work.log');
-  appendFileSync(logFile, `
---- delegate-work session ---
-`);
-  appendFileSync(logFile, `[${new Date().toISOString()}] delegate-work started: phase=${task.phase}\n`);
+  // Allocate worker ID first, then create worker-specific log file
+  const paneId = allocateWorkerId();
+  const logFile = join(projectRoot, '.agent', `delegate-work-${paneId}.log`);
+  const logFileRelative = `.agent/delegate-work-${paneId}.log`;
+  writeFileSync(logFile, '');
 
   // Fix #3: sessionToken propagation via env
   const childEnv: Record<string, string | undefined> = {
@@ -350,10 +243,11 @@ export async function handleDelegateWork(
     HARNESS_SESSION_TOKEN: String(args.sessionToken),
     HARNESS_TASK_ID: taskId,
     HARNESS_LAYER: 'worker',
+    FORCE_COLOR: '1',
   };
 
-  // Signal log pane open (VS Code extension watches signal file)
-  const paneId = openLogPane('.agent/delegate-work.log');
+  // Signal log pane open with worker-specific log file
+  openLogPane(paneId, logFileRelative);
 
   // Fix #4: async spawn instead of execSync
   try {
@@ -365,9 +259,7 @@ export async function handleDelegateWork(
     });
     const durationMs = Date.now() - startTime;
 
-    closeLogPane(paneId);
-
-    const resultText = extractResultFromStreamJson(stdout);
+    const resultText = extractResult(stdout);
     const toonResult = [
       `success: true`,
       `output: "${resultText.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
@@ -376,7 +268,6 @@ export async function handleDelegateWork(
     ].join('\n');
     return respond(toonResult);
   } catch (err) {
-    closeLogPane(paneId);
     const message = err instanceof Error ? err.message : String(err);
     return respondError(`Worker failed: ${message}`);
   }

@@ -50,25 +50,34 @@ function handleSignal(root: string, signalPath: string) {
   }
 }
 
-async function openLogPane(_root: string, id: string, _logFile: string) {
+async function openLogPane(_root: string, id: string, logFile: string) {
   closeLogPane(id);
 
-  const watchCmd = 'node .agent/log-watcher.js';
+  const watchCmd = `node .agent/log-watcher.js ${logFile}`;
 
-  // Split from active terminal
   const parent = vscode.window.activeTerminal
     ?? vscode.window.terminals.find((t) => !t.name.startsWith('Worker:'));
 
   if (parent) {
+    // Use onDidOpenTerminal to reliably detect the new split terminal
+    const termPromise = new Promise<vscode.Terminal>((resolve) => {
+      const disposable = vscode.window.onDidOpenTerminal((newTerm) => {
+        disposable.dispose();
+        resolve(newTerm);
+      });
+      // Timeout fallback after 3 seconds
+      setTimeout(() => {
+        disposable.dispose();
+        resolve(vscode.window.activeTerminal!);
+      }, 3000);
+    });
+
     parent.show(false);
     await vscode.commands.executeCommand('workbench.action.terminal.split');
-    await new Promise((r) => setTimeout(r, 600));
-    const term = vscode.window.activeTerminal;
-    if (term && term !== parent) {
+    const term = await termPromise;
+    if (term) {
       term.sendText(watchCmd);
       logTerminals.set(id, term);
-      // Rename terminal
-      await vscode.commands.executeCommand('workbench.action.terminal.renameWithArg', { name: `Worker: ${id}` });
     }
   } else {
     const term = vscode.window.createTerminal({

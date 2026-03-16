@@ -1,0 +1,34 @@
+taskId: e9d7e103-4648-4923-8a26-925edc6ea4ae
+taskName: pane-sendtext-test
+version: 4
+phase: scope_definition
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: 拡張sendText修正後のリアルタイムログペインテスト
+docsDir: docs\workflows\pane-sendtext-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\e9d7e103-4648-4923-8a26-925edc6ea4ae_pane-sendtext-test
+sessionToken: 6c179dc14fecc3a92fc6ce9770a4adb1a535ac1d08284c04811caba04d666085
+stateIntegrity: e7d27f038d065ba6ca1dd4c9a641391227b7fbec1e233a5e240f5d3848c87e66
+createdAt: 2026-03-16T06:56:38.010Z
+updatedAt: 2026-03-16T06:56:38.010Z
+completedPhases: 
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: e9d7e103-4648-4923-8a26-925edc6ea4ae
+checkpoint.phase: scope_definition
+checkpoint.timestamp: 2026-03-16T06:56:38.010Z
+checkpoint.sha256: 0b3b15edc67b0767064dcfb6b337f3db1fef4c5b14ed285f0a7f63a5a83cc458
+checkpoint.userIntent: 拡張sendText修正後のリアルタイムログペインテスト
+checkpoint.completedPhases: 
+checkpoint.scopeFiles: 
