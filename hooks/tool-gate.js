@@ -32,7 +32,7 @@ function checkL1(toolName) {
 }
 
 // ── L2 Coordinator rules (phase-independent) ──
-const L2_BLOCKED = new Set(['Write', 'Edit', 'Skill']);
+const L2_BLOCKED = new Set(['Skill']);
 
 function checkL2(toolName) {
   if (toolName.startsWith('mcp__harness__')) {
@@ -136,9 +136,9 @@ function checkBashCommand(command, phase) {
   return null;
 }
 
-function checkWriteEdit(filePath, phase) {
+function checkWriteEdit(filePath, phase, layer) {
   if (isBypassPath(filePath)) return null;
-  if (filePath.replace(/\\/g, '/').includes('docs/workflows/')) {
+  if (layer !== 'worker' && filePath.replace(/\\/g, '/').includes('docs/workflows/')) {
     return 'Direct editing of phase artifacts is forbidden. Delegate to workers.';
   }
   if (!phase) return null;
@@ -151,7 +151,7 @@ function checkWriteEdit(filePath, phase) {
   return null;
 }
 
-function checkL3(toolName, toolInput, phase) {
+function checkL3(toolName, toolInput, phase, layer) {
   if (L3_ALWAYS_ALLOWED.has(toolName)) return null;
   if (L3_ALWAYS_BLOCKED.has(toolName)) return 'L3 (Worker) cannot use "' + toolName + '".';
   if (toolName.startsWith('mcp__harness__')) return 'L3 cannot use harness MCP tools.';
@@ -163,7 +163,7 @@ function checkL3(toolName, toolInput, phase) {
 
   if (toolName === 'Write' || toolName === 'Edit') {
     if (!phase) return 'Write/Edit not allowed: no active phase.';
-    return checkWriteEdit(toolInput.file_path || toolInput.path || '', phase);
+    return checkWriteEdit(toolInput.file_path || toolInput.path || '', phase, layer);
   }
 
   return null;
@@ -187,14 +187,14 @@ async function main() {
     reason = checkL1(toolName);
   } else if (layer === 'coordinator') {
     // Both L2 and L3 have HARNESS_LAYER=coordinator.
-    // L2 is additionally restricted by --allowedTools/--disallowedTools.
-    // Apply L2 rules first, then L3 phase checks for Write/Edit/Bash.
+    // L2 is additionally restricted by --allowedTools/--disallowedTools (CLI flags).
+    // Hook enforces: L2 blocked tools (Skill) + L3 phase-dependent checks (Write/Edit/Bash).
     reason = checkL2(toolName);
-    if (!reason && (toolName === 'Write' || toolName === 'Edit')) {
-      reason = checkL3(toolName, toolInput, phase);
+    if (!reason && (toolName === 'Write' || toolName === 'Edit' || toolName === 'Bash')) {
+      reason = checkL3(toolName, toolInput, phase, layer);
     }
   } else if (layer === 'worker') {
-    reason = checkL3(toolName, toolInput, phase);
+    reason = checkL3(toolName, toolInput, phase, layer);
   }
 
   if (reason) {

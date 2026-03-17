@@ -4,6 +4,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import { isAbsolute, join, normalize } from 'node:path';
 
 export function getProjectRoot(): string {
   try {
@@ -21,4 +22,15 @@ export function getProjectRoot(): string {
   } catch {
     return process.cwd();
   }
+}
+
+/**
+ * Resolve a template-substituted path against the project root.
+ * If the substituted path is already absolute (e.g. in tests with temp dirs),
+ * returns it directly without prepending the project root.
+ */
+export function resolveProjectPath(substitutedPath: string): string {
+  const normalized = normalize(substitutedPath);
+  if (isAbsolute(normalized)) return normalized;
+  return join(getProjectRoot(), normalized);
 }

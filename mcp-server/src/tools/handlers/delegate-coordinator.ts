@@ -7,6 +7,7 @@
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { StreamProgressTracker } from './stream-progress-tracker.js';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskState } from '../../state/types.js';
 import {
@@ -17,8 +18,9 @@ import {
   type HandlerResult,
 } from '../handler-shared.js';
 import { getProjectRoot } from '../../utils/project-root.js';
+import { parseToonKv, esc } from '../../state/toon-helpers.js';
 
-const DEFAULT_DISALLOWED_TOOLS = 'Write,Edit,Bash,mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_coordinator,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion';
+const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_coordinator,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion';
 
 // ─── Phase-aware allowed tools ────────────────────
 type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
@@ -33,8 +35,15 @@ type PhaseGuide = ReturnType<typeof buildPhaseGuide>;
  * .worker-allowed-tools for direct subagents  Ethose do NOT get Agent because
  * workers should not spawn further subagents.
  */
-function buildAllowedTools(_phaseGuide: PhaseGuide): string {
-  return 'Agent,TeamCreate,TeamDelete,TaskCreate,TaskUpdate,TaskList,TaskGet,SendMessage,ToolSearch,Read,Glob,Grep';
+function buildAllowedTools(phaseGuide: PhaseGuide): string {
+  const coordinatorBase = [
+    'Agent', 'TeamCreate', 'TeamDelete',
+    'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
+    'SendMessage', 'ToolSearch', 'Read', 'Glob', 'Grep', 'Bash',
+  ];
+  const phaseTools = phaseGuide.allowedTools ?? [];
+  const merged = new Set([...coordinatorBase, ...phaseTools]);
+  return [...merged].join(',');
 }
 
 // ─── Phase-aware coordinator system prompt ────────
@@ -48,7 +57,7 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     'toon-rules: "key: value形式。カンマ含む値は引用符。バックスラッシュ禁止。ファイル名はハイフン区切り"',
     'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
     'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKENは環境変数から取得"',
-    'worker-delegation: "Agent toolでsubagentに委譲。instructionに具体的なファイルパスと期待する変更を含めること"',
+    'worker-delegation: "ファイル書き込みが必要な場合、Bashで HARNESS_LAYER=worker claude -p \'<指示>\' --print --permission-mode bypassPermissions を実行しworkerを起動すること。Agent toolのsubagentはcoordinator権限を継承するためdocs/workflows/への書き込みにはworkerが必要"',
     'team-management: "TeamCreateでチームを作成し、Agentでworkerをspawn。TaskCreateで進捗管理。workerにはSendMessageで指示"',
     'output-format: "作業結果をTOON形式で返すこと。success: true/false, output: 作業内容, files-changed: 変更ファイル一覧"',
     'output-rule: "Agent toolの結果を受け取ったら、必ず最終テキストとして結果をまとめて出力すること。ツール呼び出しだけで終了しないこと"',
@@ -81,7 +90,12 @@ function allocateWorkerId(): string {
 function spawnAsync(
   command: string,
   args: string[],
-  options: { cwd: string; env: Record<string, string | undefined>; logFile?: string },
+  options: {
+    cwd: string;
+    env: Record<string, string | undefined>;
+    logFile?: string;
+    progressTracker?: StreamProgressTracker;
+  },
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -98,6 +112,9 @@ function spawnAsync(
       if (options.logFile) {
         appendFileSync(options.logFile, text);
       }
+      if (options.progressTracker) {
+        options.progressTracker.feed(text);
+      }
     });
     child.stderr?.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
@@ -108,6 +125,9 @@ function spawnAsync(
     });
 
     child.on('close', (code: number | null) => {
+      if (options.progressTracker) {
+        options.progressTracker.flush();
+      }
       if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(`Exit code ${code}\nstderr: ${stderr}`));
     });
@@ -164,7 +184,19 @@ export async function handleDelegateCoordinator(
 
   const files = args.files as string[] | undefined;
 
-  let fullInstruction = instruction;
+  // S-2: Parse instruction as TOON key-value pairs
+  const parsedInstruction = parseToonKv(instruction);
+  let fullInstruction: string;
+  if (Object.keys(parsedInstruction).length > 0) {
+    // Structured TOON input — reconstruct as clean key: value block
+    const kvLines = Object.entries(parsedInstruction)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n');
+    fullInstruction = kvLines;
+  } else {
+    // S-4: Fallback — raw string when parseToonKv returns empty
+    fullInstruction = instruction;
+  }
   if (files?.length) {
     fullInstruction += '\n\n対象ファイル:\n' + files.map((f: string) => '- ' + f).join('\n');
   }
@@ -217,7 +249,11 @@ export async function handleDelegateCoordinator(
   // Allocate worker ID first, then create worker-specific log file
   const paneId = allocateWorkerId();
   const logFile = join(projectRoot, '.agent', `delegate-coordinator-${paneId}.log`);
+  const progressFile = join(projectRoot, '.agent', `${paneId}-progress.md`);
   writeFileSync(logFile, '');
+
+  // Progress tracker for real-time Markdown output
+  const progressTracker = new StreamProgressTracker(progressFile, paneId);
 
   // Fix #3: sessionToken propagation via env
   const childEnv: Record<string, string | undefined> = {
@@ -235,14 +271,35 @@ export async function handleDelegateCoordinator(
       cwd: projectRoot,
       env: childEnv,
       logFile,
+      progressTracker,
     });
     const durationMs = Date.now() - startTime;
 
     const resultText = extractResult(stdout);
 
+    // S-3: Parse coordinator output as TOON key-value pairs
+    const parsedOutput = parseToonKv(resultText);
+    if (Object.keys(parsedOutput).length > 0) {
+      // Structured TOON output from coordinator
+      const success = parsedOutput['success'] !== 'false';
+      if (!success) {
+        return respondError(
+          `Coordinator reported failure: ${parsedOutput['output'] ?? resultText.trim()}`,
+        );
+      }
+      const toonResult = [
+        `success: true`,
+        `output: ${esc(parsedOutput['output'] ?? resultText.trim())}`,
+        `duration-ms: ${durationMs}`,
+        `files-changed: ${parsedOutput['files-changed'] ?? (files ?? []).join(', ')}`,
+      ].join('\n');
+      return respond(toonResult);
+    }
+
+    // S-4/S-5: Fallback — raw output, use esc() instead of manual backslash escaping
     const toonResult = [
       `success: true`,
-      `output: "${resultText.trim().replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
+      `output: ${esc(resultText.trim())}`,
       `duration-ms: ${durationMs}`,
       `files-changed: ${(files ?? []).join(', ')}`,
     ].join('\n');

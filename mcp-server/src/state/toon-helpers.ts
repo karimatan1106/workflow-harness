@@ -80,6 +80,26 @@ export function tableRows(rows: string[][]): string {
 }
 
 /**
+ * Parse TOON key-value pairs from a multi-line string.
+ * Skips empty lines, indented lines (table rows), and table header lines.
+ * Quoted values are unescaped via unesc().
+ */
+export function parseToonKv(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!content) return result;
+  for (const line of content.split('\n')) {
+    if (!line.trim()) continue;
+    if (line.startsWith('  ')) continue;
+    if (/^\S+\[\d+\]\{[^}]+\}:\s*$/.test(line)) continue;
+    const sepIdx = line.indexOf(': ');
+    if (sepIdx === -1) continue;
+    const key = line.slice(0, sepIdx).trim();
+    result[key] = unesc(line.slice(sepIdx + 2));
+  }
+  return result;
+}
+
+/**
  * Parse a table array block from lines starting at given index.
  * Returns parsed rows and how many lines consumed.
  */

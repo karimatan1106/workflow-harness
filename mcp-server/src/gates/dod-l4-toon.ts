@@ -5,8 +5,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { join, normalize } from 'node:path';
-import { getProjectRoot } from '../utils/project-root.js';
+import { resolveProjectPath } from '../utils/project-root.js';
 import type { PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
@@ -82,7 +81,7 @@ export function checkToonSafety(phase: string, docsDir: string, workflowDir: str
   if (!config || !config.outputFile) {
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'No output file for this phase' };
   }
-  const outputFile = join(getProjectRoot(), normalize(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir)));
+  const outputFile = resolveProjectPath(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'Output file not found; skipped (L1 handles)' };
   }

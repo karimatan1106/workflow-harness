@@ -5,8 +5,7 @@
 
 import { execSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
-import { join, normalize } from 'node:path';
-import { getProjectRoot } from '../../utils/project-root.js';
+import { resolveProjectPath } from '../../utils/project-root.js';
 import type { StateManager } from '../../state/manager.js';
 import { runDoDChecks } from '../../gates/dod.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
@@ -128,8 +127,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   if (!forceTransition) {
     const phaseConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
     if (phaseConfig?.outputFile) {
-      const projectRoot = getProjectRoot();
-      const outPath = join(projectRoot, normalize(phaseConfig.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', task.workflowDir ?? '')));
+      const outPath = resolveProjectPath(phaseConfig.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', task.workflowDir ?? ''));
       if (!existsSync(outPath)) {
         return respondError('成果物ファイルが存在しません: ' + outPath + '. フェーズ作業を完了してから harness_next を呼び出してください。');
       }
