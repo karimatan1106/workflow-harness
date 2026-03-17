@@ -1,6 +1,7 @@
 'use strict';
 const path = require('path');
 const { findProjectRoot, getCurrentPhase, isBypassPath, readStdin, parseHookInput } = require('./hook-utils');
+const fs = require('fs');
 
 // ── Harness lifecycle MCP suffixes (L1 only) ──
 const HARNESS_LIFECYCLE = new Set([
@@ -10,16 +11,20 @@ const HARNESS_LIFECYCLE = new Set([
 ]);
 
 // ── Layer detection ──
+// hookInput is set in main() before checkL1/L2/L3 calls
+var hookInput = null;
+
 function detectLayer() {
   const env = (process.env.HARNESS_LAYER || '').toLowerCase();
-  if (!env) return 'orchestrator';
-  if (env === 'coordinator') return 'coordinator';
   if (env === 'worker') return 'worker';
-  return 'unknown';
+  if (env === 'coordinator') return 'coordinator';
+  // Agent subagent: stdin JSON contains agent_id field (not present for L1)
+  if (hookInput && hookInput.agent_id) return 'coordinator';
+  return 'orchestrator';
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'AskUserQuestion', 'ToolSearch']);
+const L1_ALLOWED = new Set(['Skill', 'Agent', 'AskUserQuestion', 'ToolSearch']);
 
 function checkL1(toolName) {
   if (toolName.startsWith('mcp__harness__')) {
@@ -28,7 +33,7 @@ function checkL1(toolName) {
     return 'L1 can only use lifecycle MCP.';
   }
   if (L1_ALLOWED.has(toolName)) return null;
-  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via harness_delegate_coordinator.';
+  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent tool.';
 }
 
 // ── L2 Coordinator rules (phase-independent) ──
@@ -162,6 +167,8 @@ function checkL3(toolName, toolInput, phase, layer) {
   }
 
   if (toolName === 'Write' || toolName === 'Edit') {
+    var fp = toolInput.file_path || toolInput.path || '';
+    if (isBypassPath(fp)) return null;
     if (!phase) return 'Write/Edit not allowed: no active phase.';
     return checkWriteEdit(toolInput.file_path || toolInput.path || '', phase, layer);
   }
@@ -169,28 +176,45 @@ function checkL3(toolName, toolInput, phase, layer) {
   return null;
 }
 
+// ── Debug env logging ──
+function logEnvDebug(projectRoot, raw) {
+  if (!process.env.HARNESS_DEBUG) return;
+  var logPath = (projectRoot || process.cwd()) + '/.harness-debug.log';
+  var allEnv = Object.assign({}, process.env);
+  if (allEnv.HARNESS_SESSION_TOKEN) allEnv.HARNESS_SESSION_TOKEN = '[SET]';
+  var entry = {
+    ts: new Date().toISOString(),
+    env: allEnv,
+    stdin: raw !== undefined ? raw : null,
+  };
+  fs.appendFileSync(logPath, JSON.stringify(entry) + '\n');
+}
+
 // ── Main ──
 async function main() {
   var raw = await readStdin();
   var inp = parseHookInput(raw);
+  hookInput = inp;
   if (!inp) process.exit(0);
 
   var toolName = inp.tool_name || inp.tool || '';
   if (!toolName) process.exit(0);
 
   var toolInput = inp.tool_input || inp.input || {};
+  var projectRoot = findProjectRoot();
   var layer = detectLayer();
-  var phase = getCurrentPhase(findProjectRoot());
+  var phase = getCurrentPhase(projectRoot);
+  logEnvDebug(projectRoot);
   var reason = null;
 
   if (layer === 'orchestrator') {
     reason = checkL1(toolName);
   } else if (layer === 'coordinator') {
-    // Both L2 and L3 have HARNESS_LAYER=coordinator.
-    // L2 is additionally restricted by --allowedTools/--disallowedTools (CLI flags).
-    // Hook enforces: L2 blocked tools (Skill) + L3 phase-dependent checks (Write/Edit/Bash).
+    // L2 coordinator: Agent subagent (CLAUDE_AGENT_ID) or delegate_coordinator spawn.
+    // Bash is unrestricted (needed for HARNESS_LAYER=worker claude -p spawning).
+    // Write/Edit are phase-dependent (extension check).
     reason = checkL2(toolName);
-    if (!reason && (toolName === 'Write' || toolName === 'Edit' || toolName === 'Bash')) {
+    if (!reason && (toolName === 'Write' || toolName === 'Edit')) {
       reason = checkL3(toolName, toolInput, phase, layer);
     }
   } else if (layer === 'worker') {
