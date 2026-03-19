@@ -3,14 +3,26 @@
  * Tests the full lifecycle: create task → write state → read state → cleanup.
  * This is the "testcontainers" equivalent for our fs-based state layer.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { StateManager } from '../../src/state/manager.js';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 describe('State manager integration (real fs)', () => {
-  let sm: StateManager;
+  let sm: InstanceType<typeof import('../../src/state/manager.js').StateManager>;
+  let tempDir: string;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'state-integ-'));
+    vi.stubEnv('STATE_DIR', tempDir);
+    vi.resetModules();
+    const { StateManager } = await import('../../src/state/manager.js');
     sm = new StateManager();
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+    if (tempDir) rmSync(tempDir, { recursive: true, force: true });
   });
 
   it('creates task and returns valid state', () => {

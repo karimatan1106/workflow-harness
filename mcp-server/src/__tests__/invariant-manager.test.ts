@@ -1,12 +1,36 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { StateManager } from '../state/manager.js';
+/**
+ * StateManager invariant operations and completeness check tests
+ * @spec AC-3 AC-4 AC-5 Invariant add/update/completeness
+ * @covers state/manager.ts
+ * @covers gates/dod-l3.ts
+ */
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+let StateManagerClass: typeof import('../state/manager.js').StateManager;
+let tempDir: string;
+
+beforeAll(async () => {
+  tempDir = mkdtempSync(join(tmpdir(), 'inv-mgr-test-'));
+  vi.stubEnv('STATE_DIR', tempDir);
+  vi.resetModules();
+  const mod = await import('../state/manager.js');
+  StateManagerClass = mod.StateManager;
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+  if (tempDir) rmSync(tempDir, { recursive: true, force: true });
+});
 
 describe('StateManager invariant operations (AC-3, AC-4)', () => {
-  let manager: StateManager;
+  let manager: InstanceType<typeof StateManagerClass>;
   let taskId: string;
 
   beforeEach(() => {
-    manager = new StateManager();
+    manager = new StateManagerClass();
     const state = manager.createTask('test-inv', 'Test invariant operations for INV-N proof tier framework');
     taskId = state.taskId;
   });
