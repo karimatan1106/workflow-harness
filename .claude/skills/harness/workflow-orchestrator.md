@@ -1,49 +1,72 @@
 ---
 name: harness-orchestrator
-description: Orchestrator protocol, two-layer execution model, model selection, context handoff, and MCP tool reference.
+description: Orchestrator protocol, three-layer execution model, model selection, context handoff, and MCP tool reference.
 ---
 > CLAUDE.md Sec5(Orchestrator)/Sec9(sessionToken) が権威仕様。本ファイルはプロトコル詳細とMCPツール一覧。
 
 ## 1. Orchestrator Protocol
 
-Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Agent tool.
+Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Agent Teams.
 
-### Two-Layer Execution Model
+### Three-Layer Execution Model (Agent Teams)
 ```
-Orchestrator (lifecycle MCP のみ: state management, delegation, retry tracking)
-  -> Subagent (~500 words: reads files, writes artifacts, MCP操作)
+Orchestrator (state management, delegation, retry tracking)
+  → TeamCreate → Coordinator (ComponentDAG execution, parallel planning)
+    → Agent() → Worker (reads files, writes artifacts atomically)
 ```
+| 層 | 起動方法 | 責務 | 使用可能ツール |
+|----|---------|------|--------------|
+| Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、TeamCreate、SendMessage、Skill、AskUserQuestion |
+| Coordinator | TeamCreateで定義 | フェーズ作業管理・Worker委譲 | 非ライフサイクルMCP、Agent |
+| Worker | CoordinatorからAgent()で起動 | ファイル読み書き | Read、Write、Edit、Bash、Glob、Grep |
 
-### Execution Flow
+### Execution Flow (Agent Teams)
 1. `harness_start(taskName, userIntent)`
 2. For each phase:
    a. `harness_next` → advance (returns hasTemplate flag)
    b. If hasTemplate: `harness_get_subphase_template` → get prompt
-   c. `Agent(prompt=template)` — テンプレートをそのまま使用
-   d. Subagent reads inputs, does work, writes output
-   e. `harness_next` → DoD検証+遷移
-3. Parallel phases: launch multiple Agent calls simultaneously → `harness_complete_sub`
+   c. `TeamCreate` でCoordinatorを定義（フェーズ実行の責務）
+   d. `SendMessage` でCoordinatorにテンプレートを送信
+   e. Coordinator が `Agent(prompt=template)` でWorkerを起動
+   f. Worker が入力読み込み → 作業 → 成果物書き出し
+   g. Orchestrator が `harness_next` → DoD検証+遷移
+3. Parallel phases: 複数TeamCreateを同時発行 → Worker並列実行 → `harness_complete_sub`
 4. Approval gates: present artifacts to user → `harness_approve`
-5. Validation failure: re-launch subagent (NEVER edit directly)
+5. Validation failure: re-launch via TeamCreate (NEVER edit directly)
 
-### フェーズ実行フロー（2層モデル）
+### フェーズ実行フロー（3層モデル — Agent Teams）
 ```
-Orchestrator (lifecycle MCP のみ)
+Orchestrator (lifecycle MCP + TeamCreate + SendMessage のみ)
 │
 ├─ harness_start           ← オーケストレーター直接実行
 │
 ├─ Phase N のサブステップ:
-│   └─ Agent(subagent) → harness_set_scope + Read/Edit/Write + harness_add_ac 等
-│                         （MCP操作とファイル操作を同一subagentで実行）
+│   ├─ TeamCreate(Coordinator)  ← Coordinatorをチーム定義
+│   └─ SendMessage(template)    ← テンプレートをCoordinatorに送信
+│         └─ Coordinator が Agent(Worker) を起動
+│               └─ Worker → Read/Edit/Write + harness_set_scope + harness_add_ac 等
 │
 ├─ harness_next            ← オーケストレーター直接実行（DoD検証）
 │
 ├─ Phase N+1 のサブステップ:
-│   └─ Agent(subagent) → 新鮮なコンテキストで次フェーズ実行
+│   ├─ TeamCreate(Coordinator)  ← 新しいCoordinatorで次フェーズ
+│   └─ SendMessage(template)
 │
 └─ 繰り返し → harness_next (completed)
 ```
-注意: subagentはlifecycle MCP (_start, _next, _approve, _status, _back, _reset) を呼べない。これらはオーケストレーターのみ。
+注意: WorkerはLifecycle MCP (_start, _next, _approve, _status, _back, _reset) を呼べない。これらはOrchestrator専用。
+注意: Coordinatorは非ライフサイクルMCP + Agent のみ使用可。Skillは使用不可。
+
+### Worker並列化ポリシー
+Coordinatorはタスクの依存関係を分析し、独立タスクを最大限並列でAgent()起動する。
+- **分割単位**: ファイル単位。同一ファイルを複数Workerが編集しない限り並列可
+- **起動数は動的**: 事前に固定しない。Coordinatorがスコープとファイル依存関係から判断
+- **並列判断フロー**:
+  1. スコープ内ファイル一覧を取得
+  2. ファイル間の依存関係を分析（import/require）
+  3. 独立グループごとに1 Worker = 1 Agent()で同時起動
+  4. 依存があるファイル群は逐次実行
+- **制約**: 同一ファイルへの並列Write/Edit禁止（競合防止）
 
 ### Template & Model Rules
 - **NEVER construct prompts from scratch.** Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
@@ -108,13 +131,19 @@ Orchestrator (lifecycle MCP のみ)
 | harness_get_test_info | Get tests + baseline |
 | harness_record_known_bug | Record known bug (testName, description, severity) |
 
-### Query (2) / Task Management (2)
+### Query (2)
 | Tool | Purpose |
 |------|---------|
 | harness_get_known_bugs | List bugs |
 | harness_get_subphase_template | Get template (phase, taskId) |
-| harness_create_subtask | Decompose (DCP-1) |
-| harness_link_tasks | Parent-child link |
+
+### DCI (4)
+| Tool | Purpose |
+|------|---------|
+| dci_build_index | Build design-code index |
+| dci_query_docs | Query design documents |
+| dci_query_files | Query source files |
+| dci_validate | Validate design-code alignment |
 
 ---
 

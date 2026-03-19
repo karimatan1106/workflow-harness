@@ -11,6 +11,14 @@ Phases = context compression devices: each artifact is the complete handoff for 
 
 ---
 
+## 0. Task Detection (Auto-Start)
+1. ユーザーの依頼を分析
+2. コード変更を伴うか判定
+   - YES → `harness_start` を自動呼び出し → orchestrator.md を読み込み
+   - NO → ハーネスなしで直接回答
+
+---
+
 ## 1. File Routing (read ONLY what the current stage needs)
 
 **Always loaded**: This file (SKILL.md) + CLAUDE.md (authority spec).

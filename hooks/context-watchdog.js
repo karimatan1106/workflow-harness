@@ -30,7 +30,7 @@ function appendLine(filePath, line) {
 }
 
 function injectCritical(root, count) {
-  const critical = readFileIfExists(path.join(agentDir(root), 'CRITICAL.toon'));
+  const critical = readFileIfExists(path.join(agentDir(root), 'CRITICAL.md'));
   if (!critical) return;
   const checkpoint = readFileIfExists(path.join(agentDir(root), 'checkpoint.toon'));
   let out = '\n=== [WATCHDOG] 定期記憶リフレッシュ (' + count + '回目) ===\n';
@@ -39,7 +39,7 @@ function injectCritical(root, count) {
   out += '  □ TOON ファイル名はハイフン区切り\n';
   out += '  □ decisions[] は5件以上\n';
   out += '  □ ## 直下に5行以上の prose\n';
-  out += '  □ サブエージェント起動時は CRITICAL.toon をプロンプトに含める\n';
+  out += '  □ サブエージェント起動時は CRITICAL.md をプロンプトに含める\n';
   if (checkpoint) {
     out += '\n--- [WATCHDOG:CHECKPOINT] 最後に記録した作業状態 ---\n';
     out += checkpoint + '\n--- [/WATCHDOG:CHECKPOINT] ---\n';
@@ -102,7 +102,7 @@ function checkPitfalls(input) {
 }
 
 function injectSubagentKnowledge(root) {
-  const critical = readFileIfExists(path.join(agentDir(root), 'CRITICAL.toon'));
+  const critical = readFileIfExists(path.join(agentDir(root), 'CRITICAL.md'));
   if (!critical) return;
   process.stdout.write(
     '\n=== [WATCHDOG:SUBAGENT] サブエージェントに以下の知識を必ず伝達 ===\n'

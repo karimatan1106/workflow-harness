@@ -18,13 +18,13 @@ function detectLayer() {
   const env = (process.env.HARNESS_LAYER || '').toLowerCase();
   if (env === 'worker') return 'worker';
   if (env === 'coordinator') return 'coordinator';
-  // Agent subagent: stdin JSON contains agent_id field (not present for L1)
+  // TeamCreateで定義されたCoordinator or Agent subagent: agent_id field present
   if (hookInput && hookInput.agent_id) return 'coordinator';
   return 'orchestrator';
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'Agent', 'AskUserQuestion', 'ToolSearch']);
+const L1_ALLOWED = new Set(['Skill', 'Agent', 'TeamCreate', 'SendMessage', 'AskUserQuestion', 'ToolSearch']);
 
 function checkL1(toolName) {
   if (toolName.startsWith('mcp__harness__')) {
@@ -210,8 +210,8 @@ async function main() {
   if (layer === 'orchestrator') {
     reason = checkL1(toolName);
   } else if (layer === 'coordinator') {
-    // L2 coordinator: Agent subagent (CLAUDE_AGENT_ID) or delegate_coordinator spawn.
-    // Bash is unrestricted (needed for HARNESS_LAYER=worker claude -p spawning).
+    // L2 coordinator: TeamCreateで定義されたCoordinator。
+    // Bash is unrestricted (needed for HARNESS_LAYER=worker spawning).
     // Write/Edit are phase-dependent (extension check).
     reason = checkL2(toolName);
     if (!reason && (toolName === 'Write' || toolName === 'Edit')) {

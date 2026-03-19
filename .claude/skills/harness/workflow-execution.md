@@ -4,25 +4,25 @@ description: Phase-specific subagent config, bash permissions, error-to-improvem
 ---
 > CLAUDE.md Sec5(Orchestrator)/Sec6(Retry)/Sec12(Bash) が権威仕様。本ファイルはフェーズ別設定のみ。
 
-## フェーズ別subagent設定
+## フェーズ別subagent設定（Agent Teams経由）
 
-| フェーズ | model | 入力 | 出力 |
-|---------|-------|------|------|
-| scope_definition | sonnet | - | scope-definition.toon |
-| research | sonnet | - | research.toon |
-| impact_analysis | sonnet | research.toon | impact-analysis.toon |
-| requirements | sonnet | research.toon | requirements.toon |
-| threat_modeling / planning | sonnet | requirements.toon / threat-model.toon | threat-model.toon / spec.toon |
-| state_machine / flowchart | haiku | spec.toon | *.mmd |
-| ui_design | sonnet | spec.toon + *.mmd | ui-design.toon |
-| design_review | sonnet | *.mmd + ui-design.toon | - |
-| test_design | sonnet | spec.toon + *.mmd | test-design.toon |
-| test_impl / implementation | sonnet | test-design.toon / *.test.ts | *.test.ts / *.ts |
-| refactoring / build_check | haiku | *.ts | *.ts / - |
-| code_review | **opus** | *.ts | code-review.toon |
-| testing / regression_test | haiku | テストスイート | - |
-| manual_test ~ e2e_test | sonnet | - | *.toon |
-| docs_update ~ deploy | haiku | 全成果物 | ドキュメント / - |
+| フェーズ | model | delegation | 入力 | 出力 |
+|---------|-------|-----------|------|------|
+| scope_definition | sonnet | TeamCreate→Coordinator→Agent→Worker | - | scope-definition.toon |
+| research | sonnet | TeamCreate→Coordinator→Agent→Worker | - | research.toon |
+| impact_analysis | sonnet | TeamCreate→Coordinator→Agent→Worker | research.toon | impact-analysis.toon |
+| requirements | sonnet | TeamCreate→Coordinator→Agent→Worker | research.toon | requirements.toon |
+| threat_modeling / planning | sonnet | TeamCreate→Coordinator→Agent→Worker | requirements.toon / threat-model.toon | threat-model.toon / spec.toon |
+| state_machine / flowchart | haiku | TeamCreate→Coordinator→Agent→Worker | spec.toon | *.mmd |
+| ui_design | sonnet | TeamCreate→Coordinator→Agent→Worker | spec.toon + *.mmd | ui-design.toon |
+| design_review | sonnet | TeamCreate→Coordinator→Agent→Worker | *.mmd + ui-design.toon | - |
+| test_design | sonnet | TeamCreate→Coordinator→Agent→Worker | spec.toon + *.mmd | test-design.toon |
+| test_impl / implementation | sonnet | TeamCreate→Coordinator→Agent→Worker | test-design.toon / *.test.ts | *.test.ts / *.ts |
+| refactoring / build_check | haiku | TeamCreate→Coordinator→Agent→Worker | *.ts | *.ts / - |
+| code_review | **opus** | TeamCreate→Coordinator→Agent→Worker | *.ts | code-review.toon |
+| testing / regression_test | haiku | TeamCreate→Coordinator→Agent→Worker | テストスイート | - |
+| manual_test ~ e2e_test | sonnet | TeamCreate→Coordinator→Agent→Worker | - | *.toon |
+| docs_update ~ deploy | haiku | TeamCreate→Coordinator→Agent→Worker | 全成果物 | ドキュメント / - |
 
 ## フェーズ別Bash許可カテゴリ
 
