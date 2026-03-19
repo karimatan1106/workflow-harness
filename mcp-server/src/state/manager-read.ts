@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TaskState, PhaseName, TaskSize } from './types.js';
 import { verifyStateWithRotation } from '../utils/hmac.js';
@@ -73,6 +73,33 @@ function loadStateFromDir(dir: string): TaskState | null {
     }
   } catch { /* skip corrupt entries */ }
   return null;
+}
+
+const ABANDON_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * GC: remove abandoned tasks (created == updated, older than 24h).
+ * Returns count of removed tasks.
+ */
+export function gcAbandonedTasks(): number {
+  const sd = getStateDir();
+  const workflowsDir = join(sd, 'workflows');
+  if (!existsSync(workflowsDir)) return 0;
+  const now = Date.now();
+  let removed = 0;
+  const entries = readdirSync(workflowsDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const dir = join(workflowsDir, entry.name);
+    const state = loadStateFromDir(dir);
+    if (!state) continue;
+    if (state.phase === 'completed') continue;
+    if (state.createdAt !== state.updatedAt) continue;
+    const age = now - new Date(state.createdAt).getTime();
+    if (age < ABANDON_THRESHOLD_MS) continue;
+    try { rmSync(dir, { recursive: true, force: true }); removed++; } catch { /* skip */ }
+  }
+  return removed;
 }
 
 export function buildTaskIndex(STATE_DIR_PARAM: string): Array<{ taskId: string; taskName: string; phase: string; size: string; status: string }> {

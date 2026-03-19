@@ -7,7 +7,7 @@
 import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
 import type { Invariant, InvariantStatus } from './types-invariant.js';
 import { ensureHmacKeys } from '../utils/hmac.js';
-import { loadTaskFromDisk, listTasksFromDisk } from './manager-read.js';
+import { loadTaskFromDisk, listTasksFromDisk, gcAbandonedTasks } from './manager-read.js';
 import {
   persistState, ensureStateDirs, writeTaskIndex, createTaskState, signAndPersist,
   applyAddAC, applyAddRTM, applyUpdateACStatus, applyUpdateRTMStatus,
@@ -68,6 +68,8 @@ export class StateManager {
   listTasks(): Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> {
     return listTasksFromDisk();
   }
+
+  gcAbandonedTasks(): number { return gcAbandonedTasks(); }
 
   updateScope(
     taskId: string, files: string[], dirs: string[], glob?: string,

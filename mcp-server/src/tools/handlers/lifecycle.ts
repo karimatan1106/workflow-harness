@@ -43,6 +43,9 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
   }
   const files = Array.isArray(args.files) ? (args.files as string[]) : [];
   const dirs = Array.isArray(args.dirs) ? (args.dirs as string[]) : [];
+  // GC abandoned tasks (created == updated, older than 24h)
+  let gcCount = 0;
+  try { gcCount = sm.gcAbandonedTasks(); } catch { /* non-blocking */ }
   const task = sm.createTask(taskName, userIntent, files, dirs);
   // S1-3 PF-2: warn if git working tree is dirty
   let gitWarning: string | undefined;
@@ -52,7 +55,7 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
   } catch { /* not in a git repo or git not available */ }
   try { recordPhaseStart(task.taskId, task.taskName, task.phase); } catch { /* non-blocking */ }
   try { writeAllowedToolsFile(task.phase); } catch (e) { console.error('writeAllowedToolsFile failed:', e); }
-  return respond({ taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size, docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken, ...(gitWarning ? { gitWarning } : {}) });
+  return respond({ taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size, docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken, ...(gitWarning ? { gitWarning } : {}), ...(gcCount > 0 ? { gcCleaned: gcCount } : {}) });
 }
 
 export async function handleHarnessStatus(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
