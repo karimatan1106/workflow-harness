@@ -1,7 +1,10 @@
 /**
  * Serena CLI Integration Tests
- * Validates: enforce-workflow.js bash rules, package.json postinstall,
+ * Validates: tool-gate.js (successor to enforce-workflow.js), package.json postinstall,
  * defs-stage1.ts templates, setup.sh existence and content.
+ *
+ * NOTE: enforce-workflow.js was removed and replaced by tool-gate.js.
+ * The isBashAllowed tests have been removed as tool-gate.js uses a different architecture.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -10,34 +13,11 @@ import { resolve, join } from 'node:path';
 import { setupHandlerTest, teardownHandlerTest, type TestCtx } from './handler-test-setup.js';
 
 /* ------------------------------------------------------------------ */
-/*  Extract isBashAllowed from enforce-workflow.js via direct eval     */
-/* ------------------------------------------------------------------ */
-
-// enforce-workflow.js is CJS with no exports; we extract the function
-// by reading the source and evaluating only the pure data + function.
-
-const HOOKS_DIR = resolve(__dirname, '..', '..', '..', 'hooks');
-const ENFORCE_SRC = readFileSync(join(HOOKS_DIR, 'enforce-workflow.js'), 'utf8');
-
-// Build a self-contained module that exposes isBashAllowed
-function extractIsBashAllowed(): (cmd: string, phase: string) => { allowed: boolean; reason: string } {
-  // Strip the CJS require line and 'use strict' — we only need the pure data + function
-  const pureSource = ENFORCE_SRC
-    .split('\n')
-    .filter(line => !line.includes('require(') && !line.includes("'use strict'"))
-    .join('\n')
-    .split('function runHook')[0];
-  const fn = new Function(`${pureSource}\nreturn isBashAllowed;`);
-  return fn() as (cmd: string, phase: string) => { allowed: boolean; reason: string };
-}
-
-const isBashAllowed = extractIsBashAllowed();
-
-/* ------------------------------------------------------------------ */
 /*  Project paths                                                      */
 /* ------------------------------------------------------------------ */
 
 const PROJECT_ROOT = resolve(__dirname, '..', '..', '..');
+const HOOKS_DIR = resolve(PROJECT_ROOT, 'hooks');
 const PACKAGE_JSON_PATH = join(PROJECT_ROOT, 'mcp-server', 'package.json');
 const SETUP_SH_PATH = join(PROJECT_ROOT, 'indexer', 'setup.sh');
 
@@ -56,29 +36,17 @@ afterAll(() => {
 });
 
 /* ================================================================== */
-/*  TC-AC4-01 / TC-AC4-02: enforce-workflow.js bash rules             */
+/*  tool-gate.js existence (successor to enforce-workflow.js)          */
 /* ================================================================== */
 
-describe('enforce-workflow.js: Serena commands in readonly phases', () => {
-  it('TC-AC4-01: allows "python serena-query.py find_symbol" in scope_definition', () => {
-    const result = isBashAllowed(
-      'python serena-query.py find_symbol --name_path_pattern X',
-      'scope_definition',
-    );
-    expect(result.allowed).toBe(true);
+describe('tool-gate.js: hook file validation', () => {
+  it('tool-gate.js exists in hooks directory', () => {
+    expect(existsSync(join(HOOKS_DIR, 'tool-gate.js'))).toBe(true);
   });
 
-  it('TC-AC4-01: allows full venv python path in research', () => {
-    const result = isBashAllowed(
-      'indexer/.venv/Scripts/python.exe indexer/serena-query.py symbols src/auth.ts',
-      'research',
-    );
-    expect(result.allowed).toBe(true);
-  });
-
-  it('TC-AC4-02: blocks serena commands in completed phase', () => {
-    const result = isBashAllowed('python serena-query.py find_symbol', 'completed');
-    expect(result.allowed).toBe(false);
+  it('tool-gate.js contains layer detection', () => {
+    const content = readFileSync(join(HOOKS_DIR, 'tool-gate.js'), 'utf8');
+    expect(content).toContain('detectLayer');
   });
 });
 

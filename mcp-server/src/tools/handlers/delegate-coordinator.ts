@@ -41,7 +41,7 @@ function buildAllowedTools(phaseGuide: PhaseGuide): string {
     'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
     'SendMessage', 'ToolSearch', 'Read', 'Glob', 'Grep', 'Bash',
   ];
-  const phaseTools = phaseGuide.allowedTools ?? [];
+  const phaseTools = (phaseGuide as PhaseGuide & { allowedTools?: string[] }).allowedTools ?? [];
   const merged = new Set([...coordinatorBase, ...phaseTools]);
   return [...merged].join(',');
 }

@@ -94,9 +94,9 @@ describe('TOOL_DEFINITIONS', () => {
     expect(ctx.TOOL_DEFINITIONS[0].name).toBe('harness_start');
   });
 
-  it('contains harness_delegate_work as the last entry', () => {
+  it('contains harness_delegate_coordinator as the last entry', () => {
     const last = ctx.TOOL_DEFINITIONS[ctx.TOOL_DEFINITIONS.length - 1];
-    expect(last.name).toBe('harness_delegate_work');
+    expect(last.name).toBe('harness_delegate_coordinator');
   });
 
   it('all entries have a name and inputSchema', () => {

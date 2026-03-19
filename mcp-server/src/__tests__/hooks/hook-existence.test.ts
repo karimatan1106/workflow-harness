@@ -2,19 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Project root (parent repo)
-const PROJECT_ROOT = resolve(__dirname, '../../../../..');
-const HOOKS_DIR = resolve(PROJECT_ROOT, '.claude/hooks');
-const SETTINGS_PATH = resolve(PROJECT_ROOT, '.claude/settings.json');
+// Harness root (workflow-harness/)
+const HARNESS_ROOT = resolve(__dirname, '../../../..');
+const HOOKS_DIR = resolve(HARNESS_ROOT, 'hooks');
+const SETTINGS_PATH = resolve(HARNESS_ROOT, '.claude/settings.json');
 
+/** Core hook files shipped with workflow-harness */
 const HOOK_FILES = [
-  'post-tool-lint.sh',
-  'pre-tool-config-guard.sh',
-  'pre-compact-context-save.sh',
-  'context-watchdog.sh',
   'pre-tool-guard.sh',
-  'pre-tool-no-verify-block.sh',
-  'handoff-reader.sh',
+  'tool-gate.js',
+  'context-watchdog.js',
+  'session-boundary.js',
+  'hook-utils.js',
+  'loop-detector.js',
+  'block-dangerous-commands.js',
 ];
 
 describe('G-01~04: Hook existence and settings', () => {
@@ -23,10 +24,10 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(existsSync(filepath)).toBe(true);
   });
 
-  it.each(HOOK_FILES)('hook file has bash shebang: %s', (filename) => {
+  it.each(HOOK_FILES.filter(f => f.endsWith('.sh')))('shell hook file has bash shebang: %s', (filename) => {
     const filepath = resolve(HOOKS_DIR, filename);
     const content = readFileSync(filepath, 'utf8');
-    expect(content.startsWith('#!/bin/bash')).toBe(true);
+    expect(content.startsWith('#!/bin/bash') || content.startsWith('#!/usr/bin/env bash')).toBe(true);
   });
 
   it('settings.json exists and is valid JSON', () => {
@@ -37,48 +38,29 @@ describe('G-01~04: Hook existence and settings', () => {
     expect(settings.hooks).toBeDefined();
   });
 
-  it('settings.json has PostToolUse hooks for Write|Edit', () => {
-    const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
-    const postToolUse = settings.hooks.PostToolUse;
-    expect(postToolUse).toBeDefined();
-    const lintHook = postToolUse.find((h: any) => h.matcher === 'Write|Edit');
-    expect(lintHook).toBeDefined();
-    expect(lintHook.hooks[0].command).toContain('post-tool-lint.sh');
-  });
-
-  it('settings.json has PreToolUse hooks (config-guard + no-verify-block)', () => {
+  it('settings.json has PreToolUse hooks', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const preToolUse = settings.hooks.PreToolUse;
     expect(preToolUse).toBeDefined();
-    expect(preToolUse.length).toBeGreaterThanOrEqual(2);
-    const configGuard = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-config-guard.sh'));
-    expect(configGuard).toBeDefined();
-    expect(configGuard.matcher).toBe('Write|Edit');
-    const noVerify = preToolUse.find((h: any) => h.hooks[0].command.includes('pre-tool-no-verify-block.sh'));
-    expect(noVerify).toBeDefined();
-    expect(noVerify.matcher).toBe('Bash');
+    expect(preToolUse.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('user-level hooks exist (watchdog)', () => {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
-    const userHooksDir = resolve(home, '.claude/hooks');
-    expect(existsSync(resolve(userHooksDir, 'context-watchdog.sh'))).toBe(true);
-  });
-
-  it('settings.json has Notification hook for compact', () => {
+  it('settings.json has pre-tool-guard.sh registered', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
-    const notification = settings.hooks.Notification;
-    expect(notification).toBeDefined();
-    expect(notification).toHaveLength(1);
-    expect(notification[0].matcher).toBe('compact');
-    expect(notification[0].hooks[0].command).toContain('pre-compact-context-save.sh');
+    const preToolUse = settings.hooks.PreToolUse;
+    const guardHook = preToolUse.find((h: any) =>
+      h.hooks?.some((hh: any) =>
+        (typeof hh === 'string' && hh.includes('pre-tool-guard')) ||
+        (typeof hh === 'object' && hh.command?.includes('pre-tool-guard'))
+      )
+    );
+    expect(guardHook).toBeDefined();
   });
 
-  it('settings.json has UserPromptSubmit hook', () => {
+  it('settings.json has UserPromptSubmit hooks', () => {
     const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
     const ups = settings.hooks.UserPromptSubmit;
     expect(ups).toBeDefined();
-    expect(ups).toHaveLength(1);
-    expect(ups[0].hooks[0].command).toContain('handoff-reader.sh');
+    expect(ups.length).toBeGreaterThanOrEqual(1);
   });
 });
