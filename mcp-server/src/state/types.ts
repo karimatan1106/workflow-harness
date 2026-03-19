@@ -102,7 +102,7 @@ export interface TaskState {
   approvals?: Record<string, { approvedAt: string }>;
   feedbackLog?: Array<{ feedback: string; recordedAt: string }>;
   baseline?: { capturedAt: string; totalTests: number; passedTests: number; failedTests: string[] };
-  testResults?: Array<{ recordedAt: string; phase: PhaseName; exitCode: number; output: string; summary?: string }>;
+  testResults?: Array<{ recordedAt: string; phase: PhaseName; exitCode: number; output: string; summary?: string; failedTests?: string[] }>;
   resetHistory?: Array<{ reason: string; resetAt: string; targetPhase: string }>;
   testFiles?: string[];
   knownBugs?: Array<{ testName: string; description: string; severity: 'low' | 'medium' | 'high' | 'critical'; targetPhase?: string; issueUrl?: string; recordedAt: string }>;

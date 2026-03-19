@@ -25,7 +25,7 @@ export function applyRecordBaseline(
 }
 
 export function applyRecordTestResult(
-  state: TaskState, exitCode: number, output: string, summary?: string,
+  state: TaskState, exitCode: number, output: string, summary?: string, failedTests?: string[],
 ): void {
   if (!state.testResults) state.testResults = [];
   state.testResults.push({
@@ -34,6 +34,7 @@ export function applyRecordTestResult(
     exitCode,
     output: output.slice(0, 5000),
     summary,
+    ...(failedTests && failedTests.length > 0 ? { failedTests } : {}),
   });
 }
 

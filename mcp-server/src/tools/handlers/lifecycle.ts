@@ -4,7 +4,8 @@
  */
 
 import { execSync } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { resolveProjectPath } from '../../utils/project-root.js';
 import type { StateManager } from '../../state/manager.js';
 import { runDoDChecks } from '../../gates/dod.js';
@@ -141,8 +142,8 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   if (!forceTransition) {
     dodResult = await runDoDChecks(task, docsDir);
     if (!dodResult.passed) {
-      const phaseDef = getPhaseDefinition(task.phase);
-      const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: (phaseDef?.model ?? 'sonnet') as 'opus' | 'sonnet' | 'haiku' };
+      const registryConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
+      const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: registryConfig?.model ?? null };
       const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
       try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
       try { recordRetry(taskId, task.phase, dodResult.errors.join('\n')); recordDoDFailure(taskId, task.phase, dodResult.errors); } catch { /* non-blocking */ }
@@ -166,7 +167,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   const freshTask = sm.loadTask(taskId);
   const responseObj: Record<string, unknown> = { nextPhase, phaseGuide: guide, hasTemplate: !!getPhaseDefinition(nextPhase) };
   if (PARALLEL_GROUPS[nextPhase]) {
-    responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: (PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model) ?? 'sonnet' }));
+    responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model ?? null }));
   }
   try { recordPhaseStart(taskId, freshTask?.taskName ?? '', nextPhase); } catch { /* non-blocking */ }
   if (nextPhase) { try { writeAllowedToolsFile(nextPhase as Parameters<typeof writeAllowedToolsFile>[0]); } catch (e) { console.error('writeAllowedToolsFile failed:', e); } }
@@ -191,6 +192,31 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
       const taskMetrics = getTaskMetrics(taskId);
       if (taskMetrics) {
         writeMetricsToon(freshTask.docsDir, taskMetrics);
+      }
+    } catch { /* non-blocking */ }
+    // Generate follow-up TOON for pre-existing test failures
+    try {
+      if (freshTask.baseline && freshTask.baseline.failedTests.length > 0) {
+        const followUpDir = resolveProjectPath(freshTask.docsDir);
+        mkdirSync(followUpDir, { recursive: true });
+        const now = new Date().toISOString();
+        const lines = [
+          '## follow-up',
+          `taskId: ${freshTask.taskId}`,
+          `taskName: ${freshTask.taskName}`,
+          `generatedAt: ${now}`,
+          `type: pre-existing-test-failures`,
+          `count: ${freshTask.baseline.failedTests.length}`,
+          '',
+          `failedTests: ${freshTask.baseline.failedTests.join('; ')}`,
+          '',
+          '## action',
+          'These tests were already failing before the task started.',
+          'They should be investigated and fixed in a separate task.',
+        ];
+        const followUpPath = join(followUpDir, 'follow-up-tests.toon');
+        writeFileSync(followUpPath, lines.join('\n') + '\n', 'utf8');
+        responseObj.followUpFile = followUpPath;
       }
     } catch { /* non-blocking */ }
   }

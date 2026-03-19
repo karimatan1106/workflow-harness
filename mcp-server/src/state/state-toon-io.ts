@@ -136,8 +136,8 @@ export function serializeState(state: TaskState): string {
     p(tableRows(state.feedbackLog.map(f => [f.feedback, f.recordedAt])));
   }
   if (state.testResults && state.testResults.length > 0) {
-    p(tableHeader('testResults', state.testResults.length, ['recordedAt', 'phase', 'exitCode', 'output', 'summary']));
-    p(tableRows(state.testResults.map(t => [t.recordedAt, t.phase, String(t.exitCode), t.output, t.summary ?? ''])));
+    p(tableHeader('testResults', state.testResults.length, ['recordedAt', 'phase', 'exitCode', 'output', 'summary', 'failedTests']));
+    p(tableRows(state.testResults.map(t => [t.recordedAt, t.phase, String(t.exitCode), t.output, t.summary ?? '', toSemiList(t.failedTests ?? [])])));
   }
   if (state.resetHistory && state.resetHistory.length > 0) {
     p(tableHeader('resetHistory', state.resetHistory.length, ['reason', 'resetAt', 'targetPhase']));

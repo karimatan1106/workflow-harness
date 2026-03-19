@@ -134,9 +134,14 @@ export function parseState(content: string): TaskState {
     state.feedbackLog = tables['feedbackLog'].rows.map(r => ({ feedback: r[0], recordedAt: r[1] }));
   }
   if (tables['testResults']) {
-    state.testResults = tables['testResults'].rows.map(r => ({
-      recordedAt: r[0], phase: r[1] as PhaseName, exitCode: toNum(r[2]), output: r[3], summary: orUndef(r[4]),
-    }));
+    state.testResults = tables['testResults'].rows.map(r => {
+      const ft = r[5] ? fromSemiList(r[5]) : [];
+      return {
+        recordedAt: r[0], phase: r[1] as PhaseName, exitCode: toNum(r[2]),
+        output: r[3], summary: orUndef(r[4]),
+        ...(ft.length > 0 ? { failedTests: ft } : {}),
+      };
+    });
   }
   if (tables['resetHistory']) {
     state.resetHistory = tables['resetHistory'].rows.map(r => ({ reason: r[0], resetAt: r[1], targetPhase: r[2] }));

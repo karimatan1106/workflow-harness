@@ -98,6 +98,41 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   };
 }
 
+const REGRESSION_PHASES = new Set(['testing', 'regression_test']);
+
+/** Test Regression Gate: compare baseline.failedTests vs latest testResult.failedTests */
+export function checkTestRegression(state: TaskState, phase: string): DoDCheckResult {
+  if (!REGRESSION_PHASES.has(phase)) {
+    return { level: 'L2', check: 'test_regression_gate', passed: true, evidence: 'Regression gate not required for phase: ' + phase };
+  }
+  if (!state.baseline) {
+    return { level: 'L2', check: 'test_regression_gate', passed: true, evidence: 'No baseline captured — regression gate skipped' };
+  }
+  if (!state.testResults || state.testResults.length === 0) {
+    return { level: 'L2', check: 'test_regression_gate', passed: true, evidence: 'No test results recorded — delegating to exit_code_zero check' };
+  }
+  const latest = state.testResults[state.testResults.length - 1];
+  if (!latest.failedTests) {
+    return { level: 'L2', check: 'test_regression_gate', passed: true, evidence: 'failedTests not provided in test result — regression gate skipped (backward compat)' };
+  }
+  const baselineSet = new Set(state.baseline.failedTests);
+  const newFailures = latest.failedTests.filter(t => !baselineSet.has(t));
+  if (newFailures.length > 0) {
+    return {
+      level: 'L2', check: 'test_regression_gate', passed: false,
+      evidence: `New test failures detected (${newFailures.length}): ${newFailures.join(', ')}`,
+      fix: 'These tests were passing before your changes. Fix all new failures before advancing: ' + newFailures.join(', '),
+    };
+  }
+  const existingFailures = latest.failedTests.filter(t => baselineSet.has(t));
+  return {
+    level: 'L2', check: 'test_regression_gate', passed: true,
+    evidence: existingFailures.length > 0
+      ? `No new regressions. ${existingFailures.length} pre-existing failure(s) carried over: ${existingFailures.join(', ')}`
+      : 'No new regressions. All tests passing.',
+  };
+}
+
 /** Resolve @spec path: try CWD first, then ancestor directories of the source file */
 function resolveSpecPath(specPath: string, sourceFile: string): boolean {
   if (existsSync(specPath)) return true;

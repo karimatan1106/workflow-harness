@@ -113,8 +113,8 @@ export class StateManager {
   recordBaseline(taskId: string, totalTests: number, passedTests: number, failedTests: string[]): boolean {
     return withTask(taskId, this.hmacKey, s => { applyRecordBaseline(s, totalTests, passedTests, failedTests); });
   }
-  recordTestResult(taskId: string, exitCode: number, output: string, summary?: string): boolean {
-    return withTask(taskId, this.hmacKey, s => { applyRecordTestResult(s, exitCode, output, summary); });
+  recordTestResult(taskId: string, exitCode: number, output: string, summary?: string, failedTests?: string[]): boolean {
+    return withTask(taskId, this.hmacKey, s => { applyRecordTestResult(s, exitCode, output, summary, failedTests); });
   }
   addProof(taskId: string, entry: ProofEntry): boolean {
     return withTask(taskId, this.hmacKey, s => { applyAddProof(s, entry); });

@@ -42,6 +42,7 @@ export const TOOL_DEFS_B = [
         exitCode: { type: 'number', description: '0=success.' },
         output: { type: 'string', description: 'Test output (min 50 chars).', minLength: 50 },
         summary: { type: 'string', description: 'Short summary.' },
+        failedTests: { type: 'array', items: { type: 'string' }, description: 'Names of failed tests (for regression gate).' },
         sessionToken: { type: 'string', description: 'Session token.' },
       },
       required: ['taskId', 'exitCode', 'output', 'sessionToken'],

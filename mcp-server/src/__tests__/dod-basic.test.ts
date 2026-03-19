@@ -1,5 +1,9 @@
 /**
  * DoD gate tests: phases with no output file, L1 file existence, L2 exit code.
+ * @spec FR-3 DoD gate system
+ * @spec AC-1 L1 file existence checks
+ * @spec AC-2 L2 exit code checks
+ * @covers gates/dod.ts
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -50,8 +54,8 @@ describe('runDoDChecks for phases with no output file', () => {
   it('always returns 27 check results', async () => {
     const state = makeMinimalState('refactoring', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
-    expect(result.checks).toHaveLength(27);
-    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L1', 'L2', 'L3', 'L4', 'L4', 'L3', 'L3', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L4', 'L4']);
+    expect(result.checks).toHaveLength(28);
+    expect(result.checks.map(c => c.level)).toEqual(['L1', 'L1', 'L1', 'L2', 'L3', 'L4', 'L4', 'L3', 'L3', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L3', 'L4', 'L4', 'L4', 'L4', 'L3', 'L4', 'L4', 'L2', 'L2', 'L4', 'L4']);
     expect(result.checks[2].check).toBe('spec_paths_exist');
     expect(result.checks[5].check).toBe('toon_safety');
     expect(result.checks[10].check).toBe('invariant_completeness');
@@ -59,8 +63,9 @@ describe('runDoDChecks for phases with no output file', () => {
     expect(result.checks[22].check).toBe('artifact_drift');
     expect(result.checks[23].check).toBe('package_lock_sync');
     expect(result.checks[24].check).toBe('tdd_red_evidence');
-    expect(result.checks[25].check).toBe('dead_references');
-    expect(result.checks[26].check).toBe('dci_validation');
+    expect(result.checks[25].check).toBe('test_regression_gate');
+    expect(result.checks[26].check).toBe('dead_references');
+    expect(result.checks[27].check).toBe('dci_validation');
   });
 });
 

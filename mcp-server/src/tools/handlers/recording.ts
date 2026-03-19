@@ -95,12 +95,13 @@ export async function handleHarnessRecordTestResult(args: Record<string, unknown
   const exitCode = Number(args.exitCode ?? -1);
   const output = String(args.output ?? '');
   const summary = args.summary ? String(args.summary) : '';
+  const failedTests = Array.isArray(args.failedTests) ? (args.failedTests as string[]) : undefined;
   if (output.length < 50) return respondError('output must be at least 50 characters long');
   const task = sm.loadTask(taskId);
   if (!task) return respondError('Task not found: ' + taskId);
   const sessionErr = validateSession(task, args.sessionToken);
   if (sessionErr) return respondError(sessionErr);
-  const trOk = sm.recordTestResult(taskId, exitCode, output, summary || undefined);
+  const trOk = sm.recordTestResult(taskId, exitCode, output, summary || undefined, failedTests);
   if (!trOk) return respondError('Failed to record test result');
   sm.addProof(taskId, { phase: task.phase as PhaseName, level: 'L2' as ControlLevel, check: 'test execution (exitCode=' + exitCode + ')', result: exitCode === 0, evidence: summary ? (summary + '\n\n' + output.slice(0, 500)) : output.slice(0, 500), timestamp: new Date().toISOString() });
   return respond({ taskId, exitCode, passed: exitCode === 0, summary, recorded: true });
