@@ -53,6 +53,7 @@ export async function setupHandlerTest(): Promise<TestCtx> {
 
   vi.stubEnv('STATE_DIR', STATE_DIR);
   vi.stubEnv('DOCS_DIR', DOCS_DIR);
+  vi.stubEnv('HARNESS_TEST_MODE', '1');
   vi.resetModules();
 
   const managerMod = await import('../state/manager.js');

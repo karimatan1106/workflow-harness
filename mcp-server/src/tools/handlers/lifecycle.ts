@@ -110,6 +110,14 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   const sessionErr = validateSession(task, args.sessionToken);
   if (sessionErr) return respondError(sessionErr);
   const forceTransition = Boolean(args.forceTransition ?? false);
+  // Phases that cannot be skipped via forceTransition (unless in test mode)
+  const NO_SKIP_PHASES = new Set(['scope_definition', 'requirements']);
+  if (forceTransition && NO_SKIP_PHASES.has(task.phase) && !process.env.HARNESS_TEST_MODE) {
+    return respondError(
+      `Phase "${task.phase}" cannot be skipped with forceTransition. ` +
+      'Complete this phase normally — its output is required for downstream phases.',
+    );
+  }
   const retryCount = Number(args.retryCount ?? 1);
   if (retryCount >= 1) {
     const currentRetry = sm.getRetryCount(taskId, task.phase);
