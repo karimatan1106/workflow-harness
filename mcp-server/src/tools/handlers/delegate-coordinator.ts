@@ -179,7 +179,10 @@ export async function handleDelegateCoordinator(
   const instruction = String(args.instruction ?? '');
   if (!instruction) return respondError('instruction is required');
 
-  // Phase-aware defaults (Fix #1, #2, #5, #6, #7)
+  const planOnly = Boolean(args.planOnly);
+  const approvedPlan = args.approvedPlan ? String(args.approvedPlan) : null;
+
+  // Phase-aware defaults
   const phaseGuide = buildPhaseGuide(task.phase);
 
   const files = args.files as string[] | undefined;
@@ -188,25 +191,45 @@ export async function handleDelegateCoordinator(
   const parsedInstruction = parseToonKv(instruction);
   let fullInstruction: string;
   if (Object.keys(parsedInstruction).length > 0) {
-    // Structured TOON input — reconstruct as clean key: value block
     const kvLines = Object.entries(parsedInstruction)
       .map(([k, v]) => `${k}: ${v}`)
       .join('\n');
     fullInstruction = kvLines;
   } else {
-    // S-4: Fallback — raw string when parseToonKv returns empty
     fullInstruction = instruction;
   }
   if (files?.length) {
     fullInstruction += '\n\n対象ファイル:\n' + files.map((f: string) => '- ' + f).join('\n');
   }
 
-  // C-3: allowedTools/disallowedTools are server-side enforced, not overridable
-  const allowedTools = buildAllowedTools(phaseGuide);
+  if (planOnly) {
+    fullInstruction += '\n\n--- plan-only mode ---\n'
+      + 'ファイル編集禁止。コードベースを調査し、実装の分解プランのみ返すこと。\n'
+      + '出力形式:\n'
+      + 'plan-summary: 全体方針の1行要約\n'
+      + 'worker-count: 想定Worker数\n'
+      + 'worker-N-task: Worker Nの担当内容\n'
+      + 'worker-N-files: Worker Nの対象ファイル\n'
+      + 'dependencies: Worker間の依存関係(なければ none)\n'
+      + 'risks: 注意すべきリスク';
+  }
+
+  if (approvedPlan) {
+    fullInstruction = '--- approved plan ---\n'
+      + approvedPlan
+      + '\n--- end approved plan ---\n\n'
+      + '上記の承認済みプランに従って実行すること。プランから逸脱しないこと。\n\n'
+      + fullInstruction;
+  }
+
+  const baseAllowedTools = buildAllowedTools(phaseGuide);
+  const allowedTools = planOnly
+    ? baseAllowedTools.split(',').filter(t => !['Write', 'Edit'].includes(t)).join(',')
+    : baseAllowedTools;
   const disallowedTools = DEFAULT_DISALLOWED_TOOLS;
   // C-4: systemPrompt is server-side enforced, not overridable
   const systemPrompt = buildCoordinatorPrompt(task, phaseGuide);
-  const model = args.model ? String(args.model) : phaseGuide.model;
+  const model = args.model ? String(args.model) : (phaseGuide.model ?? null);
   const addDirs = args.addDirs as string[] | undefined;
   const mcpConfig = args.mcpConfig ? String(args.mcpConfig) : findMcpConfig();
 
@@ -261,6 +284,7 @@ export async function handleDelegateCoordinator(
     HARNESS_SESSION_TOKEN: String(args.sessionToken),
     HARNESS_TASK_ID: taskId,
     HARNESS_LAYER: 'coordinator',
+    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
     FORCE_COLOR: '1',
   };
 
@@ -277,10 +301,20 @@ export async function handleDelegateCoordinator(
 
     const resultText = extractResult(stdout);
 
+    // planOnly: return plan for human approval
+    if (planOnly) {
+      const toonResult = [
+        `success: true`,
+        `requires-approval: true`,
+        `plan: ${esc(resultText.trim())}`,
+        `duration-ms: ${durationMs}`,
+      ].join('\n');
+      return respond(toonResult);
+    }
+
     // S-3: Parse coordinator output as TOON key-value pairs
     const parsedOutput = parseToonKv(resultText);
     if (Object.keys(parsedOutput).length > 0) {
-      // Structured TOON output from coordinator
       const success = parsedOutput['success'] !== 'false';
       if (!success) {
         return respondError(
@@ -296,7 +330,6 @@ export async function handleDelegateCoordinator(
       return respond(toonResult);
     }
 
-    // S-4/S-5: Fallback — raw output, use esc() instead of manual backslash escaping
     const toonResult = [
       `success: true`,
       `output: ${esc(resultText.trim())}`,

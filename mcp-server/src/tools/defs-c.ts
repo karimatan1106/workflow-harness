@@ -47,7 +47,7 @@ export const TOOL_DEFS_C = [
     },
   },
   {
-    name: 'harness_delegate_work',
+    name: 'harness_delegate_coordinator',
     description: 'Delegate phase work to an isolated coordinator process (3-layer model). Phase-aware context injection: auto-selects allowedTools, disallowedTools, model, and system prompt from PHASE_REGISTRY (server-enforced, not overridable). Implementation/testing phases get Write,Edit,Bash; read-only phases get Agent,Read,Glob,Grep only. sessionToken/taskId propagated via env vars.',
     inputSchema: {
       type: 'object',
@@ -82,6 +82,14 @@ export const TOOL_DEFS_C = [
         mcpConfig: {
           type: 'string',
           description: 'Path to .mcp.json for MCP server configuration. Default: auto-detected from project root.',
+        },
+        planOnly: {
+          type: 'boolean',
+          description: 'When true, coordinator runs in read-only mode and returns a decomposition plan without executing. Used as stage 1 of the planning phase 2-stage flow.',
+        },
+        approvedPlan: {
+          type: 'string',
+          description: 'Approved plan from planOnly stage. When provided, coordinator executes this plan. Used as stage 2 of the planning phase 2-stage flow.',
         },
       },
       required: ['taskId', 'sessionToken', 'instruction'],

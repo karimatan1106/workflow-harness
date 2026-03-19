@@ -6,7 +6,7 @@ description: Orchestrator protocol, three-layer execution model, model selection
 
 ## 1. Orchestrator Protocol
 
-Main Claude = **Orchestrator**. Never does phase work directly. Delegates via Agent Teams.
+Main Claude = Orchestrator. Never does phase work directly. Delegates via Agent Teams.
 
 ### Three-Layer Execution Model (Agent Teams)
 ```
@@ -59,21 +59,21 @@ Orchestrator (lifecycle MCP + TeamCreate + SendMessage のみ)
 
 ### Worker並列化ポリシー
 Coordinatorはタスクの依存関係を分析し、独立タスクを最大限並列でAgent()起動する。
-- **分割単位**: ファイル単位。同一ファイルを複数Workerが編集しない限り並列可
-- **起動数は動的**: 事前に固定しない。Coordinatorがスコープとファイル依存関係から判断
-- **並列判断フロー**:
+- 分割単位: ファイル単位。同一ファイルを複数Workerが編集しない限り並列可
+- 起動数は動的: 事前に固定しない。Coordinatorがスコープとファイル依存関係から判断
+- 並列判断フロー:
   1. スコープ内ファイル一覧を取得
   2. ファイル間の依存関係を分析（import/require）
   3. 独立グループごとに1 Worker = 1 Agent()で同時起動
   4. 依存があるファイル群は逐次実行
-- **制約**: 同一ファイルへの並列Write/Edit禁止（競合防止）
+- 制約: 同一ファイルへの並列Write/Edit禁止（競合防止）
 
 ### Template & Model Rules
-- **NEVER construct prompts from scratch.** Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
-- **opus**: code_review ONLY (SRB-1: independent model prevents self-review bias)
-- **sonnet**: Analysis, reasoning, code generation
-- **haiku**: Structured output, mechanical transforms
-- Escalation: haiku→sonnet after 2 failed retries; 3rd+ always sonnet
+- NEVER construct prompts from scratch. Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
+- SoT: model → `registry.ts (PHASE_REGISTRY)`。null=親モデル継承(CLI起動時モデル)、haiku=明示指定
+- null(inherit): 分析・推論・コード生成・code_review — CLI起動時のモデルを継承
+- haiku: コマンド実行のみ (build_check, testing, regression_test, commit, push, ci_verification, deploy, completed)
+- Escalation: haiku→inherit after 2 failed retries; 3rd+ always inherit
 - Extended Thinking: scope_definition, research, requirements, threat_modeling, impact_analysis, design_review, test_design
 
 ### Context Handoff (TOON-first)
@@ -127,7 +127,7 @@ Coordinatorはタスクの依存関係を分析し、独立タスクを最大限
 |------|---------|
 | harness_capture_baseline | Record baseline (totalTests, passedTests, failedTests[]) |
 | harness_record_test | Register test file |
-| harness_record_test_result | Record result (**subagent OK**, output >= 50 chars) |
+| harness_record_test_result | Record result (subagent OK, output >= 50 chars) |
 | harness_get_test_info | Get tests + baseline |
 | harness_record_known_bug | Record known bug (testName, description, severity) |
 
@@ -151,10 +151,10 @@ Coordinatorはタスクの依存関係を分析し、独立タスクを最大限
 
 After task completion (`completed` phase), Orchestrator runs memory curation:
 
-1. **Scan**: Read `MEMORY.md` + linked topic files
-2. **Staleness**: Compare entries against recent task learnings
-3. **Dedup**: Merge overlapping entries into more specific one
-4. **Prune**: Remove entries referencing deleted files/obsolete patterns
-5. **Record**: Add 1-3 new stable patterns (not session-specific)
+1. Scan: Read `MEMORY.md` + linked topic files
+2. Staleness: Compare entries against recent task learnings
+3. Dedup: Merge overlapping entries into more specific one
+4. Prune: Remove entries referencing deleted files/obsolete patterns
+5. Record: Add 1-3 new stable patterns (not session-specific)
 
 Rules: Never add session-specific context. Never exceed 200 lines in MEMORY.md. Never duplicate CLAUDE.md/skill files. Prefer updating over adding. Delete wrong entries.
