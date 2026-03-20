@@ -3,7 +3,7 @@
 Authoritative instruction set. Violations are blocked by hooks.
 
 ## Workflow Enforcement
-- コード変更タスクは即座に `/harness start` で開始。事前調査禁止。純粋な質問のみ直接回答可。
+- コード変更タスクは即座に `/workflow-harness start` で開始。事前調査禁止。純粋な質問のみ直接回答可。
 - Auto-Start: 「〜して」（変更依頼）→ 自動起動。「〜か？」（質問）→ 直接回答。
 
 ## Tool Delegation

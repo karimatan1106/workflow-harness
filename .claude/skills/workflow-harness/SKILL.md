@@ -1,5 +1,5 @@
 ---
-name: harness
+name: workflow-harness
 description: Intent-driven 30-phase workflow harness for code changes. Start here for requirements, design, implementation, testing, or code review tasks. Provides phase-by-phase guidance with L1-L4 deterministic gates.
 user-invocable: true
 ---
@@ -25,7 +25,7 @@ Phases = context compression devices: each artifact is the complete handoff for 
 
 | Current Stage | Read These Files | Why |
 |--------------|-----------------|-----|
-| `/harness start` | orchestrator.md | Execution flow, template rule |
+| `/workflow-harness start` | orchestrator.md | Execution flow, template rule |
 | scope → requirements | phases.md, gates.md | Phase work + DoD checks |
 | threat → planning | phases.md, execution.md | Phase work + subagent config |
 | design phases | phases.md, docs.md | Phase work + doc/diagram placement |
@@ -65,30 +65,30 @@ Phases = context compression devices: each artifact is the complete handoff for 
 
 | Command | Action |
 |---------|--------|
-| `/harness start <name>` | Start task (userIntent >= 20 chars, UI-1) |
-| `/harness status` | Show current task state |
-| `/harness next` | Run DoD checks and advance |
-| `/harness approve <type>` | Approve gate |
-| `/harness list` | List all active tasks |
-| `/harness reset [reason]` | Reset to scope_definition |
-| `/harness back <phase>` | Roll back to earlier phase |
-| `/harness complete-sub <sub>` | Complete sub-phase in parallel group |
+| `/workflow-harness start <name>` | Start task (userIntent >= 20 chars, UI-1) |
+| `/workflow-harness status` | Show current task state |
+| `/workflow-harness next` | Run DoD checks and advance |
+| `/workflow-harness approve <type>` | Approve gate |
+| `/workflow-harness list` | List all active tasks |
+| `/workflow-harness reset [reason]` | Reset to scope_definition |
+| `/workflow-harness back <phase>` | Roll back to earlier phase |
+| `/workflow-harness complete-sub <sub>` | Complete sub-phase in parallel group |
 
 ---
 
 ## 4. Command Routing
 
-**`/harness start <name>`**
+**`/workflow-harness start <name>`**
 1. Pre-start: active tasks <= 5, git clean, branch fresh
 2. Validate: userIntent >= 20 chars (UI-1), ambiguity (UI-2), purpose (UI-7)
 3. `harness_start(taskName, userIntent)` → `harness_set_scope` if known
 4. Report: taskId, phase, size, docsDir, sessionToken
 
-**`/harness next`**: `harness_next(taskId, sessionToken)` → DoD failure: re-launch subagent (never edit directly)
+**`/workflow-harness next`**: `harness_next(taskId, sessionToken)` → DoD failure: re-launch subagent (never edit directly)
 
-**`/harness approve <type>`**: Present artifacts to user FIRST → `harness_approve(taskId, type, sessionToken)`
+**`/workflow-harness approve <type>`**: Present artifacts to user FIRST → `harness_approve(taskId, type, sessionToken)`
 
-**`/harness complete-sub <sub>`**: `harness_complete_sub` → when all complete: `harness_next`
+**`/workflow-harness complete-sub <sub>`**: `harness_complete_sub` → when all complete: `harness_next`
 
 ---
 
