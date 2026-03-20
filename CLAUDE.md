@@ -10,8 +10,8 @@ Authoritative instruction set. Violations are blocked by hooks.
 - オーケストレーターの直接ツール使用禁止（Read/Edit/Write/Bash/Glob/Grep）。
 - 許可: lifecycle MCP, Agent(coordinator/worker/Explore/Plan), Skill, ToolSearch, AskUserQuestion。
 - 編集はWorkerのみ。オーケストレーター/Coordinatorはファイル編集禁止。
-- Coordinator: 分析・タスク分解。Read/Glob/Grep のみ。結果はファイルに書き出し。
-- Worker: ファイル操作実行。Read/Write/Edit/Bash/Glob/Grep。
+- Coordinator: 分析・タスク分解。結果はファイルに書き出し。
+- Worker: ファイル操作実行。
 - subagent間の文脈はファイルベースで中継。L1はファイルパスと1行サマリのみ保持。
 
 ## Core Constraints

@@ -38,7 +38,6 @@ function checkL1(toolName, toolInput) {
     var st = (toolInput && toolInput.subagent_type) || '';
     if (st === 'Explore' || st === 'Plan') return null;
     if (st && st !== 'general-purpose') return null;
-    if (toolInput && toolInput.team_name) return null;
     return 'L1 Agent() restricted. Use named subagent_type or team_name.';
   }
   if (L1_ALLOWED.has(toolName)) return null;
