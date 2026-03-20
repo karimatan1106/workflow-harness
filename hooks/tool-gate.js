@@ -46,7 +46,7 @@ function checkL1(toolName, toolInput) {
 }
 
 // ── L2 Coordinator rules (phase-independent) ──
-const L2_BLOCKED = new Set(['Skill']);
+const L2_BLOCKED = new Set([]);
 
 function checkL2(toolName) {
   if (toolName.startsWith('mcp__harness__')) {
