@@ -45,3 +45,4 @@ Authoritative instruction set. Violations are blocked by hooks.
 - ADR-001: L5(LLM判断)ゲート禁止
 - ADR-002: フェーズ=コンテキスト圧縮の設計
 - ADR-003: 3層ガード→2層ガードへの簡素化
+- ADR-004: ドキュメント3層分離（Why/What/How）
