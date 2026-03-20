@@ -38,7 +38,7 @@ function checkL1(toolName, toolInput) {
     var st = (toolInput && toolInput.subagent_type) || '';
     if (st === 'Explore' || st === 'Plan') return null;
     if (st && st !== 'general-purpose') return null;
-    return 'L1 Agent() restricted. Use named subagent_type or team_name.';
+    return 'L1 Agent() restricted. Use named subagent_type (coordinator/worker/Explore/Plan).';
   }
   if (L1_ALLOWED.has(toolName)) return null;
   return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent(coordinator/worker).';
