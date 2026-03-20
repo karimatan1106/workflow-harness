@@ -26,7 +26,7 @@ function detectLayer() {
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'TeamCreate', 'TeamDelete', 'SendMessage', 'AskUserQuestion', 'ToolSearch']);
+const L1_ALLOWED = new Set(['Skill', 'AskUserQuestion', 'ToolSearch']);
 
 function checkL1(toolName, toolInput) {
   if (toolName.startsWith('mcp__harness__')) {
@@ -42,7 +42,7 @@ function checkL1(toolName, toolInput) {
     return 'L1 Agent() restricted. Use named subagent_type or team_name.';
   }
   if (L1_ALLOWED.has(toolName)) return null;
-  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via TeamCreate + SendMessage.';
+  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent(coordinator/worker).';
 }
 
 // ── L2 Coordinator rules (phase-independent) ──
@@ -219,8 +219,8 @@ async function main() {
   if (layer === 'orchestrator') {
     reason = checkL1(toolName, toolInput);
   } else if (layer === 'coordinator') {
-    // L2 coordinator: TeamCreateで定義されたCoordinator。
-    // Bash is unrestricted (needed for HARNESS_LAYER=worker spawning).
+    // L2 coordinator: Agent(subagent_type="coordinator")で起動。
+    // Bash is unrestricted for coordinator layer.
     // Write/Edit are phase-dependent (extension check).
     reason = checkL2(toolName);
     if (!reason && (toolName === 'Write' || toolName === 'Edit')) {

@@ -18,7 +18,7 @@ Orchestrator (state management, delegation, retry tracking)
 |----|---------|------|--------------|
 | Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、Agent、Skill、AskUserQuestion |
 | Coordinator | Agent(subagent_type="coordinator") | 分析・タスク分解・ファイル出力 | Read、Glob、Grep、ToolSearch |
-| Worker | Agent(subagent_type="worker") | ファイル読み書き・成果物生成 | Read、Write、Edit、Bash、Glob、Grep |
+| Worker | Agent(subagent_type="worker") | ファイル読み書き・成果物生成 | Read、Write、Edit、Bash、Glob、Grep、ToolSearch |
 
 ### Execution Flow (Agent Subagents)
 1. `harness_start(taskName, userIntent)`
