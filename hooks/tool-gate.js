@@ -59,7 +59,7 @@ function checkL2(toolName) {
 }
 
 // ── L3 Worker rules (phase-dependent) ──
-const L3_ALWAYS_ALLOWED = new Set(['Read', 'Glob', 'Grep', 'SendMessage', 'ToolSearch']);
+const L3_ALWAYS_ALLOWED = new Set(['Read', 'Glob', 'Grep', 'ToolSearch']);
 const L3_ALWAYS_BLOCKED = new Set([
   'Skill', 'Agent', 'TeamCreate', 'TeamDelete',
   'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
