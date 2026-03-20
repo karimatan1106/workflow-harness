@@ -20,9 +20,10 @@ Authoritative instruction set. Violations are blocked by hooks.
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
 ## Documentation Layers (→ ADR-004)
-- CLAUDE.md にはWhat（ルール・制約）のみ記載。How（手順）を書かない。
-- Why（判断の経緯）は docs/adr/ADR-NNN.md に記録。CLAUDE.md にはポインタのみ。
-- How（手順・フロー）はスキルファイルまたはコードに記載。
+HowをCLAUDE.mdに書くとコードと乖離し二重管理になる。Howはコードかスキルファイルが担う。
+- CLAUDE.md = What（ルール・制約）のみ。How（手順）を書かない。
+- docs/adr/ADR-NNN.md = Why（判断の経緯）。イミュータブル（追記のみ、修正は新ADRで撤回）。
+- スキルファイル/コード = How（手順・フロー・設定）。
 - 新ルール追加時: ADR（Why）を必ず作成。Whyなきルールは追加しない。
 
 ## Forbidden Actions (hooks enforce)
