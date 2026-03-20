@@ -24,6 +24,7 @@ import { writeAnalyticsToon } from '../analytics-toon.js';
 import { appendErrorToon } from '../error-toon.js';
 import { writeMetricsToon } from '../metrics-toon.js';
 import { getTaskMetrics } from '../metrics.js';
+import { generateTaskAdr } from '../adr-generator.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -229,6 +230,11 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
         writeFileSync(followUpPath, lines.join('\n') + '\n', 'utf8');
         responseObj.followUpFile = followUpPath;
       }
+    } catch { /* non-blocking */ }
+    // IDD: Auto-generate ADR from completed task (ADR-004)
+    try {
+      const adrPath = generateTaskAdr(freshTask);
+      if (adrPath) responseObj.adrFile = adrPath;
     } catch { /* non-blocking */ }
   }
   return respond(responseObj);
