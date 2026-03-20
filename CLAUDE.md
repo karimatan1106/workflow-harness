@@ -6,11 +6,13 @@ Authoritative instruction set. Violations are blocked by hooks.
 - コード変更タスクは即座に `/workflow-harness start` で開始。事前調査禁止。純粋な質問のみ直接回答可。
 - Auto-Start: 「〜して」（変更依頼）→ 自動起動。「〜か？」（質問）→ 直接回答。
 
-## Tool Delegation
+## Tool Delegation (2層モデル)
 - オーケストレーターの直接ツール使用禁止（Read/Edit/Write/Bash/Glob/Grep）。
-- 許可: lifecycle MCP, TeamCreate, SendMessage, Task*, Agent, Skill, ToolSearch, AskUserQuestion。
+- 許可: lifecycle MCP, Agent(coordinator/worker/Explore/Plan), Skill, ToolSearch, AskUserQuestion。
 - 編集はWorkerのみ。オーケストレーター/Coordinatorはファイル編集禁止。
-- Worker内のAgent(Explore)は読み取り専用で許可。
+- Coordinator: 分析・タスク分解。Read/Glob/Grep のみ。結果はファイルに書き出し。
+- Worker: ファイル操作実行。Read/Write/Edit/Bash/Glob/Grep。
+- subagent間の文脈はファイルベースで中継。L1はファイルパスと1行サマリのみ保持。
 
 ## Core Constraints
 - L1-L4決定的ゲートのみ。L5(LLM判断)はゲート使用禁止。(→ ADR-001)

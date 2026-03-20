@@ -1,71 +1,77 @@
 ---
 name: harness-orchestrator
-description: Orchestrator protocol, three-layer execution model, model selection, context handoff, and MCP tool reference.
+description: Orchestrator protocol, two-layer execution model, model selection, context handoff, and MCP tool reference.
 ---
 > CLAUDE.md Sec5(Orchestrator)/Sec9(sessionToken) が権威仕様。本ファイルはプロトコル詳細とMCPツール一覧。
 
 ## 1. Orchestrator Protocol
 
-Main Claude = Orchestrator. Never does phase work directly. Delegates via Agent Teams.
+Main Claude = Orchestrator. Never does phase work directly. Delegates via Agent() subagents.
 
-### Three-Layer Execution Model (Agent Teams)
+### Two-Layer Execution Model (Agent Subagents)
 ```
 Orchestrator (state management, delegation, retry tracking)
-  → TeamCreate → Coordinator (ComponentDAG execution, parallel planning)
-    → Agent() → Worker (reads files, writes artifacts atomically)
+  → Agent(coordinator) → analysis, task decomposition, writes results to files
+  → Agent(worker) × N → file operations, writes artifacts to files
 ```
 | 層 | 起動方法 | 責務 | 使用可能ツール |
 |----|---------|------|--------------|
-| Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、TeamCreate、SendMessage、Skill、AskUserQuestion |
-| Coordinator | TeamCreateで定義 | フェーズ作業管理・Worker委譲 | 非ライフサイクルMCP、Agent |
-| Worker | CoordinatorからAgent()で起動 | ファイル読み書き | Read、Write、Edit、Bash、Glob、Grep |
+| Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、Agent、Skill、AskUserQuestion |
+| Coordinator | Agent(subagent_type="coordinator") | 分析・タスク分解・ファイル出力 | Read、Glob、Grep、ToolSearch |
+| Worker | Agent(subagent_type="worker") | ファイル読み書き・成果物生成 | Read、Write、Edit、Bash、Glob、Grep |
 
-### Execution Flow (Agent Teams)
+### Execution Flow (Agent Subagents)
 1. `harness_start(taskName, userIntent)`
 2. For each phase:
    a. `harness_next` → advance (returns hasTemplate flag)
    b. If hasTemplate: `harness_get_subphase_template` → get prompt
-   c. `TeamCreate` でCoordinatorを定義（フェーズ実行の責務）
-   d. `SendMessage` でCoordinatorにテンプレートを送信
-   e. Coordinator が `Agent(prompt=template)` でWorkerを起動
-   f. Worker が入力読み込み → 作業 → 成果物書き出し
-   g. Orchestrator が `harness_next` → DoD検証+遷移
-3. Parallel phases: 複数TeamCreateを同時発行 → Worker並列実行 → `harness_complete_sub`
+   c. `Agent(subagent_type="coordinator", prompt=template)` → 分析・タスク分解
+      - coordinator は入力ファイルを読み、結果をファイルに書き出す
+      - L1 には1行サマリとファイルパスのみ返却
+   d. coordinator の出力ファイルパスを prompt に含め、Worker を起動:
+      `Agent(subagent_type="worker", prompt="...")` × N（並列可）
+      - worker は coordinator が書いたファイルを読み、成果物を書き出す
+      - L1 には1行サマリとファイルパスのみ返却
+   e. Orchestrator が `harness_next` → DoD検証+遷移
+3. Parallel phases: 複数 Agent(worker) を同時発行 → `harness_complete_sub`
 4. Approval gates: present artifacts to user → `harness_approve`
-5. Validation failure: re-launch via TeamCreate (NEVER edit directly)
+5. Validation failure: re-launch via Agent (NEVER edit directly)
 
-### フェーズ実行フロー（3層モデル — Agent Teams）
+### フェーズ実行フロー（2層モデル）
 ```
-Orchestrator (lifecycle MCP + TeamCreate + SendMessage のみ)
+Orchestrator (lifecycle MCP + Agent のみ)
 │
 ├─ harness_start           ← オーケストレーター直接実行
 │
 ├─ Phase N のサブステップ:
-│   ├─ TeamCreate(Coordinator)  ← Coordinatorをチーム定義
-│   └─ SendMessage(template)    ← テンプレートをCoordinatorに送信
-│         └─ Coordinator が Agent(Worker) を起動
-│               └─ Worker → Read/Edit/Write + harness_set_scope + harness_add_ac 等
+│   ├─ Agent(coordinator)    ← 分析・タスク分解 → ファイル書き出し
+│   └─ Agent(worker) × N    ← ファイル読み込み → 成果物書き出し
 │
 ├─ harness_next            ← オーケストレーター直接実行（DoD検証）
 │
-├─ Phase N+1 のサブステップ:
-│   ├─ TeamCreate(Coordinator)  ← 新しいCoordinatorで次フェーズ
-│   └─ SendMessage(template)
+├─ Phase N+1:
+│   ├─ Agent(coordinator)
+│   └─ Agent(worker) × N
 │
 └─ 繰り返し → harness_next (completed)
 ```
 注意: WorkerはLifecycle MCP (_start, _next, _approve, _status, _back, _reset) を呼べない。これらはOrchestrator専用。
-注意: Coordinatorは非ライフサイクルMCP + Agent のみ使用可。Skillは使用不可。
+
+### Context Handoff (ファイルベース中継)
+- subagent 間の文脈は全てファイルで中継する
+- coordinator が分析結果をファイルに書き出し、worker がそれを読む
+- L1 のコンテキストにはファイルパスと1行サマリのみ蓄積
+- ファイル形式は内容に応じて選択:
+  - 構造化データ(AC, RTM, スコープ) → .toon (JSON比40-50%トークン削減)
+  - 散文・分析・コード含む内容 → .md
+  - ソースコード → 適切な拡張子
+- 次subagentはまず前工程の出力ファイルを読む
+- Context techniques: differential reading (`git diff --stat`), index-first
 
 ### Worker並列化ポリシー
-Coordinatorはタスクの依存関係を分析し、独立タスクを最大限並列でAgent()起動する。
+Orchestratorはcoordinatorの分析結果に基づき、独立タスクを最大限並列でAgent(worker)起動する。
 - 分割単位: ファイル単位。同一ファイルを複数Workerが編集しない限り並列可
-- 起動数は動的: 事前に固定しない。Coordinatorがスコープとファイル依存関係から判断
-- 並列判断フロー:
-  1. スコープ内ファイル一覧を取得
-  2. ファイル間の依存関係を分析（import/require）
-  3. 独立グループごとに1 Worker = 1 Agent()で同時起動
-  4. 依存があるファイル群は逐次実行
+- 起動数は動的: coordinatorの分析結果から判断
 - 制約: 同一ファイルへの並列Write/Edit禁止（競合防止）
 
 ### Template & Model Rules
@@ -75,13 +81,6 @@ Coordinatorはタスクの依存関係を分析し、独立タスクを最大限
 - haiku: コマンド実行のみ (build_check, testing, regression_test, commit, push, ci_verification, deploy, completed)
 - Escalation: haiku→inherit after 2 failed retries; 3rd+ always inherit
 - Extended Thinking: scope_definition, research, requirements, threat_modeling, impact_analysis, design_review, test_design
-
-### Context Handoff (TOON-first)
-- Files in `{docsDir}/` bridge subagent-to-subagent context
-- 次subagentはまず `{docsDir}/{prevPhase}.toon` を読む（JSON比40-50%トークン削減）
-- TOONが無い場合: MDの `## サマリー` (Delta Entry形式) をフォールバック
-- TOON `next.readFiles` が次フェーズの読むべきファイルを明示
-- Context techniques: differential reading (`git diff --stat`), index-first, negative space (`NOT_RELEVANT`)
 
 ### Phase Completion Reporting
 `[{phase} phase complete] Completed: {description}. Next: {next_phase}. Remaining: {count} phases.`

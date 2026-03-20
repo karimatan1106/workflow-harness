@@ -18,22 +18,31 @@ function detectLayer() {
   const env = (process.env.HARNESS_LAYER || '').toLowerCase();
   if (env === 'worker') return 'worker';
   if (env === 'coordinator') return 'coordinator';
-  // TeamCreateで定義されたCoordinator or Agent subagent: agent_id field present
-  if (hookInput && hookInput.agent_id) return 'coordinator';
-  return 'orchestrator';
+  if (!hookInput || !hookInput.agent_id) return 'orchestrator';
+  // カスタムエージェント名で判別
+  var agentId = hookInput.agent_id || '';
+  if (agentId.startsWith('worker')) return 'worker';
+  return 'coordinator';
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'Agent', 'TeamCreate', 'SendMessage', 'AskUserQuestion', 'ToolSearch']);
+const L1_ALLOWED = new Set(['Skill', 'TeamCreate', 'TeamDelete', 'SendMessage', 'AskUserQuestion', 'ToolSearch']);
 
-function checkL1(toolName) {
+function checkL1(toolName, toolInput) {
   if (toolName.startsWith('mcp__harness__')) {
     const suffix = toolName.replace('mcp__harness__', '');
     if (HARNESS_LIFECYCLE.has(suffix)) return null;
     return 'L1 can only use lifecycle MCP.';
   }
+  if (toolName === 'Agent') {
+    var st = (toolInput && toolInput.subagent_type) || '';
+    if (st === 'Explore' || st === 'Plan') return null;
+    if (st && st !== 'general-purpose') return null;
+    if (toolInput && toolInput.team_name) return null;
+    return 'L1 Agent() restricted. Use named subagent_type or team_name.';
+  }
   if (L1_ALLOWED.has(toolName)) return null;
-  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent tool.';
+  return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via TeamCreate + SendMessage.';
 }
 
 // ── L2 Coordinator rules (phase-independent) ──
@@ -208,7 +217,7 @@ async function main() {
   var reason = null;
 
   if (layer === 'orchestrator') {
-    reason = checkL1(toolName);
+    reason = checkL1(toolName, toolInput);
   } else if (layer === 'coordinator') {
     // L2 coordinator: TeamCreateで定義されたCoordinator。
     // Bash is unrestricted (needed for HARNESS_LAYER=worker spawning).
