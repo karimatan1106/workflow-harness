@@ -19,6 +19,12 @@ Authoritative instruction set. Violations are blocked by hooks.
 - TOON形式(.toon)で成果物生成。
 - AC-N(受入基準)とRTM F-NNN(要件追跡)で意図を固定・追跡。
 
+## Documentation Layers (→ ADR-004)
+- CLAUDE.md にはWhat（ルール・制約）のみ記載。How（手順）を書かない。
+- Why（判断の経緯）は docs/adr/ADR-NNN.md に記録。CLAUDE.md にはポインタのみ。
+- How（手順・フロー）はスキルファイルまたはコードに記載。
+- 新ルール追加時: ADR（Why）を必ず作成。Whyなきルールは追加しない。
+
 ## Forbidden Actions (hooks enforce)
 - フェーズスキップ禁止。research中コード編集禁止。テスト前実装禁止。DoD失敗時の直接編集禁止。
 - 禁止語: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ダミー, 仮置き
