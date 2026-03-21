@@ -80,6 +80,7 @@ Orchestratorはcoordinatorの分析結果に基づき、独立タスクを最大
 - build_check, testing, regression_test, commit, push, ci_verification, deploy, completed
 
 これら以外のフェーズは必ずcoordinator→worker の2層で実行する。
+Worker直接移譲フェーズはforegroundで実行する（run_in_background: false）。
 
 ### Template & Model Rules
 - NEVER construct prompts from scratch. Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
