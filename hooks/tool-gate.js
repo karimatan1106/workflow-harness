@@ -7,7 +7,6 @@ const fs = require('fs');
 const HARNESS_LIFECYCLE = new Set([
   'harness_start', 'harness_next', 'harness_approve',
   'harness_status', 'harness_back', 'harness_reset',
-  'harness_delegate_coordinator',
 ]);
 
 // ── Layer detection ──
@@ -58,7 +57,7 @@ function checkL2(toolName) {
 }
 
 // ── L3 Worker rules (phase-dependent) ──
-const L3_ALWAYS_ALLOWED = new Set(['Read', 'Glob', 'Grep', 'ToolSearch']);
+const L3_ALWAYS_ALLOWED = new Set(['Read', 'Glob', 'Grep']);
 const L3_ALWAYS_BLOCKED = new Set([
   'Skill', 'Agent', 'TeamCreate', 'TeamDelete',
   'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
