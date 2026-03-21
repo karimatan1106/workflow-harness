@@ -157,6 +157,10 @@ Worker直接移譲フェーズはforegroundで実行する（run_in_background: 
 
 ---
 
+### Post-Completion Retrospective
+completedフェーズ到達後、Memory Curator の前に `/retrospective` を実行する。
+手動実行も可能: 任意のタイミングで `/retrospective` を呼び出し。
+
 ## 3. Memory Curator Protocol (ACE)
 
 After task completion (`completed` phase), Orchestrator runs memory curation:
