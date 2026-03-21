@@ -74,6 +74,13 @@ Orchestratorはcoordinatorの分析結果に基づき、独立タスクを最大
 - 移譲数は動的: coordinatorの分析結果から判断
 - 制約: 同一ファイルへの並列Write/Edit禁止（競合防止）
 
+### Worker直接移譲フェーズ（coordinator不要）
+以下のフェーズはcoordinatorを経由せず、OrchestratorからWorkerに直接移譲する。
+分析・タスク分解が不要で、単一コマンドまたは単一操作で完結するフェーズ。
+- build_check, testing, regression_test, commit, push, ci_verification, deploy, completed
+
+これら以外のフェーズは必ずcoordinator→worker の2層で実行する。
+
 ### Template & Model Rules
 - NEVER construct prompts from scratch. Get from `harness_next` or `harness_get_subphase_template`. Use VERBATIM.
 - SoT: model → `registry.ts (PHASE_REGISTRY)`。null=親モデル継承(CLI起動時モデル)、haiku=明示指定
