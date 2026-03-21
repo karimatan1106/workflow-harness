@@ -52,7 +52,7 @@ is_lifecycle_mcp() {
 
 # Control-plane tools
 case "$TOOL_NAME" in
-  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop)
+  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput)
     exit 0
     ;;
 esac

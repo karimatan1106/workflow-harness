@@ -25,7 +25,7 @@ function detectLayer() {
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'AskUserQuestion', 'ToolSearch']);
+const L1_ALLOWED = new Set(['Skill', 'AskUserQuestion', 'ToolSearch', 'TeamCreate', 'SendMessage', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskUpdate', 'TaskStop', 'TaskOutput']);
 
 function checkL1(toolName, toolInput) {
   if (toolName.startsWith('mcp__harness__')) {
