@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import type { TaskState } from '../state/types.js';
+import type { TaskState, TaskSize } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 
 export type HandlerResult = { content: Array<{ type: string; text: string }> };
@@ -23,6 +23,13 @@ export const PHASE_APPROVAL_GATES: Record<string, string> = {
   code_review: 'code_review',
   acceptance_verification: 'acceptance',
 };
+
+/** FB#7: Auto-approve requirements for small tasks when ACs are sufficient and no open questions */
+export function shouldRequireApproval(phase: string, size: TaskSize, acCount: number, openQuestionCount: number): boolean {
+  if (!(phase in PHASE_APPROVAL_GATES)) return false;
+  if (size === 'small' && phase === 'requirements' && acCount >= 3 && openQuestionCount === 0) return false;
+  return true;
+}
 
 export const PARALLEL_GROUPS: Record<string, string[]> = {
   parallel_analysis: ['threat_modeling', 'planning'],

@@ -30,7 +30,7 @@ export const ARTIFACT_QUALITY_RULES = `品質要件
 
 export const SUMMARY_SECTION_RULE = `TOON成果物
 ファイル: \`{docsDir}/{phase}.toon\` — TOON形式(JSONより40-50%効率的)
-★ JSON形式({"key":"value"})で書かないこと。key: value 形式のみ。## ヘッダーも禁止。
+★ JSON形式({"key":"value"})で書かないこと。key: value 形式のみ。## ヘッダーも禁止。\n\n禁止記法: ## ヘッダー, ### サブヘッダー, **太字**, \`\`\`コードブロック\`\`\`, - リスト記法。全てkey: valueで表現すること。
 
 出力例:
 phase: scope_definition

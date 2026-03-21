@@ -51,7 +51,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkIntentConsistency(state, phase, docsDir), 'L4');
   push(checkBaselineRequired(state, phase), 'L3');
   push(checkArtifactFreshness(phase, docsDir), 'L3');
-  push(checkDeltaEntryFormat(phase, docsDir, workflowDir), 'L4');
+  push(checkDeltaEntryFormat(phase, docsDir, workflowDir, state.size), 'L4');
   push(checkAcDesignMapping(state, phase, docsDir), 'L4');
   push(checkAcTcMapping(phase, docsDir), 'L4');
   push(checkAcAchievementTable(phase, docsDir), 'L4');

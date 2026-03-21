@@ -90,8 +90,10 @@ export const PHASE_ORDER: PhaseName[] = [
 
 export const SIZE_SKIP_MAP: Record<TaskSize, PhaseName[]> = {
   small: [
+    'research',
     'impact_analysis',
     'threat_modeling',
+    'planning',
     'state_machine',
     'flowchart',
     'ui_design',
@@ -121,6 +123,12 @@ export const SIZE_SKIP_MAP: Record<TaskSize, PhaseName[]> = {
     'acceptance_verification',
   ],
   large: [],
+};
+
+export const SIZE_MINLINES_FACTOR: Record<TaskSize, number> = {
+  small: 0.6,
+  medium: 1.0,
+  large: 1.0,
 };
 
 export function getActivePhases(size: TaskSize): PhaseName[] {
@@ -163,8 +171,11 @@ export function getActiveParallelGroups(size: TaskSize): ParallelGroupName[] {
   return [...groups];
 }
 
-export function getPhaseConfig(phase: PhaseName): PhaseConfig {
+export function getPhaseConfig(phase: PhaseName, size?: TaskSize): PhaseConfig {
   const config = PHASE_REGISTRY[phase];
   if (!config) throw new Error(`Unknown phase: ${phase}`);
+  if (size && SIZE_MINLINES_FACTOR[size] !== 1.0) {
+    return { ...config, minLines: Math.max(20, Math.floor((config.minLines ?? 0) * SIZE_MINLINES_FACTOR[size])) };
+  }
   return config;
 }

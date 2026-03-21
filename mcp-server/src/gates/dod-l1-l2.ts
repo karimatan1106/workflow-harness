@@ -80,6 +80,10 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   if (phase !== 'test_impl') {
     return { level: 'L2', check: 'tdd_red_evidence', passed: true, evidence: 'TDD Red evidence check not required for phase: ' + phase };
   }
+  // FB#4: Small tasks exempt from TDD Red
+  if (state.size === 'small') {
+    return { level: 'L2', check: 'tdd_red_evidence', passed: true, evidence: 'TDD Red exempted for small tasks (FB#4)' };
+  }
   const testImplProofs = state.proofLog.filter(e => e.phase === 'test_impl' && e.level === 'L2');
   if (testImplProofs.length === 0) {
     return {

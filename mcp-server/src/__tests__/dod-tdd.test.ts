@@ -7,6 +7,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { runDoDChecks } from '../gates/dod.js';
+import { checkTDDRedEvidence } from '../gates/dod-l1-l2.js';
 import { createTempDir, removeTempDir, makeMinimalState, buildValidArtifact } from './dod-test-helpers.js';
 
 let tempDir: string;
@@ -73,5 +74,14 @@ describe('TDD-1 Red evidence check', () => {
     const result = await runDoDChecks(state, docsDir);
     const tdd = result.checks.find(c => c.check === 'tdd_red_evidence')!;
     expect(tdd.passed).toBe(true);
+  });
+
+  it('passes TDD Red check for small tasks (FB#4 exemption)', () => {
+    const state = makeMinimalState('test_impl', tempDir, docsDir);
+    state.size = 'small' as any;
+    state.proofLog = [];
+    const result = checkTDDRedEvidence(state, 'test_impl');
+    expect(result.passed).toBe(true);
+    expect(result.evidence).toContain('small');
   });
 });

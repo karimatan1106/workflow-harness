@@ -14,7 +14,7 @@ import { getPhaseDefinition } from '../../phases/definitions.js';
 import { buildRetryPrompt, type RetryContext } from '../retry.js';
 import { stashFailure, promoteStashedFailure } from '../reflector.js';
 import { runCuratorCycle } from '../curator.js';
-import { respond, respondError, validateSession, buildPhaseGuide, PHASE_APPROVAL_GATES, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
+import { respond, respondError, validateSession, buildPhaseGuide, PHASE_APPROVAL_GATES, shouldRequireApproval, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
 import { recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure, recordTaskCompletion } from '../metrics.js';
 import { readProgressJSON } from '../../state/progress-json.js';
 import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
@@ -130,9 +130,11 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     sm.incrementRetryCount(taskId, task.phase);
   }
   if (!forceTransition) {
-    const requiredApproval = PHASE_APPROVAL_GATES[task.phase];
-    if (requiredApproval && !(task.approvals && task.approvals[requiredApproval])) {
-      return respondError('Phase "' + task.phase + '" requires approval (type: "' + requiredApproval + '") before advancing. Call harness_approve first.');
+    if (shouldRequireApproval(task.phase, task.size, task.acceptanceCriteria.length, (task as any).openQuestions?.length ?? 0)) {
+      const requiredApproval = PHASE_APPROVAL_GATES[task.phase];
+      if (requiredApproval && !(task.approvals && task.approvals[requiredApproval])) {
+        return respondError('Phase "' + task.phase + '" requires approval (type: "' + requiredApproval + '") before advancing. Call harness_approve first.');
+      }
     }
   }
   const docsDir: string = task.docsDir ?? ('docs/workflows/' + task.taskName);
