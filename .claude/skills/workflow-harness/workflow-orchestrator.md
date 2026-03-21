@@ -16,7 +16,7 @@ Orchestrator (state management, delegation, retry tracking)
 ```
 | 層 | 移譲方法 | 責務 | 使用可能ツール |
 |----|---------|------|--------------|
-| Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、Agent、Skill、AskUserQuestion |
+| Orchestrator | - | 状態管理・フェーズ遷移・Edit実行 | ライフサイクルMCP、Agent、Skill、AskUserQuestion、Read、Bash、Edit |
 | Coordinator | Agent(subagent_type="coordinator") | 分析・タスク分解・ファイル出力 | Read、Glob、Grep、Bash、Skill、ToolSearch |
 | Worker | Agent(subagent_type="worker") | ファイル読み書き・成果物生成 | Read、Write、Edit、Bash、Glob、Grep |
 
@@ -36,6 +36,18 @@ Orchestrator (state management, delegation, retry tracking)
 3. Parallel phases: 複数 Agent(worker) を同時発行 → `harness_complete_sub`
 4. Approval gates: present artifacts to user → `harness_approve`
 5. Validation failure: 再移譲 via Agent (NEVER edit directly)
+6. Edit Preview: Worker が edit-preview モードで返した編集指示を、Orchestrator が Edit ツールで実行 → リッチdiffプレビュー表示
+
+### Edit Preview Flow (リッチdiff表示)
+Orchestrator が Worker の編集結果をリッチdiffで表示したい場合:
+1. Worker を edit-preview モードで起動: prompt に `mode: edit-preview` を含める
+2. Worker は直接編集せず、[EDIT] ブロックで編集指示を返す
+3. Orchestrator が Edit ツールで各指示を実行 → 赤/緑背景のリッチdiffが表示される
+4. 大量の編集がある場合は direct-edit モードで並列実行し、最後に `git diff` を Bash で表示
+
+判断基準:
+- 編集数が少ない（1-5箇所）→ edit-preview（リッチdiff表示）
+- 編集数が多い（6+箇所）→ direct-edit（並列実行 + git diff）
 
 ### フェーズ実行フロー（2層モデル）
 ```

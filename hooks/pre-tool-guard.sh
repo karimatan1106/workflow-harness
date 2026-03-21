@@ -50,12 +50,32 @@ is_lifecycle_mcp() {
   esac
 }
 
-# Control-plane tools
+# Control-plane tools (no Edit — handled separately below)
 case "$TOOL_NAME" in
-  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput)
+  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read)
     exit 0
     ;;
 esac
+
+# Edit tool: only allowed if file is authorized by Worker (edit-preview mode)
+if [ "$TOOL_NAME" = "Edit" ]; then
+  AUTH_FILE=".agent/edit-auth.txt"
+  if [ ! -f "$AUTH_FILE" ]; then
+    echo "BLOCKED: Edit not authorized - no pending edit authorizations from Worker" >&2
+    exit 2
+  fi
+  FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | sed 's/"file_path":"//;s/"//g')
+  if [ -z "$FILE_PATH" ]; then
+    echo "BLOCKED: Edit - could not extract file_path" >&2
+    exit 2
+  fi
+  if grep -qF "$FILE_PATH" "$AUTH_FILE"; then
+    exit 0
+  else
+    echo "BLOCKED: Edit not authorized for $FILE_PATH - not in Worker edit-auth list" >&2
+    exit 2
+  fi
+fi
 
 # Lifecycle MCP
 if is_lifecycle_mcp "$TOOL_NAME"; then

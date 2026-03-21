@@ -8,9 +8,9 @@ Authoritative instruction set. Violations are blocked by hooks.
 - キーワード検出: プロンプト内の任意の位置に「ハーネス」が含まれる場合、他の一切の処理より先に harness_start を実行する。Explore/調査を先行させない。
 
 ## Tool Delegation (2層モデル)
-- オーケストレーターの直接ツール使用禁止（Read/Edit/Write/Bash/Glob/Grep）。
-- 許可: lifecycle MCP, Agent(coordinator/worker/Explore/Plan), Skill, ToolSearch, AskUserQuestion。
-- 編集はWorkerのみ。オーケストレーター/Coordinatorはファイル編集禁止。
+- オーケストレーターの直接ツール使用制限（Write/Glob/Grep禁止）。
+- 許可: lifecycle MCP, Agent, Skill, ToolSearch, AskUserQuestion, Read, Edit。
+- Edit: Workerのedit-preview結果をOrchestratorが実行（リッチdiff表示用）。直接の調査目的でのRead使用は最小限に。
 - Coordinator: 分析・タスク分解。結果はファイルに書き出し。
 - Worker: ファイル操作実行。
 - subagent間の文脈はファイルベースで中継。L1はファイルパスと1行サマリのみ保持。
