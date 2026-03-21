@@ -12,6 +12,7 @@ import { writeProgressJSON } from './progress-json.js';
 import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-classifier.js';
 import { getActivePhases, SIZE_SKIP_MAP } from '../phases/registry.js';
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
+import { resolveProjectPath } from '../utils/project-root.js';
 import { serializeState } from './state-toon-io.js';
 import { serializeTaskIndex } from './index-toon-io.js';
 
@@ -31,8 +32,8 @@ export function persistState(state: TaskState): void {
 }
 
 export function ensureStateDirs(state: TaskState): void {
-  if (!existsSync(state.docsDir)) mkdirSync(state.docsDir, { recursive: true });
-  if (!existsSync(state.workflowDir)) mkdirSync(state.workflowDir, { recursive: true });
+  if (!existsSync(resolveProjectPath(state.docsDir))) mkdirSync(resolveProjectPath(state.docsDir), { recursive: true });
+  if (!existsSync(resolveProjectPath(state.workflowDir))) mkdirSync(resolveProjectPath(state.workflowDir), { recursive: true });
 }
 
 export function writeTaskIndex(): void {

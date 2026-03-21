@@ -7,13 +7,14 @@ import { readFileSync, existsSync } from 'node:fs';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { TaskState } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
+import { resolveProjectPath } from '../utils/project-root.js';
 
 /** IA-3: design_review artifact must contain acDesignMapping key in TOON */
 export function checkAcDesignMapping(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'design_review') {
     return { level: 'L4', check: 'ac_design_mapping', passed: true, evidence: 'AC→design mapping check not required for phase: ' + phase };
   }
-  const filePath = docsDir + '/design-review.toon';
+  const filePath = resolveProjectPath(docsDir) + '/design-review.toon';
   if (!existsSync(filePath)) {
     return { level: 'L4', check: 'ac_design_mapping', passed: false, evidence: 'design-review.toon not found at: ' + filePath, fix: 'design_reviewフェーズの成果物(design-review.toon)を作成してください。' };
   }
@@ -43,7 +44,7 @@ export function checkAcTcMapping(phase: string, docsDir: string): DoDCheckResult
   if (phase !== 'test_design') {
     return { level: 'L4', check: 'ac_tc_mapping', passed: true, evidence: 'AC→TC traceability check not required for phase: ' + phase };
   }
-  const filePath = docsDir + '/test-design.toon';
+  const filePath = resolveProjectPath(docsDir) + '/test-design.toon';
   if (!existsSync(filePath)) {
     return { level: 'L4', check: 'ac_tc_mapping', passed: false, evidence: 'test-design.toon not found at: ' + filePath, fix: 'test_designフェーズの成果物(test-design.toon)を作成してください。' };
   }
@@ -68,9 +69,9 @@ export function checkAcChainContinuity(state: TaskState, phase: string, docsDir:
   }
   let filePath: string;
   let keyName: string;
-  if (phase === 'design_review') { filePath = docsDir + '/design-review.toon'; keyName = 'acDesignMapping'; }
-  else if (phase === 'test_design') { filePath = docsDir + '/test-design.toon'; keyName = 'acTcMapping'; }
-  else if (phase === 'code_review') { filePath = docsDir + '/code-review.toon'; keyName = 'acAchievementStatus'; }
+  if (phase === 'design_review') { filePath = resolveProjectPath(docsDir) + '/design-review.toon'; keyName = 'acDesignMapping'; }
+  else if (phase === 'test_design') { filePath = resolveProjectPath(docsDir) + '/test-design.toon'; keyName = 'acTcMapping'; }
+  else if (phase === 'code_review') { filePath = resolveProjectPath(docsDir) + '/code-review.toon'; keyName = 'acAchievementStatus'; }
   else { return { level: 'L4', check: 'ac_chain_continuity', passed: true, evidence: 'AC chain continuity check not required for phase: ' + phase }; }
   if (!existsSync(filePath)) {
     return { level: 'L4', check: 'ac_chain_continuity', passed: false, evidence: filePath + ' not found for AC chain continuity check', fix: phase + 'フェーズの成果物を作成してください。' };
@@ -95,7 +96,7 @@ export function checkTCCoverage(state: TaskState, phase: string, docsDir: string
   if (acCount === 0) {
     return { level: 'L3', check: 'tc_coverage', passed: true, evidence: 'No ACs defined; TC coverage check skipped' };
   }
-  const filePath = docsDir + '/test-design.toon';
+  const filePath = resolveProjectPath(docsDir) + '/test-design.toon';
   if (!existsSync(filePath)) {
     return { level: 'L3', check: 'tc_coverage', passed: false, evidence: 'test-design.toon not found for TC coverage check', fix: 'test_designフェーズの成果物(test-design.toon)を作成してください。' };
   }
@@ -117,7 +118,7 @@ export function checkAcAchievementTable(phase: string, docsDir: string): DoDChec
   if (phase !== 'code_review') {
     return { level: 'L4', check: 'ac_achievement_table', passed: true, evidence: 'AC Achievement Status check not required for phase: ' + phase };
   }
-  const filePath = docsDir + '/code-review.toon';
+  const filePath = resolveProjectPath(docsDir) + '/code-review.toon';
   if (!existsSync(filePath)) {
     return { level: 'L4', check: 'ac_achievement_table', passed: false, evidence: 'code-review.toon not found at: ' + filePath, fix: 'code_reviewフェーズの成果物(code-review.toon)を作成してください。' };
   }

@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { TaskState } from './types.js';
 import { esc, splitRow, parseKV, parseTableHeader } from './toon-io.js';
+import { resolveProjectPath } from '../utils/project-root.js';
 
 export interface ProgressTransition {
   from: string;
@@ -85,8 +86,8 @@ function parseProgress(content: string): ProgressData {
 
 export function writeProgressJSON(state: TaskState, completedPhase: string, nextPhase: string): void {
   try {
-    if (!existsSync(state.docsDir)) return;
-    const filePath = join(state.docsDir, TOON_FILE);
+    if (!existsSync(resolveProjectPath(state.docsDir))) return;
+    const filePath = join(resolveProjectPath(state.docsDir), TOON_FILE);
 
     let existing: ProgressData | undefined;
     try {
@@ -117,7 +118,7 @@ export function writeProgressJSON(state: TaskState, completedPhase: string, next
 
 export function readProgressJSON(docsDir: string): ProgressData | undefined {
   try {
-    const toonPath = join(docsDir, TOON_FILE);
+    const toonPath = join(resolveProjectPath(docsDir), TOON_FILE);
     if (existsSync(toonPath)) {
       return parseProgress(readFileSync(toonPath, 'utf-8'));
     }

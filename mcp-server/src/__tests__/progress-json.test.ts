@@ -24,6 +24,11 @@ vi.mock('fs', () => ({
   mkdirSync: (_p: string, _opts?: any) => {},
 }));
 
+vi.mock('../utils/project-root.js', () => ({
+  resolveProjectPath: (p: string) => p,
+  getProjectRoot: () => '.',
+}));
+
 import { writeProgressJSON, readProgressJSON, type ProgressData } from '../state/progress-json.js';
 import type { TaskState } from '../state/types.js';
 

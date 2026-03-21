@@ -7,9 +7,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { TaskState } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
+import { resolveProjectPath } from '../utils/project-root.js';
 
 function readRequirementsToon(docsDir: string): Record<string, unknown> | null {
-  const reqPath = docsDir + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
   if (!existsSync(reqPath)) return null;
   try {
     const obj = toonDecode(readFileSync(reqPath, 'utf8'));
@@ -26,7 +27,7 @@ export function checkACFormat(state: TaskState, phase: string, docsDir: string):
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'ac_format', passed: true, evidence: 'AC format check not required for phase: ' + phase };
   }
-  const reqPath = docsDir + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
   if (!existsSync(reqPath)) {
     return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
   }
@@ -51,7 +52,7 @@ export function checkNotInScope(state: TaskState, phase: string, docsDir: string
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'not_in_scope_section', passed: true, evidence: 'NOT_IN_SCOPE check not required for phase: ' + phase };
   }
-  const reqPath = docsDir + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
   if (!existsSync(reqPath)) {
     return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
   }
@@ -74,7 +75,7 @@ export function checkIntentConsistency(state: TaskState, phase: string, docsDir:
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'intent_consistency', passed: true, evidence: 'Intent consistency check not required for phase: ' + phase };
   }
-  const reqPath = docsDir + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
   if (!existsSync(reqPath)) {
     return { level: 'L4', check: 'intent_consistency', passed: false, evidence: 'requirements.toon not found for intent consistency check', fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
   }
@@ -122,7 +123,7 @@ export function checkOpenQuestions(state: TaskState, phase: string, docsDir: str
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'OPEN_QUESTIONS check not required for phase: ' + phase };
   }
-  const reqPath = docsDir + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
   if (!existsSync(reqPath)) {
     return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
   }

@@ -43,8 +43,7 @@ fi
 # Lifecycle MCP tools
 is_lifecycle_mcp() {
   case "$1" in
-    mcp__harness__harness_start|mcp__harness__harness_next|mcp__harness__harness_back|\
-       mcp__harness__harness_reset|mcp__harness__harness_status|mcp__harness__harness_approve)
+    mcp__harness__harness_*)
       return 0 ;;
     *) return 1 ;;
   esac
