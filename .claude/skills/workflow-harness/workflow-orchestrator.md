@@ -14,7 +14,7 @@ Orchestrator (state management, delegation, retry tracking)
   → Agent(coordinator) → analysis, task decomposition, writes results to files
   → Agent(worker) × N → file operations, writes artifacts to files
 ```
-| 層 | 起動方法 | 責務 | 使用可能ツール |
+| 層 | 移譲方法 | 責務 | 使用可能ツール |
 |----|---------|------|--------------|
 | Orchestrator | - | 状態管理・フェーズ遷移 | ライフサイクルMCP、Agent、Skill、AskUserQuestion |
 | Coordinator | Agent(subagent_type="coordinator") | 分析・タスク分解・ファイル出力 | Read、Glob、Grep、Bash、Skill、ToolSearch |
@@ -28,14 +28,14 @@ Orchestrator (state management, delegation, retry tracking)
    c. `Agent(subagent_type="coordinator", prompt=template)` → 分析・タスク分解
       - coordinator は入力ファイルを読み、結果をファイルに書き出す
       - L1 には1行サマリとファイルパスのみ返却
-   d. coordinator の出力ファイルパスを prompt に含め、Worker を起動:
+   d. coordinator の出力ファイルパスを prompt に含め、Worker に移譲:
       `Agent(subagent_type="worker", prompt="...")` × N（並列可）
       - worker は coordinator が書いたファイルを読み、成果物を書き出す
       - L1 には1行サマリとファイルパスのみ返却
    e. Orchestrator が `harness_next` → DoD検証+遷移
 3. Parallel phases: 複数 Agent(worker) を同時発行 → `harness_complete_sub`
 4. Approval gates: present artifacts to user → `harness_approve`
-5. Validation failure: re-launch via Agent (NEVER edit directly)
+5. Validation failure: 再移譲 via Agent (NEVER edit directly)
 
 ### フェーズ実行フロー（2層モデル）
 ```
@@ -69,9 +69,9 @@ Orchestrator (lifecycle MCP + Agent のみ)
 - Context techniques: differential reading (`git diff --stat`), index-first
 
 ### Worker並列化ポリシー
-Orchestratorはcoordinatorの分析結果に基づき、独立タスクを最大限並列でAgent(worker)起動する。
+Orchestratorはcoordinatorの分析結果に基づき、独立タスクを最大限並列でAgent(worker)に移譲する。
 - 分割単位: ファイル単位。同一ファイルを複数Workerが編集しない限り並列可
-- 起動数は動的: coordinatorの分析結果から判断
+- 移譲数は動的: coordinatorの分析結果から判断
 - 制約: 同一ファイルへの並列Write/Edit禁止（競合防止）
 
 ### Template & Model Rules
