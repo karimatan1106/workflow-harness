@@ -45,7 +45,7 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
   }
   const files = Array.isArray(args.files) ? (args.files as string[]) : [];
   const dirs = Array.isArray(args.dirs) ? (args.dirs as string[]) : [];
-  const size = args.size as TaskSize | undefined;
+  const size: TaskSize = 'large'; // Always force large — small/medium abolished
   // GC abandoned tasks (created == updated, older than 24h)
   let gcCount = 0;
   try { gcCount = sm.gcAbandonedTasks(); } catch { /* non-blocking */ }
@@ -71,6 +71,14 @@ export async function handleHarnessStatus(args: Record<string, unknown>, sm: Sta
       taskId: task.taskId, taskName: task.taskName, phase: task.phase, size: task.size,
       docsDir: task.docsDir, workflowDir: task.workflowDir, sessionToken: task.sessionToken,
     };
+    // Add expectedOutputFile for current phase
+    const statusPhaseConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
+    if (statusPhaseConfig?.outputFile) {
+      const resolvedDocsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
+      core.expectedOutputFile = statusPhaseConfig.outputFile
+        .replace('{docsDir}', resolvedDocsDir)
+        .replace('{workflowDir}', task.workflowDir ?? '');
+    }
     if (task.integrityWarning) core.integrityWarning = true;
     if ((task as any).projectTraits) core.projectTraits = (task as any).projectTraits;
     if ((task as any).docPaths) core.docPaths = (task as any).docPaths;
@@ -205,6 +213,14 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   const guide = buildPhaseGuide(nextPhase);
   const freshTask = sm.loadTask(taskId);
   const responseObj: Record<string, unknown> = { nextPhase, phaseGuide: guide, hasTemplate: !!getPhaseDefinition(nextPhase) };
+  // Add expectedOutputFile for the next phase
+  const nextPhaseConfig = PHASE_REGISTRY[nextPhase as keyof typeof PHASE_REGISTRY];
+  if (nextPhaseConfig?.outputFile) {
+    const resolvedDocsDir = freshTask?.docsDir ?? docsDir;
+    responseObj.expectedOutputFile = nextPhaseConfig.outputFile
+      .replace('{docsDir}', resolvedDocsDir)
+      .replace('{workflowDir}', freshTask?.workflowDir ?? task.workflowDir ?? '');
+  }
   // FT-1: Warn when forceTransition has been used 3+ times
   if (forceTransition && (task.forceTransitionCount ?? 0) >= 3) {
     responseObj.forceTransitionWarning = `forceTransition used ${task.forceTransitionCount} times. Quality gates are being bypassed.`;

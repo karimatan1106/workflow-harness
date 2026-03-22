@@ -59,10 +59,18 @@ export async function handleHarnessGetSubphaseTemplate(args: Record<string, unkn
   const prompt = phaseDef
     ? buildSubagentPrompt(phase, taskName || '{taskName}', docsDir || '{docsDir}', workflowDir || '{workflowDir}', userIntent || '{userIntent}', taskId, projectTraits, undefined, docPaths)
     : '# ' + phase + ' phase\n\nNo subagent template defined. Use phase registry for configuration.';
+  // Resolve expectedOutputFile from registry
+  let expectedOutputFile: string | undefined;
+  if (registryDef?.outputFile) {
+    expectedOutputFile = registryDef.outputFile
+      .replace('{docsDir}', docsDir || '{docsDir}')
+      .replace('{workflowDir}', workflowDir || '{workflowDir}');
+  }
   return respond({
     phase,
     model: phaseDef?.model ?? registryDef?.model ?? 'opus',
     subagentTemplate: prompt,
+    ...(expectedOutputFile ? { expectedOutputFile } : {}),
   });
 }
 

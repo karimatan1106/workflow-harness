@@ -89,39 +89,8 @@ export const PHASE_ORDER: PhaseName[] = [
 ];
 
 export const SIZE_SKIP_MAP: Record<TaskSize, PhaseName[]> = {
-  small: [
-    'research',
-    'impact_analysis',
-    'threat_modeling',
-    'planning',
-    'state_machine',
-    'flowchart',
-    'ui_design',
-    'design_review',
-    'test_selection',
-    'refactoring',
-    'code_review',
-    'regression_test',
-    'acceptance_verification',
-    'manual_test',
-    'security_scan',
-    'performance_test',
-    'e2e_test',
-    'docs_update',
-    'ci_verification',
-    'deploy',
-    'health_observation',
-  ],
-  medium: [
-    'impact_analysis',
-    'state_machine',
-    'flowchart',
-    'ui_design',
-    'design_review',
-    'test_selection',
-    'refactoring',
-    'acceptance_verification',
-  ],
+  small: [],
+  medium: [],
   large: [],
 };
 
