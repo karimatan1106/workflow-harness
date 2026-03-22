@@ -49,6 +49,14 @@ is_lifecycle_mcp() {
   esac
 }
 
+# Allow .toon and .mmd artifact writes from Orchestrator
+if [[ "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" ]]; then
+  FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | sed 's/"file_path":"//;s/"//g')
+  if [[ "$FILE_PATH" == *.toon || "$FILE_PATH" == *.mmd ]]; then
+    exit 0
+  fi
+fi
+
 # Control-plane tools (no Edit — handled separately below)
 case "$TOOL_NAME" in
   Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read|Bash)

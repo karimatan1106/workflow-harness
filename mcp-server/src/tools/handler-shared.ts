@@ -24,6 +24,15 @@ export const PHASE_APPROVAL_GATES: Record<string, string> = {
   acceptance_verification: 'acceptance',
 };
 
+/** Approvals that require explicit user confirmation vs Claude self-approval */
+export const USER_APPROVAL_REQUIRED: Record<string, boolean> = {
+  requirements: true,      // User must confirm scope
+  design: false,           // Claude self-approval OK (technical judgment)
+  test_design: false,      // Claude self-approval OK
+  code_review: false,      // Claude self-approval OK
+  acceptance: true,        // User must confirm final acceptance
+};
+
 /** FB#7: Auto-approve requirements for small tasks when ACs are sufficient and no open questions */
 export function shouldRequireApproval(phase: string, size: TaskSize, acCount: number, openQuestionCount: number): boolean {
   if (!(phase in PHASE_APPROVAL_GATES)) return false;

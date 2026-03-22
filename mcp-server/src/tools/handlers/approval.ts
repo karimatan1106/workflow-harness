@@ -6,7 +6,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { StateManager } from '../../state/manager.js';
-import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, type HandlerResult } from '../handler-shared.js';
+import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, USER_APPROVAL_REQUIRED, type HandlerResult } from '../handler-shared.js';
 
 const APPROVAL_ARTIFACT_MAP: Record<string, string> = {
   requirements: '/requirements.toon', design: '/design-review.toon',
@@ -108,5 +108,13 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
   }
   const result = sm.advancePhase(taskId);
   if (!result.success) return respondError(result.error ?? 'Failed to advance after approval');
-  return respond({ approved: true, approvalType, previousPhase: task.phase, nextPhase: result.nextPhase });
+  const requiresUser = USER_APPROVAL_REQUIRED[approvalType] ?? false;
+  const response: Record<string, unknown> = {
+    approved: true, approvalType, previousPhase: task.phase,
+    nextPhase: result.nextPhase, userApprovalRequired: requiresUser,
+  };
+  if (requiresUser) {
+    response.userGateWarning = 'This approval requires explicit user confirmation. Do not self-approve.';
+  }
+  return respond(response);
 }

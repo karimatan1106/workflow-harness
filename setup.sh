@@ -151,8 +151,46 @@ if [ ! -f "$PROJECT_DIR/.agent/.worker-allowed-extensions" ]; then
   echo "Created .agent/.worker-allowed-extensions with permissive default"
 fi
 
+# 8. Copy skill files to target project (force overwrite for latest version)
+SKILLS_SRC="$HARNESS_DIR/.claude/skills/workflow-harness"
+SKILLS_DST="$PROJECT_DIR/.claude/skills/workflow-harness"
+
+if [ -d "$SKILLS_SRC" ]; then
+  mkdir -p "$SKILLS_DST"
+  cp -rf "$SKILLS_SRC/"* "$SKILLS_DST/"
+  echo "Copied skill files to $SKILLS_DST:"
+  ls -1 "$SKILLS_DST" | sed 's/^/  /'
+else
+  echo "WARNING: Skills source not found: $SKILLS_SRC"
+fi
+
+# 9. Copy rule files to target project (no overwrite of existing rules)
+RULES_SRC="$HARNESS_DIR/.claude/rules"
+RULES_DST="$PROJECT_DIR/.claude/rules"
+
+if [ -d "$RULES_SRC" ]; then
+  mkdir -p "$RULES_DST"
+  COPIED=0
+  SKIPPED=0
+  for f in "$RULES_SRC"/*; do
+    fname="$(basename "$f")"
+    if [ -f "$RULES_DST/$fname" ]; then
+      SKIPPED=$((SKIPPED + 1))
+      echo "  [skip] $fname (already exists)"
+    else
+      cp "$f" "$RULES_DST/$fname"
+      COPIED=$((COPIED + 1))
+      echo "  [copy] $fname"
+    fi
+  done
+  echo "Rules: $COPIED copied, $SKIPPED skipped (existing preserved)"
+else
+  echo "WARNING: Rules source not found: $RULES_SRC"
+fi
+
 echo ""
 echo "=== Setup Complete ==="
 echo "2-layer per-process guard installed (orchestrator + subagent, part of 3-layer architecture)."
 echo "harness MCP server registered in .mcp.json."
 echo "Orchestrator/Subagent access control active."
+echo "Skill files and rules synced."
