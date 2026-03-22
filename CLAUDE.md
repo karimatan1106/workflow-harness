@@ -1,5 +1,9 @@
 # Workflow Harness - Project Instructions
 
+## Mission
+10Mステップのコードベースでも、ユーザーの指示通りの修正を一度の実行で完遂する。
+そのために30フェーズ・L1-L4決定的ゲート・RTM追跡による圧倒的なコンテキストエンジニアリングで意図精度を保証する。
+
 Authoritative instruction set. Violations are blocked by hooks.
 
 ## Workflow Enforcement
