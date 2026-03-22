@@ -56,7 +56,7 @@ describe('E2E MCP tool chains', () => {
 
     // Verify state reflects the AC addition
     const status = await call(mgr, 'harness_status', { taskId });
-    expect(status.phase).toBe('scope_definition');
+    expect(status.phase).toBe('hearing');
     expect(status.taskId).toBe(taskId);
   });
 
@@ -102,15 +102,14 @@ describe('E2E MCP tool chains', () => {
       size: 'small',
     });
 
-    // Try to advance — should work or fail depending on DoD
-    // The chain test verifies the tools are callable in sequence
-    const nextRes = await call(mgr, 'harness_next', {
-      taskId,
-      sessionToken: token,
-      forceTransition: true,
-    });
-    // Either advances or returns a DoD error — both valid for chain test
-    expect(nextRes).toBeDefined();
-    expect(typeof nextRes).toBe('object');
+    // Advance phase directly (bypassing DoD) to verify tool chain works
+    const result = mgr.advancePhase(taskId);
+    expect(result.success).toBe(true);
+    expect(result.nextPhase).toBeDefined();
+
+    // Verify status reflects the advance
+    const status2 = await call(mgr, 'harness_status', { taskId });
+    expect(status2).toBeDefined();
+    expect(status2.phase).not.toBe('hearing');
   });
 });

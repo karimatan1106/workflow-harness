@@ -42,7 +42,7 @@ export function serializeState(state: TaskState): string {
     ['requirementCount', state.requirementCount],
     ['integrityWarning', state.integrityWarning],
     ['scopeGlob', state.scopeGlob],
-    ['forceTransitionCount', state.forceTransitionCount],
+
   ]));
 
   // Array-as-semicolon fields

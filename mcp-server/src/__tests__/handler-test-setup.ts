@@ -89,20 +89,14 @@ export async function setupHandlerTest(): Promise<TestCtx> {
     sessionToken: string,
     n: number,
   ): Promise<string> {
-    let token = sessionToken;
     for (let i = 0; i < n; i++) {
-      const res = await call(mgr, 'harness_next', {
-        taskId,
-        sessionToken: token,
-        forceTransition: true,
-      });
-      if (res.error) {
-        throw new Error(`advanceN failed at step ${i}: ${res.error}`);
+      const result = mgr.advancePhase(taskId);
+      if (!result.success) {
+        throw new Error(`advanceN failed at step ${i}: ${result.error}`);
       }
-      const status = await call(mgr, 'harness_status', { taskId });
-      token = (status as Record<string, unknown>).sessionToken as string;
     }
-    return token;
+    const status = await call(mgr, 'harness_status', { taskId });
+    return status.sessionToken as string;
   }
 
   async function advanceUntilPhase(
@@ -110,22 +104,15 @@ export async function setupHandlerTest(): Promise<TestCtx> {
     taskId: string,
     sessionToken: string,
     targetPhase: string,
-    maxSteps = 15,
+    maxSteps = 30,
   ): Promise<string> {
-    let token = sessionToken;
     for (let i = 0; i < maxSteps; i++) {
       const status = await call(mgr, 'harness_status', { taskId });
-      if (status.phase === targetPhase) return token;
-      const res = await call(mgr, 'harness_next', {
-        taskId,
-        sessionToken: token,
-        forceTransition: true,
-      });
-      if (res.error) {
-        throw new Error(`advanceUntilPhase failed at step ${i}: ${res.error}`);
+      if (status.phase === targetPhase) return status.sessionToken as string;
+      const result = mgr.advancePhase(taskId);
+      if (!result.success) {
+        throw new Error(`advanceUntilPhase failed at step ${i}: ${result.error}`);
       }
-      const freshStatus = await call(mgr, 'harness_status', { taskId });
-      token = freshStatus.sessionToken as string;
     }
     const finalStatus = await call(mgr, 'harness_status', { taskId });
     if (finalStatus.phase !== targetPhase) {
@@ -133,7 +120,7 @@ export async function setupHandlerTest(): Promise<TestCtx> {
         `advanceUntilPhase: reached ${finalStatus.phase} instead of ${targetPhase} after ${maxSteps} steps`,
       );
     }
-    return token;
+    return finalStatus.sessionToken as string;
   }
 
   return {

@@ -31,7 +31,7 @@ async function createTaskAtPhase(targetPhase: string): Promise<{ taskId: string;
   let sessionToken = startRes.sessionToken as string;
   const docsDir = startRes.docsDir as string;
 
-  // Advance to target phase using forceTransition
+  // Advance to target phase using advancePhase (bypasses DoD)
   sessionToken = await ctx.advanceUntilPhase(mgr, taskId, sessionToken, targetPhase);
   return { taskId, sessionToken, docsDir };
 }
@@ -105,22 +105,6 @@ describe('P2: output file existence pre-check (AC-2)', () => {
     expect(resStr).not.toContain('成果物ファイルが存在しません');
   });
 
-  // TC-AC2-04: forceTransition=true時には先行チェック不実行
-  it('skips pre-check when forceTransition is true', async () => {
-    const mgr = ctx.createMgr();
-    const { taskId, sessionToken } = await createTaskAtPhase('scope_definition');
-
-    // Do NOT create the output file
-    const res = await ctx.call(mgr, 'harness_next', {
-      taskId,
-      sessionToken,
-      forceTransition: true,
-    });
-
-    // forceTransition bypasses all checks including pre-checks
-    const resStr = JSON.stringify(res);
-    expect(resStr).not.toContain('成果物ファイルが存在しません');
-  });
 });
 
 describe('P4: output file size pre-check (AC-4)', () => {

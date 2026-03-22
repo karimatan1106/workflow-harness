@@ -1,5 +1,5 @@
 /**
- * Handler integration tests — Session & Security + Force Transition
+ * Handler integration tests — Session & Security
  * Split from handler.test.ts. See handler-test-setup.ts for shared setup.
  */
 
@@ -36,7 +36,6 @@ describe('Session & Security', () => {
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: 'definitely-not-the-right-token',
-      forceTransition: true,
     });
     expect(typeof res.error).toBe('string');
     expect((res.error as string).toLowerCase()).toContain('invalid sessiontoken');
@@ -96,30 +95,3 @@ describe('Session & Security', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Force Transition
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('Force Transition', () => {
-  it('harness_next with forceTransition=true skips DoD checks and advances phase', async () => {
-    const mgr = createMgr();
-    const startRes = await call(mgr, 'harness_start', {
-      taskName: 'force-transition-task',
-      userIntent: 'This user intent is long enough to pass the minimum length requirement.',
-    });
-    const taskId = startRes.taskId as string;
-    const token = startRes.sessionToken as string;
-
-    // scope_definition has L1 check for output file — with forceTransition it should skip
-    const res = await call(mgr, 'harness_next', {
-      taskId,
-      sessionToken: token,
-      forceTransition: true,
-    });
-
-    expect(res.error).toBeUndefined();
-    expect(res.nextPhase).toBeDefined();
-    expect(res.nextPhase).not.toBe('scope_definition');
-    // dodChecks removed from success response for context savings
-  });
-});

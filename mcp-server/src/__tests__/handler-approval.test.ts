@@ -52,7 +52,6 @@ describe('Approval Gates', () => {
     const nextRes = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
-      forceTransition: false,
     });
     expect(typeof nextRes.error).toBe('string');
     expect((nextRes.error as string).toLowerCase()).toContain('approval');

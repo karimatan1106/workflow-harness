@@ -39,7 +39,6 @@ export const TOOL_DEFS_A = [
       properties: {
         taskId: { type: 'string', description: 'Task ID.' },
         sessionToken: { type: 'string', description: 'Session token.' },
-        forceTransition: { type: 'boolean', description: 'Skip DoD checks. Default: false.' },
         retryCount: { type: 'number', description: 'Retry attempt #. Default: 1.' },
       },
       required: ['taskId', 'sessionToken'],

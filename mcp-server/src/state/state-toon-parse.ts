@@ -104,7 +104,7 @@ export function parseState(content: string): TaskState {
   if (kv['scopeGlob']) state.scopeGlob = kv['scopeGlob'];
   if (kv['parentTaskId']) state.parentTaskId = kv['parentTaskId'];
   if (kv['requirementCount']) state.requirementCount = toNum(kv['requirementCount']);
-  if (kv['forceTransitionCount']) state.forceTransitionCount = toNum(kv['forceTransitionCount']);
+
   if (kv['integrityWarning'] === 'true') state.integrityWarning = true;
   if (kv['testFiles']) state.testFiles = fromSemiList(kv['testFiles']);
   if (kv['docPaths']) (state as any).docPaths = fromSemiList(kv['docPaths']);

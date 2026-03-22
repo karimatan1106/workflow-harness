@@ -90,7 +90,7 @@ function normalizeForSigning(state: TaskState): void {
   if (emptyObj(state.approvals)) delete state.approvals;
   if (emptyObj(state.artifactTimestamps)) delete state.artifactTimestamps;
   if (emptyObj(state.artifactHashes)) delete state.artifactHashes;
-  if (state.forceTransitionCount === 0) delete state.forceTransitionCount;
+
 }
 
 export function signAndPersist(state: TaskState, hmacKey: string): void {
