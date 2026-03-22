@@ -4,10 +4,11 @@
  */
 
 import { readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, isAbsolute } from 'node:path';
 import type { TaskState, PhaseName, TaskSize } from './types.js';
 import { verifyStateWithRotation } from '../utils/hmac.js';
 import { parseState } from './state-toon-parse.js';
+import { getProjectRoot } from '../utils/project-root.js';
 
 function getStateDir(): string {
   return process.env.STATE_DIR || '.claude/state';
@@ -19,7 +20,9 @@ export function getStatePath(taskId: string, taskName: string): string {
 
 export function getDocsPath(taskName: string): string {
   const DOCS_DIR = process.env.DOCS_DIR || 'docs/workflows';
-  return join(DOCS_DIR, taskName);
+  const docsPath = join(DOCS_DIR, taskName);
+  if (isAbsolute(docsPath)) return docsPath;
+  return join(getProjectRoot(), docsPath);
 }
 
 export function loadTaskFromDisk(taskId: string): TaskState | null {

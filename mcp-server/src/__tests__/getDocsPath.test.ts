@@ -1,7 +1,7 @@
 /**
- * Tests for getDocsPath (relative) and resolveProjectPath (absolute resolution)
+ * Tests for getDocsPath (absolute via getProjectRoot) and resolveProjectPath
  *
- * getDocsPath returns RELATIVE paths (join of DOCS_DIR + taskName).
+ * getDocsPath returns ABSOLUTE paths (getProjectRoot + DOCS_DIR + taskName).
  * resolveProjectPath converts relative to absolute using PROJECT_ROOT.
  */
 
@@ -10,7 +10,7 @@ import { isAbsolute } from 'node:path';
 import { getDocsPath } from '../state/manager-read.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
-describe('getDocsPath returns relative path', () => {
+describe('getDocsPath returns absolute path via getProjectRoot', () => {
   const origDocsDir = process.env.DOCS_DIR;
 
   afterEach(() => {
@@ -21,16 +21,18 @@ describe('getDocsPath returns relative path', () => {
     }
   });
 
-  it('TC-AC2-01: returns relative path with default DOCS_DIR', () => {
+  it('TC-AC2-01: returns absolute path with default DOCS_DIR', () => {
     delete process.env.DOCS_DIR;
-    const result = getDocsPath('test-task').replace(/\\/g, '/');
-    expect(result).toBe('docs/workflows/test-task');
+    const result = getDocsPath('test-task');
+    expect(isAbsolute(result)).toBe(true);
+    expect(result.replace(/\\/g, '/')).toMatch(/docs\/workflows\/test-task$/);
   });
 
-  it('TC-AC2-02: returns relative path with custom DOCS_DIR', () => {
+  it('TC-AC2-02: returns absolute path with custom DOCS_DIR', () => {
     process.env.DOCS_DIR = 'custom/docs';
-    const result = getDocsPath('test-task').replace(/\\/g, '/');
-    expect(result).toBe('custom/docs/test-task');
+    const result = getDocsPath('test-task');
+    expect(isAbsolute(result)).toBe(true);
+    expect(result.replace(/\\/g, '/')).toMatch(/custom\/docs\/test-task$/);
   });
 });
 
@@ -47,6 +49,6 @@ describe('resolveProjectPath handles docsDir correctly', () => {
     const relativePath = 'docs/workflows/test-task';
     const result = resolveProjectPath(relativePath);
     expect(isAbsolute(result)).toBe(true);
-    expect(result).toMatch(/docs[\\\/]workflows[\\\/]test-task$/);
+    expect(result).toMatch(/docs[\\/]workflows[\\/]test-task$/);
   });
 });
