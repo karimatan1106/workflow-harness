@@ -188,6 +188,18 @@ else
   echo "WARNING: Rules source not found: $RULES_SRC"
 fi
 
+# 10. Copy agent definitions to target project
+AGENTS_SRC="$HARNESS_DIR/.claude/agents"
+AGENTS_DEST="$PROJECT_DIR/.claude/agents"
+mkdir -p "$AGENTS_DEST"
+for agent_file in "$AGENTS_SRC"/*.md; do
+  [ -f "$agent_file" ] || continue
+  fname=$(basename "$agent_file")
+  cp -f "$agent_file" "$AGENTS_DEST/$fname"
+  echo "  Copied: $fname"
+done
+echo "Agent definitions synced."
+
 echo ""
 echo "=== Setup Complete ==="
 echo "2-layer per-process guard installed (orchestrator + subagent, part of 3-layer architecture)."
