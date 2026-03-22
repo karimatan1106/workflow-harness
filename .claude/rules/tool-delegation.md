@@ -1,7 +1,7 @@
 # Tool Delegation (2層モデル)
 
 - オーケストレーターの直接ツール使用制限（Write/Glob/Grep禁止）。
-- 許可: lifecycle MCP, Agent, Skill, ToolSearch, AskUserQuestion, Read, Edit。
+- 許可: lifecycle MCP, Agent (coordinator/workerのみ。Explore/general-purpose/未指定は禁止), Skill, ToolSearch, AskUserQuestion, Read, Edit。
 - Edit: Workerのedit-preview結果をOrchestratorが実行（リッチdiff表示用）。直接の調査目的でのRead使用は最小限に。
 - Coordinator: 分析・タスク分解。結果はファイルに書き出し。
 - Worker: ファイル操作実行。

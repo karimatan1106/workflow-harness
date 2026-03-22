@@ -57,6 +57,20 @@ if [[ "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" ]]; then
   fi
 fi
 
+# Orchestrator Agent whitelist: only coordinator, worker allowed
+if [ "$TOOL_NAME" = "Agent" ]; then
+  SUBAGENT_TYPE=$(echo "$INPUT" | grep -o '"subagent_type" *: *"[^"]*"' | head -1 | sed 's/"subagent_type" *: *"//;s/"//g' || echo "")
+  SUBAGENT_TYPE_LOWER=$(echo "$SUBAGENT_TYPE" | tr '[:upper:]' '[:lower:]')
+  case "$SUBAGENT_TYPE_LOWER" in
+    coordinator|worker)
+      ;; # allowed
+    *)
+      echo "BLOCKED: Orchestrator Agent() requires subagent_type=coordinator|worker. Got: '$SUBAGENT_TYPE'" >&2
+      exit 2
+      ;;
+  esac
+fi
+
 # Control-plane tools (no Edit — handled separately below)
 case "$TOOL_NAME" in
   Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read|Bash)

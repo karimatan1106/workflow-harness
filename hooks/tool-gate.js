@@ -34,10 +34,9 @@ function checkL1(toolName, toolInput) {
     return 'L1 can only use lifecycle MCP.';
   }
   if (toolName === 'Agent') {
-    var st = (toolInput && toolInput.subagent_type) || '';
-    if (st === 'Explore' || st === 'Plan') return null;
-    if (st && st !== 'general-purpose') return null;
-    return 'L1 Agent() restricted. Use named subagent_type (coordinator/worker/Explore/Plan).';
+    var st = ((toolInput && toolInput.subagent_type) || '').toLowerCase();
+    if (st === 'coordinator' || st === 'worker') return null;
+    return 'L1 Agent() restricted. subagent_type must be coordinator|worker. Got: "' + (toolInput && toolInput.subagent_type || '') + '"';
   }
   if (L1_ALLOWED.has(toolName)) return null;
   return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent(coordinator/worker).';
