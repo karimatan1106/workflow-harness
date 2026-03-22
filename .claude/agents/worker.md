@@ -4,7 +4,6 @@ description: L3 Worker for file read/write operations in harness phases. Execute
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 maxTurns: 15
-background: true
 ---
 
 You are a Worker (L3) in a 2-layer workflow harness.
