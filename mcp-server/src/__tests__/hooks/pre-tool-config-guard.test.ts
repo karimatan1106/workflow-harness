@@ -10,18 +10,19 @@ function execHook(
   stdinJson: string,
   env?: Record<string, string>,
 ): { exitCode: number; stdout: string; stderr: string } {
-  const escaped = stdinJson.replace(/'/g, "'\\''");
   try {
-    const result = execSync(`echo '${escaped}' | bash "${scriptPath}"`, {
+    const result = execSync(`bash "${scriptPath}"`, {
+      input: stdinJson,
       encoding: 'utf8',
       env: { ...process.env, ...env },
-      timeout: 10000,
+      timeout: 30000,
       cwd: PROJECT_ROOT,
     });
     return { exitCode: 0, stdout: result, stderr: '' };
   } catch (e: any) {
+    const exitCode = typeof e.status === 'number' ? e.status : 1;
     return {
-      exitCode: e.status ?? 1,
+      exitCode,
       stdout: e.stdout ?? '',
       stderr: e.stderr ?? '',
     };
