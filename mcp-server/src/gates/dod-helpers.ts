@@ -39,9 +39,29 @@ export function extractNonCodeLines(content: string): string[] {
   return result;
 }
 
+function isInNegationContext(line: string, pattern: string): boolean {
+  const idx = line.indexOf(pattern);
+  if (idx < 0) return false;
+  const before = line.slice(Math.max(0, idx - 20), idx);
+  const negations = [
+    'ない', 'なし', 'ゼロ', '不要', '無し', 'なく', 'ません',
+    'not ', 'no ', "don't", 'avoid', 'never',
+  ];
+  return negations.some(n => before.includes(n));
+}
+
 export function checkForbiddenPatterns(content: string): string[] {
   const nonCodeLines = extractNonCodeLines(content);
-  return FORBIDDEN_PATTERNS.filter(p => nonCodeLines.some(line => line.includes(p)));
+  return FORBIDDEN_PATTERNS.filter(p =>
+    nonCodeLines.some(line => {
+      if (!line.includes(p)) return false;
+      if (isInNegationContext(line, p)) return false;
+      if (/^[A-Z]+$/.test(p)) {
+        return new RegExp(`\\b${p}\\b`).test(line);
+      }
+      return true;
+    })
+  );
 }
 
 export function checkBracketPlaceholders(content: string): boolean {

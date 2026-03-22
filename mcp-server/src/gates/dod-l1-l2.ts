@@ -102,6 +102,41 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   };
 }
 
+const TEST_EXECUTION_PHASES = new Set(['testing', 'regression_test']);
+
+/** Test Results Exist: ensure at least one test result has been recorded for testing phases */
+export function checkTestResultsExist(state: TaskState, phase: string): DoDCheckResult {
+  if (!TEST_EXECUTION_PHASES.has(phase)) {
+    return { level: 'L1', check: 'test_results_exist', passed: true, evidence: 'Test results check not required for phase: ' + phase };
+  }
+  if (!state.testResults || state.testResults.length === 0) {
+    return {
+      level: 'L1',
+      check: 'test_results_exist',
+      passed: false,
+      evidence: 'No test results recorded',
+      fix: 'Run tests and record results with harness_record_test_result',
+    };
+  }
+  // Count results recorded during the current phase
+  const phaseResults = state.testResults.filter(r => r.phase === phase);
+  if (phaseResults.length === 0) {
+    return {
+      level: 'L1',
+      check: 'test_results_exist',
+      passed: false,
+      evidence: `Test results exist but none recorded for current phase: ${phase}`,
+      fix: 'Run tests in this phase and record results with harness_record_test_result',
+    };
+  }
+  return {
+    level: 'L1',
+    check: 'test_results_exist',
+    passed: true,
+    evidence: `${phaseResults.length} test result(s) recorded for phase ${phase}`,
+  };
+}
+
 const REGRESSION_PHASES = new Set(['testing', 'regression_test']);
 
 /** Test Regression Gate: compare baseline.failedTests vs latest testResult.failedTests */

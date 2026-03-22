@@ -62,6 +62,23 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
   if (approvalType === 'requirements' && task.acceptanceCriteria && task.acceptanceCriteria.length >= 3) {
     sm.setRefinedIntent(taskId, task.acceptanceCriteria.map(ac => ac.description).join(' / '));
   }
+  // Update refinedIntent from design review content if available
+  if (approvalType === 'design' && task.docsDir) {
+    try {
+      const designReviewPath = task.docsDir + '/design-review.toon';
+      const content = readFileSync(designReviewPath, 'utf8');
+      const lines = content.split('\n');
+      const summaryLine = lines.find(l => l.startsWith('summary:') || l.startsWith('designSummary:'));
+      if (summaryLine) {
+        const summary = summaryLine.split(':').slice(1).join(':').trim().replace(/^"(.*)"$/, '$1');
+        if (summary && summary.length > 10) {
+          sm.setRefinedIntent(taskId, summary);
+        }
+      }
+    } catch {
+      // design-review.toon may not exist or have summary, skip silently
+    }
+  }
   // IA-6: Block acceptance approval when AC-N or RTM entries are incomplete
   if (approvalType === 'acceptance') {
     const acList = task.acceptanceCriteria ?? [];

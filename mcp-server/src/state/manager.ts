@@ -58,6 +58,12 @@ export class StateManager {
     return loadTaskFromDisk(taskId);
   }
 
+  /** Sign and persist an already-loaded TaskState (for in-place mutations). */
+  saveTask(state: TaskState): void {
+    state.updatedAt = new Date().toISOString();
+    signAndPersist(state, this.hmacKey);
+  }
+
   // Lifecycle delegates (→ manager-lifecycle.ts)
   advancePhase(taskId: string) { return doAdvance(taskId, this.hmacKey); }
   approveGate(taskId: string, approvalType: string) { return doApprove(taskId, this.hmacKey, approvalType); }

@@ -114,7 +114,15 @@ export function parseTableBlock(
   let i = startIdx + 1;
   while (i < lines.length && lines[i].startsWith('  ')) {
     const row = parseCsvRow(lines[i].trim());
-    rows.push(row);
+    // Resilient handling: if unquoted commas in the last field produced
+    // extra cells, join the surplus back into the final column.
+    if (row.length > cols.length) {
+      const fixed = row.slice(0, cols.length - 1);
+      fixed.push(row.slice(cols.length - 1).join(', '));
+      rows.push(fixed);
+    } else {
+      rows.push(row);
+    }
     i++;
   }
   return { cols, rows, consumed: i - startIdx };

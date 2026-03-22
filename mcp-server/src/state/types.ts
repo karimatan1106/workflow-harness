@@ -116,6 +116,7 @@ export interface TaskState {
   requirementCount?: number;                             // IA-2: number of AC-N entries
   artifactHashes?: Record<string, string>;               // ART-1: artifact path → SHA-256 hash
   parallelPhaseBackupLog?: string[];                     // PHA-1: rollback candidates after parallel failure
+  forceTransitionCount?: number;                          // FT-1: consecutive forceTransition usage counter
 
   // Integrity
   integrityWarning?: boolean; // true when HMAC verification failed but data is readable

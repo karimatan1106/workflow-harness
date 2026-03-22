@@ -121,6 +121,24 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
       'Complete this phase normally — its output is required for downstream phases.',
     );
   }
+  // FT-1: Track and limit consecutive forceTransition usage
+  if (forceTransition) {
+    task.forceTransitionCount = (task.forceTransitionCount ?? 0) + 1;
+    if (task.forceTransitionCount >= 5 && !process.env.HARNESS_TEST_MODE) {
+      return respondError(
+        'forceTransition limit reached (5). Manual intervention required.',
+      );
+    }
+    task.proofLog.push({
+      phase: task.phase,
+      level: 'L1',
+      check: 'force_transition',
+      result: false,
+      evidence: `forceTransition used at phase ${task.phase} (count: ${task.forceTransitionCount})`,
+      timestamp: new Date().toISOString(),
+    });
+    sm.saveTask(task);
+  }
   const retryCount = Number(args.retryCount ?? 1);
   if (retryCount >= 1) {
     const currentRetry = sm.getRetryCount(taskId, task.phase);
@@ -173,6 +191,11 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   } else {
     dodResult = { passed: true, checks: [], errors: [] };
   }
+  // FT-1: Reset forceTransition counter on normal DoD pass
+  if (!forceTransition) {
+    task.forceTransitionCount = 0;
+    sm.saveTask(task);
+  }
   if (retryCount > 1) { try { promoteStashedFailure(taskId, task.phase, retryCount); } catch { /* non-blocking */ } }
   try { recordPhaseEnd(taskId, task.phase); } catch { /* non-blocking */ }
   sm.resetRetryCount(taskId, task.phase);
@@ -182,6 +205,10 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   const guide = buildPhaseGuide(nextPhase);
   const freshTask = sm.loadTask(taskId);
   const responseObj: Record<string, unknown> = { nextPhase, phaseGuide: guide, hasTemplate: !!getPhaseDefinition(nextPhase) };
+  // FT-1: Warn when forceTransition has been used 3+ times
+  if (forceTransition && (task.forceTransitionCount ?? 0) >= 3) {
+    responseObj.forceTransitionWarning = `forceTransition used ${task.forceTransitionCount} times. Quality gates are being bypassed.`;
+  }
   if (PARALLEL_GROUPS[nextPhase]) {
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model ?? null }));
   }

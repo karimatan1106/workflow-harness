@@ -26,7 +26,7 @@ function createSignedState(sd: string, o: { taskId: string; taskName: string; ph
     userIntent: 'test', openQuestions: [], notInScope: [],
     scopeFiles: [], scopeDirs: [], plannedFiles: [], acceptanceCriteria: [], rtmEntries: [],
     proofLog: [], invariants: [],
-    checkpoint: { taskId: o.taskId, phase, completedPhases: [], timestamp: now, sha256: '', userIntent: 'test', scopeFiles: [], acceptanceCriteria: [], rtmEntries: [] },
+    checkpoint: { taskId: o.taskId, phase, completedPhases: [], timestamp: now, sha256: '', userIntent: 'test', scopeFiles: [], scopeDirs: [], acceptanceCriteria: [], rtmEntries: [] },
     docsDir: 'docs/workflows/' + o.taskName, sessionToken: 'tok', stateIntegrity: '',
     workflowDir: join(sd, 'workflows', `${o.taskId}_${o.taskName}`),
     createdAt: now, updatedAt: now,

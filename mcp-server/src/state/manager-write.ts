@@ -67,7 +67,7 @@ export function createTaskState(taskName: string, userIntent: string, hmacKey: s
     taskId, taskName, version: 4, phase: firstPhase, completedPhases: [], skippedPhases: SIZE_SKIP_MAP[size],
     size, riskScore, userIntent, openQuestions: [], notInScope: [], scopeFiles: files, scopeDirs: dirs, plannedFiles: [],
     acceptanceCriteria: [], rtmEntries: [], proofLog: [], invariants: [],
-    checkpoint: { taskId, phase: firstPhase, completedPhases: [], timestamp: now, sha256: '', userIntent, scopeFiles: files, acceptanceCriteria: [], rtmEntries: [] },
+    checkpoint: { taskId, phase: firstPhase, completedPhases: [], timestamp: now, sha256: '', userIntent, scopeFiles: files, scopeDirs: dirs, acceptanceCriteria: [], rtmEntries: [] },
     docsDir, workflowDir, sessionToken, stateIntegrity: '', createdAt: now, updatedAt: now,
   };
   state.checkpoint.sha256 = computeCheckpointHash(state.checkpoint);
@@ -90,6 +90,7 @@ function normalizeForSigning(state: TaskState): void {
   if (emptyObj(state.approvals)) delete state.approvals;
   if (emptyObj(state.artifactTimestamps)) delete state.artifactTimestamps;
   if (emptyObj(state.artifactHashes)) delete state.artifactHashes;
+  if (state.forceTransitionCount === 0) delete state.forceTransitionCount;
 }
 
 export function signAndPersist(state: TaskState, hmacKey: string): void {
@@ -101,6 +102,8 @@ export function signAndPersist(state: TaskState, hmacKey: string): void {
 export function updateCheckpoint(state: TaskState, targetPhase: PhaseName): void {
   state.checkpoint.phase = targetPhase;
   state.checkpoint.completedPhases = [...state.completedPhases];
+  state.checkpoint.scopeFiles = [...(state.scopeFiles ?? [])];
+  state.checkpoint.scopeDirs = [...(state.scopeDirs ?? [])];
   state.checkpoint.timestamp = state.updatedAt;
   state.checkpoint.sha256 = computeCheckpointHash(state.checkpoint);
 }
@@ -108,6 +111,8 @@ export function updateCheckpoint(state: TaskState, targetPhase: PhaseName): void
 export function refreshCheckpointTraceability(state: TaskState): void {
   state.checkpoint.acceptanceCriteria = [...state.acceptanceCriteria];
   state.checkpoint.rtmEntries = [...state.rtmEntries];
+  state.checkpoint.scopeFiles = [...(state.scopeFiles ?? [])];
+  state.checkpoint.scopeDirs = [...(state.scopeDirs ?? [])];
   if (state.refinedIntent) state.checkpoint.refinedIntent = state.refinedIntent;
   state.checkpoint.timestamp = state.updatedAt;
   state.checkpoint.sha256 = computeCheckpointHash(state.checkpoint);

@@ -1,22 +1,22 @@
 /**
- * Tests for getDocsPath (relative) and resolveProjectPath (absolute resolution)
+ * Tests for getDocsPath (absolute) and resolveProjectPath (absolute resolution)
  *
- * getDocsPath returns RELATIVE paths. Consumers use resolveProjectPath() to
- * convert to absolute when needed.
+ * getDocsPath returns ABSOLUTE paths resolved against PROJECT_ROOT or cwd.
  *
- * TC-AC2-01: getDocsPath returns relative path (default DOCS_DIR)
- * TC-AC2-02: getDocsPath returns relative path (custom DOCS_DIR)
+ * TC-AC2-01: getDocsPath returns absolute path (default DOCS_DIR)
+ * TC-AC2-02: getDocsPath returns absolute path (custom DOCS_DIR)
  * TC-AC3-01: resolveProjectPath passes through already-absolute path
  * TC-AC5-01: resolveProjectPath resolves relative path to absolute under project root
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { isAbsolute, join } from 'node:path';
+import { isAbsolute, resolve } from 'node:path';
 import { getDocsPath } from '../state/manager-read.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
-describe('getDocsPath returns relative path', () => {
+describe('getDocsPath returns absolute path', () => {
   const origDocsDir = process.env.DOCS_DIR;
+  const origProjectRoot = process.env.PROJECT_ROOT;
 
   afterEach(() => {
     if (origDocsDir === undefined) {
@@ -24,20 +24,27 @@ describe('getDocsPath returns relative path', () => {
     } else {
       process.env.DOCS_DIR = origDocsDir;
     }
+    if (origProjectRoot === undefined) {
+      delete process.env.PROJECT_ROOT;
+    } else {
+      process.env.PROJECT_ROOT = origProjectRoot;
+    }
   });
 
-  it('TC-AC2-01: returns relative path with default DOCS_DIR', () => {
+  it('TC-AC2-01: returns absolute path with default DOCS_DIR', () => {
     delete process.env.DOCS_DIR;
+    delete process.env.PROJECT_ROOT;
     const result = getDocsPath('test-task');
-    expect(isAbsolute(result)).toBe(false);
-    expect(result).toBe(join('docs/workflows', 'test-task'));
+    expect(isAbsolute(result)).toBe(true);
+    expect(result).toBe(resolve(process.cwd(), 'docs/workflows', 'test-task'));
   });
 
-  it('TC-AC2-02: returns relative path with custom DOCS_DIR', () => {
+  it('TC-AC2-02: returns absolute path with custom DOCS_DIR', () => {
     process.env.DOCS_DIR = 'custom/docs';
+    delete process.env.PROJECT_ROOT;
     const result = getDocsPath('test-task');
-    expect(isAbsolute(result)).toBe(false);
-    expect(result).toBe(join('custom/docs', 'test-task'));
+    expect(isAbsolute(result)).toBe(true);
+    expect(result).toBe(resolve(process.cwd(), 'custom/docs', 'test-task'));
   });
 });
 

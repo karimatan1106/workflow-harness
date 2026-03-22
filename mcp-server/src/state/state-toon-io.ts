@@ -42,6 +42,7 @@ export function serializeState(state: TaskState): string {
     ['requirementCount', state.requirementCount],
     ['integrityWarning', state.integrityWarning],
     ['scopeGlob', state.scopeGlob],
+    ['forceTransitionCount', state.forceTransitionCount],
   ]));
 
   // Array-as-semicolon fields
@@ -112,6 +113,7 @@ export function serializeState(state: TaskState): string {
   ]));
   p(kv('checkpoint.completedPhases', toSemiList(cp.completedPhases)));
   p(kv('checkpoint.scopeFiles', toSemiList(cp.scopeFiles)));
+  p(kv('checkpoint.scopeDirs', toSemiList(cp.scopeDirs ?? [])));
   if (cp.acceptanceCriteria.length > 0) {
     p(tableHeader('checkpoint.acceptanceCriteria', cp.acceptanceCriteria.length, ['id', 'description', 'status', 'testCaseId', 'proofTier']));
     p(tableRows(cp.acceptanceCriteria.map(a => [a.id, a.description, a.status, a.testCaseId ?? '', a.proofTier ?? ''])));

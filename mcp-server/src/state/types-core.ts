@@ -4,7 +4,6 @@
  */
 
 import { z } from 'zod';
-
 // ─── Control Levels ─────────────────────────────
 export type ControlLevel = 'L1' | 'L2' | 'L3' | 'L4';
 
@@ -141,6 +140,7 @@ export interface Checkpoint {
   userIntent: string;
   refinedIntent?: string;
   scopeFiles: string[];
+  scopeDirs?: string[];
   acceptanceCriteria: AcceptanceCriterion[];
   rtmEntries: RTMEntry[];
 }
