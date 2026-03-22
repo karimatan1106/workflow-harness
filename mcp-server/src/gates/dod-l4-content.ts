@@ -4,6 +4,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { extname } from 'node:path';
 import { resolveProjectPath } from '../utils/project-root.js';
 import { decode as toonDecode } from '@toon-format/toon';
 import type { PhaseConfig } from '../state/types.js';
@@ -57,9 +58,12 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   const duplicates = checkDuplicateLines(content);
   if (duplicates.length > 0) errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
 
-  const toonCheck = checkRequiredToonKeys(content, config.requiredSections ?? []);
-  if (toonCheck.parseError) errors.push(toonCheck.parseError);
-  else if (toonCheck.missingKeys.length > 0) errors.push(`Missing required TOON keys: ${toonCheck.missingKeys.join(', ')}`);
+  // TOON key checks only apply to .toon files; skip for .mmd and other non-TOON formats
+  if (extname(outputFile) === '.toon') {
+    const toonCheck = checkRequiredToonKeys(content, config.requiredSections ?? []);
+    if (toonCheck.parseError) errors.push(toonCheck.parseError);
+    else if (toonCheck.missingKeys.length > 0) errors.push(`Missing required TOON keys: ${toonCheck.missingKeys.join(', ')}`);
+  }
 
   const passed = errors.length === 0;
   return {

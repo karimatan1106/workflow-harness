@@ -20,6 +20,9 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
   if (!existsSync(outputFile)) {
     return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
   }
+  if (!outputFile.endsWith('.toon')) {
+    return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'Non-TOON file, skipping TOON quality check' };
+  }
   const content = readFileSync(outputFile, 'utf8');
   // Only check TOON parsability — content/density/fieldCount checks removed (L4 covers these via required keys)
   try {
