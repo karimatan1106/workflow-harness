@@ -6,11 +6,21 @@
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
-import type { TaskState, PhaseName, Checkpoint, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
+import type { TaskState, PhaseName, TaskSize, Checkpoint, AcceptanceCriterion, RTMEntry, ProofEntry, RiskScore } from './types.js';
 import { signState, generateSessionToken, generateTaskId } from '../utils/hmac.js';
 import { writeProgressJSON } from './progress-json.js';
-import { calculateRiskScore, classifySize, analyzeScope } from '../phases/risk-classifier.js';
 import { getActivePhases, SIZE_SKIP_MAP } from '../phases/registry.js';
+
+const DEFAULT_FACTORS = {
+  fileCount: 0, hasTests: false, hasConfig: false,
+  hasInfra: false, hasSecurity: false, hasDatabase: false,
+  codeLineEstimate: 0,
+};
+const RISK_SCORE_MAP: Record<TaskSize, RiskScore> = {
+  small: { total: 2, factors: { ...DEFAULT_FACTORS } },
+  medium: { total: 5, factors: { ...DEFAULT_FACTORS } },
+  large: { total: 8, factors: { ...DEFAULT_FACTORS } },
+};
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 import { serializeState } from './state-toon-io.js';
@@ -45,10 +55,9 @@ export function writeTaskIndex(): void {
   writeFileSync(indexPath, serializeTaskIndex({ tasks, updatedAt: new Date().toISOString() }));
 }
 
-export function createTaskState(taskName: string, userIntent: string, hmacKey: string, files: string[] = [], dirs: string[] = []): TaskState {
+export function createTaskState(taskName: string, userIntent: string, hmacKey: string, files: string[] = [], dirs: string[] = [], size: TaskSize = 'large'): TaskState {
   const taskId = generateTaskId();
-  const riskScore = calculateRiskScore(analyzeScope(files, dirs));
-  const size = classifySize(riskScore);
+  const riskScore = RISK_SCORE_MAP[size];
   const firstPhase = getActivePhases(size)[0];
   const sessionToken = generateSessionToken();
   const docsDir = getDocsPath(taskName);

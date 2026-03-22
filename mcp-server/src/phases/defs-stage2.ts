@@ -8,7 +8,7 @@ import type { PhaseDefinition } from './definitions-shared.js';
 export const DEFS_STAGE2: Record<string, PhaseDefinition> = {
   threat_modeling: {
     description: 'STRIDE analysis and risk assessment',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/requirements.toon'],
     outputFile: '{docsDir}/threat-model.toon',
@@ -42,7 +42,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 
   planning: {
     description: 'Technical specification and implementation plan',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/requirements.toon', '{docsDir}/threat-model.toon'],
     outputFile: '{docsDir}/planning.toon',
@@ -141,7 +141,7 @@ Mermaid flowchart形式で処理フローチャートを作成してください
 
   ui_design: {
     description: 'Interface design and component specifications',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/planning.toon'],
     outputFile: '{docsDir}/ui-design.toon',

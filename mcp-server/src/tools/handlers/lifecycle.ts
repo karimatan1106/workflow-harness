@@ -8,6 +8,7 @@ import { existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveProjectPath } from '../../utils/project-root.js';
 import type { StateManager } from '../../state/manager.js';
+import type { TaskSize } from '../../state/types.js';
 import { runDoDChecks } from '../../gates/dod.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
 import { getPhaseDefinition } from '../../phases/definitions.js';
@@ -44,10 +45,11 @@ export async function handleHarnessStart(args: Record<string, unknown>, sm: Stat
   }
   const files = Array.isArray(args.files) ? (args.files as string[]) : [];
   const dirs = Array.isArray(args.dirs) ? (args.dirs as string[]) : [];
+  const size = args.size as TaskSize | undefined;
   // GC abandoned tasks (created == updated, older than 24h)
   let gcCount = 0;
   try { gcCount = sm.gcAbandonedTasks(); } catch { /* non-blocking */ }
-  const task = sm.createTask(taskName, userIntent, files, dirs);
+  const task = sm.createTask(taskName, userIntent, files, dirs, size);
   // S1-3 PF-2: warn if git working tree is dirty
   let gitWarning: string | undefined;
   try {

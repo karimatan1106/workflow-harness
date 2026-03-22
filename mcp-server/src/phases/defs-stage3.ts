@@ -8,7 +8,7 @@ import type { PhaseDefinition } from './definitions-shared.js';
 export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
   design_review: {
     description: 'Review design artifacts for consistency',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.toon', '{docsDir}/planning.toon', '{docsDir}/threat-model.toon'],
     outputFile: '{docsDir}/design-review.toon',
@@ -53,7 +53,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
   test_design: {
     description: 'Test strategy and test cases mapped to AC-N',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/planning.toon', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
     outputFile: '{docsDir}/test-design.toon',
@@ -97,7 +97,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
   test_selection: {
     description: 'Select relevant tests using dependency analysis',
-    model: 'haiku',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/impact-analysis.toon'],
     outputFile: '{docsDir}/test-selection.toon',

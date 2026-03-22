@@ -61,7 +61,7 @@ export async function handleHarnessGetSubphaseTemplate(args: Record<string, unkn
     : '# ' + phase + ' phase\n\nNo subagent template defined. Use phase registry for configuration.';
   return respond({
     phase,
-    model: phaseDef?.model ?? registryDef?.model ?? 'sonnet',
+    model: phaseDef?.model ?? registryDef?.model ?? 'opus',
     subagentTemplate: prompt,
   });
 }

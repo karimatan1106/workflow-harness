@@ -14,6 +14,7 @@ export const TOOL_DEFS_A = [
         userIntent: { type: 'string', description: 'Intent (min 20 chars).', minLength: 20 },
         files: { type: 'array', items: { type: 'string' }, description: 'Scope files.' },
         dirs: { type: 'array', items: { type: 'string' }, description: 'Scope dirs.' },
+        size: { type: 'string', enum: ['small', 'medium', 'large'], description: 'Task size. Default: large.' },
       },
       required: ['taskName', 'userIntent'],
     },

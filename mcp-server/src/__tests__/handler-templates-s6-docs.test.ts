@@ -85,8 +85,8 @@ describe('AC-2: registry.ts docs_update config', () => {
     expect(config.minLines).toBe(30);
   });
 
-  it('TC-AC2-05: model is opus', () => {
-    expect(config.model).toBe('opus');
+  it('TC-AC2-05: model is haiku (mechanical phase)', () => {
+    expect(config.model).toBe('haiku');
   });
 
   it('TC-AC2-06: bashCategories contains readonly only (no implementation)', () => {

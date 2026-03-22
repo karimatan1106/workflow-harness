@@ -8,7 +8,7 @@ import type { PhaseDefinition } from './definitions-shared.js';
 export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
   scope_definition: {
     description: 'Define affected files/directories and set risk score',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: [],
     outputFile: '{docsDir}/scope-definition.toon',
@@ -95,7 +95,7 @@ Step 3: スコープ設定
 
   research: {
     description: 'Investigate codebase, existing patterns, dependencies',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/scope-definition.toon'],
     outputFile: '{docsDir}/research.toon',
@@ -119,7 +119,7 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon out:{docs
 
   impact_analysis: {
     description: 'Analyze blast radius using dependency graphs',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/scope-definition.toon', '{docsDir}/research.toon'],
     outputFile: '{docsDir}/impact-analysis.toon',
@@ -149,7 +149,7 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.toon,{docsDir}
 
   requirements: {
     description: 'Define functional/non-functional requirements with acceptance criteria',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: ['{docsDir}/research.toon', '{docsDir}/impact-analysis.toon'],
     outputFile: '{docsDir}/requirements.toon',

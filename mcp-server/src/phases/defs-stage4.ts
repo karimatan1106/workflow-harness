@@ -9,7 +9,7 @@ import { REFACTORING_STRATEGY } from './definitions-shared.js';
 export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
   test_impl: {
     description: 'Write failing tests (TDD Red phase)',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly', 'testing'],
     inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/test-selection.toon'],
     outputFile: null,
@@ -38,7 +38,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
   implementation: {
     description: 'Write code to pass tests (TDD Green phase)',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly', 'testing', 'implementation'],
     inputFiles: ['{docsDir}/planning.toon', '{docsDir}/test-design.toon'],
     outputFile: null,
@@ -132,7 +132,7 @@ ${REFACTORING_STRATEGY}
 
   code_review: {
     description: 'Review implementation against design',
-    model: 'sonnet',
+    model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: [],
     outputFile: '{docsDir}/code-review.toon',

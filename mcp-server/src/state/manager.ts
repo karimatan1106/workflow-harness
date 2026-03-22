@@ -46,8 +46,8 @@ export class StateManager {
   private hmacKey: string;
   constructor() { this.hmacKey = ensureHmacKeys(getStateDir()); }
 
-  createTask(taskName: string, userIntent: string, files: string[] = [], dirs: string[] = []): TaskState {
-    const state = createTaskState(taskName, userIntent, this.hmacKey, files, dirs);
+  createTask(taskName: string, userIntent: string, files: string[] = [], dirs: string[] = [], size?: TaskSize): TaskState {
+    const state = createTaskState(taskName, userIntent, this.hmacKey, files, dirs, size);
     persistState(state);
     ensureStateDirs(state);
     writeTaskIndex();
