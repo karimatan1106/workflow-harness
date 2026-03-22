@@ -147,3 +147,40 @@ next:
 acceptanceCriteriaは最低3件必須(DoD L4)。notInScopeとopenQuestionsは必須キー。
 openQuestionsが空なら [0] で空配列にすること。未解決質問が残っているとDoD失敗。
 harness_add_ac / harness_add_rtm を呼んでACとRTMを登録すること。`;
+
+export const TOON_SKELETON_HEARING = `
+出力フォーマット（TOON形式）
+
+:toon hearing v1
+:summary [1行サマリー]
+
+:section intent-analysis
+:surfaceRequest [ユーザーが明示的に言ったこと]
+:deepNeed [背後にある本質的なニーズ]
+:unclearPoints
+  - [不明確な点1]
+:assumptions
+  - [前提として置いた仮定1]
+:end intent-analysis
+
+:section implementation-plan
+:approach [採用するアプローチ]
+:estimatedScope [変更ファイル数・規模の概算]
+:risks
+  - [リスク1]
+:questions
+  - [ユーザーへの確認事項（あれば）]
+:end implementation-plan
+
+:section decisions
+:decision [D-HR-1] [判断内容] :reason [理由]
+:end decisions
+
+:section artifacts
+:artifact hearing.toon :status draft
+:end artifacts
+
+:section next
+:next scope_definition :input hearing.toon
+:end next
+`;

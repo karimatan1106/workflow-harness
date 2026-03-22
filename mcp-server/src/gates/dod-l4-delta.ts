@@ -16,6 +16,7 @@ const DELTA_ENTRY_APPLICABLE_PHASES = new Set([
   'threat_modeling', 'planning', 'state_machine', 'flowchart', 'ui_design',
   'design_review', 'test_design', 'test_selection', 'code_review', 'acceptance_verification',
   'manual_test', 'security_scan', 'performance_test', 'e2e_test', 'health_observation',
+  'hearing',
 ]);
 
 export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string, size: TaskSize = 'medium'): DoDCheckResult {

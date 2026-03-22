@@ -29,7 +29,7 @@ describe('State manager integration (real fs)', () => {
     const task = sm.createTask('integ-test-n58', 'Test real filesystem state management');
     expect(task.taskId).toBeTruthy();
     expect(task.taskName).toBe('integ-test-n58');
-    expect(task.phase).toBe('scope_definition');
+    expect(task.phase).toBe('hearing');
   });
 
   it('persists and retrieves task via loadTask', () => {

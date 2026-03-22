@@ -45,7 +45,7 @@ artifacts[1]{path,role,summary}:
 必須: decisions[N≥5]{id,statement,rationale} / artifacts[N]{path,role,summary} / next(criticalDecisions,readFiles,warnings)
 role: spec|design|test|impl|report|diagram。[N]は実数に置換。
 
-IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requirements=REQ,threat_modeling=TM,planning=PL,state_machine=SM,flowchart=FC,ui_design=UID,design_review=DR,test_design=TD,test_selection=TS,code_review=CR,acceptance_verification=AV,manual_test=MT,security_scan=SS,performance_test=PT,e2e_test=E2E,health_observation=HO`;
+IDプレフィックス: scope_definition=SD,research=R,impact_analysis=IA,requirements=REQ,threat_modeling=TM,planning=PL,state_machine=SM,flowchart=FC,ui_design=UID,design_review=DR,test_design=TD,test_selection=TS,code_review=CR,acceptance_verification=AV,manual_test=MT,security_scan=SS,performance_test=PT,e2e_test=E2E,health_observation=HO,hearing=HR`;
 
 // Refactoring methodology — referenced by refactoring phase template
 export const REFACTORING_STRATEGY = `リファクタリング方針（優先順に実施）

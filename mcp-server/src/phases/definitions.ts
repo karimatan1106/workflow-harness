@@ -19,6 +19,7 @@ import {
 export { buildDocCategories, loadTraitCategories };
 import * as skelA from './toon-skeletons-a.js';
 import * as skelB from './toon-skeletons-b.js';
+import { DEFS_STAGE0 } from './defs-stage0.js';
 import { DEFS_STAGE1 } from './defs-stage1.js';
 import { DEFS_STAGE2 } from './defs-stage2.js';
 import { DEFS_STAGE3 } from './defs-stage3.js';
@@ -31,6 +32,7 @@ export type { PhaseDefinition } from './definitions-shared.js';
 // ─── Phase Definitions ───────────────────────────
 
 export const PHASE_DEFINITIONS: Partial<Record<PhaseName, import('./definitions-shared.js').PhaseDefinition>> = {
+  ...DEFS_STAGE0,
   ...DEFS_STAGE1,
   ...DEFS_STAGE2,
   ...DEFS_STAGE3,
@@ -48,6 +50,7 @@ export function getPhaseDefinition(phase: string): import('./definitions-shared.
 // ─── ACE TOON-first: output filename → source phase mapping ──
 
 export const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
+  'hearing.toon': 'hearing',
   'scope-definition.toon': 'scope_definition',
   'research.toon': 'research',
   'impact-analysis.toon': 'impact_analysis',

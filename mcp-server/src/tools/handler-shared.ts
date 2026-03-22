@@ -22,6 +22,7 @@ export const PHASE_APPROVAL_GATES: Record<string, string> = {
   test_design: 'test_design',
   code_review: 'code_review',
   acceptance_verification: 'acceptance',
+  hearing: 'hearing',
 };
 
 /** Approvals that require explicit user confirmation vs Claude self-approval */
@@ -31,6 +32,7 @@ export const USER_APPROVAL_REQUIRED: Record<string, boolean> = {
   test_design: false,      // Claude self-approval OK
   code_review: false,      // Claude self-approval OK
   acceptance: true,        // User must confirm final acceptance
+  hearing: true,           // User must confirm hearing outcome
 };
 
 /** FB#7: Auto-approve requirements for small tasks when ACs are sufficient and no open questions */
@@ -86,6 +88,7 @@ const SKILL_FILE_ROUTING: Record<string, string[]> = {
   ci_verification: ['workflow-phases.md'],
   deploy: ['workflow-phases.md'],
   health_observation: ['workflow-phases.md'],
+  hearing: ['workflow-phases.md', 'workflow-gates.md'],
 };
 
 /** Build phase guide object from registry (INC-4 fix). */

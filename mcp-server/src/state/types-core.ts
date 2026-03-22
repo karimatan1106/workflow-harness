@@ -1,8 +1,4 @@
-/**
- * Core type definitions for workflow-harness state management
- * @spec docs/spec/features/workflow-harness.md
- */
-
+/** Core type definitions — @spec docs/spec/features/workflow-harness.md */
 import { z } from 'zod';
 // ─── Control Levels ─────────────────────────────
 export type ControlLevel = 'L1' | 'L2' | 'L3' | 'L4';
@@ -24,6 +20,7 @@ export interface GateContext {
 
 // ─── Phase Names ────────────────────────────────
 export const PHASE_NAMES = [
+  'hearing',
   'scope_definition',
   'research',
   'impact_analysis',
@@ -89,6 +86,7 @@ export type ParallelGroupName = keyof typeof PARALLEL_GROUPS;
 
 // ─── Approval Gates ─────────────────────────────
 export const APPROVAL_GATES = {
+  hearing: 'hearing',
   requirements: 'requirements',
   design_review: 'design',
   test_design: 'test_design',

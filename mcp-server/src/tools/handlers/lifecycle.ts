@@ -120,33 +120,6 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
   if (!task) return respondError('Task not found: ' + taskId);
   const sessionErr = validateSession(task, args.sessionToken);
   if (sessionErr) return respondError(sessionErr);
-  const forceTransition = Boolean(args.forceTransition ?? false);
-  // Phases that cannot be skipped via forceTransition (unless in test mode)
-  const NO_SKIP_PHASES = new Set(['scope_definition', 'requirements']);
-  if (forceTransition && NO_SKIP_PHASES.has(task.phase) && !process.env.HARNESS_TEST_MODE) {
-    return respondError(
-      `Phase "${task.phase}" cannot be skipped with forceTransition. ` +
-      'Complete this phase normally — its output is required for downstream phases.',
-    );
-  }
-  // FT-1: Track and limit consecutive forceTransition usage
-  if (forceTransition) {
-    task.forceTransitionCount = (task.forceTransitionCount ?? 0) + 1;
-    if (task.forceTransitionCount >= 5 && !process.env.HARNESS_TEST_MODE) {
-      return respondError(
-        'forceTransition limit reached (5). Manual intervention required.',
-      );
-    }
-    task.proofLog.push({
-      phase: task.phase,
-      level: 'L1',
-      check: 'force_transition',
-      result: false,
-      evidence: `forceTransition used at phase ${task.phase} (count: ${task.forceTransitionCount})`,
-      timestamp: new Date().toISOString(),
-    });
-    sm.saveTask(task);
-  }
   const retryCount = Number(args.retryCount ?? 1);
   if (retryCount >= 1) {
     const currentRetry = sm.getRetryCount(taskId, task.phase);
@@ -157,52 +130,38 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     }
     sm.incrementRetryCount(taskId, task.phase);
   }
-  if (!forceTransition) {
-    if (shouldRequireApproval(task.phase, task.size, task.acceptanceCriteria.length, (task as any).openQuestions?.length ?? 0)) {
-      const requiredApproval = PHASE_APPROVAL_GATES[task.phase];
-      if (requiredApproval && !(task.approvals && task.approvals[requiredApproval])) {
-        return respondError('Phase "' + task.phase + '" requires approval (type: "' + requiredApproval + '") before advancing. Call harness_approve first.');
-      }
+  if (shouldRequireApproval(task.phase, task.size, task.acceptanceCriteria.length, (task as any).openQuestions?.length ?? 0)) {
+    const requiredApproval = PHASE_APPROVAL_GATES[task.phase];
+    if (requiredApproval && !(task.approvals && task.approvals[requiredApproval])) {
+      return respondError('Phase "' + task.phase + '" requires approval (type: "' + requiredApproval + '") before advancing. Call harness_approve first.');
     }
   }
   const docsDir: string = task.docsDir ?? ('docs/workflows/' + task.taskName);
   // P2+P4: output file existence + size pre-check before DoD
-  if (!forceTransition) {
-    const phaseConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
-    if (phaseConfig?.outputFile) {
-      const outPath = resolveProjectPath(phaseConfig.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', task.workflowDir ?? ''));
-      if (!existsSync(outPath)) {
-        return respondError('成果物ファイルが存在しません: ' + outPath + '. フェーズ作業を完了してから harness_next を呼び出してください。');
-      }
-      const fileSize = statSync(outPath).size;
-      if (fileSize < 100) {
-        return respondError('成果物ファイルが空または不完全です (' + fileSize + ' bytes): ' + outPath);
-      }
+  const phaseConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
+  if (phaseConfig?.outputFile) {
+    const outPath = resolveProjectPath(phaseConfig.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', task.workflowDir ?? ''));
+    if (!existsSync(outPath)) {
+      return respondError('成果物ファイルが存在しません: ' + outPath + '. フェーズ作業を完了してから harness_next を呼び出してください。');
+    }
+    const fileSize = statSync(outPath).size;
+    if (fileSize < 100) {
+      return respondError('成果物ファイルが空または不完全です (' + fileSize + ' bytes): ' + outPath);
     }
   }
-  let dodResult: Awaited<ReturnType<typeof runDoDChecks>>;
-  if (!forceTransition) {
-    dodResult = await runDoDChecks(task, docsDir);
-    if (!dodResult.passed) {
-      const registryConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
-      const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: registryConfig?.model ?? null };
-      const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
-      try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
-      try { recordRetry(taskId, task.phase, dodResult.errors.join('\n')); recordDoDFailure(taskId, task.phase, dodResult.errors); } catch { /* non-blocking */ }
-      try { appendErrorToon(docsDir, { timestamp: new Date().toISOString(), phase: task.phase, retryCount, errors: dodResult.errors, checks: dodResult.checks.map(c => ({ name: c.check, passed: c.passed, message: c.evidence })) }); } catch { /* non-blocking */ }
-      // VDB-1: Suspect validator bug after 3+ retries on same phase
-      const vdb1Warning = retryCount >= 3
-        ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. Same validation error recurring. Diagnose the validator before retrying. Check if the DoD check itself has a bug.`
-        : undefined;
-      return respond({ error: 'DoD checks failed. Fix the following issues before advancing.', dodChecks: dodResult.checks, errors: dodResult.errors, retry: { retryPrompt: retryResult.prompt, suggestModelEscalation: retryResult.suggestModelEscalation, suggestedModel: retryResult.suggestedModel }, ...(vdb1Warning ? { vdb1Warning } : {}) });
-    }
-  } else {
-    dodResult = { passed: true, checks: [], errors: [] };
-  }
-  // FT-1: Reset forceTransition counter on normal DoD pass
-  if (!forceTransition) {
-    task.forceTransitionCount = 0;
-    sm.saveTask(task);
+  const dodResult = await runDoDChecks(task, docsDir);
+  if (!dodResult.passed) {
+    const registryConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
+    const retryCtx: RetryContext = { phase: task.phase, taskName: task.taskName, docsDir, retryCount, errorMessage: dodResult.errors.join('\n'), model: registryConfig?.model ?? null };
+    const retryResult = buildRetryPrompt(retryCtx, dodResult.checks);
+    try { stashFailure(taskId, task.phase, dodResult.errors.join('\n'), retryCount); } catch { /* non-blocking */ }
+    try { recordRetry(taskId, task.phase, dodResult.errors.join('\n')); recordDoDFailure(taskId, task.phase, dodResult.errors); } catch { /* non-blocking */ }
+    try { appendErrorToon(docsDir, { timestamp: new Date().toISOString(), phase: task.phase, retryCount, errors: dodResult.errors, checks: dodResult.checks.map(c => ({ name: c.check, passed: c.passed, message: c.evidence })) }); } catch { /* non-blocking */ }
+    // VDB-1: Suspect validator bug after 3+ retries on same phase
+    const vdb1Warning = retryCount >= 3
+      ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. Same validation error recurring. Diagnose the validator before retrying. Check if the DoD check itself has a bug.`
+      : undefined;
+    return respond({ error: 'DoD checks failed. Fix the following issues before advancing.', dodChecks: dodResult.checks, errors: dodResult.errors, retry: { retryPrompt: retryResult.prompt, suggestModelEscalation: retryResult.suggestModelEscalation, suggestedModel: retryResult.suggestedModel }, ...(vdb1Warning ? { vdb1Warning } : {}) });
   }
   if (retryCount > 1) { try { promoteStashedFailure(taskId, task.phase, retryCount); } catch { /* non-blocking */ } }
   try { recordPhaseEnd(taskId, task.phase); } catch { /* non-blocking */ }
@@ -220,10 +179,6 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
     responseObj.expectedOutputFile = nextPhaseConfig.outputFile
       .replace('{docsDir}', resolvedDocsDir)
       .replace('{workflowDir}', freshTask?.workflowDir ?? task.workflowDir ?? '');
-  }
-  // FT-1: Warn when forceTransition has been used 3+ times
-  if (forceTransition && (task.forceTransitionCount ?? 0) >= 3) {
-    responseObj.forceTransitionWarning = `forceTransition used ${task.forceTransitionCount} times. Quality gates are being bypassed.`;
   }
   if (PARALLEL_GROUPS[nextPhase]) {
     responseObj.parallelSubPhases = PARALLEL_GROUPS[nextPhase].map(subPhase => ({ subPhase, model: PHASE_REGISTRY[subPhase as keyof typeof PHASE_REGISTRY]?.model ?? null }));

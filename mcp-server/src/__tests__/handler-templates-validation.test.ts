@@ -94,7 +94,7 @@ describe('Validation', () => {
     const taskId = startRes.taskId as string;
     const token = startRes.sessionToken as string;
 
-    // scope_definition requires an output file that doesn't exist yet
+    // hearing requires an output file that doesn't exist yet
     const res = await call(mgr, 'harness_pre_validate', {
       taskId,
       sessionToken: token,
@@ -102,7 +102,7 @@ describe('Validation', () => {
 
     expect(res.error).toBeUndefined();
     expect(typeof res.passed).toBe('boolean');
-    expect(res.phase).toBe('scope_definition');
+    expect(res.phase).toBe('hearing');
     expect(Array.isArray(res.checks)).toBe(true);
 
     if (!res.passed) {
@@ -126,27 +126,27 @@ describe('Validation', () => {
     mkdirSync(docsDir, { recursive: true });
 
     const content = toonEncode({
-      phase: 'scope_definition',
+      phase: 'hearing',
       taskId: 'test',
       ts: new Date().toISOString(),
       decisions: [
-        { id: 'SD-001', statement: '対象ファイルはsrc/tools/handler.tsの単一ファイルであることが確認された', rationale: 'スコープ定義の結果' },
-        { id: 'SD-002', statement: 'ハンドラーレベルの統合テストカバレッジ向上を実施するという決定をした', rationale: '品質向上の目的' },
-        { id: 'SD-003', statement: '既存テストへの影響はなくテストスイート全体の合格率を維持するという制約がある', rationale: 'リグレッション防止' },
-        { id: 'SD-004', statement: '一時ディレクトリ使用によりファイルシステムへの影響は限定的であるリスクを確認した', rationale: 'リスク評価結果' },
-        { id: 'SD-005', statement: 'researchフェーズでhandler.tsの現在の構造と依存関係を調査するという次アクションを決定した', rationale: '調査フェーズの開始' },
-        { id: 'SD-006', statement: 'manager.ts、dod.ts、definitions.tsに依存しているという依存関係を特定した', rationale: '依存関係分析' },
-        { id: 'SD-007', statement: 'vitestフレームワークを使用してテストを実装する前提であることを確認した', rationale: 'テストフレームワーク選定' },
+        { id: 'HR-001', statement: 'ユーザーの意図を正確に把握し、タスクの目的を確認した', rationale: 'ヒアリングの結果' },
+        { id: 'HR-002', statement: 'ハンドラーレベルの統合テストカバレッジ向上を実施するという決定をした', rationale: '品質向上の目的' },
+        { id: 'HR-003', statement: '既存テストへの影響はなくテストスイート全体の合格率を維持するという制約がある', rationale: 'リグレッション防止' },
+        { id: 'HR-004', statement: '一時ディレクトリ使用によりファイルシステムへの影響は限定的であるリスクを確認した', rationale: 'リスク評価結果' },
+        { id: 'HR-005', statement: 'scope_definitionフェーズで詳細なスコープ定義を行うという次アクションを決定した', rationale: 'スコープ定義フェーズの開始' },
+        { id: 'HR-006', statement: 'manager.ts、dod.ts、definitions.tsに依存しているという依存関係を特定した', rationale: '依存関係分析' },
+        { id: 'HR-007', statement: 'vitestフレームワークを使用してテストを実装する前提であることを確認した', rationale: 'テストフレームワーク選定' },
       ],
-      artifacts: [{ path: 'docs/scope-definition.toon', role: 'spec', summary: 'Scope definition artifact' }],
+      artifacts: [{ path: 'docs/hearing.toon', role: 'spec', summary: 'Hearing artifact' }],
       next: {
-        criticalDecisions: ['SD-001', 'SD-002'],
-        readFiles: ['docs/scope-definition.toon'],
+        criticalDecisions: ['HR-001', 'HR-002'],
+        readFiles: ['docs/hearing.toon'],
         warnings: [],
       },
     });
 
-    writeFileSync(join(docsDir, 'scope-definition.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'hearing.toon'), content, 'utf8');
 
     const res = await call(mgr, 'harness_pre_validate', {
       taskId,
@@ -154,7 +154,7 @@ describe('Validation', () => {
     });
 
     expect(res.error).toBeUndefined();
-    expect(res.phase).toBe('scope_definition');
+    expect(res.phase).toBe('hearing');
     expect(res.passed).toBe(true);
     expect(res.retry).toBeUndefined();
   });

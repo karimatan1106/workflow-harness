@@ -46,10 +46,10 @@ describe('createTask', () => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     expect(uuidRegex.test(state.taskId)).toBe(true);
   });
-  it('starts in the first active phase for small tasks (scope_definition)', () => {
+  it('starts in the first active phase for small tasks (hearing)', () => {
     const mgr = createMgr();
     const state = mgr.createTask('ct-small-phase-task', 'Intent for small task with sufficient length text here ok.');
-    expect(state.phase).toBe('scope_definition');
+    expect(state.phase).toBe('hearing');
   });
   it('creates the workflow state file on disk', () => {
     const mgr = createMgr();

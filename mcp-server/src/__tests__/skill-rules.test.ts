@@ -29,9 +29,10 @@ describe('skill rule constants', () => {
     expect(td.requiredSections!.length).toBeGreaterThan(0);
   });
 
-  it('TC-AC2-03: PHASE_APPROVAL_GATES contains 5 gates', () => {
+  it('TC-AC2-03: PHASE_APPROVAL_GATES contains 6 gates', () => {
     const keys = Object.keys(PHASE_APPROVAL_GATES);
-    expect(keys).toHaveLength(5);
+    expect(keys).toHaveLength(6);
+    expect(keys).toContain('hearing');
     expect(keys).toContain('requirements');
     expect(keys).toContain('design_review');
     expect(keys).toContain('test_design');

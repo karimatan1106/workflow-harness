@@ -41,8 +41,41 @@ describe('Retry and VDB-1 detection', () => {
     const taskId = startRes.taskId as string;
     const token = startRes.sessionToken as string;
     const docsDir = startRes.docsDir as string;
-    // Create output file that passes P2 pre-check (>=100 bytes) but fails DoD L4
     mkdirSync(docsDir, { recursive: true });
+    // Create valid hearing.toon to pass hearing phase DoD
+    const hearingToon = [
+      'phase: hearing',
+      'summary: test hearing for vdb1',
+      '',
+      'decisions[1]{id,statement,rationale}:',
+      '  D-HR-1, "test decision", "test rationale"',
+      '',
+      'artifacts[1]{path,role,summary}:',
+      '  hearing.toon, spec, "hearing output"',
+      '',
+      'next(criticalDecisions,readFiles,warnings):',
+      '  none, hearing.toon, none',
+      '',
+      '# padding to reach minLines threshold',
+      '# line 14',
+      '# line 15',
+      '# line 16',
+      '# line 17',
+      '# line 18',
+      '# line 19',
+      '# line 20',
+      '# line 21',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'hearing.toon'), hearingToon, 'utf8');
+    // Advance past hearing via approval gate (hearing requires approval)
+    const approveRes = await call(mgr, 'harness_approve', {
+      taskId,
+      sessionToken: token,
+      type: 'hearing',
+    });
+    expect(approveRes.error).toBeUndefined();
+    expect(approveRes.nextPhase).toBe('scope_definition');
+    // Now on scope_definition: create output that passes P2 (>=100 bytes) but fails DoD
     writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
@@ -66,7 +99,7 @@ describe('Retry and VDB-1 detection', () => {
     const docsDir = startRes.docsDir as string;
     // Create output file that passes P2 pre-check but fails DoD L4
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
+    writeFileSync(join(docsDir, 'hearing.toon'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
@@ -87,7 +120,7 @@ describe('Retry and VDB-1 detection', () => {
     const docsDir = startRes.docsDir as string;
     // Create output file that passes P2 pre-check but fails DoD
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
+    writeFileSync(join(docsDir, 'hearing.toon'), 'x'.repeat(150), 'utf8');
     // Increment counter 5 times (each call with retryCount >= 1 increments)
     for (let i = 0; i < 5; i++) {
       await call(mgr, 'harness_next', { taskId, sessionToken: token, retryCount: 1 });
@@ -112,7 +145,7 @@ describe('Task Lifecycle', () => {
     expect(typeof res.docsDir).toBe('string');
     expect(typeof res.workflowDir).toBe('string');
     expect(res.taskName).toBe('start-basic-task');
-    expect(res.phase).toBe('scope_definition');
+    expect(res.phase).toBe('hearing');
     // sessionToken should be a 64-char hex string
     expect(/^[0-9a-f]{64}$/.test(res.sessionToken as string)).toBe(true);
   });
@@ -150,7 +183,7 @@ describe('Task Lifecycle', () => {
     expect(statusRes.taskName).toBe('status-detail-task');
     expect(typeof statusRes.sessionToken).toBe('string');
     expect((statusRes.sessionToken as string).length).toBe(64);
-    expect(statusRes.phase).toBe('scope_definition');
+    expect(statusRes.phase).toBe('hearing');
   });
 
   it('harness_status returns task list when called without taskId', async () => {

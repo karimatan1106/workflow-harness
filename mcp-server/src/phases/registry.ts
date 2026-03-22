@@ -6,8 +6,10 @@
 import type { PhaseConfig, PhaseName, TaskSize, ParallelGroupName } from '../state/types.js';
 
 export const PHASE_REGISTRY: Record<PhaseName, PhaseConfig> = {
+  // Stage 0: Hearing
+  hearing: { name: 'hearing', stage: 0, model: 'opus', inputFiles: [], outputFile: '{docsDir}/hearing.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 20, allowedExtensions: ['.toon', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   // Stage 1: Discovery
-  scope_definition: { name: 'scope_definition', stage: 1, model: 'opus', inputFiles: [], outputFile: '{docsDir}/scope-definition.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 30, allowedExtensions: ['.toon', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
+  scope_definition: { name: 'scope_definition', stage: 1, model: 'opus', inputFiles: ['{docsDir}/hearing.toon'], outputFile: '{docsDir}/scope-definition.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 30, allowedExtensions: ['.toon', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   research: { name: 'research', stage: 1, model: 'opus', inputFiles: ['{docsDir}/scope-definition.toon'], outputFile: '{docsDir}/research.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 50, allowedExtensions: ['.toon', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   impact_analysis: { name: 'impact_analysis', stage: 1, model: 'opus', inputFiles: ['{docsDir}/scope-definition.toon', '{docsDir}/research.toon'], outputFile: '{docsDir}/impact-analysis.toon', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 40, allowedExtensions: ['.toon', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   // Stage 2: Requirements
@@ -55,6 +57,7 @@ export const PHASE_REGISTRY: Record<PhaseName, PhaseConfig> = {
 };
 
 export const PHASE_ORDER: PhaseName[] = [
+  'hearing',
   'scope_definition',
   'research',
   'impact_analysis',
