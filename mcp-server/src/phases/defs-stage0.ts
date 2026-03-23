@@ -9,39 +9,33 @@ export const DEFS_STAGE0: Record<string, PhaseDefinition> = {
     outputFile: '{docsDir}/hearing.toon',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
-    subagentTemplate: `hearingフェーズ
+    subagentTemplate: `hearingフェーズ（Worker planモード）
 
 タスク情報
 - タスク名: {taskName}
 - 出力先: {docsDir}/
 - ユーザー意図: {userIntent}
 
-作業内容
-ユーザーの意図を分析し、実装計画を策定してください。
+実行手順
 
-1. 意図分析
-   - surfaceRequest: ユーザーが明示的に言ったこと
-   - deepNeed: 背後にある本質的なニーズ
-   - unclearPoints: 不明確な点（仮定を置く場合は明記）
-   - assumptions: 前提として置いた仮定
+1. ユーザー意図を分析し、不明確な点を特定する
 
-2. コードベース事前調査（readonly）
+2. AskUserQuestion で確認事項をヒアリング（1回のAskで最大4問）
+   - 各質問に2-4個の選択肢を用意
+   - 技術的判断が必要な場合は推奨を(Recommended)で明示
+   - 不明確な点が多い場合は複数回に分けて質問
+
+3. コードベース事前調査（readonly）
    - 変更対象の特定
    - 影響範囲の概算
    - 既存パターンの確認
 
-3. 実装プラン策定
-   - approach: 採用するアプローチ
-   - estimatedScope: 変更ファイル数・規模
-   - risks: リスク・懸念事項
-   - questions: ユーザーへの確認事項（あれば）
+4. 回答と調査結果を元にhearing.toonを作成
+   - intent-analysis: surfaceRequest, deepNeed, unclearPoints, assumptions
+   - implementation-plan: approach, estimatedScope, risks
+   - decisions: 確認で決まった事項
 
-出力
-{docsDir}/hearing.toon に保存してください。
-
-{SUMMARY_SECTION}
 {TOON_SKELETON_HEARING}
-{BASH_CATEGORIES}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
   },
