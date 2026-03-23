@@ -176,6 +176,7 @@ export const TaskSizeSchema = z.enum(['small', 'medium', 'large']);
 export const PhaseNameSchema = z.enum(PHASE_NAMES as unknown as [string, ...string[]]);
 
 export const ApprovalTypeSchema = z.enum([
+  'hearing',
   'requirements',
   'design',
   'test_design',
