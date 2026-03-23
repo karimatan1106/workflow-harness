@@ -7,8 +7,8 @@ description: タスク完了後の振り返りと改善点の記録。completed 
 
 ### 1. データ収集
 以下のファイルを読み込む:
-- `docs/workflows/{taskId}/phase-analytics.toon` — フェーズ別所要時間
-- `docs/workflows/{taskId}/phase-metrics.toon` — AC/RTM/テスト数
+- `docs/workflows/{taskId}/phase-analytics.md` — フェーズ別所要時間
+- `docs/workflows/{taskId}/phase-metrics.md` — AC/RTM/テスト数
 - harness_status で feedbackLog を取得
 - harness_get_known_bugs で既知バグを取得
 

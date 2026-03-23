@@ -228,7 +228,7 @@ export async function handleHarnessNext(args: Record<string, unknown>, sm: State
           'These tests were already failing before the task started.',
           'They should be investigated and fixed in a separate task.',
         ];
-        const followUpPath = join(followUpDir, 'follow-up-tests.toon');
+        const followUpPath = join(followUpDir, 'follow-up-tests.md');
         writeFileSync(followUpPath, lines.join('\n') + '\n', 'utf8');
         responseObj.followUpFile = followUpPath;
       }

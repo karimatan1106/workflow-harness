@@ -1,6 +1,6 @@
 /**
  * Invariant type definitions for INV-N proof tier framework.
- * @spec docs/workflows/inv-n-proof-tier/spec.toon
+ * @spec docs/workflows/inv-n-proof-tier/spec.md
  */
 
 import type { ProofTier } from './types-core.js';

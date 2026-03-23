@@ -1,6 +1,6 @@
 /**
  * StateManager extension: invariant operations + moved utility methods.
- * @spec docs/workflows/inv-n-proof-tier/spec.toon
+ * @spec docs/workflows/inv-n-proof-tier/spec.md
  */
 
 import type { Invariant, InvariantStatus } from './types-invariant.js';

@@ -112,5 +112,5 @@ export function buildPhaseGuide(phase: string): {
       skillFiles,
     };
   }
-  return { model: 'sonnet', bashCategories: ['readonly'], allowedExtensions: ['.toon'], requiredSections: [], minLines: 0, skillFiles };
+  return { model: 'sonnet', bashCategories: ['readonly'], allowedExtensions: ['.md'], requiredSections: [], minLines: 0, skillFiles };
 }

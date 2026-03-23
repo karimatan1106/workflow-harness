@@ -52,14 +52,14 @@ commitフェーズにimplementation(rm含む)なし。削除はimplementation/re
 | フェーズ | 編集可能 | 禁止 |
 |---------|---------|------|
 | idle / commit / push / completed | なし | 全て |
-| research ~ parallel_analysis | .toon, .md | コード |
-| parallel_design | .toon, .md, .mmd | コード |
-| design_review | .toon, .md | コード |
-| test_design ~ regression_test | .toon, .md, テストファイル | ソースコード |
-| test_impl | テストファイル, .toon, .md | ソースコード |
+| research ~ parallel_analysis | .md | コード |
+| parallel_design | .md, .mmd | コード |
+| design_review | .md | コード |
+| test_design ~ regression_test | .md, テストファイル | ソースコード |
+| test_impl | テストファイル, .md | ソースコード |
 | implementation | ソースコード | テストファイル |
 | refactoring / parallel_quality | コード全般 | - |
-| parallel_verification / docs_update ~ deploy | .toon, .md | コード |
+| parallel_verification / docs_update ~ deploy | .md | コード |
 
 ## subagent委譲時の必須コンテキスト
 
