@@ -35,8 +35,8 @@ function checkL1(toolName, toolInput) {
   }
   if (toolName === 'Agent') {
     var st = ((toolInput && toolInput.subagent_type) || '').toLowerCase();
-    if (st === 'coordinator' || st === 'worker') return null;
-    return 'L1 Agent() restricted. subagent_type must be coordinator|worker. Got: "' + (toolInput && toolInput.subagent_type || '') + '"';
+    if (st === 'coordinator' || st === 'worker' || st === 'hearing-worker') return null;
+    return 'L1 Agent() restricted. subagent_type must be coordinator|worker|hearing-worker. Got: "' + (toolInput && toolInput.subagent_type || '') + '"';
   }
   if (L1_ALLOWED.has(toolName)) return null;
   return 'L1 (Orchestrator) cannot use "' + toolName + '". Delegate via Agent(coordinator/worker).';
