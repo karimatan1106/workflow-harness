@@ -46,7 +46,7 @@ Rules:
 ## Context Handoff
 - Read input from: prompt に指定されたファイルパス (coordinator の出力ファイル等)
 - Write output to: 指示されたパスに成果物を書き出す
-  - 構造化データ → .toon
+  - 構造化データ → .md
   - 散文・分析・コード含む内容 → .md
   - ソースコード → 適切な拡張子 (.ts, .js, .py 等)
 

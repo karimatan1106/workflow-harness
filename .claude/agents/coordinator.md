@@ -17,7 +17,7 @@ You are a Coordinator (L2) in a 2-layer workflow harness.
 ## Context Handoff
 - Read input from: prompt に指定されたファイルパス
 - Write output to: docs/workflows/ 配下に適切な拡張子で書き出す
-  - 構造化データ(AC, RTM, スコープ) → .toon
+  - 構造化データ(AC, RTM, スコープ) → .md
   - 分析・散文・コード含む内容 → .md
 - L1 にはファイルパスと1行サマリのみ返す。詳細はファイルに書く。
 

@@ -91,7 +91,7 @@ function checkPitfalls(input) {
   if (content.includes('.toon') && content.includes('\\|')) {
     warnings.push('[WATCHDOG:PITFALL] TOON にバックスラッシュ検出。エスケープ扱いされます。');
   }
-  if (/scope_definition\.toon|test_design\.toon|test_selection\.toon/.test(content)) {
+  if (/scope_definition\.md|test_design\.md|test_selection\.md/.test(content)) {
     warnings.push('[WATCHDOG:PITFALL] TOON ファイル名がアンダースコア区切り。ハイフン区切りにしてください。');
   }
   if ((content.includes('docs/workflows/') || content.includes('docs\\workflows\\'))
