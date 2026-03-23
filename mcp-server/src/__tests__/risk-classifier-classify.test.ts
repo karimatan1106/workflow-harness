@@ -8,27 +8,10 @@ import { classifySize, analyzeScope } from '../phases/risk-classifier.js';
 // ─── classifySize ────────────────────────────────
 
 describe('classifySize', () => {
-  it('returns "small" when total is 0', () => {
-    expect(classifySize({ total: 0, factors: {} as any })).toBe('small');
-  });
-
-  it('returns "small" when total is 3', () => {
-    expect(classifySize({ total: 3, factors: {} as any })).toBe('small');
-  });
-
-  it('returns "medium" when total is 4', () => {
-    expect(classifySize({ total: 4, factors: {} as any })).toBe('medium');
-  });
-
-  it('returns "medium" when total is 7', () => {
-    expect(classifySize({ total: 7, factors: {} as any })).toBe('medium');
-  });
-
-  it('returns "large" when total is 8', () => {
+  it('always returns "large" regardless of total', () => {
+    expect(classifySize({ total: 0, factors: {} as any })).toBe('large');
+    expect(classifySize({ total: 3, factors: {} as any })).toBe('large');
     expect(classifySize({ total: 8, factors: {} as any })).toBe('large');
-  });
-
-  it('returns "large" when total is very high', () => {
     expect(classifySize({ total: 100, factors: {} as any })).toBe('large');
   });
 });

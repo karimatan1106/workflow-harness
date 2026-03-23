@@ -9,6 +9,7 @@ import type { StateManager } from '../../state/manager.js';
 import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, USER_APPROVAL_REQUIRED, type HandlerResult } from '../handler-shared.js';
 
 const APPROVAL_ARTIFACT_MAP: Record<string, string> = {
+  hearing: '/hearing.md',
   requirements: '/requirements.md', design: '/design-review.md',
   test_design: '/test-design.md', code_review: '/code-review.md',
 };

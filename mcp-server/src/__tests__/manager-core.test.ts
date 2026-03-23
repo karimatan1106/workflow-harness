@@ -82,11 +82,6 @@ describe('createTask', () => {
     expect(state.docsDir).toContain('ct-paths-task');
     expect(state.workflowDir).toContain(state.taskId);
   });
-  it('sets size to "small" when size=small is passed', () => {
-    const mgr = createMgr();
-    const state = mgr.createTask('ct-small-task', 'Intent for small task with sufficient length text here ok.', [], [], 'small');
-    expect(state.size).toBe('small');
-  });
   it('sets size to "large" for high risk scope (many auth files)', () => {
     const mgr = createMgr();
     const files = Array.from({ length: 10 }, (_, i) => `src/auth/file${i}.ts`);
@@ -109,13 +104,6 @@ describe('createTask', () => {
 
 // ─── RC-2: skippedPhases regression tests ───────
 describe('skippedPhases matches SIZE_SKIP_MAP', () => {
-  it('small task: skippedPhases equals SIZE_SKIP_MAP.small', async () => {
-    const { SIZE_SKIP_MAP } = await import('../phases/registry.js');
-    const mgr = createMgr();
-    const state = mgr.createTask('rc2-small', 'Intent for small task regression test for skippedPhases.', [], [], 'small');
-    expect(state.size).toBe('small');
-    expect(state.skippedPhases).toEqual(SIZE_SKIP_MAP.small);
-  });
   it('large task: skippedPhases equals SIZE_SKIP_MAP.large (empty)', async () => {
     const { SIZE_SKIP_MAP } = await import('../phases/registry.js');
     const mgr = createMgr();

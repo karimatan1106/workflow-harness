@@ -6,6 +6,7 @@
 
 import type { TaskState } from '../state/types.js';
 import { checkL1FileExists, checkL2ExitCode, checkInputFilesExist, checkTDDRedEvidence, checkSpecPathsExist, checkTestResultsExist, checkTestRegression } from './dod-l1-l2.js';
+import { checkHearingUserResponse } from './dod-l2-hearing.js';
 import { OUTPUT_FILE_TO_PHASE } from '../phases/definitions.js';
 import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkRTMRequired, checkBaselineRequired, checkArtifactFreshness, checkInvariantCompleteness } from './dod-l3.js';
 import { checkL4ContentValidation } from './dod-l4-content.js';
@@ -61,6 +62,7 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   push(checkTDDRedEvidence(state, phase), 'L2');
   push(checkTestResultsExist(state, phase), 'L1');
   push(checkTestRegression(state, phase), 'L2');
+  push(checkHearingUserResponse(phase, docsDir), 'L2');
   push(checkDeadReferences(phase, docsDir, workflowDir ?? ''), 'L4');
   for (const r of checkDCIValidation(state, phase)) push(r, 'L4');
 

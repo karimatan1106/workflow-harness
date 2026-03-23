@@ -36,7 +36,8 @@ export function loadTaskFromDisk(taskId: string): TaskState | null {
       const toonPath = join(dir, 'workflow-state.toon');
 
       if (!existsSync(toonPath)) continue;
-      const state: TaskState = parseState(readFileSync(toonPath, 'utf8'));
+      const state = parseState(readFileSync(toonPath, 'utf8'));
+      if (!state) continue;
 
       // RC-3: Version migration chain entry point
       if (verifyStateWithRotation(state as unknown as Record<string, unknown>, sd)) {

@@ -76,12 +76,4 @@ describe('TDD-1 Red evidence check', () => {
     expect(tdd.passed).toBe(true);
   });
 
-  it('passes TDD Red check for small tasks (FB#4 exemption)', () => {
-    const state = makeMinimalState('test_impl', tempDir, docsDir);
-    state.size = 'small' as any;
-    state.proofLog = [];
-    const result = checkTDDRedEvidence(state, 'test_impl');
-    expect(result.passed).toBe(true);
-    expect(result.evidence).toContain('small');
-  });
 });

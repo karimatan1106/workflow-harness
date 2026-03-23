@@ -32,9 +32,7 @@ export function calculateRiskScore(input: RiskInput): RiskScore {
   return { total, factors: input };
 }
 
-export function classifySize(score: RiskScore): TaskSize {
-  if (score.total <= 3) return 'small';
-  if (score.total <= 7) return 'medium';
+export function classifySize(_score: RiskScore): TaskSize {
   return 'large';
 }
 

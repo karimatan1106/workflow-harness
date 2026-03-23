@@ -40,18 +40,11 @@ afterAll(() => {
 });
 
 describe('TC-AC1: size argument propagation', () => {
-  it('TC-AC1-01: createTaskState with size=small sets state.size to small', () => {
+  it('TC-AC1-01: createTaskState with size=large sets state.size to large', () => {
     const state = createTaskStateFn(
-      'size-small-task', INTENT, hmacKey, [], [], 'small',
+      'size-large-task', INTENT, hmacKey, [], [], 'large',
     );
-    expect(state.size).toBe('small');
-  });
-
-  it('TC-AC1-02: createTaskState with size=medium sets state.size to medium', () => {
-    const state = createTaskStateFn(
-      'size-medium-task', INTENT, hmacKey, [], [], 'medium',
-    );
-    expect(state.size).toBe('medium');
+    expect(state.size).toBe('large');
   });
 });
 
@@ -63,26 +56,16 @@ describe('TC-AC2: default size and riskScore mapping', () => {
     expect(state.size).toBe('large');
   });
 
-  it('TC-AC2-02: riskScore fixed mapping small=2, medium=5, large=8', () => {
-    const sizes: TaskSize[] = ['small', 'medium', 'large'];
-    const expectedTotals: Record<TaskSize, number> = {
-      small: 2,
-      medium: 5,
-      large: 8,
-    };
-    const expectedFactors = {
+  it('TC-AC2-02: riskScore fixed mapping large=8', () => {
+    const state = createTaskStateFn(
+      'risk-large-task', INTENT, hmacKey, [], [], 'large',
+    );
+    expect(state.riskScore.total).toBe(8);
+    expect(state.riskScore.factors).toEqual({
       fileCount: 0, hasTests: false, hasConfig: false,
       hasInfra: false, hasSecurity: false, hasDatabase: false,
       codeLineEstimate: 0,
-    };
-
-    for (const size of sizes) {
-      const state = createTaskStateFn(
-        `risk-${size}-task`, INTENT, hmacKey, [], [], size,
-      );
-      expect(state.riskScore.total).toBe(expectedTotals[size]);
-      expect(state.riskScore.factors).toEqual(expectedFactors);
-    }
+    });
   });
 });
 
@@ -98,6 +81,6 @@ describe('TC-AC4: harness_start schema', () => {
     const sizeProperty = harnessStart!.inputSchema.properties.size;
     expect(sizeProperty).toBeDefined();
     expect(sizeProperty.type).toBe('string');
-    expect(sizeProperty.enum).toEqual(['small', 'medium', 'large']);
+    expect(sizeProperty.enum).toEqual(['large']);
   });
 });

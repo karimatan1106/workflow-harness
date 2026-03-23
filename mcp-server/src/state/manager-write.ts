@@ -17,8 +17,6 @@ const DEFAULT_FACTORS = {
   codeLineEstimate: 0,
 };
 const RISK_SCORE_MAP: Record<TaskSize, RiskScore> = {
-  small: { total: 2, factors: { ...DEFAULT_FACTORS } },
-  medium: { total: 5, factors: { ...DEFAULT_FACTORS } },
   large: { total: 8, factors: { ...DEFAULT_FACTORS } },
 };
 import { getStatePath, getDocsPath, buildTaskIndex } from './manager-read.js';

@@ -57,7 +57,7 @@ export const PHASE_NAMES = [
 export type PhaseName = typeof PHASE_NAMES[number];
 
 // ─── Task Size ──────────────────────────────────
-export type TaskSize = 'small' | 'medium' | 'large';
+export type TaskSize = 'large';
 
 export interface RiskScore {
   total: number;
@@ -171,7 +171,7 @@ export interface PhaseConfig {
 }
 
 // ─── Zod Schemas for Validation ─────────────────
-export const TaskSizeSchema = z.enum(['small', 'medium', 'large']);
+export const TaskSizeSchema = z.enum(['large']);
 
 export const PhaseNameSchema = z.enum(PHASE_NAMES as unknown as [string, ...string[]]);
 

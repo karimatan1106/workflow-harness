@@ -4,10 +4,17 @@
  */
 
 import type { PhaseConfig, PhaseName, TaskSize, ParallelGroupName } from '../state/types.js';
+import { checkHearingUserResponse } from '../gates/dod-l2-hearing.js';
 
 export const PHASE_REGISTRY: Record<PhaseName, PhaseConfig> = {
   // Stage 0: Hearing
-  hearing: { name: 'hearing', stage: 0, model: 'opus', inputFiles: [], outputFile: '{docsDir}/hearing.md', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 20, allowedExtensions: ['.md', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
+  hearing: { name: 'hearing', stage: 0, model: 'opus', inputFiles: [], outputFile: '{docsDir}/hearing.md', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 20, allowedExtensions: ['.md', '.mmd'], bashCategories: ['readonly'], dodChecks: [
+    {
+      level: 'L2',
+      description: 'hearing.md must contain userResponse: key proving AskUserQuestion was used',
+      check: (ctx) => checkHearingUserResponse(ctx.phase, ctx.docsDir).passed,
+    },
+  ], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   // Stage 1: Discovery
   scope_definition: { name: 'scope_definition', stage: 1, model: 'opus', inputFiles: ['{docsDir}/hearing.md'], outputFile: '{docsDir}/scope-definition.md', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 30, allowedExtensions: ['.md', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
   research: { name: 'research', stage: 1, model: 'opus', inputFiles: ['{docsDir}/scope-definition.md'], outputFile: '{docsDir}/research.md', requiredSections: ['decisions', 'artifacts', 'next'], minLines: 50, allowedExtensions: ['.md', '.mmd'], bashCategories: ['readonly'], dodChecks: [], dependencies: [], allowedTools: ['Read', 'Glob', 'Grep', 'Write'] },
@@ -92,14 +99,10 @@ export const PHASE_ORDER: PhaseName[] = [
 ];
 
 export const SIZE_SKIP_MAP: Record<TaskSize, PhaseName[]> = {
-  small: [],
-  medium: [],
   large: [],
 };
 
 export const SIZE_MINLINES_FACTOR: Record<TaskSize, number> = {
-  small: 0.6,
-  medium: 1.0,
   large: 1.0,
 };
 

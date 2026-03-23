@@ -10,7 +10,7 @@ import type { PhaseConfig, TaskSize } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-const DELTA_ENTRY_MIN_MAP: Record<TaskSize, number> = { small: 3, medium: 5, large: 5 };
+const DELTA_ENTRY_MIN_MAP: Record<TaskSize, number> = { large: 5 };
 const DELTA_ENTRY_APPLICABLE_PHASES = new Set([
   'scope_definition', 'research', 'impact_analysis', 'requirements',
   'threat_modeling', 'planning', 'state_machine', 'flowchart', 'ui_design',
@@ -19,7 +19,7 @@ const DELTA_ENTRY_APPLICABLE_PHASES = new Set([
   'hearing',
 ]);
 
-export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string, size: TaskSize = 'medium'): DoDCheckResult {
+export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string, size: TaskSize = 'large'): DoDCheckResult {
   if (!DELTA_ENTRY_APPLICABLE_PHASES.has(phase)) {
     return { level: 'L4', check: 'delta_entry_format', passed: true, evidence: 'Delta Entry format check not applicable for phase: ' + phase };
   }
@@ -61,6 +61,13 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
     return {
       level: 'L4', check: 'delta_entry_format', passed: true,
       evidence: `Delta Entry format OK: ${decisionItems.length} decision items in Markdown artifact`,
+    };
+  }
+  // Mermaid diagram files: skip TOON delta check
+  if (outputFile.endsWith('.mmd')) {
+    return {
+      level: 'L4', check: 'delta_entry_format', passed: true,
+      evidence: 'Mermaid diagram file, skipping TOON delta check',
     };
   }
 

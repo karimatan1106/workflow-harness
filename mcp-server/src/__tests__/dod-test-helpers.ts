@@ -27,7 +27,7 @@ export function makeMinimalState(phase: string, workflowDir: string, docsDir: st
     phase: phase as any,
     completedPhases: [],
     skippedPhases: [],
-    size: 'medium',
+    size: 'large',
     riskScore: { total: 0, factors: { fileCount: 0, hasTests: false, hasConfig: false, hasInfra: false, hasSecurity: false, hasDatabase: false, codeLineEstimate: 0 } },
     userIntent: 'This is a test task with sufficient user intent text',
     openQuestions: [],

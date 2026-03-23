@@ -35,10 +35,9 @@ export const USER_APPROVAL_REQUIRED: Record<string, boolean> = {
   hearing: true,           // User must confirm hearing outcome
 };
 
-/** FB#7: Auto-approve requirements for small tasks when ACs are sufficient and no open questions */
-export function shouldRequireApproval(phase: string, size: TaskSize, acCount: number, openQuestionCount: number): boolean {
+/** Check whether approval is required for a given phase */
+export function shouldRequireApproval(phase: string, _size: TaskSize, _acCount: number, _openQuestionCount: number): boolean {
   if (!(phase in PHASE_APPROVAL_GATES)) return false;
-  if (size === 'small' && phase === 'requirements' && acCount >= 3 && openQuestionCount === 0) return false;
   return true;
 }
 
