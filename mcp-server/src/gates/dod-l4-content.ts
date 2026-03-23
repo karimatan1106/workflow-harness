@@ -55,8 +55,10 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
 
   if (checkBracketPlaceholders(content)) errors.push('Bracket placeholders [#...#] found in content');
 
-  const duplicates = checkDuplicateLines(content);
-  if (duplicates.length > 0) errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
+  if (extname(outputFile) !== '.mmd') {
+    const duplicates = checkDuplicateLines(content);
+    if (duplicates.length > 0) errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
+  }
 
   // TOON key checks only apply to .toon files; skip for .mmd and other non-TOON formats
   if (extname(outputFile) === '.toon') {
