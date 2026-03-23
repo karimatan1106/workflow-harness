@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { TaskState } from './types.js';
-import { esc, splitRow, parseKV, parseTableHeader } from './toon-io.js';
+import { esc, parseCsvRow, parseKV } from './toon-helpers.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
 export interface ProgressTransition {
@@ -63,7 +63,7 @@ function parseProgress(content: string): ProgressData {
       continue;
     }
     if (inTransitions && line.startsWith('  ')) {
-      const cells = splitRow(line.trim());
+      const cells = parseCsvRow(line.trim());
       if (cells.length >= 3) {
         data.transitions.push({ from: cells[0], to: cells[1], timestamp: cells[2] });
       }

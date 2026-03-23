@@ -12,7 +12,8 @@ function toBool(s: string): boolean { return s === 'true'; }
 function toNum(s: string): number { return Number(s) || 0; }
 function orUndef(s: string): string | undefined { return s === '' ? undefined : s; }
 
-export function parseState(content: string): TaskState {
+export function parseState(content: string): TaskState | null {
+  try {
   const lines = content.split('\n');
   const kv: Record<string, string> = {};
   const tables: Record<string, { cols: string[]; rows: string[][] }> = {};
@@ -171,4 +172,8 @@ export function parseState(content: string): TaskState {
   }
 
   return state;
+  } catch (e) {
+    process.stderr.write(`[warn] Failed to parse state-toon-parse: ${e instanceof Error ? e.message : String(e)}\n`);
+    return null;
+  }
 }

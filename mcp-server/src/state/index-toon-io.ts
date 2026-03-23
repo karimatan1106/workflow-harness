@@ -31,30 +31,35 @@ export function serializeTaskIndex(index: TaskIndex): string {
 }
 
 export function parseTaskIndex(content: string): TaskIndex {
-  const lines = content.split('\n');
-  const result: TaskIndex = { tasks: [], updatedAt: '' };
+  try {
+    const lines = content.split('\n');
+    const result: TaskIndex = { tasks: [], updatedAt: '' };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim() === '' || line.startsWith('  ')) continue;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.trim() === '' || line.startsWith('  ')) continue;
 
-    // Table header
-    if (line.match(/^tasks\[\d+\]\{[^}]+\}:\s*$/)) {
-      const { rows } = parseTableBlock(lines, i);
-      result.tasks = rows.map(r => ({
-        taskId: r[0], taskName: r[1], phase: r[2], size: r[3], status: r[4],
-      }));
-      break;
+      // Table header
+      if (line.match(/^tasks\[\d+\]\{[^}]+\}:\s*$/)) {
+        const { rows } = parseTableBlock(lines, i);
+        result.tasks = rows.map(r => ({
+          taskId: r[0], taskName: r[1], phase: r[2], size: r[3], status: r[4],
+        }));
+        break;
+      }
+
+      // KV pair
+      const colonIdx = line.indexOf(': ');
+      if (colonIdx > 0) {
+        const key = line.slice(0, colonIdx).trim();
+        const val = unesc(line.slice(colonIdx + 2));
+        if (key === 'updatedAt') result.updatedAt = val;
+      }
     }
 
-    // KV pair
-    const colonIdx = line.indexOf(': ');
-    if (colonIdx > 0) {
-      const key = line.slice(0, colonIdx).trim();
-      const val = unesc(line.slice(colonIdx + 2));
-      if (key === 'updatedAt') result.updatedAt = val;
-    }
+    return result;
+  } catch (e) {
+    process.stderr.write(`[warn] Failed to parse index-toon-io: ${e instanceof Error ? e.message : String(e)}\n`);
+    return { tasks: [], updatedAt: '' };
   }
-
-  return result;
 }

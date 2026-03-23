@@ -5,10 +5,7 @@
  */
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-
-function esc(v: string): string {
-  return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v;
-}
+import { esc } from '../state/toon-helpers.js';
 
 export interface DoDFailureEntry {
   timestamp: string;

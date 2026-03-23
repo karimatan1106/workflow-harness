@@ -4,41 +4,7 @@
  */
 
 import type { ReflectorLesson, StashedFailure, ReflectorStore } from './reflector-types.js';
-
-/** Quote a value if it contains comma or double-quote. */
-export function esc(v: string): string {
-  if (v.includes(',') || v.includes('"')) return '"' + v.replace(/"/g, '""') + '"';
-  return v;
-}
-
-/** Remove surrounding quotes and unescape doubled quotes. */
-export function unesc(v: string): string {
-  const t = v.trim();
-  if (t.startsWith('"') && t.endsWith('"')) return t.slice(1, -1).replace(/""/g, '"');
-  return t;
-}
-
-/** Split a TOON CSV row respecting quoted values. */
-export function splitRow(line: string): string[] {
-  const cells: string[] = [];
-  let cur = '';
-  let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQ && i + 1 < line.length && line[i + 1] === '"') { cur += '"'; i++; }
-      else { inQ = !inQ; cur += '"'; }
-    } else if (ch === ',' && !inQ) {
-      cells.push(cur);
-      cur = '';
-      if (line[i + 1] === ' ') i++; // skip space after comma
-    } else {
-      cur += ch;
-    }
-  }
-  cells.push(cur);
-  return cells.map(c => unesc(c));
-}
+import { esc, unesc, parseCsvRow } from '../state/toon-helpers.js';
 
 export function serializeStore(store: ReflectorStore): string {
   const lines: string[] = [];
@@ -69,32 +35,37 @@ export function serializeStore(store: ReflectorStore): string {
 }
 
 export function parseStore(content: string): ReflectorStore {
-  const store: ReflectorStore = { version: 3, nextLessonId: 1, lessons: [], stashedFailures: [] };
-  const lines = content.split('\n');
-  let section: 'none' | 'lessons' | 'stashed' = 'none';
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    if (line === '') continue;
-    if (line.startsWith('version: ')) continue;
-    if (line.startsWith('nextLessonId: ')) { store.nextLessonId = parseInt(line.slice(14), 10); continue; }
-    if (line.startsWith('lessons[')) { section = 'lessons'; continue; }
-    if (line.startsWith('stashedFailures[')) { section = 'stashed'; continue; }
-    if (!line.startsWith('  ')) continue;
-    const cells = splitRow(line.trim());
-    if (section === 'lessons' && cells.length >= 9) {
-      store.lessons.push({
-        id: cells[0], phase: cells[1], errorPattern: cells[2], lesson: cells[3],
-        createdAt: cells[4], hitCount: parseInt(cells[5], 10),
-        helpfulCount: parseInt(cells[6], 10), harmfulCount: parseInt(cells[7], 10),
-        category: cells[8] as ReflectorLesson['category'],
-        preventionRule: cells[9] && cells[9] !== '' ? cells[9] : undefined,
-      });
-    } else if (section === 'stashed' && cells.length >= 6) {
-      store.stashedFailures.push({
-        phase: cells[0], taskId: cells[1], errorPattern: cells[2],
-        errorMessage: cells[3], retryCount: parseInt(cells[4], 10), createdAt: cells[5],
-      });
+  try {
+    const store: ReflectorStore = { version: 3, nextLessonId: 1, lessons: [], stashedFailures: [] };
+    const lines = content.split('\n');
+    let section: 'none' | 'lessons' | 'stashed' = 'none';
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (line === '') continue;
+      if (line.startsWith('version: ')) continue;
+      if (line.startsWith('nextLessonId: ')) { store.nextLessonId = parseInt(line.slice(14), 10); continue; }
+      if (line.startsWith('lessons[')) { section = 'lessons'; continue; }
+      if (line.startsWith('stashedFailures[')) { section = 'stashed'; continue; }
+      if (!line.startsWith('  ')) continue;
+      const cells = parseCsvRow(line.trim());
+      if (section === 'lessons' && cells.length >= 9) {
+        store.lessons.push({
+          id: cells[0], phase: cells[1], errorPattern: cells[2], lesson: cells[3],
+          createdAt: cells[4], hitCount: parseInt(cells[5], 10),
+          helpfulCount: parseInt(cells[6], 10), harmfulCount: parseInt(cells[7], 10),
+          category: cells[8] as ReflectorLesson['category'],
+          preventionRule: cells[9] && cells[9] !== '' ? cells[9] : undefined,
+        });
+      } else if (section === 'stashed' && cells.length >= 6) {
+        store.stashedFailures.push({
+          phase: cells[0], taskId: cells[1], errorPattern: cells[2],
+          errorMessage: cells[3], retryCount: parseInt(cells[4], 10), createdAt: cells[5],
+        });
+      }
     }
+    return store;
+  } catch (e) {
+    process.stderr.write(`[warn] Failed to parse reflector-toon: ${e instanceof Error ? e.message : String(e)}\n`);
+    return { version: 3, nextLessonId: 1, lessons: [], stashedFailures: [] };
   }
-  return store;
 }

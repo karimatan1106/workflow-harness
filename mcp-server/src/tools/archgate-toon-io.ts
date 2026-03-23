@@ -4,28 +4,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 import type { ArchRule, ArchCheckType, ArchRuleStore } from './archgate.js';
-
-function esc(v: string): string {
-  if (v.includes(',') || v.includes('"')) return '"' + v.replace(/"/g, '""') + '"';
-  return v;
-}
-
-function splitCsvRow(line: string): string[] {
-  const out: string[] = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQ) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') inQ = false;
-      else cur += ch;
-    } else if (ch === ',') { out.push(cur.trim()); cur = ''; }
-    else if (ch === '"') inQ = true;
-    else cur += ch;
-  }
-  out.push(cur.trim());
-  return out;
-}
+import { esc, parseCsvRow } from '../state/toon-helpers.js';
 
 const RULE_COLS = 'id,adrId,description,checkType,threshold,pattern,glob,createdAt';
 
@@ -54,28 +33,33 @@ export const FEEDBACK_SPEED_LAYERS = {
 } as const;
 
 export function parseRuleStore(content: string): ArchRuleStore {
-  const store: ArchRuleStore = { version: 1, rules: [] };
-  const lines = content.split('\n');
-  let inTable = false;
-  for (const raw of lines) {
-    const trimmed = raw.trim();
-    if (!trimmed) { inTable = false; continue; }
-    const hdr = trimmed.match(/^rules\[\d+]\{[^}]+}:$/);
-    if (hdr) { inTable = true; continue; }
-    if (inTable && raw.startsWith('  ')) {
-      const v = splitCsvRow(trimmed);
-      const rule: ArchRule = {
-        id: v[0],
-        adrId: v[1],
-        description: v[2],
-        checkType: v[3] as ArchCheckType,
-        createdAt: v[7],
-      };
-      if (v[4]) rule.threshold = Number(v[4]);
-      if (v[5]) rule.pattern = v[5];
-      if (v[6]) rule.glob = v[6];
-      store.rules.push(rule);
+  try {
+    const store: ArchRuleStore = { version: 1, rules: [] };
+    const lines = content.split('\n');
+    let inTable = false;
+    for (const raw of lines) {
+      const trimmed = raw.trim();
+      if (!trimmed) { inTable = false; continue; }
+      const hdr = trimmed.match(/^rules\[\d+]\{[^}]+}:$/);
+      if (hdr) { inTable = true; continue; }
+      if (inTable && raw.startsWith('  ')) {
+        const v = parseCsvRow(trimmed);
+        const rule: ArchRule = {
+          id: v[0],
+          adrId: v[1],
+          description: v[2],
+          checkType: v[3] as ArchCheckType,
+          createdAt: v[7],
+        };
+        if (v[4]) rule.threshold = Number(v[4]);
+        if (v[5]) rule.pattern = v[5];
+        if (v[6]) rule.glob = v[6];
+        store.rules.push(rule);
+      }
     }
+    return store;
+  } catch (e) {
+    process.stderr.write(`[warn] Failed to parse archgate-toon-io: ${e instanceof Error ? e.message : String(e)}\n`);
+    return { version: 1, rules: [] };
   }
-  return store;
 }

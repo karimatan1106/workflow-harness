@@ -6,12 +6,9 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import type { AnalyticsResult, PhaseErrorStats } from './phase-analytics.js';
 import type { PhaseTimingsResult } from './phase-timings.js';
+import { esc } from '../state/toon-helpers.js';
 
 // ─── TOON Line Builders ─────────────────────────
-
-function esc(v: string): string {
-  return v.includes(',') || v.includes('"') ? `"${v}"` : v;
-}
 
 function headerBlock(taskName: string, taskId: string): string {
   return [

@@ -127,3 +127,16 @@ export function parseTableBlock(
   }
   return { cols, rows, consumed: i - startIdx };
 }
+
+/** Parse a single TOON key-value line. Returns [key, value] or null. */
+export function parseKV(line: string): [string, string] | null {
+  const m = line.match(/^(\w+):\s*(.*)$/);
+  return m ? [m[1], m[2]] : null;
+}
+
+/** Detect list header (e.g. `name[3]:`). Returns { name, count } or null. */
+export function parseListHeader(line: string): { name: string; count: number } | null {
+  const m = line.match(/^(\w+)\[(\d+)]:$/);
+  if (!m) return null;
+  return { name: m[1], count: Number(m[2]) };
+}

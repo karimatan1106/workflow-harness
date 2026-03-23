@@ -6,10 +6,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import type { TaskMetrics } from './metrics.js';
-
-function esc(v: string): string {
-  return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v;
-}
+import { esc } from '../state/toon-helpers.js';
 
 /**
  * Write task metrics to phase-metrics.toon.
