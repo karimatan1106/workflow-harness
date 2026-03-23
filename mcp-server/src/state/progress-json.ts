@@ -1,13 +1,14 @@
 /**
  * Progress TOON — structured progress recording for session recovery.
  * Writes claude-progress.toon (TOON-only, no JSON fallback).
+ * Uses @toon-format/toon via toon-io-adapter.
  * @spec docs/spec/features/workflow-harness.md
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { TaskState } from './types.js';
-import { esc, parseCsvRow, parseKV } from './toon-helpers.js';
+import { toonEncode, toonDecodeSafe } from './toon-io-adapter.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
 export interface ProgressTransition {
@@ -29,62 +30,38 @@ export interface ProgressData {
 const TOON_FILE = 'claude-progress.toon';
 
 function serializeProgress(data: ProgressData): string {
-  const L: string[] = [];
-  L.push(`taskId: ${data.taskId}`);
-  L.push(`taskName: ${esc(data.taskName)}`);
-  L.push(`currentPhase: ${data.currentPhase}`);
-  L.push(`completedCount: ${data.completedCount}`);
-  L.push(`updatedAt: ${data.updatedAt}`);
-  L.push('');
-  L.push(`completedPhases: ${data.completedPhases.join(';')}`);
-  L.push('');
-  const tc = data.transitions.length;
-  L.push(`transitions[${tc}]{from,to,timestamp}:`);
-  for (const t of data.transitions) {
-    L.push(`  ${esc(t.from)}, ${esc(t.to)}, ${t.timestamp}`);
-  }
-  L.push('');
-  return L.join('\n');
+  return toonEncode(data);
 }
 
 function parseProgress(content: string): ProgressData {
-  const data: ProgressData = {
+  const parsed = toonDecodeSafe<ProgressData>(content);
+  if (parsed && typeof parsed.taskId === 'string') {
+    return {
+      taskId: parsed.taskId,
+      taskName: parsed.taskName ?? '',
+      currentPhase: parsed.currentPhase ?? '',
+      completedPhases: Array.isArray(parsed.completedPhases)
+        ? parsed.completedPhases
+        : [],
+      completedCount: Number(parsed.completedCount ?? 0),
+      updatedAt: parsed.updatedAt ?? '',
+      transitions: Array.isArray(parsed.transitions)
+        ? parsed.transitions
+        : [],
+    };
+  }
+  return {
     taskId: '', taskName: '', currentPhase: '',
     completedPhases: [], completedCount: 0, updatedAt: '',
     transitions: [],
   };
-  const lines = content.split('\n');
-  let inTransitions = false;
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    if (line === '') { inTransitions = false; continue; }
-    if (line.startsWith('transitions[')) {
-      inTransitions = true;
-      continue;
-    }
-    if (inTransitions && line.startsWith('  ')) {
-      const cells = parseCsvRow(line.trim());
-      if (cells.length >= 3) {
-        data.transitions.push({ from: cells[0], to: cells[1], timestamp: cells[2] });
-      }
-      continue;
-    }
-    const kv = parseKV(line);
-    if (!kv) continue;
-    const [k, v] = kv;
-    if (k === 'taskId') data.taskId = v;
-    else if (k === 'taskName') data.taskName = v;
-    else if (k === 'currentPhase') data.currentPhase = v;
-    else if (k === 'completedCount') data.completedCount = Number(v);
-    else if (k === 'updatedAt') data.updatedAt = v;
-    else if (k === 'completedPhases') {
-      data.completedPhases = v ? v.split(';').filter(Boolean) : [];
-    }
-  }
-  return data;
 }
 
-export function writeProgressJSON(state: TaskState, completedPhase: string, nextPhase: string): void {
+export function writeProgressJSON(
+  state: TaskState,
+  completedPhase: string,
+  nextPhase: string,
+): void {
   try {
     if (!existsSync(resolveProjectPath(state.docsDir))) return;
     const filePath = join(resolveProjectPath(state.docsDir), TOON_FILE);
@@ -116,7 +93,9 @@ export function writeProgressJSON(state: TaskState, completedPhase: string, next
   } catch { /* non-blocking */ }
 }
 
-export function readProgressJSON(docsDir: string): ProgressData | undefined {
+export function readProgressJSON(
+  docsDir: string,
+): ProgressData | undefined {
   try {
     const toonPath = join(resolveProjectPath(docsDir), TOON_FILE);
     if (existsSync(toonPath)) {

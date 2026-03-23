@@ -1,28 +1,10 @@
 /**
- * TOON I/O for archgate rule store — serialize and parse archgate-rules.toon.
- * TOON format: key-value pairs + table arrays, no nested objects.
+ * TOON I/O for archgate rule store -- serialize and parse archgate-rules.toon.
+ * Uses official @toon-format/toon via toon-io-adapter.
  * @spec docs/spec/features/workflow-harness.md
  */
-import type { ArchRule, ArchCheckType, ArchRuleStore } from './archgate.js';
-import { esc, parseCsvRow } from '../state/toon-helpers.js';
-
-const RULE_COLS = 'id,adrId,description,checkType,threshold,pattern,glob,createdAt';
-
-export function serializeRuleStore(store: ArchRuleStore): string {
-  const L: string[] = [];
-  L.push('version: 1');
-  L.push('');
-  const n = store.rules.length;
-  L.push(`rules[${n}]{${RULE_COLS}}:`);
-  for (const r of store.rules) {
-    const threshold = r.threshold !== undefined ? String(r.threshold) : '';
-    const pattern = r.pattern ? esc(r.pattern) : '';
-    const glob = r.glob ? esc(r.glob) : '';
-    L.push(`  ${esc(r.id)}, ${esc(r.adrId)}, ${esc(r.description)}, ${r.checkType}, ${threshold}, ${pattern}, ${glob}, ${r.createdAt}`);
-  }
-  L.push('');
-  return L.join('\n');
-}
+import type { ArchRuleStore } from './archgate.js';
+import { toonEncode, toonDecodeSafe } from '../state/toon-io-adapter.js';
 
 /** N-27: Feedback speed layers for PostToolUse - CI - human-review pipeline */
 export const FEEDBACK_SPEED_LAYERS = {
@@ -32,34 +14,13 @@ export const FEEDBACK_SPEED_LAYERS = {
   h: { name: 'human-review', tools: ['code-review', 'acceptance'], maxTime: 'async' },
 } as const;
 
+export function serializeRuleStore(store: ArchRuleStore): string {
+  return toonEncode(store);
+}
+
 export function parseRuleStore(content: string): ArchRuleStore {
-  try {
-    const store: ArchRuleStore = { version: 1, rules: [] };
-    const lines = content.split('\n');
-    let inTable = false;
-    for (const raw of lines) {
-      const trimmed = raw.trim();
-      if (!trimmed) { inTable = false; continue; }
-      const hdr = trimmed.match(/^rules\[\d+]\{[^}]+}:$/);
-      if (hdr) { inTable = true; continue; }
-      if (inTable && raw.startsWith('  ')) {
-        const v = parseCsvRow(trimmed);
-        const rule: ArchRule = {
-          id: v[0],
-          adrId: v[1],
-          description: v[2],
-          checkType: v[3] as ArchCheckType,
-          createdAt: v[7],
-        };
-        if (v[4]) rule.threshold = Number(v[4]);
-        if (v[5]) rule.pattern = v[5];
-        if (v[6]) rule.glob = v[6];
-        store.rules.push(rule);
-      }
-    }
-    return store;
-  } catch (e) {
-    process.stderr.write(`[warn] Failed to parse archgate-toon-io: ${e instanceof Error ? e.message : String(e)}\n`);
-    return { version: 1, rules: [] };
-  }
+  const result = toonDecodeSafe<ArchRuleStore>(content);
+  if (result !== null) return result;
+  process.stderr.write('[warn] Failed to parse archgate-toon-io: decode returned null\n');
+  return { version: 1, rules: [] };
 }

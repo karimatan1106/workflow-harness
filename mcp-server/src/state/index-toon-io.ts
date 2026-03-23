@@ -1,10 +1,10 @@
 /**
  * Task-index TOON serialization/parsing.
- * Simple structure: updatedAt KV + tasks table array.
+ * Uses @toon-format/toon via toon-io-adapter.
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { esc, tableHeader, tableRows, parseTableBlock, unesc } from './toon-helpers.js';
+import { toonEncode, toonDecodeSafe } from './toon-io-adapter.js';
 
 export interface TaskIndexEntry {
   taskId: string;
@@ -20,46 +20,17 @@ export interface TaskIndex {
 }
 
 export function serializeTaskIndex(index: TaskIndex): string {
-  const lines: string[] = [];
-  lines.push(`updatedAt: ${esc(index.updatedAt)}`);
-  lines.push('');
-  if (index.tasks.length > 0) {
-    lines.push(tableHeader('tasks', index.tasks.length, ['taskId', 'taskName', 'phase', 'size', 'status']));
-    lines.push(tableRows(index.tasks.map(t => [t.taskId, t.taskName, t.phase, t.size, t.status])));
-  }
-  return lines.join('\n') + '\n';
+  return toonEncode(index);
 }
 
 export function parseTaskIndex(content: string): TaskIndex {
-  try {
-    const lines = content.split('\n');
-    const result: TaskIndex = { tasks: [], updatedAt: '' };
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.trim() === '' || line.startsWith('  ')) continue;
-
-      // Table header
-      if (line.match(/^tasks\[\d+\]\{[^}]+\}:\s*$/)) {
-        const { rows } = parseTableBlock(lines, i);
-        result.tasks = rows.map(r => ({
-          taskId: r[0], taskName: r[1], phase: r[2], size: r[3], status: r[4],
-        }));
-        break;
-      }
-
-      // KV pair
-      const colonIdx = line.indexOf(': ');
-      if (colonIdx > 0) {
-        const key = line.slice(0, colonIdx).trim();
-        const val = unesc(line.slice(colonIdx + 2));
-        if (key === 'updatedAt') result.updatedAt = val;
-      }
-    }
-
-    return result;
-  } catch (e) {
-    process.stderr.write(`[warn] Failed to parse index-toon-io: ${e instanceof Error ? e.message : String(e)}\n`);
-    return { tasks: [], updatedAt: '' };
+  const parsed = toonDecodeSafe<TaskIndex>(content);
+  if (parsed && typeof parsed.updatedAt === 'string') {
+    return {
+      tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+      updatedAt: parsed.updatedAt,
+    };
   }
+  process.stderr.write('[warn] Failed to parse index-toon-io\n');
+  return { tasks: [], updatedAt: '' };
 }

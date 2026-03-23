@@ -1,80 +1,19 @@
 /**
  * TOON I/O for curator log (curator-log.toon).
- * Tables:
- *   reports[N]{timestamp,taskId,taskName,lessonsBefore,lessonsAfter,stashedBefore,stashedAfter}
- *   reportActions_0[N]{action,phase,errorPattern,reason}  (one per report)
+ * Uses official @toon-format/toon via toon-io-adapter.
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import type { CuratorReport, CuratorAction } from './curator-helpers.js';
-import { esc, parseCsvRow } from '../state/toon-helpers.js';
+import type { CuratorReport } from './curator-helpers.js';
+import { toonEncode, toonDecodeSafe } from '../state/toon-io-adapter.js';
 
 export function serializeReports(reports: CuratorReport[]): string {
-  const lines: string[] = [];
-  lines.push(`reports[${reports.length}]{timestamp,taskId,taskName,lessonsBefore,lessonsAfter,stashedBefore,stashedAfter}:`);
-  for (const r of reports) {
-    const cols = [
-      r.timestamp, esc(r.taskId), esc(r.taskName),
-      String(r.lessonsBefore), String(r.lessonsAfter),
-      String(r.stashedBefore), String(r.stashedAfter),
-    ];
-    lines.push('  ' + cols.join(', '));
-  }
-  for (let i = 0; i < reports.length; i++) {
-    const acts = reports[i].actions;
-    lines.push('');
-    lines.push(`reportActions_${i}[${acts.length}]{action,phase,errorPattern,reason}:`);
-    for (const a of acts) {
-      lines.push(`  ${a.action}, ${esc(a.phase)}, ${esc(a.errorPattern)}, ${esc(a.reason)}`);
-    }
-  }
-  return lines.join('\n') + '\n';
+  return toonEncode(reports);
 }
 
 export function parseReports(content: string): CuratorReport[] {
-  try {
-    const reports: CuratorReport[] = [];
-    const actionMap = new Map<number, CuratorAction[]>();
-    const lines = content.split('\n');
-    let section: 'none' | 'reports' | 'actions' = 'none';
-    let actionIdx = -1;
-
-    for (const raw of lines) {
-      const line = raw.trimEnd();
-      if (line === '') { section = 'none'; continue; }
-      if (line.startsWith('reports[')) { section = 'reports'; continue; }
-      const actMatch = line.match(/^reportActions_(\d+)\[/);
-      if (actMatch) {
-        section = 'actions';
-        actionIdx = parseInt(actMatch[1], 10);
-        if (!actionMap.has(actionIdx)) actionMap.set(actionIdx, []);
-        continue;
-      }
-      if (!line.startsWith('  ')) continue;
-      const cells = parseCsvRow(line.trim());
-      if (section === 'reports' && cells.length >= 7) {
-        reports.push({
-          timestamp: cells[0], taskId: cells[1], taskName: cells[2],
-          lessonsBefore: parseInt(cells[3], 10), lessonsAfter: parseInt(cells[4], 10),
-          stashedBefore: parseInt(cells[5], 10), stashedAfter: parseInt(cells[6], 10),
-          actions: [],
-        });
-      } else if (section === 'actions' && cells.length >= 4) {
-        const arr = actionMap.get(actionIdx) || [];
-        arr.push({
-          action: cells[0] as CuratorAction['action'],
-          phase: cells[1], errorPattern: cells[2], reason: cells[3],
-        });
-        actionMap.set(actionIdx, arr);
-      }
-    }
-    // Attach actions to reports
-    for (const [idx, acts] of actionMap) {
-      if (idx < reports.length) reports[idx].actions = acts;
-    }
-    return reports;
-  } catch (e) {
-    process.stderr.write(`[warn] Failed to parse curator-toon: ${e instanceof Error ? e.message : String(e)}\n`);
-    return [];
-  }
+  const result = toonDecodeSafe<CuratorReport[]>(content);
+  if (result !== null && Array.isArray(result)) return result;
+  process.stderr.write('[warn] Failed to parse curator-toon: decode returned null\n');
+  return [];
 }

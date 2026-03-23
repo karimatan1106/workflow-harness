@@ -6,7 +6,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { esc, parseToonKv } from '../state/toon-helpers.js';
+import { toonEncode, toonDecodeSafe } from '../state/toon-io-adapter.js';
 
 const HMAC_ALGORITHM = 'sha256';
 
@@ -21,29 +21,15 @@ function getToonPath(stateDir: string): string {
   return join(stateDir, 'hmac-keys.toon');
 }
 
-/** Serialize HmacKeys to TOON KV format using toon-helpers esc(). */
+/** Serialize HmacKeys to TOON format via toon-io-adapter. */
 function serializeHmacToon(keys: HmacKeys): string {
-  const lines: string[] = [];
-  lines.push(`version: ${esc(keys.version)}`);
-  lines.push(`current: ${esc(keys.current)}`);
-  if (keys.previous) lines.push(`previous: ${esc(keys.previous)}`);
-  lines.push(`rotatedAt: ${esc(keys.rotatedAt)}`);
-  return lines.join('\n') + '\n';
+  return toonEncode(keys);
 }
 
-/** Parse TOON KV format into HmacKeys using toon-helpers parseToonKv(). */
+/** Parse TOON format into HmacKeys via toon-io-adapter. */
 function parseHmacToon(content: string): HmacKeys {
-  try {
-    const kv = parseToonKv(content);
-    return {
-      version: Number(kv.version ?? 1) as 1,
-      current: kv.current ?? '',
-      ...(kv.previous ? { previous: kv.previous } : {}),
-      rotatedAt: kv.rotatedAt ?? '',
-    };
-  } catch {
-    return {} as HmacKeys;
-  }
+  const result = toonDecodeSafe<HmacKeys>(content);
+  return result ?? ({} as HmacKeys);
 }
 
 /**

@@ -6,7 +6,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import type { TaskMetrics } from './metrics.js';
-import { esc } from '../state/toon-helpers.js';
+import { toonEncode } from '../state/toon-io-adapter.js';
 
 /**
  * Write task metrics to phase-metrics.toon.
@@ -18,40 +18,28 @@ export function writeMetricsToon(docsDir: string, metrics: TaskMetrics): string 
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   const phases = Object.entries(metrics.phases);
-  const lines: string[] = [
-    'phase: metrics',
-    `taskName: ${esc(metrics.taskName)}`,
-    `startedAt: ${metrics.startedAt}`,
-    `completedAt: ${metrics.completedAt ?? 'in-progress'}`,
-    `totalRetries: ${metrics.retries}`,
-    `totalDoDFailures: ${metrics.dodFailures}`,
-  ];
+  const result = {
+    phase: 'metrics',
+    taskName: metrics.taskName,
+    startedAt: metrics.startedAt,
+    completedAt: metrics.completedAt ?? 'in-progress',
+    totalRetries: metrics.retries,
+    totalDoDFailures: metrics.dodFailures,
+    phases: Object.fromEntries(
+      phases.map(([name, pm]) => [name, {
+        durationSec: Math.round(pm.durationMs / 1000),
+        retries: pm.retries,
+        dodFailures: pm.dodFailurePatterns.length,
+      }]),
+    ),
+    dodFailurePatterns: Object.fromEntries(
+      phases
+        .filter(([_, pm]) => pm.dodFailurePatterns.length > 0)
+        .map(([name, pm]) => [name, pm.dodFailurePatterns]),
+    ),
+  };
 
-  if (phases.length > 0) {
-    lines.push('');
-    lines.push(`phases[${phases.length}]{phase,durationSec,retries,dodFailures}:`);
-    for (const [name, pm] of phases) {
-      const durSec = Math.round(pm.durationMs / 1000);
-      const failCount = pm.dodFailurePatterns.length;
-      lines.push(`  ${name}, ${durSec}, ${pm.retries}, ${failCount}`);
-    }
-  }
-
-  // DoD failure patterns detail
-  const phasesWithFailures = phases.filter(([_, pm]) => pm.dodFailurePatterns.length > 0);
-  if (phasesWithFailures.length > 0) {
-    lines.push('');
-    lines.push('dodFailurePatterns:');
-    for (const [name, pm] of phasesWithFailures) {
-      lines.push(`  ${name}:`);
-      for (const pattern of pm.dodFailurePatterns) {
-        lines.push(`    ${esc(pattern)}`);
-      }
-    }
-  }
-
-  lines.push('');
-  const content = lines.join('\n');
+  const content = toonEncode(result);
   writeFileSync(outPath, content, 'utf-8');
   return outPath;
 }

@@ -18,7 +18,30 @@ import {
   type HandlerResult,
 } from '../handler-shared.js';
 import { getProjectRoot } from '../../utils/project-root.js';
-import { parseToonKv, esc } from '../../state/toon-helpers.js';
+import { toonDecodeSafe } from '../../state/toon-io-adapter.js';
+
+/** Escape a value for TOON KV output. Double-quote if contains comma/newline. */
+function esc(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (s.includes(',') || s.includes('\n') || s.includes('"')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+/** Parse TOON key-value pairs from a multi-line string. */
+function parseToonKv(content: string): Record<string, string> {
+  const parsed = toonDecodeSafe<Record<string, string>>(content);
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const result: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      result[k] = String(v);
+    }
+    return result;
+  }
+  return {};
+}
 
 const DEFAULT_DISALLOWED_TOOLS = 'mcp__harness__harness_start,mcp__harness__harness_next,mcp__harness__harness_approve,mcp__harness__harness_status,mcp__harness__harness_back,mcp__harness__harness_reset,mcp__harness__harness_delegate_coordinator,Skill,WebSearch,WebFetch,TodoWrite,NotebookEdit,EnterPlanMode,ExitPlanMode,EnterWorktree,ExitWorktree,CronCreate,CronDelete,CronList,AskUserQuestion';
 
