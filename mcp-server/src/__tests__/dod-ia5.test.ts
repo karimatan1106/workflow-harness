@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { encode as toonEncode } from '@toon-format/toon';
 
 import { runDoDChecks } from '../gates/dod.js';
 import { createTempDir, removeTempDir, makeMinimalState, buildValidArtifact } from './dod-test-helpers.js';
@@ -32,7 +31,7 @@ describe('L4 AC Achievement Status table check (IA-5)', () => {
     expect(check.evidence).toContain('not required');
   });
 
-  it('fails when code-review.toon is missing', async () => {
+  it('fails when code-review.md is missing', async () => {
     const state = makeMinimalState('code_review', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_achievement_table')!;
@@ -40,10 +39,10 @@ describe('L4 AC Achievement Status table check (IA-5)', () => {
     expect(check.evidence).toContain('not found');
   });
 
-  it('fails when code-review.toon lacks acAchievementStatus key', async () => {
+  it('fails when code-review.md lacks acAchievementStatus key', async () => {
     const state = makeMinimalState('code_review', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'code-review.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'code-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_achievement_table')!;
     expect(check.passed).toBe(false);
@@ -52,23 +51,28 @@ describe('L4 AC Achievement Status table check (IA-5)', () => {
 
   it('fails when acAchievementStatus contains not_met entries', async () => {
     const state = makeMinimalState('code_review', tempDir, docsDir);
-    const content = toonEncode({
-      phase: 'code_review', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [
-        { id: 'CR-001', statement: 'Code review decision one', rationale: 'Reason one' },
-        { id: 'CR-002', statement: 'Code review decision two', rationale: 'Reason two' },
-        { id: 'CR-003', statement: 'Code review decision three', rationale: 'Reason three' },
-        { id: 'CR-004', statement: 'Code review decision four', rationale: 'Reason four' },
-        { id: 'CR-005', statement: 'Code review decision five', rationale: 'Reason five' },
-      ],
-      acAchievementStatus: [
-        { acId: 'AC-1', status: 'met' },
-        { acId: 'AC-2', status: 'not_met' },
-      ],
-      artifacts: [{ path: 'docs/code-review.toon', role: 'spec', summary: 'Code review artifact' }],
-      next: { criticalDecisions: ['CR-001'], readFiles: ['docs/code-review.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'code-review.toon'), content, 'utf8');
+    const content = [
+      '## decisions',
+      '- CR-001: Code review decision one (Reason one)',
+      '- CR-002: Code review decision two (Reason two)',
+      '- CR-003: Code review decision three (Reason three)',
+      '- CR-004: Code review decision four (Reason four)',
+      '- CR-005: Code review decision five (Reason five)',
+      '',
+      '## acAchievementStatus',
+      '- AC-1: met',
+      '- AC-2: not_met',
+      '',
+      '## artifacts',
+      '- docs/code-review.md: spec - Code review artifact',
+      '',
+      '## next',
+      '- criticalDecisions: CR-001',
+      '- readFiles: docs/code-review.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'code-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_achievement_table')!;
     expect(check.passed).toBe(false);
@@ -78,23 +82,28 @@ describe('L4 AC Achievement Status table check (IA-5)', () => {
 
   it('passes when acAchievementStatus exists and no ACs are not_met', async () => {
     const state = makeMinimalState('code_review', tempDir, docsDir);
-    const content = toonEncode({
-      phase: 'code_review', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [
-        { id: 'CR-001', statement: 'Code review decision one', rationale: 'Reason one' },
-        { id: 'CR-002', statement: 'Code review decision two', rationale: 'Reason two' },
-        { id: 'CR-003', statement: 'Code review decision three', rationale: 'Reason three' },
-        { id: 'CR-004', statement: 'Code review decision four', rationale: 'Reason four' },
-        { id: 'CR-005', statement: 'Code review decision five', rationale: 'Reason five' },
-      ],
-      acAchievementStatus: [
-        { acId: 'AC-1', status: 'met' },
-        { acId: 'AC-2', status: 'met' },
-      ],
-      artifacts: [{ path: 'docs/code-review.toon', role: 'spec', summary: 'Code review artifact' }],
-      next: { criticalDecisions: ['CR-001'], readFiles: ['docs/code-review.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'code-review.toon'), content, 'utf8');
+    const content = [
+      '## decisions',
+      '- CR-001: Code review decision one (Reason one)',
+      '- CR-002: Code review decision two (Reason two)',
+      '- CR-003: Code review decision three (Reason three)',
+      '- CR-004: Code review decision four (Reason four)',
+      '- CR-005: Code review decision five (Reason five)',
+      '',
+      '## acAchievementStatus',
+      '- AC-1: met',
+      '- AC-2: met',
+      '',
+      '## artifacts',
+      '- docs/code-review.md: spec - Code review artifact',
+      '',
+      '## next',
+      '- criticalDecisions: CR-001',
+      '- readFiles: docs/code-review.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'code-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_achievement_table')!;
     expect(check.passed).toBe(true);

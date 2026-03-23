@@ -9,34 +9,34 @@ Phase sets: small(~12)=scope→research→requirements→impl→build→testing�
 ## Phase Work Descriptions
 
 ### Stage 0: scope_definition
-Identify entry points and affected files via ast-grep/ts-morph (1-2 hops). Call `harness_set_scope` (max 100 files; propose subtask if exceeded). Output: `scope-definition.toon`. DoD: L1 exists, L3 files <= 100, L4 entry_points non-empty.
+Identify entry points and affected files via ast-grep/ts-morph (1-2 hops). Call `harness_set_scope` (max 100 files; propose subtask if exceeded). Output: `scope-definition.md`. DoD: L1 exists, L3 files <= 100, L4 entry_points non-empty.
 
 ### Stage 1: research
-Investigate existing code via Glob/Grep/Read. Include intent analysis (UI-3): surface request, deep need, unclear points (`【確認必要】`), assumptions. Output: `research.toon`. DoD: L1 exists, L3 >= 30 lines, L4 `## サマリー` + `## ユーザー意図の分析`.
+Investigate existing code via Glob/Grep/Read. Include intent analysis (UI-3): surface request, deep need, unclear points (`【確認必要】`), assumptions. Output: `research.md`. DoD: L1 exists, L3 >= 30 lines, L4 `## サマリー` + `## ユーザー意図の分析`.
 
 ### Stage 1: impact_analysis (IA-7: after research, before requirements)
-Build reverse dependency graph via ts-morph, identify affected tests via vitest --related. Max depth 3, max 200 files. Output: `impact-analysis.toon`. DoD: L1 exists, L3 >= 20 lines.
+Build reverse dependency graph via ts-morph, identify affected tests via vitest --related. Max depth 3, max 200 files. Output: `impact-analysis.md`. DoD: L1 exists, L3 >= 20 lines.
 
 ### Stage 2: requirements
 Define AC-1~AC-N (min 3). Write `## NOT_IN_SCOPE`, `## OPEN_QUESTIONS`, `## ユーザー意図との整合性確認`. Register via `harness_add_ac`. DoD: L3 AC >= 3, L4 OPEN_QUESTIONS empty, NOT_IN_SCOPE present. Gate: `approve("requirements")`.
 
 ### Stage 2: threat_modeling (parallel_analysis)
-STRIDE analysis. Output: `threat-model.toon`. DoD: L1 exists, L3 >= 30 lines.
+STRIDE analysis. Output: `threat-model.md`. DoD: L1 exists, L3 >= 30 lines.
 
 ### Stage 2: planning (waits for threat_modeling)
-Technical spec. Register F-NNN via `harness_add_rtm`. Output: `spec.toon`. DoD: L1 exists, L3 >= 40 lines, L4 F-NNN with spec.
+Technical spec. Register F-NNN via `harness_add_rtm`. Output: `planning.md`. DoD: L1 exists, L3 >= 40 lines, L4 F-NNN with spec.
 
 ### Stage 3: state_machine / flowchart / ui_design (parallel_design)
 - state_machine: stateDiagram-v2, named Start/End, min 3 states. Output: `state-machine.mmd`.
 - flowchart: flowchart TD, min 3 nodes, 2 edges. Output: `flowchart.mmd`.
-- ui_design (waits for state_machine + flowchart): Web→Storybook stories as specs (CDD). CLI/API→command interfaces. Output: `ui-design.toon`.
+- ui_design (waits for state_machine + flowchart): Web→Storybook stories as specs (CDD). CLI/API→command interfaces. Output: `ui-design.md`.
 
 ### Stage 3: design_review
 Verify AC-to-Design mapping covers all ACs. Gate: `approve("design")`.
 
 ### Stage 4: test_design / test_selection
-- test_design: TC-{AC#}-{seq} naming, every AC >= 1 TC. Output: `test-design.toon`. Gate: `approve("test_design")`.
-- test_selection: Select tests via vitest --related. Output: `test-selection.toon`.
+- test_design: TC-{AC#}-{seq} naming, every AC >= 1 TC. Output: `test-design.md`. Gate: `approve("test_design")`.
+- test_selection: Select tests via vitest --related. Output: `test-selection.md`.
 
 ### Stage 4: test_impl (TDD Red)
 Write failing tests. Register via `harness_record_test`. CDD: stories first, then unit tests. DoD: L2 tests executed, >= 1 FAILS.
@@ -56,7 +56,7 @@ Improve quality. Mandatory /simplify (SMP-1): 3 parallel subagents. Tests MUST s
 - regression_test: Compare with baseline. Fix change-caused failures. Known bugs via `harness_record_known_bug`. DoD: L3 new failures = 0.
 
 ### Stage 6: acceptance_verification
-Final intent gate. All ACs + RTM. Output: `acceptance-report.toon`. Gate: `approve("acceptance")`.
+Final intent gate. All ACs + RTM. Output: `acceptance-report.md`. Gate: `approve("acceptance")`.
 
 ### Stage 7: parallel_verification
 - manual_test: Verify scenarios not covered by automation. Required: `## テストシナリオ`, `## テスト結果`.
@@ -75,4 +75,4 @@ Update permanent docs in `docs/spec/`, `docs/architecture/`. Update CHANGELOG.md
 ### Stage 7: ci_verification / deploy / health_observation
 - ci_verification: Build success, all tests pass, lint/static analysis clean, security scan OK.
 - deploy: Deploy to target environment. Verify health.
-- health_observation: Post-deploy monitoring >= 5 min. Thresholds: error rate < +0.5%, P99 latency < +20%, throughput drop < 10%. Output: `health-report.toon`.
+- health_observation: Post-deploy monitoring >= 5 min. Thresholds: error rate < +0.5%, P99 latency < +20%, throughput drop < 10%. Output: `health-report.md`.

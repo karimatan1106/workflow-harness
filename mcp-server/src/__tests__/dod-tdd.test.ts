@@ -65,8 +65,8 @@ describe('TDD-1 Red evidence check', () => {
 
   it('passes test_impl phase with Red evidence when all other checks pass', async () => {
     const state = makeMinimalState('test_impl', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-selection.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-selection.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     state.proofLog = [
       { phase: 'test_impl', timestamp: '2024-01-01T00:00:00.000Z', level: 'L2', check: 'exit_code_zero', result: false, evidence: 'tests failed (Red phase)' },
       { phase: 'test_impl', timestamp: '2024-01-01T01:00:00.000Z', level: 'L2', check: 'exit_code_zero', result: true, evidence: 'tests passing' },

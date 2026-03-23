@@ -48,10 +48,10 @@ describe('L3 TC coverage check (CRV-1)', () => {
         { acId: 'AC-1', testCases: ['TC-AC1-01'] },
         { acId: 'AC-2', testCases: ['TC-AC2-01'] },
       ],
-      artifacts: [{ path: 'docs/test-design.toon', role: 'spec', summary: 'Test design' }],
-      next: { criticalDecisions: ['TD-001'], readFiles: ['docs/test-design.toon'], warnings: [] },
+      artifacts: [{ path: 'docs/test-design.md', role: 'spec', summary: 'Test design' }],
+      next: { criticalDecisions: ['TD-001'], readFiles: ['docs/test-design.md'], warnings: [] },
     });
-    writeFileSync(join(docsDir, 'test-design.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'tc_coverage')!;
     expect(check.passed).toBe(false);
@@ -73,10 +73,10 @@ describe('L3 TC coverage check (CRV-1)', () => {
         { acId: 'AC-1', testCases: ['TC-AC1-01'] },
         { acId: 'AC-2', testCases: ['TC-AC2-01'] },
       ],
-      artifacts: [{ path: 'docs/test-design.toon', role: 'spec', summary: 'Test design' }],
-      next: { criticalDecisions: ['TD-001'], readFiles: ['docs/test-design.toon'], warnings: [] },
+      artifacts: [{ path: 'docs/test-design.md', role: 'spec', summary: 'Test design' }],
+      next: { criticalDecisions: ['TD-001'], readFiles: ['docs/test-design.md'], warnings: [] },
     });
-    writeFileSync(join(docsDir, 'test-design.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'tc_coverage')!;
     expect(check.passed).toBe(true);
@@ -104,7 +104,7 @@ describe('L4 artifact drift check (ART-1)', () => {
   });
 
   it('fails when an approved artifact has been modified', async () => {
-    const filePath = join(docsDir, 'requirements.toon');
+    const filePath = join(docsDir, 'requirements.md');
     writeFileSync(filePath, 'Original content for hashing', 'utf8');
     const state = { ...makeMinimalState('test_design', tempDir, docsDir), artifactHashes: { [filePath]: 'deadbeef-fake-hash-that-will-not-match' } };
     const result = await runDoDChecks(state, docsDir);

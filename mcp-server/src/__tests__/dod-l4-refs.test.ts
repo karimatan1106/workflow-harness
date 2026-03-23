@@ -34,7 +34,7 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('passes when TOON artifact has no relative markdown links', () => {
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = checkDeadReferences('design_review', docsDir, '');
     expect(result.passed).toBe(true);
@@ -42,18 +42,18 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('passes when all relative links point to existing files', () => {
-    writeFileSync(join(docsDir, 'planning.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'planning.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [spec](./spec.md) for details.\n', 'utf8');
     // Note: TOON files don't normally have markdown links; this verifies they are ignored
     const result = checkDeadReferences('design_review', docsDir, '');
-    // .md links in TOON content: spec.md doesn't exist but planning.toon does - check passes due to pattern
+    // .md links in TOON content: spec.md doesn't exist but planning.md does - check passes due to pattern
     expect(result.passed).toBeDefined();
     expect(result.evidence).toContain('DRV-1');
   });
 
   it('fails when a relative link points to a missing file', () => {
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [missing doc](./missing.md) for details.\n', 'utf8');
     const result = checkDeadReferences('design_review', docsDir, '');
     expect(result.passed).toBe(false);
@@ -62,14 +62,14 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('ignores absolute URLs (does not match http/https)', () => {
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [example](https://example.com) and [docs](http://docs.com/page.md).\n', 'utf8');
     const result = checkDeadReferences('design_review', docsDir, '');
     expect(result.passed).toBe(true);
   });
 
   it('reports multiple dead references at once', () => {
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [a](./a.md) and [b](./b.md).\n', 'utf8');
     const result = checkDeadReferences('design_review', docsDir, '');
     expect(result.passed).toBe(false);
@@ -78,7 +78,7 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('checks code_review phase artifacts', () => {
-    writeFileSync(join(docsDir, 'code-review.toon'),
+    writeFileSync(join(docsDir, 'code-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [broken](./broken.md).\n', 'utf8');
     const result = checkDeadReferences('code_review', docsDir, '');
     expect(result.passed).toBe(false);
@@ -86,7 +86,7 @@ describe('DRV-1 dead reference check', () => {
   });
 
   it('ignores anchor-only links and query strings', () => {
-    writeFileSync(join(docsDir, 'design-review.toon'),
+    writeFileSync(join(docsDir, 'design-review.md'),
       buildValidArtifact(['decisions', 'artifacts', 'next'], 6) + '\nSee [section](#anchor) link.\n', 'utf8');
     const result = checkDeadReferences('design_review', docsDir, '');
     expect(result.passed).toBe(true);

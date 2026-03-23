@@ -24,14 +24,14 @@ afterEach(() => {
   removeTempDir(tempDir);
 });
 
-// ─── Phases with no output file ───────────────────
+// --- Phases with no output file ---
 
 describe('runDoDChecks for phases with no output file', () => {
   it('passes all checks for "test_impl" which has no outputFile', async () => {
     const state = makeMinimalState('test_impl', tempDir, docsDir);
-    // IFV-1: test_impl requires test-design.toon and test-selection.toon as inputs
-    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-selection.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    // IFV-1: test_impl requires test-design.md and test-selection.md as inputs
+    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-selection.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     // TDD-1: test_impl requires Red phase evidence (Red before Green)
     state.proofLog = [
       { phase: 'test_impl', timestamp: '2024-01-01T00:00:00.000Z', level: 'L2', check: 'exit_code_zero', result: false, evidence: 'tests failed (Red phase)' },
@@ -44,9 +44,9 @@ describe('runDoDChecks for phases with no output file', () => {
 
   it('passes all checks for "implementation" which has no outputFile', async () => {
     const state = makeMinimalState('implementation', tempDir, docsDir);
-    // IFV-1: implementation requires planning.toon and test-design.toon as inputs
-    writeFileSync(join(docsDir, 'planning.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    // IFV-1: implementation requires planning.md and test-design.md as inputs
+    writeFileSync(join(docsDir, 'planning.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     expect(result.passed).toBe(true);
   });
@@ -70,11 +70,11 @@ describe('runDoDChecks for phases with no output file', () => {
   });
 });
 
-// ─── L1: Input File Existence (IFV-1) ─────────────
+// --- L1: Input File Existence (IFV-1) ---
 
 describe('IFV-1 input files existence check', () => {
   it('fails input_files_exist when required input file is missing', async () => {
-    // threat_modeling requires requirements.toon as input; do not create it
+    // threat_modeling requires requirements.md as input; do not create it
     const state = makeMinimalState('threat_modeling', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
     const ifv = result.checks.find(c => c.check === 'input_files_exist')!;
@@ -84,7 +84,7 @@ describe('IFV-1 input files existence check', () => {
 
   it('passes input_files_exist when all input files exist', async () => {
     const state = makeMinimalState('threat_modeling', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'requirements.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'requirements.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const ifv = result.checks.find(c => c.check === 'input_files_exist')!;
     expect(ifv.passed).toBe(true);
@@ -100,7 +100,7 @@ describe('IFV-1 input files existence check', () => {
   });
 });
 
-// ─── L1: File Existence ───────────────────────────
+// --- L1: File Existence ---
 
 describe('L1 file existence check', () => {
   it('fails L1 when the expected output file is missing', async () => {
@@ -114,7 +114,7 @@ describe('L1 file existence check', () => {
   it('passes L1 when the expected output file exists', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l1 = result.checks.find(c => c.level === 'L1')!;
     expect(l1.passed).toBe(true);
@@ -122,7 +122,7 @@ describe('L1 file existence check', () => {
   });
 });
 
-// ─── L2: Exit Code ───────────────────────────────
+// --- L2: Exit Code ---
 
 describe('L2 exit code check', () => {
   it('passes L2 when there is no L2 proof entry for the current phase', async () => {

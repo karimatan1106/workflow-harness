@@ -8,20 +8,20 @@ description: Phase-specific subagent config, bash permissions, error-to-improvem
 
 | フェーズ | model | delegation | 入力 | 出力 |
 |---------|-------|-----------|------|------|
-| scope_definition | sonnet | TeamCreate→Coordinator→Agent→Worker | - | scope-definition.toon |
-| research | sonnet | TeamCreate→Coordinator→Agent→Worker | - | research.toon |
-| impact_analysis | sonnet | TeamCreate→Coordinator→Agent→Worker | research.toon | impact-analysis.toon |
-| requirements | sonnet | TeamCreate→Coordinator→Agent→Worker | research.toon | requirements.toon |
-| threat_modeling / planning | sonnet | TeamCreate→Coordinator→Agent→Worker | requirements.toon / threat-model.toon | threat-model.toon / spec.toon |
-| state_machine / flowchart | haiku | TeamCreate→Coordinator→Agent→Worker | spec.toon | *.mmd |
-| ui_design | sonnet | TeamCreate→Coordinator→Agent→Worker | spec.toon + *.mmd | ui-design.toon |
-| design_review | sonnet | TeamCreate→Coordinator→Agent→Worker | *.mmd + ui-design.toon | - |
-| test_design | sonnet | TeamCreate→Coordinator→Agent→Worker | spec.toon + *.mmd | test-design.toon |
-| test_impl / implementation | sonnet | TeamCreate→Coordinator→Agent→Worker | test-design.toon / *.test.ts | *.test.ts / *.ts |
+| scope_definition | sonnet | TeamCreate→Coordinator→Agent→Worker | - | scope-definition.md |
+| research | sonnet | TeamCreate→Coordinator→Agent→Worker | - | research.md |
+| impact_analysis | sonnet | TeamCreate→Coordinator→Agent→Worker | research.md | impact-analysis.md |
+| requirements | sonnet | TeamCreate→Coordinator→Agent→Worker | research.md | requirements.md |
+| threat_modeling / planning | sonnet | TeamCreate→Coordinator→Agent→Worker | requirements.md / threat-model.md | threat-model.md / planning.md |
+| state_machine / flowchart | haiku | TeamCreate→Coordinator→Agent→Worker | planning.md | *.mmd |
+| ui_design | sonnet | TeamCreate→Coordinator→Agent→Worker | planning.md + *.mmd | ui-design.md |
+| design_review | sonnet | TeamCreate→Coordinator→Agent→Worker | *.mmd + ui-design.md | - |
+| test_design | sonnet | TeamCreate→Coordinator→Agent→Worker | planning.md + *.mmd | test-design.md |
+| test_impl / implementation | sonnet | TeamCreate→Coordinator→Agent→Worker | test-design.md / *.test.ts | *.test.ts / *.ts |
 | refactoring / build_check | haiku | TeamCreate→Coordinator→Agent→Worker | *.ts | *.ts / - |
-| code_review | **opus** | TeamCreate→Coordinator→Agent→Worker | *.ts | code-review.toon |
+| code_review | **opus** | TeamCreate→Coordinator→Agent→Worker | *.ts | code-review.md |
 | testing / regression_test | haiku | TeamCreate→Coordinator→Agent→Worker | テストスイート | - |
-| manual_test ~ e2e_test | sonnet | TeamCreate→Coordinator→Agent→Worker | - | *.toon |
+| manual_test ~ e2e_test | sonnet | TeamCreate→Coordinator→Agent→Worker | - | *.md |
 | docs_update ~ deploy | haiku | TeamCreate→Coordinator→Agent→Worker | 全成果物 | ドキュメント / - |
 
 ## フェーズ別Bash許可カテゴリ
@@ -66,6 +66,6 @@ commitフェーズにimplementation(rm含む)なし。削除はimplementation/re
 subagentに委譲する際、以下の情報をプロンプトに含めること：
 - taskId と sessionToken
 - 成果物の出力先: `docs/workflows/{taskName}/` （docsDir）
-- TOON形式: `key: value` のフラットKV。カンマ含む値は引用符必須。バックスラッシュ禁止
-- ファイル名: ハイフン区切り（例: `scope-definition.toon`, `research.toon`）
+- Markdown形式: フェーズ成果物は .md で生成。必須セクションは ## ヘッダーで記述
+- ファイル名: ハイフン区切り（例: `scope-definition.md`, `research.md`）
 - 必須キー: フェーズごとのDoD要件（harness_get_subphase_template で取得可能）

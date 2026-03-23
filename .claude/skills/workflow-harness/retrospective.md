@@ -20,7 +20,7 @@ Agent(coordinator) に以下を分析させる:
 - Worker が [FAIL] を返したケース
 - feedbackLog に記録されたユーザーフィードバック
 
-出力: `docs/workflows/{taskId}/retrospective.toon`
+出力: `docs/workflows/{taskId}/retrospective.md`
 
 フォーマット:
 ```
@@ -48,7 +48,7 @@ issues の中で「ハーネス自体の問題」に該当するものを抽出:
 - フェーズ設計の問題 → ハーネス改善
 - Worker/Coordinator の制約 → ハーネス改善
 
-該当があれば `docs/harness-improvements.toon` に追記:
+該当があれば `docs/harness-improvements.md` に追記:
 ```
 [[improvement]]
 date = {ISO date}

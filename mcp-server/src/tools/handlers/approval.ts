@@ -9,8 +9,8 @@ import type { StateManager } from '../../state/manager.js';
 import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, USER_APPROVAL_REQUIRED, type HandlerResult } from '../handler-shared.js';
 
 const APPROVAL_ARTIFACT_MAP: Record<string, string> = {
-  requirements: '/requirements.toon', design: '/design-review.toon',
-  test_design: '/test-design.toon', code_review: '/code-review.toon',
+  requirements: '/requirements.md', design: '/design-review.md',
+  test_design: '/test-design.md', code_review: '/code-review.md',
 };
 
 export async function handleHarnessApprove(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
@@ -35,7 +35,7 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
   if (approvalType === 'requirements' && task.docsDir) {
     try {
       const { decode: toonDec } = await import('@toon-format/toon');
-      const reqPath = task.docsDir + '/requirements.toon';
+      const reqPath = task.docsDir + '/requirements.md';
       if (existsSync(reqPath)) {
         const toon = toonDec(readFileSync(reqPath, 'utf8'));
         if (typeof toon === 'object' && toon !== null && !Array.isArray(toon)) {
@@ -65,7 +65,7 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
   // Update refinedIntent from design review content if available
   if (approvalType === 'design' && task.docsDir) {
     try {
-      const designReviewPath = task.docsDir + '/design-review.toon';
+      const designReviewPath = task.docsDir + '/design-review.md';
       const content = readFileSync(designReviewPath, 'utf8');
       const lines = content.split('\n');
       const summaryLine = lines.find(l => l.startsWith('summary:') || l.startsWith('designSummary:'));
@@ -76,7 +76,7 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
         }
       }
     } catch {
-      // design-review.toon may not exist or have summary, skip silently
+      // design-review.md may not exist or have summary, skip silently
     }
   }
   // IA-6: Block acceptance approval when AC-N or RTM entries are incomplete

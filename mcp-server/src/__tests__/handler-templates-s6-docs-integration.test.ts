@@ -64,9 +64,9 @@ describe('docs_update buildSubagentPrompt integration', () => {
     // Compact header should contain in: and out: lines
     expect(prompt).toContain('in:');
     expect(prompt).toContain('out:');
-    expect(prompt).toContain('planning.toon');
-    expect(prompt).toContain('requirements.toon');
-    expect(prompt).toContain('code-review.toon');
-    expect(prompt).toContain('docs-update.toon');
+    expect(prompt).toContain('planning.md');
+    expect(prompt).toContain('requirements.md');
+    expect(prompt).toContain('code-review.md');
+    expect(prompt).toContain('docs-update.md');
   });
 });

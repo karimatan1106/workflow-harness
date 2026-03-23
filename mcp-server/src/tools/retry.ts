@@ -83,7 +83,7 @@ function errorToImprovement(errorMessage: string): string[] {
   }
 
   if (/TOON parse/i.test(errorMessage) || /Markdown headers? detected/i.test(errorMessage))
-    improvements.push('.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。全ての ## 行を削除し、TOON構文で書き直してください。');
+    improvements.push('TOON形式のファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。全ての ## 行を削除し、TOON構文で書き直してください。');
   if (/non-zero exit code/i.test(errorMessage) || /exit code/i.test(errorMessage))
     improvements.push('コマンドの実行が失敗しました。エラー出力を確認し、問題を修正してください。');
   if (/RTM entries not at required status/i.test(errorMessage))
@@ -95,7 +95,7 @@ function errorToImprovement(errorMessage: string): string[] {
   if (/NOT_IN_SCOPE/i.test(errorMessage) || /スコープ外/i.test(errorMessage))
     improvements.push('requirements.mdに ## NOT_IN_SCOPE セクションを追加し、スコープ外の項目を明示してください。');
   if (/OPEN_QUESTIONS/i.test(errorMessage))
-    improvements.push('requirements.toonのopenQuestionsに未解決の質問が残っています。全て解決するか、openQuestions: なし に変更してください。');
+    improvements.push('requirements.mdのopenQuestionsに未解決の質問が残っています。全て解決するか、openQuestions: なし に変更してください。');
   if (/No baseline captured/i.test(errorMessage))
     improvements.push('testingフェーズでharness_capture_baselineを実行してテストベースラインを記録してください。');
   // Generic fallback

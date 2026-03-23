@@ -41,20 +41,20 @@ describe('AC-1: inputFileMode suffixes in buildSubagentPrompt', () => {
     expect(prompt).toContain('flowchart.mmd[ref]');
   });
 
-  it('TC-AC1-02: acceptance_verification emits [sum] for requirements.toon and [full] for test-design.toon', () => {
+  it('TC-AC1-02: acceptance_verification emits [sum] for requirements.md and [full] for test-design.md', () => {
     const docsDir = join(TEMP_DIR, 'docs');
     const prompt = buildSubagentPrompt('acceptance_verification', 'task', docsDir, '/wf', INTENT) as string;
-    expect(prompt).toContain('requirements.toon[sum]');
-    expect(prompt).toContain('test-design.toon[full]');
+    expect(prompt).toContain('requirements.md[sum]');
+    expect(prompt).toContain('test-design.md[full]');
   });
 
   it('TC-AC1-03: file without inputFileModes entry defaults to [full] suffix', () => {
     const docsDir = join(TEMP_DIR, 'docs');
-    // research has inputFiles: [scope-definition.toon] and no inputFileModes setting
+    // research has inputFiles: [scope-definition.md] and no inputFileModes setting
     const prompt = buildSubagentPrompt('research', 'task', docsDir, '/wf', INTENT) as string;
     // default mode = full → suffix [full] or no suffix (current impl has no suffix at all)
     // After implementation, should have [full]; before implementation it won't — test will fail
-    expect(prompt).toMatch(/scope-definition\.toon\[full\]/);
+    expect(prompt).toMatch(/scope-definition\.md\[full\]/);
   });
 });
 

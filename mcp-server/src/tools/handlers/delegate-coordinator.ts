@@ -53,7 +53,7 @@ function buildCoordinatorPrompt(task: TaskState, pg: PhaseGuide): string {
     `phase: ${task.phase}`,
     `docs-dir: ${task.docsDir}`,
     `allowed-extensions: ${pg.allowedExtensions.join(', ')}`,
-    `output-file: ${task.docsDir}/${task.phase}.toon`,
+    `output-file: ${task.docsDir}/${task.phase}.md`,
     'toon-rules: "key: value形式。カンマ含む値は引用符。バックスラッシュ禁止。ファイル名はハイフン区切り"',
     'instruction-format: "TOON形式で受信。key: valueペアをパースして作業内容を理解すること"',
     'env-vars: "HARNESS_TASK_ID, HARNESS_SESSION_TOKENは環境変数から取得"',

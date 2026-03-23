@@ -47,41 +47,41 @@ export function getPhaseDefinition(phase: string): import('./definitions-shared.
   return PHASE_DEFINITIONS[phase as PhaseName] ?? null;
 }
 
-// ─── ACE TOON-first: output filename → source phase mapping ──
+// ─── ACE artifact-first: output filename → source phase mapping ──
 
 export const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
-  'hearing.toon': 'hearing',
-  'scope-definition.toon': 'scope_definition',
-  'research.toon': 'research',
-  'impact-analysis.toon': 'impact_analysis',
-  'requirements.toon': 'requirements',
-  'threat-model.toon': 'threat_modeling',
-  'planning.toon': 'planning',
+  'hearing.md': 'hearing',
+  'scope-definition.md': 'scope_definition',
+  'research.md': 'research',
+  'impact-analysis.md': 'impact_analysis',
+  'requirements.md': 'requirements',
+  'threat-model.md': 'threat_modeling',
+  'planning.md': 'planning',
   'state-machine.mmd': 'state_machine',
   'flowchart.mmd': 'flowchart',
-  'ui-design.toon': 'ui_design',
-  'test-design.toon': 'test_design',
-  'test-selection.toon': 'test_selection',
-  'code-review.toon': 'code_review',
-  'acceptance-report.toon': 'acceptance_verification',
-  'manual-test.toon': 'manual_test',
-  'security-scan.toon': 'security_scan',
-  'performance-test.toon': 'performance_test',
-  'e2e-test.toon': 'e2e_test',
-  'docs-update.toon': 'docs_update',
+  'ui-design.md': 'ui_design',
+  'test-design.md': 'test_design',
+  'test-selection.md': 'test_selection',
+  'code-review.md': 'code_review',
+  'acceptance-report.md': 'acceptance_verification',
+  'manual-test.md': 'manual_test',
+  'security-scan.md': 'security_scan',
+  'performance-test.md': 'performance_test',
+  'e2e-test.md': 'e2e_test',
+  'docs-update.md': 'docs_update',
 };
 
-function buildToonFirstSection(phase: string, docsDir: string): string {
+function buildArtifactFirstSection(phase: string, docsDir: string): string {
   const config = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   const inputFiles = config?.inputFiles ?? [];
   if (inputFiles.length === 0) return '';
   const resolved = inputFiles.map(f => f.replace(/\{docsDir\}/g, docsDir));
-  const toonFiles = resolved.filter(f => {
+  const artifactFiles = resolved.filter(f => {
     const basename = f.split('/').pop() ?? '';
     return OUTPUT_FILE_TO_PHASE[basename] !== undefined;
   });
-  if (toonFiles.length === 0) return '';
-  return '\n\nTOON入力(ACE)\nread: ' + toonFiles.join(', ') + '\n';
+  if (artifactFiles.length === 0) return '';
+  return '\n\n成果物入力(ACE)\nread: ' + artifactFiles.join(', ') + '\n';
 }
 
 // ─── Prompt Builder ──────────────────────────────
@@ -167,9 +167,9 @@ export function buildSubagentPrompt(
     prompt = prompt.slice(0, insertPos) + layerSection + prompt.slice(insertPos);
   }
 
-  // ACE TOON-first + Reflector lessons
-  const toonFirst = buildToonFirstSection(phase, docsDir);
-  if (toonFirst) prompt += toonFirst;
+  // ACE artifact-first + Reflector lessons
+  const artifactFirst = buildArtifactFirstSection(phase, docsDir);
+  if (artifactFirst) prompt += artifactFirst;
   const lessons = formatLessonsForPrompt(phase);
   if (lessons) prompt += lessons;
 

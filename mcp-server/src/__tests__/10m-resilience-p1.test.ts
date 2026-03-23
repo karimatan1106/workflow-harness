@@ -26,18 +26,18 @@ afterEach(() => {
 const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
   'state-machine.mmd': 'state_machine',
   'flowchart.mmd': 'flowchart',
-  'ui-design.toon': 'ui_design',
-  'planning.toon': 'planning',
-  'threat-model.toon': 'threat_modeling',
+  'ui-design.md': 'ui_design',
+  'planning.md': 'planning',
+  'threat-model.md': 'threat_modeling',
 };
 
 describe('P1: checkInputFilesExist with skippedPhases', () => {
-  // TC-AC1-01: skippedPhasesにscope_definitionが含まれる場合、scope-definition.toonが不在でもパス
+  // TC-AC1-01: skippedPhasesにscope_definitionが含まれる場合、scope-definition.mdが不在でもパス
   it('skips input file validation for files produced by skipped phases', () => {
-    // design_review requires: state-machine.mmd, flowchart.mmd, ui-design.toon, planning.toon, threat-model.toon
-    // Create only planning.toon and threat-model.toon (non-skipped sources)
-    writeFileSync(join(docsDir, 'planning.toon'), 'phase: planning\n');
-    writeFileSync(join(docsDir, 'threat-model.toon'), 'phase: threat_modeling\n');
+    // design_review requires: state-machine.mmd, flowchart.mmd, ui-design.md, planning.md, threat-model.md
+    // Create only planning.md and threat-model.md (non-skipped sources)
+    writeFileSync(join(docsDir, 'planning.md'), '## phase\nplanning\n');
+    writeFileSync(join(docsDir, 'threat-model.md'), '## phase\nthreat_modeling\n');
 
     // P1 feature: 4th arg skippedPhases, 5th arg fileToPhaseMap
     // Current signature: checkInputFilesExist(phase, docsDir, workflowDir)
@@ -48,7 +48,7 @@ describe('P1: checkInputFilesExist with skippedPhases', () => {
       OUTPUT_FILE_TO_PHASE,
     );
 
-    // With all Stage4 phases skipped, only planning.toon and threat-model.toon should be checked
+    // With all Stage4 phases skipped, only planning.md and threat-model.md should be checked
     // Both exist, so passed should be true
     expect(result.passed).toBe(true);
   });
@@ -56,8 +56,8 @@ describe('P1: checkInputFilesExist with skippedPhases', () => {
   // TC-AC1-02: skippedPhasesが空の場合、従来通り全ファイルを検証
   it('validates all input files when skippedPhases is empty', () => {
     // Create only some files - leave state-machine.mmd missing
-    writeFileSync(join(docsDir, 'planning.toon'), 'phase: planning\n');
-    writeFileSync(join(docsDir, 'threat-model.toon'), 'phase: threat_modeling\n');
+    writeFileSync(join(docsDir, 'planning.md'), '## phase\nplanning\n');
+    writeFileSync(join(docsDir, 'threat-model.md'), '## phase\nthreat_modeling\n');
 
     const result = (checkInputFilesExist as any)(
       'design_review', docsDir, tempDir,
@@ -65,15 +65,15 @@ describe('P1: checkInputFilesExist with skippedPhases', () => {
       OUTPUT_FILE_TO_PHASE,
     );
 
-    // state-machine.mmd, flowchart.mmd, ui-design.toon are missing
+    // state-machine.mmd, flowchart.mmd, ui-design.md are missing
     expect(result.passed).toBe(false);
     expect(result.evidence).toContain('state-machine.mmd');
   });
 
   // TC-AC1-03: smallタスクでskippedPhasesに全Stage4フェーズが含まれるとinputFiles全スキップ
   it('skips all Stage4 output files when all Stage4 phases are skipped', () => {
-    writeFileSync(join(docsDir, 'planning.toon'), 'phase: planning\n');
-    writeFileSync(join(docsDir, 'threat-model.toon'), 'phase: threat_modeling\n');
+    writeFileSync(join(docsDir, 'planning.md'), '## phase\nplanning\n');
+    writeFileSync(join(docsDir, 'threat-model.md'), '## phase\nthreat_modeling\n');
 
     const result = (checkInputFilesExist as any)(
       'design_review', docsDir, tempDir,
@@ -86,8 +86,8 @@ describe('P1: checkInputFilesExist with skippedPhases', () => {
 
   // TC-AC1-04: fileToPhaseMap未指定時はスキップなしで全ファイル検証
   it('does not skip any files when fileToPhaseMap is omitted', () => {
-    writeFileSync(join(docsDir, 'planning.toon'), 'phase: planning\n');
-    writeFileSync(join(docsDir, 'threat-model.toon'), 'phase: threat_modeling\n');
+    writeFileSync(join(docsDir, 'planning.md'), '## phase\nplanning\n');
+    writeFileSync(join(docsDir, 'threat-model.md'), '## phase\nthreat_modeling\n');
 
     // Call with skippedPhases but without fileToPhaseMap
     const result = (checkInputFilesExist as any)(

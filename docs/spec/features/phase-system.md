@@ -9,36 +9,36 @@ PHASE_ORDER (`registry.ts:57-89`) が実行順序を固定する。
 
 | # | フェーズ名 | Stage | Model | outputFile | requiredSections | minLines | bashCategories | parallelGroup | approvalRequired |
 |---|-----------|-------|-------|------------|-----------------|----------|----------------|---------------|-----------------|
-| 1 | scope_definition | 1 | sonnet | scope-definition.toon | decisions,artifacts,next | 30 | readonly | - | - |
-| 2 | research | 1 | sonnet | research.toon | decisions,artifacts,next | 50 | readonly | - | - |
-| 3 | impact_analysis | 1 | sonnet | impact-analysis.toon | decisions,artifacts,next | 40 | readonly | - | - |
-| 4 | requirements | 2 | sonnet | requirements.toon | decisions,acceptanceCriteria,notInScope,openQuestions | 50 | readonly | - | requirements |
-| 5 | threat_modeling | 3 | sonnet | threat-model.toon | decisions,artifacts,next | 40 | readonly | parallel_analysis | - |
-| 6 | planning | 3 | sonnet | spec.toon | decisions,artifacts,next | 50 | readonly | parallel_analysis | - |
+| 1 | scope_definition | 1 | sonnet | scope-definition.md | decisions,artifacts,next | 30 | readonly | - | - |
+| 2 | research | 1 | sonnet | research.md | decisions,artifacts,next | 50 | readonly | - | - |
+| 3 | impact_analysis | 1 | sonnet | impact-analysis.md | decisions,artifacts,next | 40 | readonly | - | - |
+| 4 | requirements | 2 | sonnet | requirements.md | decisions,acceptanceCriteria,notInScope,openQuestions | 50 | readonly | - | requirements |
+| 5 | threat_modeling | 3 | sonnet | threat-model.md | decisions,artifacts,next | 40 | readonly | parallel_analysis | - |
+| 6 | planning | 3 | sonnet | planning.md | decisions,artifacts,next | 50 | readonly | parallel_analysis | - |
 | 7 | state_machine | 4 | haiku | state-machine.mmd | decisions | 15 | readonly | parallel_design | - |
 | 8 | flowchart | 4 | haiku | flowchart.mmd | decisions | 15 | readonly | parallel_design | - |
-| 9 | ui_design | 4 | sonnet | ui-design.toon | decisions,artifacts,next | 50 | readonly | parallel_design | - |
-| 10 | design_review | 5 | sonnet | design-review.toon | decisions,artifacts,next | 30 | readonly | - | design |
-| 11 | test_design | 6 | sonnet | test-design.toon | decisions,artifacts,next | 50 | readonly | - | test_design |
-| 12 | test_selection | 6 | haiku | test-selection.toon | decisions,artifacts,next | 20 | readonly | - | - |
+| 9 | ui_design | 4 | sonnet | ui-design.md | decisions,artifacts,next | 50 | readonly | parallel_design | - |
+| 10 | design_review | 5 | sonnet | design-review.md | decisions,artifacts,next | 30 | readonly | - | design |
+| 11 | test_design | 6 | sonnet | test-design.md | decisions,artifacts,next | 50 | readonly | - | test_design |
+| 12 | test_selection | 6 | haiku | test-selection.md | decisions,artifacts,next | 20 | readonly | - | - |
 | 13 | test_impl | 7 | sonnet | - | - | 0 | readonly,testing | - | - |
 | 14 | implementation | 7 | sonnet | - | - | 0 | readonly,testing,implementation | - | - |
 | 15 | refactoring | 7 | haiku | - | - | 0 | readonly,testing,implementation | - | - |
 | 16 | build_check | 8 | haiku | - | - | 0 | readonly,testing,implementation | parallel_quality | - |
-| 17 | code_review | 8 | sonnet | code-review.toon | decisions,artifacts,next | 30 | readonly | parallel_quality | code_review |
+| 17 | code_review | 8 | sonnet | code-review.md | decisions,artifacts,next | 30 | readonly | parallel_quality | code_review |
 | 18 | testing | 9 | haiku | - | - | 0 | readonly,testing | - | - |
 | 19 | regression_test | 9 | haiku | - | - | 0 | readonly,testing | - | - |
-| 20 | acceptance_verification | 10 | sonnet | acceptance-report.toon | decisions,artifacts,next | 40 | readonly | - | acceptance |
-| 21 | manual_test | 11 | sonnet | manual-test.toon | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
-| 22 | security_scan | 11 | sonnet | security-scan.toon | decisions,artifacts,next | 40 | readonly,testing,security | parallel_verification | - |
-| 23 | performance_test | 11 | sonnet | performance-test.toon | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
-| 24 | e2e_test | 11 | sonnet | e2e-test.toon | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
-| 25 | docs_update | 12 | sonnet | docs-update.toon | decisions,artifacts,next | 30 | readonly,implementation | - | - |
+| 20 | acceptance_verification | 10 | sonnet | acceptance-report.md | decisions,artifacts,next | 40 | readonly | - | acceptance |
+| 21 | manual_test | 11 | sonnet | manual-test.md | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
+| 22 | security_scan | 11 | sonnet | security-scan.md | decisions,artifacts,next | 40 | readonly,testing,security | parallel_verification | - |
+| 23 | performance_test | 11 | sonnet | performance-test.md | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
+| 24 | e2e_test | 11 | sonnet | e2e-test.md | decisions,artifacts,next | 40 | readonly,testing | parallel_verification | - |
+| 25 | docs_update | 12 | sonnet | docs-update.md | decisions,artifacts,next | 30 | readonly,implementation | - | - |
 | 26 | commit | 13 | haiku | - | - | 0 | readonly,git | - | - |
 | 27 | push | 13 | haiku | - | - | 0 | readonly,git | - | - |
 | 28 | ci_verification | 13 | haiku | - | - | 0 | readonly | - | - |
 | 29 | deploy | 14 | haiku | - | - | 0 | readonly | - | - |
-| 30 | health_observation | 14 | sonnet | health-report.toon | decisions,artifacts,next | 20 | readonly | - | - |
+| 30 | health_observation | 14 | sonnet | health-report.md | decisions,artifacts,next | 20 | readonly | - | - |
 | 31 | completed | 99 | haiku | - | - | 0 | readonly | - | - |
 
 ソース: `registry.ts:8-55`, テンプレート: `defs-stage1.ts`〜`defs-stage6.ts`

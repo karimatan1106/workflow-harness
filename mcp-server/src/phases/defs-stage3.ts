@@ -10,8 +10,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Review design artifacts for consistency',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.toon', '{docsDir}/planning.toon', '{docsDir}/threat-model.toon'],
-    outputFile: '{docsDir}/design-review.toon',
+    inputFiles: ['{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd', '{docsDir}/ui-design.md', '{docsDir}/planning.md', '{docsDir}/threat-model.md'],
+    outputFile: '{docsDir}/design-review.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
     subagentTemplate: `# design_reviewフェーズ
@@ -22,16 +22,16 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 
 入力
 以下の全設計成果物を読み込んでレビューしてください:
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
-- {docsDir}/ui-design.toon
-- {docsDir}/threat-model.toon
+- {docsDir}/ui-design.md
+- {docsDir}/threat-model.md
 
 作業内容
 設計成果物の整合性を検証してください。
-1. planning.toonと各設計図の一貫性
-2. 要件（requirements.toon）との対応関係
+1. planning.mdと各設計図の一貫性
+2. 要件（requirements.md）との対応関係
 3. セキュリティ要件の反映確認
 4. AC-Nと設計要素の対応表を作成
 
@@ -39,11 +39,11 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのAC-Nに対応する設計要素を以下の形式でマッピングすること:
 | AC-N | 設計コンポーネント | 仕様書参照 |
 |----|-------------|---------|
-| AC-1 | (対応する設計要素) | planning.toon §X.Y |
+| AC-1 | (対応する設計要素) | planning.md §X.Y |
 全てのACにマッピングが必要。空欄のACがある場合、承認がブロックされる。
 
 出力
-{docsDir}/design-review.toon に保存してください。
+{docsDir}/design-review.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -55,8 +55,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Test strategy and test cases mapped to AC-N',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/planning.toon', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
-    outputFile: '{docsDir}/test-design.toon',
+    inputFiles: ['{docsDir}/planning.md', '{docsDir}/state-machine.mmd', '{docsDir}/flowchart.mmd'],
+    outputFile: '{docsDir}/test-design.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# test_designフェーズ
@@ -66,7 +66,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
 
@@ -87,7 +87,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 全てのACに最低1件のテストケースが必要。カバーなしのACがある場合、承認がブロックされる。
 
 出力
-{docsDir}/test-design.toon に保存してください。
+{docsDir}/test-design.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -99,8 +99,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
     description: 'Select relevant tests using dependency analysis',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/impact-analysis.toon'],
-    outputFile: '{docsDir}/test-selection.toon',
+    inputFiles: ['{docsDir}/test-design.md', '{docsDir}/impact-analysis.md'],
+    outputFile: '{docsDir}/test-selection.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
     subagentTemplate: `# test_selectionフェーズ
@@ -110,8 +110,8 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/test-design.toon
-- {docsDir}/impact-analysis.toon
+- {docsDir}/test-design.md
+- {docsDir}/impact-analysis.md
 
 作業内容
 影響分析に基づき実行すべきテストを選択してください。
@@ -120,7 +120,7 @@ export const DEFS_STAGE3: Record<string, PhaseDefinition> = {
 3. 実行コマンドの生成
 
 出力
-{docsDir}/test-selection.toon に保存してください。
+{docsDir}/test-selection.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

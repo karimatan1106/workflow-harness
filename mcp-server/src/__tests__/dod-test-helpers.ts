@@ -6,7 +6,6 @@
 import { mkdtempSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { encode as toonEncode } from '@toon-format/toon';
 import type { TaskState } from '../state/types.js';
 
 export function createTempDir(): { tempDir: string; docsDir: string } {
@@ -61,41 +60,39 @@ export function makeMinimalState(phase: string, workflowDir: string, docsDir: st
 }
 
 /**
- * Build a valid TOON artifact with the specified keys and enough content
+ * Build a valid Markdown artifact with the specified keys and enough content
  * to pass L3 quality checks (minLines threshold via content chars).
  */
 export function buildValidArtifact(keys: string[], linesPerSection: number = 20): string {
-  const decisions: Array<{ id: string; statement: string; rationale: string }> = [];
   const keyNames = keys.map(k => k.replace(/^#+\s*/, '').replace(/\s+/g, '_'));
-  for (let i = 1; i <= Math.max(linesPerSection, 5); i++) {
-    decisions.push({
-      id: `D-${String(i).padStart(3, '0')}`,
-      statement: `Decision ${i} for ${keyNames[0]}: providing real substantive information about the topic in detail`,
-      rationale: `Rationale ${i}: context and reasoning for decision ${i} in the artifact content`,
-    });
+  const lines: string[] = [];
+  const count = Math.max(linesPerSection, 5);
+  for (const key of keyNames) {
+    lines.push(`## ${key}`);
+    if (key === 'decisions') {
+      for (let i = 1; i <= count; i++) {
+        lines.push(`- D-${String(i).padStart(3, '0')}: Decision ${i} for ${keyNames[0]}: providing real substantive information about the topic in detail (Rationale ${i}: context and reasoning for decision ${i} in the artifact content)`);
+      }
+    } else if (key === 'artifacts') {
+      lines.push(`- docs/output.md: spec - Primary output artifact for this phase containing all decisions`);
+    } else if (key === 'next') {
+      lines.push(`- criticalDecisions: ${Array.from({ length: Math.min(3, count) }, (_, j) => `D-${String(j + 1).padStart(3, '0')}`).join(', ')}`);
+      lines.push(`- readFiles: docs/output.md`);
+      lines.push(`- warnings: No warnings for this test artifact`);
+    } else {
+      for (let i = 1; i <= count; i++) {
+        lines.push(`Content line ${i} for ${key}: providing real substantive information about the topic in detail`);
+      }
+    }
+    lines.push('');
   }
-  const artifacts: Array<{ path: string; role: string; summary: string }> = [
-    { path: 'docs/output.toon', role: 'spec', summary: 'Primary output artifact for this phase containing all decisions' },
-  ];
-  const obj: Record<string, unknown> = {
-    phase: keyNames[0] ?? 'unknown',
-    taskId: 'test-task-id',
-    ts: new Date().toISOString(),
-    decisions,
-    artifacts,
-    next: {
-      criticalDecisions: decisions.slice(0, 3).map(d => d.id),
-      readFiles: ['docs/output.toon'],
-      warnings: ['No warnings for this test artifact'],
-    },
-  };
-  return toonEncode(obj);
+  return lines.join('\n');
 }
 
 /**
- * Build a TOON artifact for requirements phase with acceptanceCriteria, notInScope, openQuestions.
+ * Build a Markdown artifact for requirements phase with acceptanceCriteria, notInScope, openQuestions.
  */
-export function buildValidRequirementsToon(opts: {
+export function buildValidRequirementsMd(opts: {
   acCount?: number;
   hasNotInScope?: boolean;
   hasOpenQuestions?: boolean;
@@ -103,53 +100,48 @@ export function buildValidRequirementsToon(opts: {
   userIntent?: string;
 }): string {
   const { acCount = 3, hasNotInScope = true, hasOpenQuestions = true } = opts;
-  const decisions: Array<{ id: string; statement: string; rationale: string }> = [];
+  const lines: string[] = [];
+  lines.push('## decisions');
   for (let i = 1; i <= 5; i++) {
-    decisions.push({
-      id: `REQ-${String(i).padStart(3, '0')}`,
-      statement: `Requirement ${i}: system shall validate input and handle errors correctly`,
-      rationale: `Rationale ${i}: security and reliability require this validation step`,
-    });
+    lines.push(`- REQ-${String(i).padStart(3, '0')}: Requirement ${i}: system shall validate input and handle errors correctly (Rationale ${i}: security and reliability require this validation step)`);
   }
-  const acceptanceCriteria: Array<{ id: string; criterion: string }> = [];
+  lines.push('');
+  lines.push('## acceptanceCriteria');
   for (let i = 1; i <= acCount; i++) {
-    acceptanceCriteria.push({ id: `AC-${i}`, criterion: `Acceptance criterion ${i}: verifiable condition for requirement` });
+    lines.push(`- AC-${i}: Acceptance criterion ${i}: verifiable condition for requirement`);
   }
-  const obj: Record<string, unknown> = {
-    phase: 'requirements',
-    taskId: 'test-task-id',
-    ts: new Date().toISOString(),
-    decisions,
-    acceptanceCriteria,
-  };
+  lines.push('');
   if (hasNotInScope) {
-    (obj as any).notInScope = [
-      { item: 'Mobile application development is excluded from this scope' },
-      { item: 'Third-party authentication integration is not included' },
-    ];
+    lines.push('## notInScope');
+    lines.push('- Mobile application development is excluded from this scope');
+    lines.push('- Third-party authentication integration is not included');
+    lines.push('');
   }
   if (hasOpenQuestions) {
-    (obj as any).openQuestions = [];
+    lines.push('## openQuestions');
+    lines.push('');
   }
   const ui = opts.userIntent ?? '';
   if (ui) {
     const kws = ui.split(/\s+/).filter(w => w.length >= 3);
-    decisions.push({
-      id: 'REQ-KW',
-      statement: `Keywords: ${kws.join(' ')} are all addressed in this requirements document`,
-      rationale: 'Intent consistency requirement',
-    });
+    lines.push(`- REQ-KW: Keywords: ${kws.join(' ')} are all addressed in this requirements document (Intent consistency requirement)`);
+    lines.push('');
   }
-  (obj as any).artifacts = [
-    { path: 'docs/requirements.toon', role: 'spec', summary: 'Requirements definition with AC and scope' },
-  ];
-  (obj as any).next = {
-    criticalDecisions: ['REQ-001', 'REQ-002'],
-    readFiles: ['docs/requirements.toon'],
-    warnings: ['No open questions remain'],
-  };
+  lines.push('## artifacts');
+  lines.push('- docs/requirements.md: spec - Requirements definition with AC and scope');
+  lines.push('');
+  lines.push('## next');
+  lines.push('- criticalDecisions: REQ-001, REQ-002');
+  lines.push('- readFiles: docs/requirements.md');
+  lines.push('- warnings: No open questions remain');
+  lines.push('');
   if (opts.extraContent) {
-    (obj as any).additionalNotes = opts.extraContent;
+    lines.push('## additionalNotes');
+    lines.push(opts.extraContent);
+    lines.push('');
   }
-  return toonEncode(obj);
+  return lines.join('\n');
 }
+
+/** @deprecated Use buildValidRequirementsMd instead */
+export const buildValidRequirementsToon = buildValidRequirementsMd;

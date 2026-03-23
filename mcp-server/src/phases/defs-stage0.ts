@@ -6,7 +6,7 @@ export const DEFS_STAGE0: Record<string, PhaseDefinition> = {
     model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: [],
-    outputFile: '{docsDir}/hearing.toon',
+    outputFile: '{docsDir}/hearing.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
     subagentTemplate: `hearingフェーズ（Worker planモード）
@@ -30,7 +30,7 @@ export const DEFS_STAGE0: Record<string, PhaseDefinition> = {
    - 影響範囲の概算
    - 既存パターンの確認
 
-4. 回答と調査結果を元にhearing.toonを作成
+4. 回答と調査結果を元にhearing.mdを作成
    - intent-analysis: surfaceRequest, deepNeed, unclearPoints, assumptions
    - implementation-plan: approach, estimatedScope, risks
    - decisions: 確認で決まった事項

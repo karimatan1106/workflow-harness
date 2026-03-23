@@ -10,8 +10,8 @@ export const DEFS_STAGE2: Record<string, PhaseDefinition> = {
     description: 'STRIDE analysis and risk assessment',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/requirements.toon'],
-    outputFile: '{docsDir}/threat-model.toon',
+    inputFiles: ['{docsDir}/requirements.md'],
+    outputFile: '{docsDir}/threat-model.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# threat_modelingフェーズ
@@ -21,7 +21,7 @@ export const DEFS_STAGE2: Record<string, PhaseDefinition> = {
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/requirements.toon
+- {docsDir}/requirements.md
 
 作業内容
 STRIDE分析に基づく脅威モデリングを実施してください。
@@ -31,7 +31,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 4. 対策の優先順位付け
 
 出力
-{docsDir}/threat-model.toon に保存してください。
+{docsDir}/threat-model.md に保存してください。
 
 {SUMMARY_SECTION}
 {TOON_SKELETON_THREAT_MODELING}
@@ -44,8 +44,8 @@ STRIDE分析に基づく脅威モデリングを実施してください。
     description: 'Technical specification and implementation plan',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/requirements.toon', '{docsDir}/threat-model.toon'],
-    outputFile: '{docsDir}/planning.toon',
+    inputFiles: ['{docsDir}/requirements.md', '{docsDir}/threat-model.md'],
+    outputFile: '{docsDir}/planning.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# planningフェーズ
@@ -55,8 +55,8 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/requirements.toon
-- {docsDir}/threat-model.toon
+- {docsDir}/requirements.md
+- {docsDir}/threat-model.md
 
 作業内容
 技術仕様書と実装計画を作成してください。
@@ -66,7 +66,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 4. 変更対象ファイルの一覧。漸進的移行: 各ステップでテストが通る状態を維持
 
 出力
-{docsDir}/planning.toon に保存してください。
+{docsDir}/planning.md に保存してください。
 
 {SUMMARY_SECTION}
 {TOON_SKELETON_PLANNING}
@@ -79,7 +79,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
     description: 'State diagrams in Mermaid stateDiagram-v2',
     model: 'haiku',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/planning.toon'],
+    inputFiles: ['{docsDir}/planning.md'],
     outputFile: '{docsDir}/state-machine.mmd',
     requiredSections: ['decisions'],
     minLines: 15,
@@ -90,7 +90,7 @@ STRIDE分析に基づく脅威モデリングを実施してください。
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 
 作業内容
 Mermaid stateDiagram-v2形式でステートマシン図を作成してください。
@@ -111,7 +111,7 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
     description: 'Process flow diagrams in Mermaid flowchart',
     model: 'haiku',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/planning.toon'],
+    inputFiles: ['{docsDir}/planning.md'],
     outputFile: '{docsDir}/flowchart.mmd',
     requiredSections: ['decisions'],
     minLines: 15,
@@ -122,7 +122,7 @@ Mermaid stateDiagram-v2形式でステートマシン図を作成してくださ
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 
 作業内容
 Mermaid flowchart形式で処理フローチャートを作成してください。
@@ -143,8 +143,8 @@ Mermaid flowchart形式で処理フローチャートを作成してください
     description: 'Interface design and component specifications',
     model: 'opus',
     bashCategories: ['readonly'],
-    inputFiles: ['{docsDir}/planning.toon'],
-    outputFile: '{docsDir}/ui-design.toon',
+    inputFiles: ['{docsDir}/planning.md'],
+    outputFile: '{docsDir}/ui-design.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 50,
     subagentTemplate: `# ui_designフェーズ
@@ -154,7 +154,7 @@ Mermaid flowchart形式で処理フローチャートを作成してください
 - 出力先: {docsDir}/
 
 入力
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 
 作業内容
 UI設計とコンポーネント仕様を作成してください。
@@ -164,7 +164,7 @@ UI設計とコンポーネント仕様を作成してください。
 4. レスポンシブ対応の方針
 
 出力
-{docsDir}/ui-design.toon に保存してください。
+{docsDir}/ui-design.md に保存してください。
 
 {SUMMARY_SECTION}
 {TOON_SKELETON_UI_DESIGN}

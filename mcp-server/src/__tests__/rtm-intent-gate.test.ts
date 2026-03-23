@@ -52,29 +52,29 @@ describe('AC-1: checkOpenQuestions blocks non-empty openQuestions', () => {
 
   afterAll(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function writeReqToon(oqContent: string) {
-    const content = `phase: requirements\nopenQuestions: ${oqContent}\nacceptanceCriteria[1]{id,criterion}:\n  AC-1, test\n`;
-    fs.writeFileSync(path.join(tmpDir, 'requirements.toon'), content);
+  function writeReqMd(oqContent: string) {
+    const content = `## openQuestions\n${oqContent}\n\n## acceptanceCriteria\n- AC-1: test\n`;
+    fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
   }
 
   it('TC-AC1-01: string openQuestions with valid item → passed:false', () => {
-    writeReqToon('"OQ-1: 未解決質問"');
+    writeReqMd('OQ-1: 未解決質問');
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(false);
   });
 
   it('TC-AC1-02: openQuestions array with valid items → passed:false', () => {
-    const content = `phase: requirements\nopenQuestions[2]{id,question}:\n  OQ-1, "未解決質問A"\n  OQ-2, "未解決質問B"\nacceptanceCriteria[1]{id,criterion}:\n  AC-1, test\n`;
-    fs.writeFileSync(path.join(tmpDir, 'requirements.toon'), content);
+    const content = `## openQuestions\n- OQ-1: 未解決質問A\n- OQ-2: 未解決質問B\n\n## acceptanceCriteria\n- AC-1: test\n`;
+    fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(false);
   });
 
   it('TC-AC1-03: mixed valid and なし items → passed:false', () => {
-    const content = `phase: requirements\nopenQuestions[2]{id,question}:\n  OQ-1, "なし"\n  OQ-2, "有効な質問"\nacceptanceCriteria[1]{id,criterion}:\n  AC-1, test\n`;
-    fs.writeFileSync(path.join(tmpDir, 'requirements.toon'), content);
+    const content = `## openQuestions\n- OQ-1: なし\n- OQ-2: 有効な質問\n\n## acceptanceCriteria\n- AC-1: test\n`;
+    fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(false);
@@ -96,16 +96,16 @@ describe('AC-2: checkOpenQuestions passes empty or なし', () => {
   afterAll(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   it('TC-AC2-01: openQuestions: なし → passed:true', () => {
-    const content = `phase: requirements\nopenQuestions: なし\nacceptanceCriteria[1]{id,criterion}:\n  AC-1, test\n`;
-    fs.writeFileSync(path.join(tmpDir, 'requirements.toon'), content);
+    const content = `## openQuestions\nなし\n\n## acceptanceCriteria\n- AC-1: test\n`;
+    fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(true);
   });
 
   it('TC-AC2-02: openQuestions key present but empty string → passed:true', () => {
-    const content = `phase: requirements\nopenQuestions:\nacceptanceCriteria[1]{id,criterion}:\n  AC-1, test\n`;
-    fs.writeFileSync(path.join(tmpDir, 'requirements.toon'), content);
+    const content = `## openQuestions\n\n## acceptanceCriteria\n- AC-1: test\n`;
+    fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(true);
@@ -155,7 +155,7 @@ describe('AC-5: checkAcChainContinuity in dod-l4-ia.ts', () => {
       acceptanceCriteria: [{ id: 'AC-1', status: 'open' }, { id: 'AC-2', status: 'open' }],
     } as any;
     const content = `acDesignMapping[1]{acId,designElement}:\n  AC-1, "Module X"\n`;
-    fs.writeFileSync(path.join(tmpDir, 'design-review.toon'), content);
+    fs.writeFileSync(path.join(tmpDir, 'design-review.md'), content);
     const result = checkAcChainContinuity(state, 'design_review', tmpDir);
     expect(result.passed).toBe(false);
   });
@@ -173,7 +173,7 @@ describe('AC-5: checkAcChainContinuity in dod-l4-ia.ts', () => {
       acceptanceCriteria: [{ id: 'AC-1', status: 'open' }],
     } as any;
     const content = `acDesignMapping[1]{acId,designElement}:\n  AC-1, "Module X"\n`;
-    fs.writeFileSync(path.join(tmpDir, 'design-review.toon'), content);
+    fs.writeFileSync(path.join(tmpDir, 'design-review.md'), content);
     const result = checkAcChainContinuity(state, 'design_review', tmpDir);
     expect(result.passed).toBe(true);
   });

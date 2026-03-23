@@ -4,80 +4,101 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { decode as toonDecode } from '@toon-format/toon';
 import type { TaskState } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
-function readRequirementsToon(docsDir: string): Record<string, unknown> | null {
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
-  if (!existsSync(reqPath)) return null;
-  try {
-    const obj = toonDecode(readFileSync(reqPath, 'utf8'));
-    if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-      return obj as Record<string, unknown>;
+/** Parse Markdown content into sections keyed by heading text (lowercased). */
+function parseMarkdownSections(content: string): Record<string, string> {
+  const sections: Record<string, string> = {};
+  const lines = content.split('\n');
+  let currentSection = '';
+  let currentContent: string[] = [];
+  for (const line of lines) {
+    const headingMatch = line.match(/^#{1,3}\s+(.+)/);
+    if (headingMatch) {
+      if (currentSection) {
+        sections[currentSection.toLowerCase()] = currentContent.join('\n').trim();
+      }
+      currentSection = headingMatch[1].trim();
+      currentContent = [];
+    } else {
+      currentContent.push(line);
     }
-    return null;
-  } catch {
-    return null;
   }
+  if (currentSection) {
+    sections[currentSection.toLowerCase()] = currentContent.join('\n').trim();
+  }
+  return sections;
+}
+
+function readRequirementsMarkdown(docsDir: string): Record<string, string> | null {
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
+  if (!existsSync(reqPath)) return null;
+  const content = readFileSync(reqPath, 'utf8');
+  const sections = parseMarkdownSections(content);
+  if (Object.keys(sections).length === 0) return null;
+  return sections;
 }
 
 export function checkACFormat(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'ac_format', passed: true, evidence: 'AC format check not required for phase: ' + phase };
   }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
   if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
+    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
   }
-  const toon = readRequirementsToon(docsDir);
-  if (!toon) {
-    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.toon could not be decoded at: ' + reqPath, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' };
+  const content = readFileSync(reqPath, 'utf8');
+  const sections = readRequirementsMarkdown(docsDir);
+  if (!sections) {
+    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
   }
-  const acs = toon['acceptanceCriteria'];
-  const acCount = Array.isArray(acs) ? acs.length : 0;
+  // Count unique AC-N patterns in the entire content
+  const acMatches = content.match(/AC-\d+/g) ?? [];
+  const uniqueACs = new Set(acMatches);
+  const acCount = uniqueACs.size;
   if (acCount < 3) {
     return {
       level: 'L4', check: 'ac_format', passed: false,
-      evidence: `requirements.toon contains only ${acCount} acceptanceCriteria entries (minimum 3 required)\n修正方法: acceptanceCriteria[N]{id,criterion}: テーブルにAC項目を${3 - acCount}件追加してください。`,
+      evidence: `requirements.md contains only ${acCount} acceptanceCriteria entries (minimum 3 required)\n修正方法: acceptanceCriteriaセクションにAC項目を${3 - acCount}件追加してください。`,
       fix: '最低3件のAC-N形式の受入基準を追加してください。',
-      example: 'acceptanceCriteria[0]{id,criterion}:\n  AC-1\n  機能Xが正常に動作すること',
+      example: '## acceptanceCriteria\n- AC-1: 機能Xが正常に動作すること',
     };
   }
-  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.toon contains ${acCount} acceptanceCriteria entries (minimum 3 met)` };
+  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.md contains ${acCount} acceptanceCriteria entries (minimum 3 met)` };
 }
 
 export function checkNotInScope(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'not_in_scope_section', passed: true, evidence: 'NOT_IN_SCOPE check not required for phase: ' + phase };
   }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
   if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
+    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
   }
-  const toon = readRequirementsToon(docsDir);
-  if (!toon) {
-    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.toon could not be decoded at: ' + reqPath, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' };
+  const sections = readRequirementsMarkdown(docsDir);
+  if (!sections) {
+    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
   }
-  const hasNotInScope = 'notInScope' in toon;
+  const hasNotInScope = Object.keys(sections).some(k => k.replace(/[_\s]/g, '').includes('notinscope'));
   return {
     level: 'L4', check: 'not_in_scope_section', passed: hasNotInScope,
     evidence: hasNotInScope
-      ? 'notInScope key found in requirements.toon'
-      : 'requirements.toon is missing notInScope key\n修正方法: requirements.toon に notInScope[N]{item}: テーブルを追加し、スコープ外の機能を列挙してください。',
-    ...(!hasNotInScope && { fix: 'notInScopeセクションを追加し、スコープ外の項目を明示してください。', example: 'notInScope[0]{item}:\n  パフォーマンス最適化' }),
+      ? 'notInScope section found in requirements.md'
+      : 'requirements.md is missing notInScope section\n修正方法: requirements.md に ## notInScope セクションを追加し、スコープ外の機能を列挙してください。',
+    ...(!hasNotInScope && { fix: 'notInScopeセクションを追加し、スコープ外の項目を明示してください。', example: '## notInScope\n- パフォーマンス最適化' }),
   };
 }
 
-// CIC-1 (S2-28): Cross-phase intent consistency — ensure requirements.toon reflects userIntent
+// CIC-1 (S2-28): Cross-phase intent consistency — ensure requirements.md reflects userIntent
 export function checkIntentConsistency(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'intent_consistency', passed: true, evidence: 'Intent consistency check not required for phase: ' + phase };
   }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
   if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'intent_consistency', passed: false, evidence: 'requirements.toon not found for intent consistency check', fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
+    return { level: 'L4', check: 'intent_consistency', passed: false, evidence: 'requirements.md not found for intent consistency check', fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
   }
   const rawContent = readFileSync(reqPath, 'utf8').toLowerCase();
   const stopWords = new Set(['する', 'ある', 'いる', 'こと', 'ため', 'から', 'まで', 'また', 'この', 'その', 'また', 'そして', 'the', 'and', 'for', 'this', 'that', 'with', 'from', 'into']);
@@ -92,8 +113,8 @@ export function checkIntentConsistency(state: TaskState, phase: string, docsDir:
   if (missing.length >= 3) {
     return {
       level: 'L4', check: 'intent_consistency', passed: false,
-      evidence: `意図整合性警告: ${missing.length}語が requirements.toon に未反映: ${missing.slice(0, 5).join(', ')}\n修正方法: requirements.toon にユーザー意図の主要キーワードを反映してください。`,
-      fix: 'requirements.toonにユーザー意図の主要キーワードを反映してください。',
+      evidence: `意図整合性警告: ${missing.length}語が requirements.md に未反映: ${missing.slice(0, 5).join(', ')}\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。`,
+      fix: 'requirements.mdにユーザー意図の主要キーワードを反映してください。',
     };
   }
   const lineCount = rawContent.split('\n').length;
@@ -101,8 +122,8 @@ export function checkIntentConsistency(state: TaskState, phase: string, docsDir:
   if (minLineCount > 0 && lineCount < minLineCount) {
     return {
       level: 'L4', check: 'intent_consistency', passed: false,
-      evidence: `requirements.toon が不十分な詳細度: ${lineCount}行 < 最低${minLineCount}行（userIntent長/${5}）\n修正方法: requirements.toon に各機能要件・AC・制約の詳細を追記してください。`,
-      fix: 'requirements.toonに各機能要件・AC・制約の詳細を追記してください。',
+      evidence: `requirements.md が不十分な詳細度: ${lineCount}行 < 最低${minLineCount}行（userIntent長/${5}）\n修正方法: requirements.md に各機能要件・AC・制約の詳細を追記してください。`,
+      fix: 'requirements.mdに各機能要件・AC・制約の詳細を追記してください。',
     };
   }
   return { level: 'L4', check: 'intent_consistency', passed: true, evidence: `Intent consistency OK: ${keywords.length - missing.length}/${keywords.length} keywords found, ${lineCount} lines (min ${minLineCount})` };
@@ -123,26 +144,23 @@ export function checkOpenQuestions(state: TaskState, phase: string, docsDir: str
   if (phase !== 'requirements') {
     return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'OPEN_QUESTIONS check not required for phase: ' + phase };
   }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.toon';
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
   if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.toon)を作成してください。' };
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
   }
-  const toon = readRequirementsToon(docsDir);
-  if (!toon) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon could not be decoded at: ' + reqPath, fix: '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' };
+  const sections = readRequirementsMarkdown(docsDir);
+  if (!sections) {
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
   }
-  if (!('openQuestions' in toon)) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.toon is missing openQuestions key\n修正方法: requirements.toon に openQuestions[N]{id,question}: テーブルを追加してください。未解決の場合は空配列にしてください。', fix: 'openQuestionsセクションを追加してください。不明点がなければ空配列。', example: 'openQuestions[0]{id,question}:\n  OQ-1\n  パフォーマンス要件の具体的な数値は？' };
+  const oqKey = Object.keys(sections).find(k => k.replace(/[_\s]/g, '').includes('openquestions'));
+  if (!oqKey) {
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md is missing openQuestions section\n修正方法: requirements.md に ## openQuestions セクションを追加してください。未解決の場合は空にしてください。', fix: 'openQuestionsセクションを追加してください。不明点がなければ空セクション。', example: '## openQuestions\n' };
   }
-  const oq = toon['openQuestions'];
-  let hasOpen = false;
-  if (Array.isArray(oq)) {
-    hasOpen = oq.some(item => isOpenQuestion(item));
-  } else {
-    hasOpen = isOpenQuestion(oq);
-  }
+  const content = sections[oqKey];
+  // Empty or "なし" means no open questions (resolved)
+  const hasOpen = content !== '' && content !== 'なし' && content.trim().length > 0;
   if (hasOpen) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'openQuestionsに未解決の質問が残っています。全て解決するか、openQuestions: なし に変更してください。', fix: 'openQuestionsの未解決質問を解決してください。' };
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。', fix: 'openQuestionsの未解決質問を解決してください。' };
   }
-  return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'openQuestions key found in requirements.toon with no open items' };
+  return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'openQuestions section found in requirements.md with no open items' };
 }

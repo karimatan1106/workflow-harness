@@ -5,8 +5,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { encode as toonEncode } from '@toon-format/toon';
-
 import { runDoDChecks } from '../gates/dod.js';
 import { createTempDir, removeTempDir, makeMinimalState, buildValidArtifact } from './dod-test-helpers.js';
 
@@ -21,24 +19,29 @@ afterEach(() => {
   removeTempDir(tempDir);
 });
 
-/** Build a valid TOON artifact with extra additionalNotes content for pattern tests. */
-function buildToonWithNote(note: string): string {
-  return toonEncode({
-    phase: 'research',
-    taskId: 'test-task-id',
-    ts: new Date().toISOString(),
-    decisions: [
-      { id: 'D-001', statement: 'Decision one for research: providing real substantive information about the topic in detail', rationale: 'Rationale one: context and reasoning for decision in the artifact content' },
-      { id: 'D-002', statement: 'Decision two for research: providing real substantive information about the topic in detail', rationale: 'Rationale two: context and reasoning for decision in the artifact content' },
-      { id: 'D-003', statement: 'Decision three for research: providing real substantive information about the topic in detail', rationale: 'Rationale three: context and reasoning for decision in the artifact content' },
-      { id: 'D-004', statement: 'Decision four for research: providing real substantive information about the topic in detail', rationale: 'Rationale four: context and reasoning for decision in the artifact content' },
-      { id: 'D-005', statement: 'Decision five for research: providing real substantive information about the topic in detail', rationale: 'Rationale five: context and reasoning for decision in the artifact content' },
-      { id: 'D-006', statement: 'Decision six for research: providing real substantive information about the topic in detail', rationale: 'Rationale six: context and reasoning for decision in the artifact content' },
-    ],
-    artifacts: [{ path: 'docs/output.toon', role: 'spec', summary: 'Primary output artifact for this phase containing all decisions' }],
-    next: { criticalDecisions: ['D-001', 'D-002', 'D-003'], readFiles: ['docs/output.toon'], warnings: ['No warnings for this test artifact'] },
-    additionalNotes: note,
-  });
+/** Build a valid Markdown artifact with extra additionalNotes content for pattern tests. */
+function buildMdWithNote(note: string): string {
+  const lines = [
+    '## decisions',
+    '- D-001: Decision one for research: providing real substantive information about the topic in detail (Rationale one)',
+    '- D-002: Decision two for research: providing real substantive information about the topic in detail (Rationale two)',
+    '- D-003: Decision three for research: providing real substantive information about the topic in detail (Rationale three)',
+    '- D-004: Decision four for research: providing real substantive information about the topic in detail (Rationale four)',
+    '- D-005: Decision five for research: providing real substantive information about the topic in detail (Rationale five)',
+    '- D-006: Decision six for research: providing real substantive information about the topic in detail (Rationale six)',
+    '',
+    '## artifacts',
+    '- docs/output.md: spec - Primary output artifact for this phase containing all decisions',
+    '',
+    '## next',
+    '- criticalDecisions: D-001, D-002, D-003',
+    '- readFiles: docs/output.md',
+    '- warnings: No warnings for this test artifact',
+    '',
+    '## additionalNotes',
+    note,
+  ];
+  return lines.join('\n');
 }
 
 // ─── L3: Artifact Quality ─────────────────────────
@@ -47,21 +50,20 @@ describe('L3 artifact quality check', () => {
   it('passes L3 with a well-formed TOON artifact meeting content and density', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next']);
-    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l3 = result.checks.find(c => c.level === 'L3')!;
     expect(l3.passed).toBe(true);
   });
 
-  it('passes L3 parse check even with minimal fields (content validated by L4)', async () => {
+  it('passes L3 with minimal headings but fails L4 delta_entry_format', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    const minimal = toonEncode({ phase: 'research' });
-    writeFileSync(join(docsDir, 'research.toon'), minimal, 'utf8');
+    const minimal = '## decisions\nMinimal\n\n## artifacts\nMinimal\n\n## next\nMinimal';
+    writeFileSync(join(docsDir, 'research.md'), minimal, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l3 = result.checks.find(c => c.level === 'L3')!;
-    // L3 only checks TOON parsability now — content checks moved to L4
     expect(l3.passed).toBe(true);
-    // But L4 should catch missing required keys (decisions, artifacts, next)
+    // L4 should catch insufficient content format
     const l4 = result.checks.find(c => c.check === 'delta_entry_format')!;
     expect(l4.passed).toBe(false);
   });
@@ -72,7 +74,7 @@ describe('L3 artifact quality check', () => {
 describe('L4 forbidden pattern detection', () => {
   it('fails L4 when artifact TOON value contains "TODO"', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('This item requires TODO work before completion.'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('This item requires TODO work before completion.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
@@ -81,7 +83,7 @@ describe('L4 forbidden pattern detection', () => {
 
   it('fails L4 when artifact TOON value contains Japanese forbidden word "未定"', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('この値は未定です。後で決定する。'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('この値は未定です。後で決定する。'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
@@ -90,7 +92,7 @@ describe('L4 forbidden pattern detection', () => {
 
   it('fails L4 when artifact TOON value contains "TBD"', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Value is TBD and not yet determined.'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('Value is TBD and not yet determined.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
@@ -100,7 +102,7 @@ describe('L4 forbidden pattern detection', () => {
   it('passes L4 when TOON artifact contains no forbidden patterns', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
@@ -109,7 +111,7 @@ describe('L4 forbidden pattern detection', () => {
   it('passes L4 when forbidden word is inside an inline backtick in TOON value', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     // The inline backtick stripping in extractNonCodeLines removes `TODO` from line
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Use `TODO` comments to mark placeholders in code.'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('Use `TODO` comments to mark placeholders in code.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
@@ -121,7 +123,7 @@ describe('L4 forbidden pattern detection', () => {
 describe('L4 bracket placeholder detection', () => {
   it('fails L4 when artifact TOON value contains a [#xxx#] placeholder', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('The value is [#insert-value-here#].'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('The value is [#insert-value-here#].'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
@@ -130,7 +132,7 @@ describe('L4 bracket placeholder detection', () => {
 
   it('does NOT fail L4 for normal text without bracket placeholders', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('See RFC-1234 for reference documentation.'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('See RFC-1234 for reference documentation.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
@@ -139,7 +141,7 @@ describe('L4 bracket placeholder detection', () => {
   it('does NOT fail L4 when bracket placeholder is inside an inline backtick', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     // Inline backtick stripping in extractNonCodeLines removes `[#placeholder#]` from line
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithNote('Use `[#placeholder#]` pattern in templates.'), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithNote('Use `[#placeholder#]` pattern in templates.'), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);

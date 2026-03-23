@@ -42,7 +42,7 @@ describe('Retry and VDB-1 detection', () => {
     const token = startRes.sessionToken as string;
     const docsDir = startRes.docsDir as string;
     mkdirSync(docsDir, { recursive: true });
-    // Create valid hearing.toon to pass hearing phase DoD
+    // Create valid hearing.md to pass hearing phase DoD
     const hearingToon = [
       'phase: hearing',
       'summary: test hearing for vdb1',
@@ -51,10 +51,10 @@ describe('Retry and VDB-1 detection', () => {
       '  D-HR-1, "test decision", "test rationale"',
       '',
       'artifacts[1]{path,role,summary}:',
-      '  hearing.toon, spec, "hearing output"',
+      '  hearing.md, spec, "hearing output"',
       '',
       'next(criticalDecisions,readFiles,warnings):',
-      '  none, hearing.toon, none',
+      '  none, hearing.md, none',
       '',
       '# padding to reach minLines threshold',
       '# line 14',
@@ -66,7 +66,7 @@ describe('Retry and VDB-1 detection', () => {
       '# line 20',
       '# line 21',
     ].join('\n');
-    writeFileSync(join(docsDir, 'hearing.toon'), hearingToon, 'utf8');
+    writeFileSync(join(docsDir, 'hearing.md'), hearingToon, 'utf8');
     // Advance past hearing via approval gate (hearing requires approval)
     const approveRes = await call(mgr, 'harness_approve', {
       taskId,
@@ -76,7 +76,7 @@ describe('Retry and VDB-1 detection', () => {
     expect(approveRes.error).toBeUndefined();
     expect(approveRes.nextPhase).toBe('scope_definition');
     // Now on scope_definition: create output that passes P2 (>=100 bytes) but fails DoD
-    writeFileSync(join(docsDir, 'scope-definition.toon'), 'x'.repeat(150), 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
@@ -99,7 +99,7 @@ describe('Retry and VDB-1 detection', () => {
     const docsDir = startRes.docsDir as string;
     // Create output file that passes P2 pre-check but fails DoD L4
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'hearing.toon'), 'x'.repeat(150), 'utf8');
+    writeFileSync(join(docsDir, 'hearing.md'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {
       taskId,
       sessionToken: token,
@@ -120,7 +120,7 @@ describe('Retry and VDB-1 detection', () => {
     const docsDir = startRes.docsDir as string;
     // Create output file that passes P2 pre-check but fails DoD
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'hearing.toon'), 'x'.repeat(150), 'utf8');
+    writeFileSync(join(docsDir, 'hearing.md'), 'x'.repeat(150), 'utf8');
     // Increment counter 5 times (each call with retryCount >= 1 increments)
     for (let i = 0; i < 5; i++) {
       await call(mgr, 'harness_next', { taskId, sessionToken: token, retryCount: 1 });

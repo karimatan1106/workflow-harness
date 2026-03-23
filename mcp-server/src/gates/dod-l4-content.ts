@@ -67,10 +67,20 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
     else if (toonCheck.missingKeys.length > 0) errors.push(`Missing required TOON keys: ${toonCheck.missingKeys.join(', ')}`);
   }
 
+  // Markdown section checks for .md phase artifacts (DJ-1)
+  if (extname(outputFile) === '.md') {
+    const requiredSections = config.requiredSections ?? [];
+    if (requiredSections.length > 0) {
+      const headings = content.split('\n').filter(l => /^#{1,3}\s/.test(l)).map(l => l.replace(/^#+\s*/, '').trim().toLowerCase());
+      const missing = requiredSections.filter(s => !headings.includes(s.toLowerCase()));
+      if (missing.length > 0) errors.push(`Missing required Markdown sections: ${missing.join(', ')}`);
+    }
+  }
+
   const passed = errors.length === 0;
   return {
     level: 'L4', check: 'content_validation', passed,
     evidence: passed ? 'Content validation passed: no forbidden patterns, placeholders, or duplicates' : errors.join('; '),
-    ...(!passed && { fix: errors.some(e => e.includes('Forbidden')) ? '指摘された禁止語を削除し、具体的な実例に置き換えてください。' : errors.some(e => e.includes('Duplicate')) ? '繰り返されている行をそれぞれ異なる内容に書き換えてください。' : errors.some(e => e.includes('Missing required TOON')) ? '必須TOONキー(decisions/artifacts/next)を成果物に追加してください。' : errors.some(e => e.includes('TOON parse')) ? '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' : '指摘された内容バリデーションエラーを修正してください。' }),
+    ...(!passed && { fix: errors.some(e => e.includes('Forbidden')) ? '指摘された禁止語を削除し、具体的な実例に置き換えてください。' : errors.some(e => e.includes('Duplicate')) ? '繰り返されている行をそれぞれ異なる内容に書き換えてください。' : errors.some(e => e.includes('Missing required TOON')) ? '必須TOONキー(decisions/artifacts/next)を成果物に追加してください。' : errors.some(e => e.includes('Missing required Markdown')) ? '必須セクション(## decisions/## artifacts/## next)を追加してください。' : errors.some(e => e.includes('TOON parse')) ? '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' : '指摘された内容バリデーションエラーを修正してください。' }),
   };
 }

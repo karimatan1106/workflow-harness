@@ -66,15 +66,15 @@ describe('AC-2: registry.ts docs_update config', () => {
     config = PHASE_REGISTRY.docs_update as unknown as Record<string, unknown>;
   });
 
-  it('TC-AC2-01: outputFile is {docsDir}/docs-update.toon', () => {
-    expect(config.outputFile).toBe('{docsDir}/docs-update.toon');
+  it('TC-AC2-01: outputFile is {docsDir}/docs-update.md', () => {
+    expect(config.outputFile).toBe('{docsDir}/docs-update.md');
   });
 
-  it('TC-AC2-02: inputFiles contains planning.toon, requirements.toon, code-review.toon', () => {
+  it('TC-AC2-02: inputFiles contains planning.md, requirements.md, code-review.md', () => {
     const inputFiles = config.inputFiles as string[];
-    expect(inputFiles).toContain('{docsDir}/planning.toon');
-    expect(inputFiles).toContain('{docsDir}/requirements.toon');
-    expect(inputFiles).toContain('{docsDir}/code-review.toon');
+    expect(inputFiles).toContain('{docsDir}/planning.md');
+    expect(inputFiles).toContain('{docsDir}/requirements.md');
+    expect(inputFiles).toContain('{docsDir}/code-review.md');
   });
 
   it('TC-AC2-03: requiredSections is [decisions, artifacts, next]', () => {
@@ -96,11 +96,11 @@ describe('AC-2: registry.ts docs_update config', () => {
   });
 });
 
-describe('AC-3: OUTPUT_FILE_TO_PHASE contains docs-update.toon', () => {
-  it('TC-AC3-01: definitions.ts source contains docs-update.toon mapping', () => {
+describe('AC-3: OUTPUT_FILE_TO_PHASE contains docs-update.md', () => {
+  it('TC-AC3-01: definitions.ts source contains docs-update.md mapping', () => {
     const defsPath = join(__dirname, '..', 'phases', 'definitions.ts');
     const source = readFileSync(defsPath, 'utf8');
-    expect(source).toContain("'docs-update.toon': 'docs_update'");
+    expect(source).toContain("'docs-update.md': 'docs_update'");
   });
 });
 

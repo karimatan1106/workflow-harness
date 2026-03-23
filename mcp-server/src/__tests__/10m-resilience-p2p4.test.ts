@@ -42,7 +42,7 @@ describe('P2: output file existence pre-check (AC-2)', () => {
     const mgr = ctx.createMgr();
     const { taskId, sessionToken } = await createTaskAtPhase('scope_definition');
 
-    // Do NOT create the output file (scope-definition.toon)
+    // Do NOT create the output file (scope-definition.md)
     const res = await ctx.call(mgr, 'harness_next', {
       taskId,
       sessionToken,
@@ -61,7 +61,7 @@ describe('P2: output file existence pre-check (AC-2)', () => {
     // Create valid output file with 100+ bytes
     const artifact = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'scope-definition.toon'), artifact, 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), artifact, 'utf8');
 
     const res = await ctx.call(mgr, 'harness_next', {
       taskId,
@@ -88,10 +88,10 @@ describe('P2: output file existence pre-check (AC-2)', () => {
     mkdirSync(docsDir, { recursive: true });
 
     // Create required input files along the way
-    writeFileSync(join(docsDir, 'scope-definition.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'research.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-design.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
-    writeFileSync(join(docsDir, 'test-selection.toon'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
+    writeFileSync(join(docsDir, 'test-selection.md'), buildValidArtifact(['decisions', 'artifacts', 'next'], 6), 'utf8');
 
     sessionToken = await ctx.advanceUntilPhase(mgr, taskId, sessionToken, 'test_impl');
 
@@ -116,7 +116,7 @@ describe('P4: output file size pre-check (AC-4)', () => {
     // Create a file with only 50 bytes
     mkdirSync(docsDir, { recursive: true });
     const smallContent = 'x'.repeat(50);
-    writeFileSync(join(docsDir, 'scope-definition.toon'), smallContent, 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), smallContent, 'utf8');
 
     const res = await ctx.call(mgr, 'harness_next', {
       taskId,
@@ -134,7 +134,7 @@ describe('P4: output file size pre-check (AC-4)', () => {
 
     mkdirSync(docsDir, { recursive: true });
     const exactContent = 'x'.repeat(100);
-    writeFileSync(join(docsDir, 'scope-definition.toon'), exactContent, 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), exactContent, 'utf8');
 
     const res = await ctx.call(mgr, 'harness_next', {
       taskId,
@@ -151,7 +151,7 @@ describe('P4: output file size pre-check (AC-4)', () => {
     const { taskId, sessionToken, docsDir } = await createTaskAtPhase('scope_definition');
 
     mkdirSync(docsDir, { recursive: true });
-    writeFileSync(join(docsDir, 'scope-definition.toon'), '', 'utf8');
+    writeFileSync(join(docsDir, 'scope-definition.md'), '', 'utf8');
 
     const res = await ctx.call(mgr, 'harness_next', {
       taskId,

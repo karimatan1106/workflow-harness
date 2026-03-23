@@ -10,7 +10,7 @@ import type { TaskState, PhaseConfig, RTMEntry } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-/** L3 artifact quality: TOON parse check only. Content quality is validated by L4. */
+/** L3 artifact quality: Markdown section check for .md files, TOON parse check for .toon files. Content quality is validated by L4. */
 export function checkL3Quality(phase: string, docsDir: string, workflowDir: string): DoDCheckResult {
   const config: PhaseConfig | undefined = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
   if (!config || !config.outputFile) {
@@ -19,6 +19,18 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
   const outputFile = resolveProjectPath(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
   if (!existsSync(outputFile)) {
     return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Cannot check quality: file missing: ${outputFile}`, fix: '成果物ファイルが指定パスに存在しません。正しいパスに保存してください。' };
+  }
+  if (outputFile.endsWith('.md')) {
+    const content = readFileSync(outputFile, 'utf8');
+    const requiredSections = config.requiredSections ?? [];
+    if (requiredSections.length > 0) {
+      const headings = content.split('\n').filter(l => /^#{1,3}\s/.test(l)).map(l => l.replace(/^#+\s*/, '').trim().toLowerCase());
+      const missing = requiredSections.filter(s => !headings.includes(s.toLowerCase()));
+      if (missing.length > 0) {
+        return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Missing required sections: ${missing.join(', ')}. Add ## headings for each.`, fix: `成果物に以下のMarkdownヘッダーを追加してください: ${missing.map(s => '## ' + s).join(', ')}` };
+      }
+    }
+    return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'Markdown section check passed' };
   }
   if (!outputFile.endsWith('.toon')) {
     return { level: 'L3', check: 'artifact_quality', passed: true, evidence: 'Non-TOON file, skipping TOON quality check' };

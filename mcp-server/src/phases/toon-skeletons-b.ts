@@ -4,12 +4,12 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-export const TOON_SKELETON_THREAT_MODELING = `★ 以下のスケルトンをそのまま穴埋めして threat-model.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_THREAT_MODELING = `★ 以下のスケルトンをそのまま穴埋めして threat-model.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: threat_modeling
 task: {taskName}
 status: complete
-inputArtifact: {docsDir}/requirements.toon
+inputArtifact: {docsDir}/requirements.md
 
 strideAnalysis[N]{id,category,threat,likelihood,impact,mitigation}:
   TM-01, <S|T|R|I|D|E>, <脅威の説明>, <低|中|高>, <低|中|高>, <緩和策>
@@ -38,12 +38,12 @@ next:
 
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。`;
 
-export const TOON_SKELETON_PLANNING = `★ 以下のスケルトンをそのまま穴埋めして planning.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_PLANNING = `★ 以下のスケルトンをそのまま穴埋めして planning.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: planning
 task: {taskName}
 status: complete
-inputArtifact: {docsDir}/requirements.toon
+inputArtifact: {docsDir}/requirements.md
 
 architectureDecisions[N]{id,decision,alternatives,rationale}:
   AD-1, <設計判断>, <検討した代替案>, <選択理由>
@@ -76,12 +76,12 @@ next:
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。
 リファクタ時の実装順序: 削除→正規化→インターフェース設計→階層化→構造化→分割。`;
 
-export const TOON_SKELETON_UI_DESIGN = `★ 以下のスケルトンをそのまま穴埋めして ui-design.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_UI_DESIGN = `★ 以下のスケルトンをそのまま穴埋めして ui-design.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: ui_design
 task: {taskName}
 status: complete
-inputArtifact: {docsDir}/planning.toon
+inputArtifact: {docsDir}/planning.md
 
 components[N]{id,name,responsibility,props}:
   UID-01, <コンポーネント名>, <責務>, <主要Props>

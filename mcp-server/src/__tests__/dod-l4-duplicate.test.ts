@@ -21,24 +21,22 @@ afterEach(() => {
 });
 
 /**
- * Build a TOON file with N identical decision rows (same id, statement, rationale).
- * This produces N identical raw lines in the TOON text, triggering duplicate detection.
+ * Build a Markdown file with N identical decision rows.
+ * This produces N identical raw lines, triggering duplicate detection.
  */
-function buildToonWithDuplicateRows(count: number): string {
-  const dupRow = '  DUP-001,This exact duplicate line appears multiple times in the document and is very problematic,Duplicate rationale text for testing purposes only';
+function buildMdWithDuplicateRows(count: number): string {
+  const dupRow = '- DUP-001: This exact duplicate line appears multiple times in the document and is very problematic for quality (Duplicate rationale text for testing purposes only)';
   const rows = Array(count).fill(dupRow).join('\n');
   return [
-    'phase: research',
-    'taskId: test-task-id',
-    'ts: "2026-03-01T00:00:00Z"',
-    `decisions[${count}]{id,statement,rationale}:`,
+    '## decisions',
     rows,
-    'artifacts[1]{path,role,summary}:',
-    '  docs/output.toon,spec,Primary output artifact for this phase containing all decisions',
-    'next:',
-    '  criticalDecisions[1]: DUP-001',
-    '  readFiles[1]: docs/output.toon',
-    '  warnings[0]:',
+    '',
+    '## artifacts',
+    '- docs/output.md: spec - Primary output artifact',
+    '',
+    '## next',
+    '- criticalDecisions: DUP-001',
+    '- readFiles: docs/output.md',
   ].join('\n');
 }
 
@@ -47,7 +45,7 @@ function buildToonWithDuplicateRows(count: number): string {
 describe('L4 duplicate line detection', () => {
   it('fails L4 when the same non-structural line appears 3 or more times', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(3), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(3), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
@@ -56,7 +54,7 @@ describe('L4 duplicate line detection', () => {
 
   it('does NOT fail L4 when a line appears only twice', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.toon'), buildToonWithDuplicateRows(2), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(2), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
@@ -65,7 +63,7 @@ describe('L4 duplicate line detection', () => {
   it('does NOT flag structural TOON lines as duplicates even when repeated', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);
@@ -75,7 +73,7 @@ describe('L4 duplicate line detection', () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     // Valid TOON content with no duplicates should always pass
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);

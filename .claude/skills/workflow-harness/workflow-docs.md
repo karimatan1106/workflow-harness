@@ -67,18 +67,18 @@ Diagrams: `docs/architecture/diagrams/` (system-wide) / `docs/spec/diagrams/` (p
 | `docs/guides/storybook-setup.md` | Storybook setup |
 
 ### research
-- `{docsDir}/research.toon` (required)
+- `{docsDir}/research.md` (required)
 
 ### requirements
 - `docs/glossary.md` (update) / `docs/spec/user-stories/{name}.md` / `docs/spec/journeys/{persona}-{journey}.md`
-- `docs/spec/features/{name}.md` (required) / `{docsDir}/requirements.toon` (required)
+- `docs/spec/features/{name}.md` (required) / `{docsDir}/requirements.md` (required)
 
 ### threat_modeling (parallel_analysis)
-- `{docsDir}/threat-model.toon` (required) / `docs/security/threat-models/{project}.md` (required)
+- `{docsDir}/threat-model.md` (required) / `docs/security/threat-models/{project}.md` (required)
 
 ### planning (parallel_analysis)
 - `docs/spec/database/{table}.md` / `docs/spec/api/{api}.md` / `docs/architecture/modules/{module}.md` (all required)
-- `{docsDir}/spec.toon` (required). Note: auth/caching/performance are project-common.
+- `{docsDir}/planning.md` (required). Note: auth/caching/performance are project-common.
 
 ### state_machine / flowchart (parallel_design)
 - `{docsDir}/state-machine.mmd` + `docs/spec/diagrams/{target}.state-machine.mmd` (required)
@@ -87,33 +87,33 @@ Diagrams: `docs/architecture/diagrams/` (system-wide) / `docs/spec/diagrams/` (p
 ### ui_design (parallel_design, waits for state_machine + flowchart)
 - `docs/spec/sitemap.md` / `docs/spec/screens/{name}.md` / `docs/spec/components/{name}.md` (Storybook story定義含む)
 - Optional: interactions/ responsive/ accessibility/ seo/ i18n/ messages/
-- `{docsDir}/ui-design.toon` (required). CDD: Component specs must include Storybook story definitions.
+- `{docsDir}/ui-design.md` (required). CDD: Component specs must include Storybook story definitions.
 
 ### design_review
 No documents. Review and approval only.
 
 ### test_design
-- `docs/testing/plans/{project}.md` / `{docsDir}/test-design.toon` (both required)
+- `docs/testing/plans/{project}.md` / `{docsDir}/test-design.md` (both required)
 
 ### test_impl [CDD: Red Phase]
 - `src/**/*.stories.tsx` (Storybook stories) / `src/**/*.test.ts` (failing tests)
 
 ### implementation [CDD: Green Phase]
 - `src/**/*.tsx` (make stories + tests pass) / `docs/architecture/decisions/{NNNN-title}.md` (optional ADR)
-- Pre-impl checklist: read spec.toon, state-machine.mmd, flowchart.mmd, ui-design.toon, test-design.toon
+- Pre-impl checklist: read planning.md, state-machine.mmd, flowchart.mmd, ui-design.md, test-design.md
 
 ### refactoring / build_check
 No documents. Code quality / build error fixes only.
 
 ### code_review (parallel_quality)
-- `{docsDir}/code-review.toon` (required): design-impl consistency, quality, security, performance, user intent
+- `{docsDir}/code-review.md` (required): design-impl consistency, quality, security, performance, user intent
 
 ### testing
 - `docs/testing/reports/{project}-{date}.md` (required)
 
 ### parallel_verification
-- manual_test: `{docsDir}/manual-test.toon` / security_scan: `{docsDir}/security-scan.toon`
-- performance_test: `{docsDir}/performance-test.toon` / e2e_test: `{docsDir}/e2e-test.toon`
+- manual_test: `{docsDir}/manual-test.md` / security_scan: `{docsDir}/security-scan.md`
+- performance_test: `{docsDir}/performance-test.md` / e2e_test: `{docsDir}/e2e-test.md`
 
 ### docs_update
 - Update `docs/architecture/overview.md`, `docs/operations/` (environments/deployment/monitoring/runbooks)

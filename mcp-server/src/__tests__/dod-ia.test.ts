@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { encode as toonEncode } from '@toon-format/toon';
 
 import { runDoDChecks } from '../gates/dod.js';
 import { createTempDir, removeTempDir, makeMinimalState, buildValidArtifact } from './dod-test-helpers.js';
@@ -32,7 +31,7 @@ describe('L4 AC→design mapping check (IA-3)', () => {
     expect(check.evidence).toContain('not required');
   });
 
-  it('fails when design-review.toon is missing', async () => {
+  it('fails when design-review.md is missing', async () => {
     const state = makeMinimalState('design_review', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_design_mapping')!;
@@ -40,27 +39,36 @@ describe('L4 AC→design mapping check (IA-3)', () => {
     expect(check.evidence).toContain('not found');
   });
 
-  it('fails when design-review.toon lacks acDesignMapping key', async () => {
+  it('fails when design-review.md lacks acDesignMapping section', async () => {
     const state = makeMinimalState('design_review', tempDir, docsDir);
-    const content = toonEncode({ phase: 'design_review', taskId: 'test', ts: new Date().toISOString(), decisions: [{ id: 'D-001', statement: 'Review content', rationale: 'Reason' }] });
-    writeFileSync(join(docsDir, 'design-review.toon'), content, 'utf8');
+    const content = '## decisions\n- D-001: Review content (Reason)\n';
+    writeFileSync(join(docsDir, 'design-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_design_mapping')!;
     expect(check.passed).toBe(false);
     expect(check.evidence).toContain('missing');
   });
 
-  it('passes when design-review.toon has acDesignMapping key and no ACs defined', async () => {
+  it('passes when design-review.md has acDesignMapping section and no ACs defined', async () => {
     const state = makeMinimalState('design_review', tempDir, docsDir);
     state.acceptanceCriteria = [];
-    const content = toonEncode({
-      phase: 'design_review', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [{ id: 'D-001', statement: 'Review complete', rationale: 'All criteria reviewed' }],
-      acDesignMapping: [{ acId: 'AC-1', designElement: 'InputValidator component' }],
-      artifacts: [{ path: 'docs/design-review.toon', role: 'spec', summary: 'Design review artifact' }],
-      next: { criticalDecisions: ['D-001'], readFiles: ['docs/design-review.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'design-review.toon'), content, 'utf8');
+    const content = [
+      '## decisions',
+      '- D-001: Review complete (All criteria reviewed)',
+      '',
+      '## acDesignMapping',
+      '- AC-1: InputValidator component',
+      '',
+      '## artifacts',
+      '- docs/design-review.md: spec - Design review artifact',
+      '',
+      '## next',
+      '- criticalDecisions: D-001',
+      '- readFiles: docs/design-review.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'design-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_design_mapping')!;
     expect(check.passed).toBe(true);
@@ -73,14 +81,23 @@ describe('L4 AC→design mapping check (IA-3)', () => {
       { id: 'AC-1', description: 'Validate input', status: 'open' },
       { id: 'AC-2', description: 'Handle errors', status: 'open' },
     ];
-    const content = toonEncode({
-      phase: 'design_review', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [{ id: 'D-001', statement: 'Review complete', rationale: 'Partial review' }],
-      acDesignMapping: [{ acId: 'AC-1', designElement: 'InputValidator component only' }],
-      artifacts: [{ path: 'docs/design-review.toon', role: 'spec', summary: 'Design review artifact' }],
-      next: { criticalDecisions: ['D-001'], readFiles: ['docs/design-review.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'design-review.toon'), content, 'utf8');
+    const content = [
+      '## decisions',
+      '- D-001: Review complete (Partial review)',
+      '',
+      '## acDesignMapping',
+      '- AC-1: InputValidator component only',
+      '',
+      '## artifacts',
+      '- docs/design-review.md: spec - Design review artifact',
+      '',
+      '## next',
+      '- criticalDecisions: D-001',
+      '- readFiles: docs/design-review.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'design-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_design_mapping')!;
     expect(check.passed).toBe(false);
@@ -93,17 +110,24 @@ describe('L4 AC→design mapping check (IA-3)', () => {
       { id: 'AC-1', description: 'Validate input', status: 'open' },
       { id: 'AC-2', description: 'Handle errors', status: 'open' },
     ];
-    const content = toonEncode({
-      phase: 'design_review', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [{ id: 'D-001', statement: 'Review complete for all ACs', rationale: 'Full review' }],
-      acDesignMapping: [
-        { acId: 'AC-1', designElement: 'InputValidator component' },
-        { acId: 'AC-2', designElement: 'ErrorHandler component' },
-      ],
-      artifacts: [{ path: 'docs/design-review.toon', role: 'spec', summary: 'Design review artifact' }],
-      next: { criticalDecisions: ['D-001'], readFiles: ['docs/design-review.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'design-review.toon'), content, 'utf8');
+    const content = [
+      '## decisions',
+      '- D-001: Review complete for all ACs (Full review)',
+      '',
+      '## acDesignMapping',
+      '- AC-1: InputValidator component',
+      '- AC-2: ErrorHandler component',
+      '',
+      '## artifacts',
+      '- docs/design-review.md: spec - Design review artifact',
+      '',
+      '## next',
+      '- criticalDecisions: D-001',
+      '- readFiles: docs/design-review.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'design-review.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_design_mapping')!;
     expect(check.passed).toBe(true);
@@ -121,7 +145,7 @@ describe('L4 AC→TC traceability mapping check (IA-4)', () => {
     expect(check.evidence).toContain('not required');
   });
 
-  it('fails when test-design.toon is missing', async () => {
+  it('fails when test-design.md is missing', async () => {
     const state = makeMinimalState('test_design', tempDir, docsDir);
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_tc_mapping')!;
@@ -129,35 +153,40 @@ describe('L4 AC→TC traceability mapping check (IA-4)', () => {
     expect(check.evidence).toContain('not found');
   });
 
-  it('fails when test-design.toon lacks acTcMapping key', async () => {
+  it('fails when test-design.md lacks acTcMapping key', async () => {
     const state = makeMinimalState('test_design', tempDir, docsDir);
     const content = buildValidArtifact(['decisions', 'artifacts', 'next'], 6);
-    writeFileSync(join(docsDir, 'test-design.toon'), content, 'utf8');
+    writeFileSync(join(docsDir, 'test-design.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_tc_mapping')!;
     expect(check.passed).toBe(false);
     expect(check.evidence).toContain('missing');
   });
 
-  it('passes when test-design.toon has acTcMapping key', async () => {
+  it('passes when test-design.md has acTcMapping key', async () => {
     const state = makeMinimalState('test_design', tempDir, docsDir);
-    const base = toonEncode({
-      phase: 'test_design', taskId: 'test', ts: new Date().toISOString(),
-      decisions: [
-        { id: 'TD-001', statement: 'Test design decision one providing details', rationale: 'Reason one' },
-        { id: 'TD-002', statement: 'Test design decision two providing details', rationale: 'Reason two' },
-        { id: 'TD-003', statement: 'Test design decision three providing details', rationale: 'Reason three' },
-        { id: 'TD-004', statement: 'Test design decision four providing details', rationale: 'Reason four' },
-        { id: 'TD-005', statement: 'Test design decision five providing details', rationale: 'Reason five' },
-      ],
-      acTcMapping: [
-        { acId: 'AC-1', testCases: ['TC-AC1-01', 'TC-AC1-02'] },
-        { acId: 'AC-2', testCases: ['TC-AC2-01'] },
-      ],
-      artifacts: [{ path: 'docs/test-design.toon', role: 'spec', summary: 'Test design artifact' }],
-      next: { criticalDecisions: ['TD-001'], readFiles: ['docs/test-design.toon'], warnings: [] },
-    });
-    writeFileSync(join(docsDir, 'test-design.toon'), base, 'utf8');
+    const content = [
+      '## decisions',
+      '- TD-001: Test design decision one providing details (Reason one)',
+      '- TD-002: Test design decision two providing details (Reason two)',
+      '- TD-003: Test design decision three providing details (Reason three)',
+      '- TD-004: Test design decision four providing details (Reason four)',
+      '- TD-005: Test design decision five providing details (Reason five)',
+      '',
+      '## acTcMapping',
+      '- AC-1: TC-AC1-01, TC-AC1-02',
+      '- AC-2: TC-AC2-01',
+      '',
+      '## artifacts',
+      '- docs/test-design.md: spec - Test design artifact',
+      '',
+      '## next',
+      '- criticalDecisions: TD-001',
+      '- readFiles: docs/test-design.md',
+      '- warnings:',
+      '',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'test-design.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const check = result.checks.find(c => c.check === 'ac_tc_mapping')!;
     expect(check.passed).toBe(true);

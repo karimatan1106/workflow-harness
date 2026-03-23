@@ -6,7 +6,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-export const TOON_SKELETON_SCOPE_DEFINITION = `★ 以下のスケルトンをそのまま穴埋めして scope-definition.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_SCOPE_DEFINITION = `★ 以下のスケルトンをそのまま穴埋めして scope-definition.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: scope_definition
 task: {taskName}
@@ -37,12 +37,12 @@ next:
 
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。`;
 
-export const TOON_SKELETON_RESEARCH = `★ 以下のスケルトンをそのまま穴埋めして research.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。最低50行。
+export const TOON_SKELETON_RESEARCH = `★ 以下のスケルトンをそのまま穴埋めして research.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。最低50行。
 
 phase: research
 task: {taskName}
 status: complete
-inputArtifact: {docsDir}/scope-definition.toon
+inputArtifact: {docsDir}/scope-definition.md
 
 existingPatterns[N]{id,pattern,location,description}:
   EP-1, <パターン名>, <場所>, <説明>
@@ -73,7 +73,7 @@ next:
 
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。`;
 
-export const TOON_SKELETON_IMPACT_ANALYSIS = `★ 以下のスケルトンをそのまま穴埋めして impact-analysis.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_IMPACT_ANALYSIS = `★ 以下のスケルトンをそのまま穴埋めして impact-analysis.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: impact_analysis
 task: {taskName}
@@ -105,12 +105,12 @@ next:
 
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。impactedFilesとunaffectedModulesは両方必須。`;
 
-export const TOON_SKELETON_REQUIREMENTS = `★ 以下のスケルトンをそのまま穴埋めして requirements.toon を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
+export const TOON_SKELETON_REQUIREMENTS = `★ 以下のスケルトンをそのまま穴埋めして requirements.md を作成すること。<...> を実際の値に置換。[N]は実件数に置換。
 
 phase: requirements
 task: {taskName}
 status: complete
-inputArtifact: {docsDir}/research.toon
+inputArtifact: {docsDir}/research.md
 
 functionalRequirements[N]{id,description,source,priority}:
   REQ-F1, <機能要件の説明>, <要件の出典>, <must|should|could>
@@ -177,10 +177,10 @@ export const TOON_SKELETON_HEARING = `
 :end decisions
 
 :section artifacts
-:artifact hearing.toon :status draft
+:artifact hearing.md :status draft
 :end artifacts
 
 :section next
-:next scope_definition :input hearing.toon
+:next scope_definition :input hearing.md
 :end next
 `;

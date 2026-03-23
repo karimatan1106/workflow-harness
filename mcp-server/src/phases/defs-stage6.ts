@@ -12,7 +12,7 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
     model: 'sonnet',
     bashCategories: ['readonly', 'testing'],
     inputFiles: [],
-    outputFile: '{docsDir}/performance-test.toon',
+    outputFile: '{docsDir}/performance-test.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# performance_testフェーズ
@@ -29,7 +29,7 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
 4. 改善提案
 
 出力
-{docsDir}/performance-test.toon に保存してください。
+{docsDir}/performance-test.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -42,7 +42,7 @@ export const DEFS_STAGE6: Record<string, PhaseDefinition> = {
     model: 'sonnet',
     bashCategories: ['readonly', 'testing'],
     inputFiles: [],
-    outputFile: '{docsDir}/e2e-test.toon',
+    outputFile: '{docsDir}/e2e-test.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 40,
     subagentTemplate: `# e2e_testフェーズ
@@ -58,7 +58,7 @@ E2Eテストを実施してください。
 3. テスト結果の記録
 
 出力
-{docsDir}/e2e-test.toon に保存してください。
+{docsDir}/e2e-test.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}
@@ -70,8 +70,8 @@ E2Eテストを実施してください。
     description: 'Update specifications, README, CHANGELOG',
     model: 'sonnet',
     bashCategories: ['readonly', 'implementation'],
-    inputFiles: ['{docsDir}/planning.toon', '{docsDir}/requirements.toon', '{docsDir}/code-review.toon'],
-    outputFile: '{docsDir}/docs-update.toon',
+    inputFiles: ['{docsDir}/planning.md', '{docsDir}/requirements.md', '{docsDir}/code-review.md'],
+    outputFile: '{docsDir}/docs-update.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
     subagentTemplate: `# docs_updateフェーズ
@@ -81,7 +81,7 @@ E2Eテストを実施してください。
 
 Step 1: DCI で更新対象ドキュメントを特定
 各変更ファイルに dci_query_docs を実行し、関連設計書を特定。乖離があるものを更新対象に追加。
-impact-analysis.toon の designDocsToReview も参照。DCI未構築時はスキップ。
+impact-analysis.md の designDocsToReview も参照。DCI未構築時はスキップ。
 
 {docCategories}
 
@@ -172,7 +172,7 @@ CI/CDパイプラインの結果を確認してください。
     model: 'sonnet',
     bashCategories: ['readonly'],
     inputFiles: [],
-    outputFile: '{docsDir}/health-report.toon',
+    outputFile: '{docsDir}/health-report.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 20,
     subagentTemplate: `# health_observationフェーズ
@@ -187,7 +187,7 @@ CI/CDパイプラインの結果を確認してください。
 3. パフォーマンスメトリクスの確認
 
 出力
-{docsDir}/health-report.toon に保存してください。
+{docsDir}/health-report.md に保存してください。
 
 {SUMMARY_SECTION}
 {BASH_CATEGORIES}

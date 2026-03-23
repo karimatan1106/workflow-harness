@@ -11,7 +11,7 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
     description: 'Write failing tests (TDD Red phase)',
     model: 'opus',
     bashCategories: ['readonly', 'testing'],
-    inputFiles: ['{docsDir}/test-design.toon', '{docsDir}/test-selection.toon'],
+    inputFiles: ['{docsDir}/test-design.md', '{docsDir}/test-selection.md'],
     outputFile: null,
     requiredSections: [],
     minLines: 0,
@@ -21,12 +21,12 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 - タスク名: {taskName}
 
 入力
-- {docsDir}/test-design.toon
-- {docsDir}/test-selection.toon
+- {docsDir}/test-design.md
+- {docsDir}/test-selection.md
 
 作業内容
 テスト設計に基づきテストコードを作成してください（TDD Redフェーズ）。
-1. test-design.toonのテストケースを実装
+1. test-design.mdのテストケースを実装
 2. テストは失敗する状態で作成（実装コードがまだないため）
 3. テストファイルのパスを記録
 
@@ -42,7 +42,7 @@ TDD Red記録: harness_record_test_result(taskId, exitCode: 1, summary: "Red pha
     description: 'Write code to pass tests (TDD Green phase)',
     model: 'opus',
     bashCategories: ['readonly', 'testing', 'implementation'],
-    inputFiles: ['{docsDir}/planning.toon', '{docsDir}/test-design.toon'],
+    inputFiles: ['{docsDir}/planning.md', '{docsDir}/test-design.md'],
     outputFile: null,
     requiredSections: [],
     minLines: 0,
@@ -53,17 +53,17 @@ TDD Red記録: harness_record_test_result(taskId, exitCode: 1, summary: "Red pha
 
 入力
 以下の設計成果物を全て読み込んでから実装してください:
-- {docsDir}/planning.toon
+- {docsDir}/planning.md
 - {docsDir}/state-machine.mmd
 - {docsDir}/flowchart.mmd
-- {docsDir}/ui-design.toon
-- {docsDir}/test-design.toon
+- {docsDir}/ui-design.md
+- {docsDir}/test-design.md
 
 設計チェックリスト（実装開始前に必須確認）
-- planning.toonに記載された全機能を実装したか
+- planning.mdに記載された全機能を実装したか
 - state-machine.mmdの全状態遷移を実装したか
 - flowchart.mmdの全処理フローを実装したか
-- test-design.toonの全テストケースに対応するコードがあるか
+- test-design.mdの全テストケースに対応するコードがあるか
 
 作業内容
 テストが通るように実装コードを作成してください。
@@ -137,7 +137,7 @@ ${REFACTORING_STRATEGY}
     model: 'opus',
     bashCategories: ['readonly'],
     inputFiles: [],
-    outputFile: '{docsDir}/code-review.toon',
+    outputFile: '{docsDir}/code-review.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,
     subagentTemplate: `# code_reviewフェーズ
@@ -149,9 +149,9 @@ ${REFACTORING_STRATEGY}
 
 入力
 以下の設計成果物と実装コードを比較してください:
-- {docsDir}/planning.toon
-- {docsDir}/requirements.toon
-- {docsDir}/threat-model.toon
+- {docsDir}/planning.md
+- {docsDir}/requirements.md
+- {docsDir}/threat-model.md
 
 レビュー姿勢（SRB-1）
 外部レビュアーの視点でレビューすること。実装者と同一セッションの知識を前提にしないこと。
@@ -159,7 +159,7 @@ ${REFACTORING_STRATEGY}
 
 作業内容
 設計と実装の整合性を検証してください。
-1. planning.toonの全機能が実装されているか
+1. planning.mdの全機能が実装されているか
 2. 設計書にない追加機能（勝手な追加）がないか
 3. ユーザー意図が正しく反映されているか
 4. セキュリティ要件の対策実装確認
@@ -173,7 +173,7 @@ ${REFACTORING_STRATEGY}
 不合格のACが1件でもある場合、承認がブロックされる。
 
 出力
-{docsDir}/code-review.toon に保存してください。
+{docsDir}/code-review.md に保存してください。
 
 承認ゲートです。
 
