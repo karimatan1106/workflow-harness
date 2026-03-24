@@ -1,27 +1,2 @@
-tasks[25]{taskId,taskName,phase,size,status}:
-  09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5,3層E2Eスモークテスト-v2,scope_definition,small,active
-  0963bf20-4201-494c-ad1b-32e6b476e97e,docs-workflows-refactoring,completed,large,completed
-  175345eb-5fb9-477f-805d-d61bc92ad417,guard-agent-bridge-visibility,build_check,small,active
-  2458d771-2994-41b3-99ff-726ac75a7946,Windows混在パスセパレータ修正,completed,small,completed
-  27a3413e-3850-45b9-a1cd-bd77869f0450,md-preview-log-pane,implementation,small,active
-  2b0a25ad-8c4c-433f-9d19-8bf998f4fed9,smallタスクDoD最適化(FB#2-#8),completed,small,completed
-  366612b8-730b-4208-8733-eecb97b9fcdc,fix-delegate-work-extractResult,implementation,small,active
-  3edce1b6-b4cf-4131-8bc4-51ca65d2d989,3層E2E検証-v3,scope_definition,small,active
-  449737a1-c619-4d66-808f-06adf184131c,delegate-work-e2e-test,scope_definition,small,active
-  4bdf73af-ba05-40ef-9920-467637f811de,サイズ判定改善(harness_start size引数追加),completed,small,completed
-  5c32b072-1d7a-401e-ac7f-d88a6fdad547,log-pane-shellpath-test,implementation,small,active
-  6e08c57b-b642-413f-a5cb-f6784cde5273,delegate-workログリアルタイム表示修正,commit,small,active
-  71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c,delegate-work高速化,commit,small,active
-  8ad74731-3726-4b76-9faf-0af1a774581c,worker-progress-viewer,implementation,small,active
-  8f94fc2b-5386-49f9-b87e-e441c8c86914,3層E2Eスモークテスト,scope_definition,small,active
-  9533abf6-5982-4039-82d3-f72fe7d3b3d6,harness_delegate_coordinator TOON正式パース実装,completed,small,completed
-  9e34853b-9ec3-42c7-9f4a-2c0e5f5d04fc,workflow-harness-refactoring-v2,implementation,large,active
-  a0e87be6-7db4-4213-9988-977dae15a4e1,workflow-harness-refactoring,completed,large,completed
-  a2bfc912-4a69-4a6b-85f4-f0916f7a5046,3層構造ドキュメント更新,implementation,small,active
-  b452aaef-8ed3-43fd-8d2c-83c4fca00b5d,3層guard-AGENT-ID判別,commit,small,active
-  d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f,harness_record_proofブロック修正＋docsDir パス不一致修正,completed,small,completed
-  dbe2dd2b-ff23-4365-b31f-39d963a0f632,HANDOFF更新,scope_definition,small,active
-  e5d5f2f9-0839-400b-8c10-e3809ea9b5da,3層構造ドキュメント更新,implementation,small,active
-  f2b7a7eb-253b-4805-9369-e8adfa5552a6,mcp-logging-test,implementation,small,active
-  f33e889a-4b74-4c0a-a293-f367fd7e3d2b,tool-gate-commit-push,completed,medium,completed
-updatedAt: "2026-03-24T15:17:30.598Z"
+tasks[0]{taskId,taskName,phase,size,status}:
+updatedAt: 2026-03-24T16:51:16.000Z

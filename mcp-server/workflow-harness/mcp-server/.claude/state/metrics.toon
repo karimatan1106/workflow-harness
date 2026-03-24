@@ -101,6 +101,12 @@ tasks:
   "6e08c57b-b642-413f-a5cb-f6784cde5273":
     taskName: delegate-workログリアルタイム表示修正
     phases:
+      commit:
+        startedAt: "2026-03-24T15:38:17.978Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:38:17.978Z"
     retries: 5
     dodFailures: 5
     startedAt: "2026-03-15T22:18:34.130Z"
@@ -755,8 +761,8 @@ aggregate:
   completedTasks: 6
   totalRetries: 53
   totalDoDFailures: 53
-  totalPhaseTransitions: 159
-  firstPassPhases: 134
+  totalPhaseTransitions: 160
+  firstPassPhases: 135
   phaseTimings:
     scope_definition:
       count: 15
@@ -795,9 +801,9 @@ aggregate:
       totalMs: 240708
       avgMs: 24071
     commit:
-      count: 6
+      count: 7
       totalMs: 278456
-      avgMs: 46409
+      avgMs: 39779
     push:
       count: 6
       totalMs: 23877
