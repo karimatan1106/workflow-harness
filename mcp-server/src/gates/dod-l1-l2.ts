@@ -3,17 +3,14 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { resolveProjectPath } from '../utils/project-root.js';
 import type { TaskState, PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-const SPEC_REGEX = /[/*]\s*@spec\s+(\S+)/g;
-const SPEC_CHECK_PHASES = new Set([
-  'implementation', 'refactoring', 'build_check', 'code_review',
-]);
+// Re-export spec checks so existing imports from this module continue to work
+export { checkSpecPathsExist } from './dod-spec.js';
 
 export function checkL1FileExists(phase: string, docsDir: string, workflowDir: string): DoDCheckResult {
   const config: PhaseConfig | undefined = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
@@ -165,57 +162,5 @@ export function checkTestRegression(state: TaskState, phase: string): DoDCheckRe
     evidence: existingFailures.length > 0
       ? `No new regressions. ${existingFailures.length} pre-existing failure(s) carried over: ${existingFailures.join(', ')}`
       : 'No new regressions. All tests passing.',
-  };
-}
-
-/** Resolve @spec path: try CWD first, then ancestor directories of the source file */
-function resolveSpecPath(specPath: string, sourceFile: string): boolean {
-  if (existsSync(specPath)) return true;
-  // Walk up from source file's directory to find subproject root
-  let dir = dirname(sourceFile);
-  const seen = new Set<string>();
-  while (dir && !seen.has(dir)) {
-    seen.add(dir);
-    if (existsSync(join(dir, specPath))) return true;
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return false;
-}
-
-/** Validate that @spec paths in scope files actually exist on filesystem */
-export function checkSpecPathsExist(state: TaskState, phase: string): DoDCheckResult {
-  if (!SPEC_CHECK_PHASES.has(phase)) {
-    return { level: 'L1', check: 'spec_paths_exist', passed: true, evidence: '@spec path check not required for phase: ' + phase };
-  }
-  const scopeFiles = state.scopeFiles ?? [];
-  if (scopeFiles.length === 0) {
-    return { level: 'L1', check: 'spec_paths_exist', passed: true, evidence: 'No scope files to check' };
-  }
-  const broken: string[] = [];
-  for (const filePath of scopeFiles) {
-    if (!existsSync(filePath)) continue;
-    let content: string;
-    try { content = readFileSync(filePath, 'utf8'); } catch { continue; }
-    const lines = content.split('\n').slice(0, 50).join('\n');
-    const regex = new RegExp(SPEC_REGEX.source, 'g');
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(lines)) !== null) {
-      const specPath = match[1].replace(/\*\/$/, '');
-      if (specPath && !resolveSpecPath(specPath, filePath)) {
-        broken.push(`${filePath} → @spec ${specPath}`);
-      }
-    }
-  }
-  const passed = broken.length === 0;
-  return {
-    level: 'L1',
-    check: 'spec_paths_exist',
-    passed,
-    evidence: passed
-      ? `All @spec paths in ${scopeFiles.length} scope files are valid`
-      : `Broken @spec references: ${broken.join('; ')}`,
-    ...(!passed && { fix: '@specコメントが参照するファイルが存在しません。パスを修正するか、仕様書を作成してください。' }),
   };
 }

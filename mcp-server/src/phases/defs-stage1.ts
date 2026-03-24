@@ -4,94 +4,12 @@
  */
 
 import type { PhaseDefinition } from './definitions-shared.js';
+import { SCOPE_DEFINITION } from './defs-stage1a.js';
+
+export { SCOPE_DEFINITION } from './defs-stage1a.js';
 
 export const DEFS_STAGE1: Record<string, PhaseDefinition> = {
-  scope_definition: {
-    description: 'Define affected files/directories and set risk score',
-    model: 'opus',
-    bashCategories: ['readonly'],
-    inputFiles: [],
-    outputFile: '{docsDir}/scope-definition.md',
-    requiredSections: ['decisions', 'artifacts', 'next'],
-    minLines: 30,
-    subagentTemplate: `# scope_definitionフェーズ
-
-タスク情報
-- タスク名: {taskName}
-- ユーザー意図: {userIntent}
-- 出力先: {docsDir}/
-
-作業内容
-対象プロジェクトを調査し、変更の影響範囲を特定してください。
-
-Step 0: Serena利用可否チェック
-\`indexer/.venv/Scripts/python.exe -c "from serena.agent import SerenaAgent" 2>/dev/null && echo "SERENA_OK" || echo "SERENA_UNAVAILABLE"\`
-SERENA_UNAVAILABLEならStep 1b/2bフォールバック使用。
-Step 1: LSP-firstエントリポイント検索（LLM推測禁止）
-ユーザー意図のキーワードでLSP検索し、候補を絞り込む:
-\`\`\`bash
-# 1a. キーワードで全出現箇所を検索（--limit 100で制御）
-indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 search_for_pattern --substring_pattern "<意図のキーワード>" --restrict_search_to_code_files true
-# 1b. モジュール構造から候補ディレクトリを確認
-indexer/.venv/Scripts/python.exe indexer/serena-query.py get_symbols_overview --relative_path <候補dir>
-# 1c. 候補シンボルの定義位置を確定
-indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 50 find_symbol --name_path_pattern "<候補名>"
-\`\`\`
-結果が多すぎる場合（_pagination.has_more: true）→ パターンを絞り込んで再検索。
-フォールバック(1b): Grep/Globで \`grep -r "キーワード" src/ | head -50\` を使用。
-
-Step 2: 依存追跡（分岐係数制御）
-Step 1で確定したエントリポイントから参照元を辿る:
-\`\`\`bash
-# 2a. 直接参照元を取得（--limit 100で各hop最大100件）
-indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <確定したname_path> --relative_path <file>
-\`\`\`
-分岐係数ルール: 各hopで最大100件。has_more: true時はパターン絞り込みで再検索。
-depth: 収束するまで追跡（安全上限10hop）。各hop最大100件。
-収束チェック: 前hopと同じファイル集合なら打ち切り（新規ファイルなし=影響範囲確定）。
-フォールバック(2b): Grep/Globで \`grep -r "import.*<module>" src/\` を使用。
-
-Step 3.5: プロジェクト性質判定
-package.json/tsconfig/ディレクトリ構造からプロジェクト性質を判定し、harness_set_scopeのprojectTraitsに設定:
-- hasUI: React/Vue/Angular/Svelte等のUI FW存在
-- hasAPI: Express/Fastify/REST/GraphQL等のAPI層存在
-- hasDB: Prisma/TypeORM/Sequelize/SQL等のDB層存在
-- hasEvents: EventEmitter/MQ/WebSocket等のイベント機構存在
-- hasI18n: i18next/react-intl/vue-i18n等の国際化FW存在
-- hasDesignSystem: Storybook/designTokens/theme等のデザインシステム存在
-
-Step 3.6: DCI 関連設計書クエリ
-dci_build_index でインデックスを構築し、各scope fileに対して dci_query_docs を実行。
-結果の relatedDesignDocs をscope-definition.mdに記録:
-\`\`\`
-relatedDesignDocs: ["docs/spec/features/xxx.md", ...]
-\`\`\`
-DCI未構築・@specなしの場合はスキップ可。
-
-Step 3.7: 既存ドキュメント探索
-プロジェクト内の既存ドキュメントファイルを探索し、harness_set_scopeのdocPathsに設定:
-\`\`\`bash
-find . -maxdepth 4 -type f \\( -name "*.md" -o -name "*.rst" -o -name "*.adoc" \\) \\
-  -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" \\
-  -not -path "*/docs/workflows/*" | head -50
-\`\`\`
-対象: README, CHANGELOG, docs/, wiki/, specifications/ 等
-除外: node_modules, .git, dist, docs/workflows(一時ワークフロー)
-
-Step 3: スコープ設定
-1. 列挙したファイルで harness_set_scope を呼び出す（max 100ファイル、projectTraits + docPaths含む）
-2. リスクスコアの算出根拠を記録。リファクタ時は呼び出し元なしの未使用ファイルも記録（削除候補）
-3. スコープ外の項目を明示
-
-出力
-{docsDir}/scope-definition.md に保存してください。
-{SUMMARY_SECTION}
-{TOON_SKELETON_SCOPE_DEFINITION}
-{BASH_CATEGORIES}
-{ARTIFACT_QUALITY}
-{PROCEDURE_ORDER}
-{EXIT_CODE_RULE}`,
-  },
+  scope_definition: SCOPE_DEFINITION,
 
   research: {
     description: 'Investigate codebase, existing patterns, dependencies',
@@ -128,10 +46,10 @@ task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.md out:{docsDi
     subagentTemplate: `# impact_analysisフェーズ
 task:{taskName} intent:{userIntent} in:{docsDir}/scope-definition.md,{docsDir}/research.md out:{docsDir}/impact-analysis.md
 
-逆依存グラフ構築（Serena利用可能時）: entry_pointsに対してSerenaで逆依存を列挙。
-\`indexer/.venv/Scripts/python.exe indexer/serena-query.py --limit 100 find_referencing_symbols --name_path <name-path> --relative_path <file>\`
-分岐係数ルール: 各hopで最大100件。収束するまで追跡（安全上限15hop）。収束=前hopと同じファイル集合。
-フォールバック: Grep/Globで \`grep -r "import.*from.*<module>" src/\` を使用。
+逆依存グラフ構築: entry_pointsに対して逆依存を列挙。
+\`grep -r "import.*from.*<module>" src/ | head -50\`
+Serena MCP が利用可能な場合は find_referencing_symbols を使用。
+収束するまで追跡（安全上限15hop）。収束=前hopと同じファイル集合。
 
 分析項目
 1. 逆依存グラフから間接的に影響を受けるモジュールを特定

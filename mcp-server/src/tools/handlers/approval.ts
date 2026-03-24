@@ -107,12 +107,10 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
       if (existsSync(filePath)) sm.recordArtifactHash(taskId, filePath, createHash('sha256').update(readFileSync(filePath)).digest('hex'));
     } catch { /* non-blocking */ }
   }
-  const result = sm.advancePhase(taskId);
-  if (!result.success) return respondError(result.error ?? 'Failed to advance after approval');
   const requiresUser = USER_APPROVAL_REQUIRED[approvalType] ?? false;
   const response: Record<string, unknown> = {
-    approved: true, approvalType, previousPhase: task.phase,
-    nextPhase: result.nextPhase, userApprovalRequired: requiresUser,
+    approved: true, approvalType, phase: task.phase,
+    nextAction: 'call harness_next', userApprovalRequired: requiresUser,
   };
   if (requiresUser) {
     response.userGateWarning = 'This approval requires explicit user confirmation. Do not self-approve.';

@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { findProjectRoot, readStdin } = require('./hook-utils');
+const { findProjectRoot, readStdin, parseHookInput } = require('./hook-utils');
 
 const THRESHOLD = 30;
 const REREAD_LIMIT = 3;
@@ -114,8 +114,8 @@ function injectSubagentKnowledge(root) {
 
 async function runHook() {
   const raw = await readStdin();
-  let inp;
-  try { inp = JSON.parse(raw); } catch (_) { process.exit(0); }
+  const inp = parseHookInput(raw);
+  if (!inp) process.exit(0);
 
   const tn = inp.tool_name || inp.tool || '';
   const ti = inp.tool_input || inp.input || {};

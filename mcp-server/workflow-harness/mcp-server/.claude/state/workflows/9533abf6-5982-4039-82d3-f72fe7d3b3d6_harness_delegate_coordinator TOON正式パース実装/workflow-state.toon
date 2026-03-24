@@ -1,0 +1,64 @@
+taskId: 9533abf6-5982-4039-82d3-f72fe7d3b3d6
+taskName: harness_delegate_coordinator TOON正式パース実装
+version: 4
+phase: completed
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: harness_delegate_coordinatorの入力(instruction)と出力(coordinator返答)の両方に正式なTOONパーサーを実装する。現状はLLMの暗黙的解釈に依存しているため、determinisicなパーサーを介在させる。
+refinedIntent: instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される / coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される / パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている / 既存のテストが通る
+docsDir: docs\workflows\harness_delegate_coordinator TOON正式パース実装
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\9533abf6-5982-4039-82d3-f72fe7d3b3d6_harness_delegate_coordinator TOON正式パース実装
+sessionToken: d726ef3422e8dafb912659b78cf5e313c78cb2b4f13e76351412930622616134
+stateIntegrity: 2d18f3cff58a0d64748272f9f178ee13bedc8afbf04f051968c66b6dd111ccbf
+createdAt: 2026-03-16T16:43:19.584Z
+updatedAt: 2026-03-17T12:00:33.112Z
+requirementCount: 5
+completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing;commit;push
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+acceptanceCriteria[5]{id,description,status,testCaseId,proofTier}:
+  AC-1, instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される, open, , 
+  AC-2, coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される, open, , 
+  AC-3, パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている, open, , 
+  AC-4, 既存のテストが通る, open, , 
+  AC-5, MCP全ツールのリクエスト/レスポンスが.agent/mcp-debug.logに記録され、エラー発生時の切り分けが可能, open, , 
+proofLog[8]{phase,check,level,result,evidence,timestamp}:
+  requirements, AC defined: AC-1, L4, true, instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される, 2026-03-17T07:01:03.620Z
+  requirements, AC defined: AC-2, L4, true, coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される, 2026-03-17T07:01:10.520Z
+  requirements, AC defined: AC-3, L4, true, パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている, 2026-03-17T07:01:15.093Z
+  requirements, AC defined: AC-4, L4, true, 既存のテストが通る, 2026-03-17T07:01:20.760Z
+  planning, AC defined: AC-5, L4, true, MCP全ツールのリクエスト/レスポンスが.agent/mcp-debug.logに記録され、エラー発生時の切り分けが可能, 2026-03-17T07:07:37.313Z
+  test_impl, tdd_red_evidence, L2, true, TDD Red: 4/4 tests FAIL — TypeError: parseToonKv is not a function (TC-1〜TC-4). テストファイル: workflow-harness/mcp-server/src/__tests__/toon-helpers.test.ts, 2026-03-17T07:29:07.619Z
+  test_impl, TDD-1, L2, true, TDD Red: 4/4 tests FAIL — TypeError: parseToonKv is not a function. File: workflow-harness/mcp-server/src/__tests__/toon-helpers.test.ts, 2026-03-17T07:29:39.472Z
+  test_impl, TDD-1, L2, false, TDD Red: 4/4 tests FAIL — TypeError: parseToonKv is not a function. File: workflow-harness/mcp-server/src/__tests__/toon-helpers.test.ts, 2026-03-17T07:30:10.009Z
+retryCount[2]{phase,count}:
+  requirements, 1
+  test_design, 1
+approvals[2]{type,approvedAt}:
+  requirements, 2026-03-17T07:01:31.339Z
+  test_design, 2026-03-17T07:21:32.494Z
+checkpoint.taskId: 9533abf6-5982-4039-82d3-f72fe7d3b3d6
+checkpoint.phase: completed
+checkpoint.timestamp: 2026-03-17T12:00:33.112Z
+checkpoint.sha256: 77609335245968d3d4c8ce9306c9247775029af5055cb56807c844d41b8310ef
+checkpoint.userIntent: harness_delegate_coordinatorの入力(instruction)と出力(coordinator返答)の両方に正式なTOONパーサーを実装する。現状はLLMの暗黙的解釈に依存しているため、determinisicなパーサーを介在させる。
+checkpoint.refinedIntent: instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される / coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される / パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている / 既存のテストが通る
+checkpoint.completedPhases: scope_definition;research;requirements;planning;test_design;test_impl;implementation;build_check;testing;commit;push
+checkpoint.scopeFiles: 
+checkpoint.acceptanceCriteria[5]{id,description,status,testCaseId,proofTier}:
+  AC-1, instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される, open, , 
+  AC-2, coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される, open, , 
+  AC-3, パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている, open, , 
+  AC-4, 既存のテストが通る, open, , 
+  AC-5, MCP全ツールのリクエスト/レスポンスが.agent/mcp-debug.logに記録され、エラー発生時の切り分けが可能, open, , 

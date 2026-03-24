@@ -2,7 +2,7 @@
 name: harness-rules
 description: AI directives (23 rules), prohibited actions, retry protocol, completion language, artifact quality, and bash categories.
 ---
-> CLAUDE.md Sec4(Forbidden)/Sec6(Retry)/Sec8(Session)/Sec11(Artifact Quality) が権威仕様。本ファイルは実行時ルール詳細。
+> `.claude/rules/forbidden-actions.md`(禁止語・禁止アクション)、`.claude/rules/session-recovery.md`(セッション復帰) が権威仕様。本ファイルは実行時ルール詳細。
 
 ## 1. AI Directives (23 Rules)
 

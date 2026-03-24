@@ -1,0 +1,34 @@
+taskId: f2b7a7eb-253b-4805-9369-e8adfa5552a6
+taskName: mcp-logging-test
+version: 4
+phase: implementation
+size: small
+riskScore.total: 0
+riskScore.fileCount: 0
+riskScore.hasTests: false
+riskScore.hasConfig: false
+riskScore.hasInfra: false
+riskScore.hasSecurity: false
+riskScore.hasDatabase: false
+riskScore.codeLineEstimate: 0
+userIntent: MCP logging通知がClaude Codeに表示されるかテストする
+docsDir: docs\workflows\mcp-logging-test
+workflowDir: workflow-harness\mcp-server\.claude\state\workflows\f2b7a7eb-253b-4805-9369-e8adfa5552a6_mcp-logging-test
+sessionToken: 585debe269e68e833234262cce54eac0394c729a898337b37e28ea95ca393f2a
+stateIntegrity: e1b147144a9c6332155ba3a00ba518207aecfd72568944323f17f114d6a9704a
+createdAt: 2026-03-16T09:41:55.405Z
+updatedAt: 2026-03-16T09:42:28.400Z
+completedPhases: scope_definition;research;requirements;planning;test_design;test_impl
+skippedPhases: impact_analysis;threat_modeling;state_machine;flowchart;ui_design;design_review;test_selection;refactoring;code_review;regression_test;acceptance_verification;manual_test;security_scan;performance_test;e2e_test;docs_update;ci_verification;deploy;health_observation
+scopeFiles: 
+scopeDirs: 
+plannedFiles: 
+openQuestions: 
+notInScope: 
+checkpoint.taskId: f2b7a7eb-253b-4805-9369-e8adfa5552a6
+checkpoint.phase: implementation
+checkpoint.timestamp: 2026-03-16T09:42:28.400Z
+checkpoint.sha256: 5c0f4991cc138501bf15f5dd17df8d3cebf656fe09300b55df00f68cb2bd08d2
+checkpoint.userIntent: MCP logging通知がClaude Codeに表示されるかテストする
+checkpoint.completedPhases: scope_definition;research;requirements;planning;test_design;test_impl
+checkpoint.scopeFiles: 

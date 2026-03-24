@@ -40,11 +40,11 @@ fi
 # Orchestrator: restricted to control-plane tools only
 # ============================================================
 
-# Lifecycle MCP tools
+# Harness MCP tools (all allowed except harness_get_subphase_template)
 is_lifecycle_mcp() {
   case "$1" in
-    mcp__harness__harness_*)
-      return 0 ;;
+    mcp__harness__harness_get_subphase_template) return 1 ;;  # BLOCKED: delegate to coordinator
+    mcp__harness__harness_*) return 0 ;;  # All other harness tools allowed
     *) return 1 ;;
   esac
 }

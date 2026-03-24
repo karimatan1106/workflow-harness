@@ -37,6 +37,8 @@ describe('Parallel Phases', () => {
     });
     const taskId = startRes.taskId as string;
     let token = startRes.sessionToken as string;
+    const docsDir = startRes.docsDir as string;
+    mkdirSync(docsDir, { recursive: true });
 
     // Advance to requirements, add ACs, approve, then advance one more
     token = await advanceUntilPhase(mgr, taskId, token, 'requirements');
@@ -51,6 +53,44 @@ describe('Parallel Phases', () => {
       });
     }
 
+    // Create requirements.md artifact to pass DoD gate on harness_next
+    const requirementsContent = [
+      '## decisions',
+      '- REQ-001: System must pass minimum length requirement for parallel phase testing (Core requirement)',
+      '- REQ-002: System must support acceptance criteria validation (Quality requirement)',
+      '- REQ-003: System must handle parallel phase transitions correctly (Architecture requirement)',
+      '- REQ-004: System must validate session tokens across phase boundaries (Security requirement)',
+      '- REQ-005: System must maintain state consistency during phase advancement (Reliability requirement)',
+      '',
+      '## acceptanceCriteria',
+      '- AC-1: Acceptance criterion 1 for parallel phase testing',
+      '- AC-2: Acceptance criterion 2 for parallel phase testing',
+      '- AC-3: Acceptance criterion 3 for parallel phase testing',
+      '',
+      '## notInScope',
+      '- Performance optimization is excluded from this task',
+      '',
+      '## openQuestions',
+      '',
+      '## artifacts',
+      '- docs/requirements.md: spec - Requirements definition',
+      '',
+      '## next',
+      '- criticalDecisions: REQ-001',
+      '- readFiles: docs/requirements.md',
+    ].join('\n');
+    writeFileSync(join(docsDir, 'requirements.md'), requirementsContent, 'utf8');
+
+    // RTM-REQ: requirements phase needs RTM entries referencing ACs
+    for (let i = 1; i <= 3; i++) {
+      await call(mgr, 'harness_add_rtm', {
+        taskId,
+        id: `F-00${i}`,
+        requirement: `AC-${i}: Acceptance criterion ${i} for parallel phase testing`,
+        sessionToken: token,
+      });
+    }
+
     const approveRes = await call(mgr, 'harness_approve', {
       taskId,
       type: 'requirements',
@@ -58,7 +98,12 @@ describe('Parallel Phases', () => {
     });
     expect(approveRes.error).toBeUndefined();
 
-    // After requirements approval, we should be at the next active phase
+    // Approve no longer advances phases; advance directly via StateManager
+    // (bypasses DoD since this test focuses on parallel phase behavior, not DoD gates)
+    const advResult = mgr.advancePhase(taskId);
+    expect(advResult.error).toBeUndefined();
+
+    // After requirements approval + next, we should be at the next active phase
     const statusAfterApprove = await call(mgr, 'harness_status', { taskId });
     token = statusAfterApprove.sessionToken as string;
     const phaseAfterApprove = statusAfterApprove.phase as string;
@@ -68,8 +113,9 @@ describe('Parallel Phases', () => {
     expect(phaseAfterApprove).not.toBe('requirements');
     expect(phaseAfterApprove).not.toBe('scope_definition');
 
-    // The advance response for approval includes nextPhase
-    expect(typeof approveRes.nextPhase).toBe('string');
+    // The approve response no longer includes nextPhase; use harness_next instead
+    expect(approveRes.nextPhase).toBeUndefined();
+    expect(approveRes.nextAction).toBe('call harness_next');
   });
 
   it('harness_complete_sub marks a sub-phase complete after DoD passes', async () => {

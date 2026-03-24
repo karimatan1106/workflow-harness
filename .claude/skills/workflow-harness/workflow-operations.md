@@ -2,7 +2,7 @@
 name: workflow-operations
 description: Test output placement, MCP server cache management, and package installation rules.
 ---
-> CLAUDE.md Sec12(Bash/コアモジュール再起動) が権威仕様。本ファイルは具体的な配置ルールと手順のみ。
+> `.claude/rules/core-constraints.md`(コア制約)、`workflow-rules.md` Sec6(Bashカテゴリ) が権威仕様。本ファイルは具体的な配置ルールと手順のみ。
 
 ## 1. Test Output Placement
 

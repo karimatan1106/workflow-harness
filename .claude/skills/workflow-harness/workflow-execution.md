@@ -2,7 +2,7 @@
 name: harness-execution
 description: Phase-specific subagent config, bash permissions, error-to-improvement conversion, and edit restrictions.
 ---
-> CLAUDE.md Sec5(Orchestrator)/Sec6(Retry)/Sec12(Bash) が権威仕様。本ファイルはフェーズ別設定のみ。
+> `.claude/rules/tool-delegation.md`(2層モデル)、`workflow-rules.md`(リトライ)、`workflow-operations.md`(Bash) が権威仕様。本ファイルはフェーズ別設定のみ。
 
 ## フェーズ別subagent設定（Agent Teams経由）
 

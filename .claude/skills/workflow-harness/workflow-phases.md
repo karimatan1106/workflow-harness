@@ -2,7 +2,7 @@
 name: harness-phases
 description: 30 phase work descriptions across 8 stages with DoD checks and task sizing.
 ---
-> CLAUDE.md Sec2(Phase一覧)/Sec3(Task Sizing) が権威仕様。本ファイルは各フェーズの作業内容のみ。
+> `CLAUDE.md` How セクション が権威仕様。本ファイルは各フェーズの作業内容のみ。
 
 Phase sets: small(~12)=scope→research→requirements→impl→build→testing→commit→deploy. Medium(~22) adds threat/design/regression/security. Large(30)=all.
 

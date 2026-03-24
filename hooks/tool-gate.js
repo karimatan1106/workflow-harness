@@ -1,6 +1,7 @@
 'use strict';
 const path = require('path');
 const { findProjectRoot, getCurrentPhase, isBypassPath, readStdin, parseHookInput } = require('./hook-utils');
+const { BASH_COMMANDS, PHASE_BASH, PHASE_EXT } = require('./phase-config');
 const fs = require('fs');
 
 // ── Harness lifecycle MCP suffixes (L1 only) ──
@@ -62,70 +63,6 @@ const L3_ALWAYS_BLOCKED = new Set([
   'TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet',
 ]);
 
-// Bash: phase -> allowed command prefixes
-const BASH_COMMANDS = {
-  lsp: ['python serena-query.py', 'indexer/.venv/Scripts/python.exe'],
-  testing: [
-    'npm test', 'npm run test', 'npx vitest', 'npx jest',
-    'npx playwright', 'pytest',
-  ],
-  git: ['git add', 'git commit', 'git push', 'git tag'],
-  security: [
-    'npm audit', 'npx audit-ci', 'detect-secrets', 'semgrep',
-    'npx snyk', 'trivy', 'gitleaks',
-  ],
-};
-
-const PHASE_BASH = {
-  scope_definition: ['lsp'], research: ['lsp'], impact_analysis: ['lsp'],
-  requirements: ['lsp'], threat_modeling: ['lsp'], planning: ['lsp'],
-  state_machine: ['lsp'], flowchart: ['lsp'], ui_design: ['lsp'],
-  design_review: ['lsp'], test_design: ['lsp'], test_selection: ['lsp'],
-  code_review: ['lsp'], manual_test: ['lsp'], acceptance_verification: ['lsp'],
-  docs_update: ['lsp'], ci_verification: ['lsp'], deploy: ['lsp'],
-  health_observation: ['lsp'],
-  test_impl: ['lsp', 'testing'], implementation: ['lsp', 'testing'],
-  refactoring: ['lsp', 'testing'], build_check: ['lsp', 'testing'],
-  testing: ['lsp', 'testing'], regression_test: ['lsp', 'testing'],
-  performance_test: ['lsp', 'testing'], e2e_test: ['lsp', 'testing'],
-  security_scan: ['lsp', 'testing', 'security'],
-  commit: ['git'], push: ['git'],
-};
-
-// Write/Edit: phase -> allowed extensions
-const PHASE_EXT = {
-  scope_definition:        ['.md'],
-  research:                ['.md'],
-  impact_analysis:         ['.md'],
-  requirements:            ['.md'],
-  threat_modeling:         ['.md'],
-  planning:                ['.md'],
-  design_review:           ['.md'],
-  test_design:             ['.md'],
-  test_selection:          ['.md'],
-  code_review:             ['.md'],
-  manual_test:             ['.md'],
-  acceptance_verification: ['.md'],
-  docs_update:             ['.md'],
-  ci_verification:         ['.md'],
-  deploy:                  ['.md'],
-  health_observation:      ['.md'],
-  security_scan:           ['.md'],
-  performance_test:        ['.md'],
-  state_machine:           ['.md', '.mmd'],
-  flowchart:               ['.md', '.mmd'],
-  ui_design:               ['.md', '.mmd'],
-  testing:                 ['.md', '.ts', '.tsx', '.js'],
-  regression_test:         ['.md', '.ts', '.tsx', '.js'],
-  test_impl:               ['.test.ts', '.spec.ts', '.test.tsx', '.spec.tsx', '.md'],
-  implementation:          ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html', '.md', '.py', '.go', '.rs', '.java', '.yml', '.yaml', '.toml', '.env', '.sh'],
-  refactoring:             ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.test.ts', '.spec.ts', '.py', '.go', '.rs', '.java', '.md'],
-  e2e_test:                ['.md', '.test.ts', '.spec.ts'],
-  build_check:             null,
-  commit:                  null,
-  push:                    null,
-  completed:               null,
-};
 
 function getEffectiveExtension(filePath) {
   const base = path.basename(filePath);

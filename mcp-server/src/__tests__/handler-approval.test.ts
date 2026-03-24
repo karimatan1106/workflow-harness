@@ -91,9 +91,10 @@ describe('Approval Gates', () => {
     expect(approveRes.error).toBeUndefined();
     expect(approveRes.approved).toBe(true);
     expect(approveRes.approvalType).toBe('requirements');
-    expect(approveRes.previousPhase).toBe('requirements');
+    expect(approveRes.phase).toBe('requirements');
     // After approval the phase should have advanced past requirements
-    expect(approveRes.nextPhase).not.toBe('requirements');
+    expect(approveRes.nextPhase).toBeUndefined();
+    expect(approveRes.nextAction).toBe('call harness_next');
   });
 
   it('harness_approve rejects wrong approval type for current phase', async () => {
@@ -144,6 +145,6 @@ describe('Approval Gates', () => {
     expect(approveRes.error).toBeUndefined();
     expect(approveRes.approved).toBe(true);
     expect(approveRes.approvalType).toBe('test_design');
-    expect(approveRes.previousPhase).toBe('test_design');
+    expect(approveRes.phase).toBe('test_design');
   });
 });

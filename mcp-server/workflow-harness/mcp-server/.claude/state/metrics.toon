@@ -1,60 +1,884 @@
 version: 1
-totalTasks: 35
-completedTasks: 1
-totalRetries: 7
-totalDoDFailures: 7
-totalPhaseTransitions: 66
-firstPassPhases: 66
-
-aggregatePhaseTimings[11]{phase,count,totalMs,avgMs}:
-  scope_definition, 9, 0, 0
-  research, 8, 1, 0
-  requirements, 7, 0, 0
-  planning, 8, 0, 0
-  test_design, 8, 0, 0
-  test_impl, 8, 0, 0
-  implementation, 6, 0, 0
-  build_check, 5, 0, 0
-  testing, 5, 0, 0
-  commit, 1, 0, 0
-  push, 1, 0, 0
-
-tasks[35]{taskId,taskName,retries,dodFailures,startedAt,completedAt}:
-  449737a1-c619-4d66-808f-06adf184131c, delegate-work-e2e-test, 0, 0, 2026-03-15T14:27:21.801Z, null
-  8f94fc2b-5386-49f9-b87e-e441c8c86914, 3層E2Eスモークテスト, 0, 0, 2026-03-15T17:11:13.286Z, null
-  2458d771-2994-41b3-99ff-726ac75a7946, Windows混在パスセパレータ修正, 0, 0, 2026-03-15T17:16:07.613Z, 2026-03-15T17:24:50.814Z
-  09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5, 3層E2Eスモークテスト-v2, 0, 0, 2026-03-15T17:32:54.700Z, null
-  3edce1b6-b4cf-4131-8bc4-51ca65d2d989, 3層E2E検証-v3, 2, 2, 2026-03-15T17:54:40.496Z, null
-  dbe2dd2b-ff23-4365-b31f-39d963a0f632, HANDOFF更新, 0, 0, 2026-03-15T17:58:47.680Z, null
-  71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c, delegate-work高速化, 0, 0, 2026-03-15T18:00:15.234Z, null
-  175345eb-5fb9-477f-805d-d61bc92ad417, guard-agent-bridge-visibility, 0, 0, 2026-03-15T18:37:47.772Z, null
-  b452aaef-8ed3-43fd-8d2c-83c4fca00b5d, 3層guard-AGENT-ID判別, 0, 0, 2026-03-15T19:28:05.705Z, null
-  df9a5add-3eaa-46eb-bad1-358f0185e461, 3層ガードE2Eテスト, 0, 0, 2026-03-15T21:16:15.237Z, null
-  7d7590b1-6021-4879-aa31-2a1b8ef4dc38, log-pane-debug, 0, 0, 2026-03-15T21:28:48.633Z, null
-  4a15a5d1-4abb-4297-bf19-018ae8eac526, log-pane-e2e-v2, 0, 0, 2026-03-15T21:46:48.245Z, null
-  87b9ddca-d21e-4370-9d2c-ab59206a1156, log-pane-e2e-final, 0, 0, 2026-03-15T21:59:01.491Z, null
-  58159541-727a-40ac-9172-e5676d6591a2, log-pane-final-test, 0, 0, 2026-03-15T22:03:45.465Z, null
-  6e08c57b-b642-413f-a5cb-f6784cde5273, delegate-workログリアルタイム表示修正, 5, 5, 2026-03-15T22:18:34.130Z, null
-  88b8914a-4b41-4957-8516-17a3306b4b40, session-restore, 0, 0, 2026-03-15T23:21:24.391Z, null
-  8f2a7dec-47db-49d7-af82-aeb24a7b4b7d, 3layer-e2e-verify, 0, 0, 2026-03-15T23:36:03.537Z, null
-  ec6391ef-efdb-40f1-b5c8-5bef15008e52, 3layer-e2e-final, 0, 0, 2026-03-15T23:52:49.626Z, null
-  f2c2cf90-ba3a-4ba7-8fe4-44c8447f0dec, log-pane-verify, 0, 0, 2026-03-16T00:10:55.219Z, null
-  1cb488bf-b766-41ac-b04b-176439a625e9, log-append-verify, 0, 0, 2026-03-16T00:20:18.687Z, null
-  cc2e9ef1-d9e2-4797-9ce5-f8c68e54f75b, log-pane-test, 0, 0, 2026-03-16T00:33:40.091Z, null
-  b108538b-dc64-489f-b4cd-7ad0e2160e95, realtime-log-test, 0, 0, 2026-03-16T00:37:16.560Z, null
-  e78b7d80-2119-40f9-9fe2-b22820828bb2, output-channel-test, 0, 0, 2026-03-16T00:45:46.638Z, null
-  00070fd4-e85f-4859-aec9-fd29d774c9c7, terminal-pane-test, 0, 0, 2026-03-16T01:01:16.477Z, null
-  369d5267-9ebf-4a27-8e20-31a60413ecbd, pane-test-v2, 0, 0, 2026-03-16T01:08:24.059Z, null
-  36fcf348-79d5-4931-b898-1c06f27b0341, realtime-final, 0, 0, 2026-03-16T01:19:15.610Z, null
-  9fc52f33-1850-4f1b-90fa-6fff1cf2962e, extension-final-test, 0, 0, 2026-03-16T01:26:45.685Z, null
-  fc64d740-55e3-43b7-8ec6-b4c6f4c3894e, final-pane-test, 0, 0, 2026-03-16T01:33:41.484Z, null
-  b948b00f-3c91-43b5-bcc7-fd1e77d004c8, gitbash-pane-test, 0, 0, 2026-03-16T01:36:11.723Z, null
-  12cd6424-14eb-4024-93d4-44858c4e8c16, log-truncate-fix, 0, 0, 2026-03-16T01:48:13.790Z, null
-  56a545b1-89fd-40e7-86b1-65e3c24740ea, verbose-passthrough-test, 0, 0, 2026-03-16T06:28:19.912Z, null
-  4af65db4-099f-4fc3-a03b-73ee47db3712, stream-render-test, 0, 0, 2026-03-16T06:43:36.609Z, null
-  e9d7e103-4648-4923-8a26-925edc6ea4ae, pane-sendtext-test, 0, 0, 2026-03-16T06:56:38.065Z, null
-  27a3413e-3850-45b9-a1cd-bd77869f0450, md-preview-log-pane, 0, 0, 2026-03-16T07:20:49.449Z, null
-  366612b8-730b-4208-8733-eecb97b9fcdc, fix-delegate-work-extractResult, 0, 0, 2026-03-16T08:59:12.313Z, null
-
-taskPhases_366612b8-730b-4208-8733-eecb97b9fcdc[1]{phase,startedAt,endedAt,durationMs,retries,dodFailurePatterns}:
-  implementation, 2026-03-16T08:59:55.361Z, null, 0, 0, 
+tasks:
+  "449737a1-c619-4d66-808f-06adf184131c":
+    taskName: delegate-work-e2e-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T14:27:21.801Z"
+    completedAt: null
+  "8f94fc2b-5386-49f9-b87e-e441c8c86914":
+    taskName: 3層E2Eスモークテスト
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T17:11:13.286Z"
+    completedAt: null
+  "2458d771-2994-41b3-99ff-726ac75a7946":
+    taskName: Windows混在パスセパレータ修正
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T17:16:07.613Z"
+    completedAt: "2026-03-15T17:24:50.814Z"
+  "09382a0b-340a-4f3f-91ba-f0d8fd6ef1b5":
+    taskName: 3層E2Eスモークテスト-v2
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T17:32:54.700Z"
+    completedAt: null
+  "3edce1b6-b4cf-4131-8bc4-51ca65d2d989":
+    taskName: 3層E2E検証-v3
+    phases:
+    retries: 2
+    dodFailures: 2
+    startedAt: "2026-03-15T17:54:40.496Z"
+    completedAt: null
+  "dbe2dd2b-ff23-4365-b31f-39d963a0f632":
+    taskName: HANDOFF更新
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T17:58:47.680Z"
+    completedAt: null
+  "71ae84b1-c8df-4d41-a8bc-6a11fa3b1e2c":
+    taskName: delegate-work高速化
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T18:00:15.234Z"
+    completedAt: null
+  "175345eb-5fb9-477f-805d-d61bc92ad417":
+    taskName: guard-agent-bridge-visibility
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T18:37:47.772Z"
+    completedAt: null
+  "b452aaef-8ed3-43fd-8d2c-83c4fca00b5d":
+    taskName: 3層guard-AGENT-ID判別
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T19:28:05.705Z"
+    completedAt: null
+  "df9a5add-3eaa-46eb-bad1-358f0185e461":
+    taskName: 3層ガードE2Eテスト
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T21:16:15.237Z"
+    completedAt: null
+  "7d7590b1-6021-4879-aa31-2a1b8ef4dc38":
+    taskName: log-pane-debug
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T21:28:48.633Z"
+    completedAt: null
+  "4a15a5d1-4abb-4297-bf19-018ae8eac526":
+    taskName: log-pane-e2e-v2
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T21:46:48.245Z"
+    completedAt: null
+  "87b9ddca-d21e-4370-9d2c-ab59206a1156":
+    taskName: log-pane-e2e-final
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T21:59:01.491Z"
+    completedAt: null
+  "58159541-727a-40ac-9172-e5676d6591a2":
+    taskName: log-pane-final-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T22:03:45.465Z"
+    completedAt: null
+  "6e08c57b-b642-413f-a5cb-f6784cde5273":
+    taskName: delegate-workログリアルタイム表示修正
+    phases:
+    retries: 5
+    dodFailures: 5
+    startedAt: "2026-03-15T22:18:34.130Z"
+    completedAt: null
+  "88b8914a-4b41-4957-8516-17a3306b4b40":
+    taskName: session-restore
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T23:21:24.391Z"
+    completedAt: null
+  "8f2a7dec-47db-49d7-af82-aeb24a7b4b7d":
+    taskName: 3layer-e2e-verify
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T23:36:03.537Z"
+    completedAt: null
+  "ec6391ef-efdb-40f1-b5c8-5bef15008e52":
+    taskName: 3layer-e2e-final
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-15T23:52:49.626Z"
+    completedAt: null
+  "f2c2cf90-ba3a-4ba7-8fe4-44c8447f0dec":
+    taskName: log-pane-verify
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T00:10:55.219Z"
+    completedAt: null
+  "1cb488bf-b766-41ac-b04b-176439a625e9":
+    taskName: log-append-verify
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T00:20:18.687Z"
+    completedAt: null
+  "cc2e9ef1-d9e2-4797-9ce5-f8c68e54f75b":
+    taskName: log-pane-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T00:33:40.091Z"
+    completedAt: null
+  "b108538b-dc64-489f-b4cd-7ad0e2160e95":
+    taskName: realtime-log-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T00:37:16.560Z"
+    completedAt: null
+  "e78b7d80-2119-40f9-9fe2-b22820828bb2":
+    taskName: output-channel-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T00:45:46.638Z"
+    completedAt: null
+  "00070fd4-e85f-4859-aec9-fd29d774c9c7":
+    taskName: terminal-pane-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:01:16.477Z"
+    completedAt: null
+  "369d5267-9ebf-4a27-8e20-31a60413ecbd":
+    taskName: pane-test-v2
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:08:24.059Z"
+    completedAt: null
+  "36fcf348-79d5-4931-b898-1c06f27b0341":
+    taskName: realtime-final
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:19:15.610Z"
+    completedAt: null
+  "9fc52f33-1850-4f1b-90fa-6fff1cf2962e":
+    taskName: extension-final-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:26:45.685Z"
+    completedAt: null
+  "fc64d740-55e3-43b7-8ec6-b4c6f4c3894e":
+    taskName: final-pane-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:33:41.484Z"
+    completedAt: null
+  "b948b00f-3c91-43b5-bcc7-fd1e77d004c8":
+    taskName: gitbash-pane-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:36:11.723Z"
+    completedAt: null
+  "12cd6424-14eb-4024-93d4-44858c4e8c16":
+    taskName: log-truncate-fix
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T01:48:13.790Z"
+    completedAt: null
+  "56a545b1-89fd-40e7-86b1-65e3c24740ea":
+    taskName: verbose-passthrough-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T06:28:19.912Z"
+    completedAt: null
+  "4af65db4-099f-4fc3-a03b-73ee47db3712":
+    taskName: stream-render-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T06:43:36.609Z"
+    completedAt: null
+  "e9d7e103-4648-4923-8a26-925edc6ea4ae":
+    taskName: pane-sendtext-test
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T06:56:38.065Z"
+    completedAt: null
+  "27a3413e-3850-45b9-a1cd-bd77869f0450":
+    taskName: md-preview-log-pane
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T07:20:49.449Z"
+    completedAt: null
+  "366612b8-730b-4208-8733-eecb97b9fcdc":
+    taskName: fix-delegate-work-extractResult
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-16T08:59:12.313Z"
+    completedAt: null
+  "d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f":
+    taskName: harness_record_proofブロック修正＋docsDir パス不一致修正
+    phases:
+    retries: 7
+    dodFailures: 7
+    startedAt: "2026-03-21T22:00:30.884Z"
+    completedAt: "2026-03-21T23:14:58.249Z"
+  "2b0a25ad-8c4c-433f-9d19-8bf998f4fed9":
+    taskName: smallタスクDoD最適化(FB#2-#8)
+    phases:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-21T23:16:45.482Z"
+    completedAt: "2026-03-21T23:58:22.612Z"
+  "4bdf73af-ba05-40ef-9920-467637f811de":
+    taskName: サイズ判定改善(harness_start size引数追加)
+    phases:
+    retries: 4
+    dodFailures: 4
+    startedAt: "2026-03-22T02:35:00.027Z"
+    completedAt: "2026-03-22T03:35:56.835Z"
+  "a0e87be6-7db4-4213-9988-977dae15a4e1":
+    taskName: workflow-harness-refactoring
+    phases:
+      hearing:
+        startedAt: "2026-03-23T12:22:01.052Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      scope_definition:
+        startedAt: "2026-03-23T13:09:19.536Z"
+        durationMs: 78007
+        retries: 1
+        dodFailurePatterns[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-23T13:10:37.543Z"
+      research:
+        startedAt: "2026-03-23T13:10:37.852Z"
+        durationMs: 2914092
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T13:59:11.944Z"
+      impact_analysis:
+        startedAt: "2026-03-23T13:59:12.802Z"
+        durationMs: 1169094
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T14:18:41.896Z"
+      requirements:
+        startedAt: "2026-03-23T14:18:44.292Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      threat_modeling:
+        startedAt: "2026-03-23T14:26:54.152Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T14:26:54.152Z"
+      planning:
+        startedAt: "2026-03-23T14:26:54.999Z"
+        durationMs: 549427
+        retries: 2
+        dodFailurePatterns[2]: "[L4] Duplicate lines (3+ times): \"dependsOn: none...\" (3x); \"risk: low...\" (6x); \"risk: medium...\" (3x)","[L4] Duplicate lines (3+ times): \"threat: none...\" (3x)"
+        endedAt: "2026-03-23T14:36:04.426Z"
+      state_machine:
+        startedAt: "2026-03-23T14:36:05.278Z"
+        durationMs: 576630
+        retries: 1
+        dodFailurePatterns[1]: "[L4] TOON decode failed: Missing colon after key"
+        endedAt: "2026-03-23T14:45:41.908Z"
+      flowchart:
+        startedAt: "2026-03-23T14:45:42.080Z"
+        durationMs: 101753
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T14:47:23.833Z"
+      ui_design:
+        startedAt: "2026-03-23T14:47:23.932Z"
+        durationMs: 101180
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Duplicate lines (3+ times): \"- 対象外...\" (3x)"
+        endedAt: "2026-03-23T14:49:05.112Z"
+      design_review:
+        startedAt: "2026-03-23T14:49:05.212Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      test_selection:
+        startedAt: "2026-03-23T15:24:50.284Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T15:24:50.284Z"
+      test_impl:
+        startedAt: "2026-03-23T15:24:50.378Z"
+        durationMs: 154363
+        retries: 2
+        dodFailurePatterns[1]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+        endedAt: "2026-03-23T15:27:24.741Z"
+      implementation:
+        startedAt: "2026-03-23T15:27:24.832Z"
+        durationMs: 20363777
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:06:48.609Z"
+      refactoring:
+        startedAt: "2026-03-23T21:06:48.714Z"
+        durationMs: 82316
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:08:11.030Z"
+      build_check:
+        startedAt: "2026-03-23T21:08:11.130Z"
+        durationMs: 69363
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:09:20.493Z"
+      code_review:
+        startedAt: "2026-03-23T21:09:20.590Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      testing:
+        startedAt: "2026-03-23T21:18:46.134Z"
+        durationMs: 57208
+        retries: 1
+        dodFailurePatterns[2]: "[L1] Test results exist but none recorded for current phase: testing","[L2] New test failures detected (4): AC-1-vscode-ext-exists, AC-2-backup-files-exist, AC-5-serena-mcp-missing, AC-6-dead-size-enum"
+        endedAt: "2026-03-23T21:19:43.342Z"
+      regression_test:
+        startedAt: "2026-03-23T21:19:44.175Z"
+        durationMs: 110148
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:21:34.323Z"
+      acceptance_verification:
+        startedAt: "2026-03-23T21:21:34.414Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      manual_test:
+        startedAt: "2026-03-23T21:27:39.010Z"
+        durationMs: 140804
+        retries: 1
+        dodFailurePatterns[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-23T21:29:59.814Z"
+      security_scan:
+        startedAt: "2026-03-23T21:29:59.982Z"
+        durationMs: 210611
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:33:30.593Z"
+      performance_test:
+        startedAt: "2026-03-23T21:33:30.718Z"
+        durationMs: 177399
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:36:28.117Z"
+      e2e_test:
+        startedAt: "2026-03-23T21:36:28.365Z"
+        durationMs: 200441
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:39:48.806Z"
+      docs_update:
+        startedAt: "2026-03-23T21:39:48.900Z"
+        durationMs: 229744
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:43:38.644Z"
+      commit:
+        startedAt: "2026-03-23T21:43:38.855Z"
+        durationMs: 119667
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:45:38.522Z"
+      push:
+        startedAt: "2026-03-23T21:45:38.695Z"
+        durationMs: 10802
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:45:49.497Z"
+      ci_verification:
+        startedAt: "2026-03-23T21:45:49.764Z"
+        durationMs: 126836
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:47:56.600Z"
+      deploy:
+        startedAt: "2026-03-23T21:47:56.692Z"
+        durationMs: 37358
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:48:34.050Z"
+      health_observation:
+        startedAt: "2026-03-23T21:48:34.142Z"
+        durationMs: 152907
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T21:51:07.049Z"
+      completed:
+        startedAt: "2026-03-23T21:51:07.418Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+    retries: 9
+    dodFailures: 9
+    startedAt: "2026-03-23T12:22:01.052Z"
+    completedAt: "2026-03-23T21:51:07.597Z"
+  "9e34853b-9ec3-42c7-9f4a-2c0e5f5d04fc":
+    taskName: workflow-harness-refactoring-v2
+    phases:
+      hearing:
+        startedAt: "2026-03-23T22:05:08.559Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      scope_definition:
+        startedAt: "2026-03-23T22:20:24.203Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:20:24.203Z"
+      research:
+        startedAt: "2026-03-23T22:20:24.297Z"
+        durationMs: 307329
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:25:31.626Z"
+      impact_analysis:
+        startedAt: "2026-03-23T22:25:31.718Z"
+        durationMs: 217907
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:29:09.625Z"
+      requirements:
+        startedAt: "2026-03-23T22:29:09.717Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      threat_modeling:
+        startedAt: "2026-03-23T22:39:13.024Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:39:13.024Z"
+      planning:
+        startedAt: "2026-03-23T22:39:13.114Z"
+        durationMs: 151265
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:41:44.379Z"
+      state_machine:
+        startedAt: "2026-03-23T22:41:44.465Z"
+        durationMs: 27496
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:42:11.961Z"
+      flowchart:
+        startedAt: "2026-03-23T22:42:12.048Z"
+        durationMs: 60029
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:43:12.077Z"
+      ui_design:
+        startedAt: "2026-03-23T22:43:12.918Z"
+        durationMs: 62961
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:44:15.879Z"
+      design_review:
+        startedAt: "2026-03-23T22:44:15.970Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+      test_selection:
+        startedAt: "2026-03-23T22:47:10.370Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-23T22:47:10.370Z"
+      test_impl:
+        startedAt: "2026-03-23T22:47:10.460Z"
+        durationMs: 586599
+        retries: 2
+        dodFailurePatterns[2]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+        endedAt: "2026-03-23T22:56:57.059Z"
+      implementation:
+        startedAt: "2026-03-23T22:56:57.152Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+    retries: 2
+    dodFailures: 2
+    startedAt: "2026-03-23T22:05:08.559Z"
+    completedAt: null
+  "acfa308d-8449-4571-a6ce-c60b6b4d77cf":
+    taskName: docs/workflows リファクタリング
+    phases:
+      hearing:
+        startedAt: "2026-03-24T02:23:02.961Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+    retries: 0
+    dodFailures: 0
+    startedAt: "2026-03-24T02:23:02.961Z"
+    completedAt: null
+  "0963bf20-4201-494c-ad1b-32e6b476e97e":
+    taskName: docs-workflows-refactoring
+    phases:
+      hearing:
+        startedAt: "2026-03-24T13:41:40.599Z"
+        durationMs: 122833
+        retries: 1
+        dodFailurePatterns[4]: "[L3] Missing required sections: artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: artifacts, next","[L4] decisions count: 4 < required 5\n修正方法: ## decisions にあと1件追加してください。","[L2] userResponse: key missing from hearing artifact"
+        endedAt: "2026-03-24T13:43:43.432Z"
+      scope_definition:
+        startedAt: "2026-03-24T13:43:43.526Z"
+        durationMs: 316819
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-24T13:49:00.345Z"
+      research:
+        startedAt: "2026-03-24T13:49:01.099Z"
+        durationMs: 451583
+        retries: 2
+        dodFailurePatterns[2]: "[L4] Bracket placeholders [#...#] found in content","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-24T13:56:32.682Z"
+      impact_analysis:
+        startedAt: "2026-03-24T13:56:32.774Z"
+        durationMs: 185394
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-24T13:59:38.168Z"
+      requirements:
+        startedAt: "2026-03-24T13:59:38.259Z"
+        durationMs: 538479
+        retries: 2
+        dodFailurePatterns[4]: "[L3] requirements phase requires at least one F-NNN RTM entry","[L4] openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。","[L4] 意図整合性警告: 5語が requirements.md に未反映: ディレクトリのリファクタリング:, 半角カタカナ重複削除, 旧タスク削除, カテゴリ別サブディレクトリ整理, 散在mdファイルのディレクトリ化\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。","[L3] RTM entries do not reference these ACs: AC-7"
+        endedAt: "2026-03-24T14:08:36.738Z"
+      threat_modeling:
+        startedAt: "2026-03-24T14:08:36.832Z"
+        durationMs: 87738
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:10:04.570Z"
+      planning:
+        startedAt: "2026-03-24T14:10:04.673Z"
+        durationMs: 220903
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)"
+        endedAt: "2026-03-24T14:13:45.576Z"
+      state_machine:
+        startedAt: "2026-03-24T14:13:45.673Z"
+        durationMs: 75814
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:15:01.487Z"
+      flowchart:
+        startedAt: "2026-03-24T14:15:01.579Z"
+        durationMs: 52768
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:15:54.347Z"
+      ui_design:
+        startedAt: "2026-03-24T14:15:54.438Z"
+        durationMs: 114655
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:17:49.093Z"
+      design_review:
+        startedAt: "2026-03-24T14:17:49.186Z"
+        durationMs: 353722
+        retries: 1
+        dodFailurePatterns[1]: "[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-review.md に ## acDesignMapping セクションを追加し、各AC-Nと対応する設計要素を列挙してください。"
+        endedAt: "2026-03-24T14:23:42.908Z"
+      test_design:
+        startedAt: "2026-03-24T14:23:43.104Z"
+        durationMs: 473897
+        retries: 3
+        dodFailurePatterns[3]: "[L3] TC coverage insufficient: 0 TC entries < 7 ACs (CRV-1)\n修正方法: test-design.md に各AC-Nに対して TC-ACN-01 形式のテストケースを追加してください。","[L4] Approved artifacts modified since approval: hearing.md, requirements.md, design-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。","[L4] Approved artifacts modified since approval: hearing.md, requirements.md, design-review.md, test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+        endedAt: "2026-03-24T14:31:37.001Z"
+      test_selection:
+        startedAt: "2026-03-24T14:31:37.113Z"
+        durationMs: 84843
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:33:01.956Z"
+      test_impl:
+        startedAt: "2026-03-24T14:33:02.051Z"
+        durationMs: 38800
+        retries: 1
+        dodFailurePatterns[1]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)"
+        endedAt: "2026-03-24T14:33:40.851Z"
+      implementation:
+        startedAt: "2026-03-24T14:33:40.944Z"
+        durationMs: 600895
+        retries: 1
+        dodFailurePatterns[1]: "[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactoring\\planning.md, C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactoring\\test-design.md"
+        endedAt: "2026-03-24T14:43:41.839Z"
+      refactoring:
+        startedAt: "2026-03-24T14:43:41.940Z"
+        durationMs: 14383
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:43:56.323Z"
+      build_check:
+        startedAt: "2026-03-24T14:43:56.419Z"
+        durationMs: 24290
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T14:44:20.709Z"
+      code_review:
+        startedAt: "2026-03-24T14:44:20.801Z"
+        durationMs: 149979
+        retries: 1
+        dodFailurePatterns[2]: "[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending)","[L4] code-review.md is missing acAchievementStatus section (IA-5)\n修正方法: code-review.md に ## acAchievementStatus セクションを追加し、各AC-Nのpass/fail状態を記入してください。"
+        endedAt: "2026-03-24T14:46:50.780Z"
+      testing:
+        startedAt: "2026-03-24T14:46:50.872Z"
+        durationMs: 183500
+        retries: 1
+        dodFailurePatterns[1]: "[L1] No test results recorded"
+        endedAt: "2026-03-24T14:49:54.372Z"
+      regression_test:
+        startedAt: "2026-03-24T14:49:54.462Z"
+        durationMs: 149124
+        retries: 1
+        dodFailurePatterns[2]: "[L3] No baseline captured. Use harness_capture_baseline in testing phase before regression_test","[L1] Test results exist but none recorded for current phase: regression_test"
+        endedAt: "2026-03-24T14:52:23.586Z"
+      acceptance_verification:
+        startedAt: "2026-03-24T14:52:23.678Z"
+        durationMs: 514414
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:00:58.092Z"
+      manual_test:
+        startedAt: "2026-03-24T15:00:58.240Z"
+        durationMs: 185530
+        retries: 1
+        dodFailurePatterns[1]: "[L4] decisions count: 4 < required 5\n修正方法: ## decisions にあと1件追加してください。"
+        endedAt: "2026-03-24T15:04:03.770Z"
+      security_scan:
+        startedAt: "2026-03-24T15:04:03.945Z"
+        durationMs: 96778
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:05:40.723Z"
+      performance_test:
+        startedAt: "2026-03-24T15:05:40.857Z"
+        durationMs: 145187
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:08:06.044Z"
+      e2e_test:
+        startedAt: "2026-03-24T15:08:06.192Z"
+        durationMs: 182808
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Duplicate lines (3+ times): \"実行結果: PASS...\" (5x)"
+        endedAt: "2026-03-24T15:11:09.000Z"
+      docs_update:
+        startedAt: "2026-03-24T15:11:09.098Z"
+        durationMs: 94579
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:12:43.677Z"
+      commit:
+        startedAt: "2026-03-24T15:12:43.768Z"
+        durationMs: 158789
+        retries: 4
+        dodFailurePatterns[1]: "[L4] package.json modified 477572s after package-lock.json. Run npm install to sync lock file. (DEP-1)"
+        endedAt: "2026-03-24T15:15:22.557Z"
+      push:
+        startedAt: "2026-03-24T15:15:23.402Z"
+        durationMs: 13075
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:15:36.477Z"
+      ci_verification:
+        startedAt: "2026-03-24T15:15:36.575Z"
+        durationMs: 11227
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:15:47.802Z"
+      deploy:
+        startedAt: "2026-03-24T15:15:47.900Z"
+        durationMs: 12478
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-03-24T15:16:00.378Z"
+      health_observation:
+        startedAt: "2026-03-24T15:16:00.485Z"
+        durationMs: 90099
+        retries: 1
+        dodFailurePatterns[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+        endedAt: "2026-03-24T15:17:30.584Z"
+      completed:
+        startedAt: "2026-03-24T15:17:30.679Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+    retries: 24
+    dodFailures: 24
+    startedAt: "2026-03-24T13:41:40.599Z"
+    completedAt: "2026-03-24T15:17:30.759Z"
+aggregate:
+  totalTasks: 42
+  completedTasks: 6
+  totalRetries: 53
+  totalDoDFailures: 53
+  totalPhaseTransitions: 159
+  firstPassPhases: 134
+  phaseTimings:
+    scope_definition:
+      count: 15
+      totalMs: 394826
+      avgMs: 26322
+    research:
+      count: 14
+      totalMs: 3673005
+      avgMs: 262358
+    requirements:
+      count: 8
+      totalMs: 538479
+      avgMs: 67310
+    planning:
+      count: 14
+      totalMs: 921595
+      avgMs: 65828
+    test_design:
+      count: 9
+      totalMs: 473897
+      avgMs: 52655
+    test_impl:
+      count: 14
+      totalMs: 779762
+      avgMs: 55697
+    implementation:
+      count: 11
+      totalMs: 20964672
+      avgMs: 1905879
+    build_check:
+      count: 10
+      totalMs: 93653
+      avgMs: 9365
+    testing:
+      count: 10
+      totalMs: 240708
+      avgMs: 24071
+    commit:
+      count: 6
+      totalMs: 278456
+      avgMs: 46409
+    push:
+      count: 6
+      totalMs: 23877
+      avgMs: 3980
+    impact_analysis:
+      count: 3
+      totalMs: 1572395
+      avgMs: 524132
+    threat_modeling:
+      count: 3
+      totalMs: 87738
+      avgMs: 29246
+    state_machine:
+      count: 3
+      totalMs: 679940
+      avgMs: 226647
+    flowchart:
+      count: 3
+      totalMs: 214550
+      avgMs: 71517
+    ui_design:
+      count: 3
+      totalMs: 278796
+      avgMs: 92932
+    test_selection:
+      count: 3
+      totalMs: 84843
+      avgMs: 28281
+    refactoring:
+      count: 2
+      totalMs: 96699
+      avgMs: 48350
+    regression_test:
+      count: 2
+      totalMs: 259272
+      avgMs: 129636
+    manual_test:
+      count: 2
+      totalMs: 326334
+      avgMs: 163167
+    security_scan:
+      count: 2
+      totalMs: 307389
+      avgMs: 153695
+    performance_test:
+      count: 2
+      totalMs: 322586
+      avgMs: 161293
+    e2e_test:
+      count: 2
+      totalMs: 383249
+      avgMs: 191625
+    docs_update:
+      count: 2
+      totalMs: 324323
+      avgMs: 162162
+    ci_verification:
+      count: 2
+      totalMs: 138063
+      avgMs: 69032
+    deploy:
+      count: 2
+      totalMs: 49836
+      avgMs: 24918
+    health_observation:
+      count: 2
+      totalMs: 243006
+      avgMs: 121503
+    hearing:
+      count: 1
+      totalMs: 122833
+      avgMs: 122833
+    design_review:
+      count: 1
+      totalMs: 353722
+      avgMs: 353722
+    code_review:
+      count: 1
+      totalMs: 149979
+      avgMs: 149979
+    acceptance_verification:
+      count: 1
+      totalMs: 514414
+      avgMs: 514414

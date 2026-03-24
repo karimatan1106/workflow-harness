@@ -1,0 +1,243 @@
+
+> @workflow-harness/mcp-server@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/ツール/Workflow/workflow-harness/mcp-server[39m
+
+ [33m❯[39m src/__tests__/ace-reflector.test.ts [2m ([22m[2m9 tests[22m [2m|[22m [31m7 failed[39m[2m)[22m[90m 17[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-01: 新規lessonがid/helpfulCount/harmfulCount/category付きで生成される[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-03: nextLessonIdが採番ごとにインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-01: stashFailure()で同一パターンのharmfulCountがインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-02: promoteStashedFailure()でhelpfulCountがインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-03: hitCountがhelpfulCount+harmfulCountと一致する[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-01: formatLessonsForPrompt()が[L-001][failure] phase: pattern → lesson形式で出力する[39m
+[31m     → expected '' to match /\[L-001\]\[failure\] research: timeou…/[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-02: getLessonsForPhase()がquality score降順で返す[39m
+[31m     → actual value must be number or bigint, received "undefined"[39m
+ [33m❯[39m src/__tests__/ace-reflector-curator.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m5 failed[39m[2m)[22m[90m 16[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-02: curator trimがquality score昇順（低品質から）削除する[39m
+[31m     → expected 41 to be 40 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-03: 類似度0.7以上のlessonがfuzzy dedupで統合される[39m
+[31m     → expected 2 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-01: quality score>=0.6のlessonがace-context.toonに昇格される[39m
+[31m     → expected undefined not to be undefined[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-02: getTopCrossTaskBullets(5)が上位5件を返す[39m
+[31m     → expected +0 to be 5 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-04: runCuratorCycle後にgetTopCrossTaskBulletsで昇格件数が1件以上になる[39m
+[31m     → expected 0 to be greater than or equal to 1[39m
+ [32m✓[39m src/__tests__/n73-n87.test.ts [2m ([22m[2m28 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/rtm-intent-gate.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 156[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-dynamic-categories-unit.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 157[2mms[22m[39m
+ [32m✓[39m src/__tests__/10m-resilience-p3p5p6.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-lifecycle.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[33m 319[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-core.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[33m 351[2mms[22m[39m
+ [32m✓[39m src/__tests__/stale-task-hmac.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[33m 358[2mms[22m[39m
+ [32m✓[39m src/__tests__/dci.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+ [32m✓[39m src/__tests__/template-separator-cleanup.test.ts [2m ([22m[2m31 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+ [32m✓[39m src/__tests__/hmac.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+ [33m❯[39m src/__tests__/metrics.test.ts [2m ([22m[2m12 tests[22m [2m|[22m [31m8 failed[39m[2m)[22m[90m 18[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mMetrics store lifecycle[2m > [22mloadMetrics loads existing store from disk[39m
+[31m     → expected undefined not to be undefined[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseStart records start timestamp for a phase[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd records end timestamp and calculates duration[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd without prior start creates entry with 0 duration[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry increments retry count for task and aggregate[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry records phase-level retry details[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mDoD failure tracking[2m > [22mrecordDoDFailure increments failure count and records pattern[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mTask completion[2m > [22mrecordTaskCompletion marks task as completed and updates aggregate[39m
+[31m     → metrics store not found[39m
+ [32m✓[39m src/__tests__/n88-n93.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [33m❯[39m src/__tests__/serena-integration.test.ts [2m ([22m[2m0 test[22m[2m)[22m
+ [32m✓[39m src/__tests__/risk-classifier-classify.test.ts [2m ([22m[2m30 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [33m❯[39m src/__tests__/reflector-quality.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[90m 8[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains lessons with qualityScore above threshold[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains new lessons with no feedback (score 0.5)[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mboundary: score=0.25 excluded, score=0.33 retained[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mformatLessonsForPrompt excludes harmful lessons[39m
+[31m     → expected '' to contain 'L-002'[39m
+ [32m✓[39m src/__tests__/mcp-contract.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+ [32m✓[39m src/__tests__/archgate.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-scope.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[33m 6739[2mms[22m[39m
+ [33m❯[39m src/__tests__/reflector-failure-loop.test.ts [2m ([22m[2m9 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgenerates a prevention rule when same error pattern fails 2+ times[39m
+[31m     → reflector store not found[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mprevention rule contains actionable instruction[39m
+[31m     → reflector store not found[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgetPreventionRules returns rules for a phase[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mformatLessonsForPrompt includes prevention rules section[39m
+[31m     → expected '' to contain '禁止'[39m
+ [32m✓[39m src/__tests__/n63-n72.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/gc.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [33m❯[39m src/__tests__/handler-templates-s6-docs.test.ts [2m ([22m[2m17 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[90m 79[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/handler-templates-s6-docs.test.ts[2m > [22mAC-2: registry.ts docs_update config[2m > [22mTC-AC2-05: model is sonnet[39m
+[31m     → expected 'opus' to be 'sonnet' // Object.is equality[39m
+ [32m✓[39m src/__tests__/risk-classifier.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/archgate-extended.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-misc.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 10704[2mms[22m[39m
+ [32m✓[39m src/__tests__/context-engineering.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 12702[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-dynamic-categories-integration.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 18038[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-session-force.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 17134[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-traceability.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 28820[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-lifecycle-reset.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[33m 28378[2mms[22m[39m
+ [32m✓[39m src/__tests__/progress-json.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/linter-runner.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/adr.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/doc-inventory.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 10238[2mms[22m[39m
+ [32m✓[39m src/__tests__/invariant-manager.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 80[2mms[22m[39m
+ [32m✓[39m src/__tests__/n94-n97.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-toon-safety.test.ts [2m ([22m[2m12 tests[22m [2m|[22m [31m5 failed[39m[2m)[22m[33m 25640[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-toon-safety.test.ts[2m > [22mCheck A: colon spacing[2m > [22mfails when key:value has no space after colon[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-toon-safety.test.ts[2m > [22mCheck B: field count mismatch[2m > [22mfails when row has fewer fields than declared[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-toon-safety.test.ts[2m > [22mCheck B+C: quoting guidance[2m > [22mincludes quoting hint when field count mismatch is detected[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-toon-safety.test.ts[2m > [22mIntegration[2m > [22mpasses with valid TOON content[39m
+[31m     → expected 'Output file not found; skipped (L1 ha…' to contain 'TOON pre-parse safety OK'[39m
+[31m   [33m❯[31m src/__tests__/dod-toon-safety.test.ts[2m > [22mIntegration[2m > [22mprioritizes Check A over Check B[39m
+[31m     → expected true to be false // Object.is equality[39m
+ [33m❯[39m src/__tests__/handler-lifecycle.test.ts [2m ([22m[2m8 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 42233[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/handler-lifecycle.test.ts[2m > [22mRetry and VDB-1 detection[2m > [22mharness_next returns VDB-1 warning when retryCount >= 3 and DoD fails[39m
+[31m     → expected undefined not to be undefined[39m
+ [32m✓[39m src/__tests__/retry-adr.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/hooks/hook-existence.test.ts [2m ([22m[2m20 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-l4-refs.test.ts [2m ([22m[2m9 tests[22m [2m|[22m [31m5 failed[39m[2m)[22m[33m 17233[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-refs.test.ts[2m > [22mDRV-1 dead reference check[2m > [22mpasses when TOON artifact has no relative markdown links[39m
+[31m     → expected 'Output file not found; dead reference…' to contain 'DRV-1'[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-refs.test.ts[2m > [22mDRV-1 dead reference check[2m > [22mpasses when all relative links point to existing files[39m
+[31m     → expected 'Output file not found; dead reference…' to contain 'DRV-1'[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-refs.test.ts[2m > [22mDRV-1 dead reference check[2m > [22mfails when a relative link points to a missing file[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-refs.test.ts[2m > [22mDRV-1 dead reference check[2m > [22mreports multiple dead references at once[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-refs.test.ts[2m > [22mDRV-1 dead reference check[2m > [22mchecks code_review phase artifacts[39m
+[31m     → expected true to be false // Object.is equality[39m
+ [32m✓[39m src/__tests__/retry.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/llm-quality-gates.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [33m❯[39m src/__tests__/handler-templates-validation.test.ts [2m ([22m[2m5 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 46928[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/handler-templates-validation.test.ts[2m > [22mValidation[2m > [22mharness_pre_validate passes when output file exists[39m
+[31m     → expected false to be true // Object.is equality[39m
+ [32m✓[39m src/__tests__/dod-l4-commit.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m src/__tests__/cli.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m src/__tests__/dci-phase-integration.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-s1.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 78[2mms[22m[39m
+ [32m✓[39m src/__tests__/eval-runner.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/infra/state-integration.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 117[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-extended.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/e2e-patterns.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/plankton.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/skill-rules.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/antipattern.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/mvh-roadmap.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/plankton-routing.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/error-adr-map.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/e2e-mcp-chain.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 20854[2mms[22m[39m
+ [32m✓[39m src/__tests__/garbage-collector.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l3-baseline.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/hybrid-strategy.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/invariant-dogfooding.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/safety.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/invariant-types.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+ [32m✓[39m src/__tests__/toon-helpers.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-parallel-pha1.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 58800[2mms[22m[39m
+ [33m❯[39m src/__tests__/10m-resilience-p1.test.ts [2m ([22m[2m5 tests[22m [2m|[22m [31m2 failed[39m[2m)[22m[33m 42762[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/10m-resilience-p1.test.ts[2m > [22mP1: checkInputFilesExist with skippedPhases[2m > [22mskips input file validation for files produced by skipped phases[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/10m-resilience-p1.test.ts[2m > [22mP1: checkInputFilesExist with skippedPhases[2m > [22mskips all Stage4 output files when all Stage4 phases are skipped[39m
+[31m     → expected false to be true // Object.is equality[39m
+ [33m❯[39m src/__tests__/handler-parallel.test.ts [2m ([22m[2m3 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[33m 61859[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/handler-parallel.test.ts[2m > [22mParallel Phases[2m > [22mharness_complete_sub marks a sub-phase complete after DoD passes[39m
+[31m     → expected 'DoD checks failed for sub-phase: thre…' to be undefined[39m
+ [32m✓[39m src/__tests__/handler-misc-ia2.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 48208[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-s6-docs-integration.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[33m 16526[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-approval.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 69129[2mms[22m[39m
+ [33m❯[39m src/__tests__/10m-resilience-p2p4.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m3 failed[39m[2m)[22m[33m 69663[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/10m-resilience-p2p4.test.ts[2m > [22mP2: output file existence pre-check (AC-2)[2m > [22mpasses pre-check when outputFile exists with sufficient content[39m
+[31m     → expected '{"error":"成果物ファイルが存在しません: C:\\ツール\\Wo…' not to contain '成果物ファイルが存在しません'[39m
+[31m   [33m❯[31m src/__tests__/10m-resilience-p2p4.test.ts[2m > [22mP4: output file size pre-check (AC-4)[2m > [22mreturns size-insufficient error for files under 100 bytes[39m
+[31m     → expected '{"error":"成果物ファイルが存在しません: C:\\ツール\\Wo…' to contain '空または不完全です'[39m
+[31m   [33m❯[31m src/__tests__/10m-resilience-p2p4.test.ts[2m > [22mP4: output file size pre-check (AC-4)[2m > [22mreturns size-insufficient error for empty files with 0 bytes[39m
+[31m     → expected '{"error":"成果物ファイルが存在しません: C:\\ツール\\Wo…' to contain '空または不完全です'[39m
+ [32m✓[39m src/__tests__/dod-ia5.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 68973[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-format.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 34763[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-basic.test.ts [2m ([22m[2m13 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[33m 87723[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-basic.test.ts[2m > [22mrunDoDChecks for phases with no output file[2m > [22mpasses all checks for "test_impl" which has no outputFile[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-basic.test.ts[2m > [22mrunDoDChecks for phases with no output file[2m > [22mpasses all checks for "implementation" which has no outputFile[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-basic.test.ts[2m > [22mIFV-1 input files existence check[2m > [22mpasses input_files_exist when all input files exist[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-basic.test.ts[2m > [22mL1 file existence check[2m > [22mpasses L1 when the expected output file exists[39m
+[31m     → expected false to be true // Object.is equality[39m
+ [32m✓[39m src/__tests__/dod-tdd.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 53115[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-l4-duplicate.test.ts [2m ([22m[2m4 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[33m 49963[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mfails L4 when the same non-structural line appears 3 or more times[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain '3x'[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mdoes NOT fail L4 when a line appears only twice[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mdoes NOT flag structural TOON lines as duplicates even when repeated[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mdoes NOT flag short separator lines as duplicates[39m
+[31m     → expected false to be true // Object.is equality[39m
+ [32m✓[39m src/__tests__/dod-ia-coverage.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 132692[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l4-requirements.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 142218[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-l3-l4-content.test.ts [2m ([22m[2m10 tests[22m [2m|[22m [31m10 failed[39m[2m)[22m[33m 143089[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL3 artifact quality check[2m > [22mpasses L3 with a well-formed TOON artifact meeting content and density[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL3 artifact quality check[2m > [22mpasses L3 parse check even with minimal fields (content validated by L4)[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 forbidden pattern detection[2m > [22mfails L4 when artifact TOON value contains "TODO"[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain 'TODO'[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 forbidden pattern detection[2m > [22mfails L4 when artifact TOON value contains Japanese forbidden word "未定"[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain '未定'[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 forbidden pattern detection[2m > [22mfails L4 when artifact TOON value contains "TBD"[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain 'TBD'[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 forbidden pattern detection[2m > [22mpasses L4 when TOON artifact contains no forbidden patterns[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 forbidden pattern detection[2m > [22mpasses L4 when forbidden word is inside an inline backtick in TOON value[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 bracket placeholder detection[2m > [22mfails L4 when artifact TOON value contains a [#xxx#] placeholder[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain '[#'[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 bracket placeholder detection[2m > [22mdoes NOT fail L4 for normal text without bracket placeholders[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l3-l4-content.test.ts[2m > [22mL4 bracket placeholder detection[2m > [22mdoes NOT fail L4 when bracket placeholder is inside an inline backtick[39m
+[31m     → expected false to be true // Object.is equality[39m
+ [33m❯[39m src/__tests__/hooks/pre-tool-config-guard.test.ts [2m ([22m[2m16 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[33m 124789[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/hooks/pre-tool-config-guard.test.ts[2m > [22mG-02: pre-tool-config-guard[2m > [22mblocks write to 'package.json'[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/hooks/pre-tool-config-guard.test.ts[2m > [22mG-02: pre-tool-config-guard[2m > [22mblocks write to '.gitignore'[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/hooks/pre-tool-config-guard.test.ts[2m > [22mG-02: pre-tool-config-guard[2m > [22mblocks write to '.mcp.json'[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/hooks/pre-tool-config-guard.test.ts[2m > [22mG-02: pre-tool-config-guard[2m > [22mblocks write to '.eslintrc.js'[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+ [33m❯[39m src/__tests__/dod-l4-sections.test.ts [2m ([22m[2m12 tests[22m [2m|[22m [31m3 failed[39m[2m)[22m[33m 164144[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-sections.test.ts[2m > [22mL4 required sections check[2m > [22mfails L4 when a required TOON key is missing[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain 'artifacts'[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-sections.test.ts[2m > [22mL4 required sections check[2m > [22mpasses L4 when all required TOON keys are present and content is valid[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-sections.test.ts[2m > [22mL4 required sections check[2m > [22mfails L4 for planning phase when required TOON key is missing[39m
+[31m     → expected 'Cannot validate content: file missing…' to contain 'next'[39m
+ [32m✓[39m src/__tests__/dod-ia.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[33m 195097[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m19 failed[39m[22m[2m | [22m[1m[32m67 passed[39m[22m[90m (86)[39m
+[2m      Tests [22m [1m[31m72 failed[39m[22m[2m | [22m[1m[32m703 passed[39m[22m[90m (775)[39m
+[2m   Start at [22m 17:56:30
+[2m   Duration [22m 196.13s[2m (transform 3.13s, setup 7ms, collect 7.14s, tests 1851.30s, environment 13ms, prepare 10.86s)[22m
+

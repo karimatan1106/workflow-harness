@@ -130,7 +130,7 @@ describe('AC-3: HMAC failure returns integrityWarning', () => {
     const id = 'hmac-st-01-abcdefgh';
     writeToDisk(tempDir, createSignedState(tempDir, { taskId: id, taskName: 'hm-st', phase: 'planning' }));
     overwriteKey(tempDir, 'd'.repeat(64));
-    const { handleHarnessStatus } = await import('../tools/handlers/lifecycle.js');
+    const { handleHarnessStatus } = await import('../tools/handlers/lifecycle-start-status.js');
     const { StateManager } = await import('../state/manager.js');
     const c = JSON.stringify(await handleHarnessStatus({ taskId: id }, new StateManager()));
     expect(c).not.toContain('Task not found');

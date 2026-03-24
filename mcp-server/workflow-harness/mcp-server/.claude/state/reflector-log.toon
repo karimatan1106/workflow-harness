@@ -1,10 +1,16 @@
 version: 3
-nextLessonId: 1
-
-lessons[0]{id,phase,errorPattern,lesson,createdAt,hitCount,helpfulCount,harmfulCount,category,preventionRule}:
-
+nextLessonId: 12
+lessons[11]{id,phase,errorPattern,lesson,createdAt,hitCount,helpfulCount,harmfulCount,category}:
+  L-001,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","リトライ2回目で成功。失敗パターン: Missing required sections: artifacts, next. Add ## headings for each.","2026-03-24T13:43:43.430Z",1,1,0,failure
+  L-002,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","リトライ2回目で成功。失敗パターン: [L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","2026-03-24T13:49:00.343Z",1,1,0,failure
+  L-003,research,Bracket placeholder,"リトライ3回目で成功。失敗パターン: Bracket placeholder","2026-03-24T13:56:32.680Z",1,1,0,failure
+  L-004,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","リトライ2回目で成功。失敗パターン: [L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","2026-03-24T13:59:38.165Z",1,1,0,failure
+  L-005,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","リトライ3回目で成功。失敗パターン: [L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","2026-03-24T14:08:36.737Z",1,1,0,failure
+  L-006,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","リトライ2回目で成功。失敗パターン: Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","2026-03-24T14:13:45.574Z",1,1,0,failure
+  L-007,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","リトライ2回目で成功。失敗パターン: [L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","2026-03-24T14:23:42.897Z",1,1,0,failure
+  L-008,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","リトライ4回目で成功。失敗パターン: [L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","2026-03-24T14:31:36.999Z",1,1,0,failure
+  L-009,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","リトライ2回目で成功。失敗パターン: [L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","2026-03-24T14:33:40.849Z",1,1,0,failure
+  L-010,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","リトライ2回目で成功。失敗パターン: [L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","2026-03-24T14:43:41.836Z",1,1,0,failure
+  L-011,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","リトライ2回目で成功。失敗パターン: [L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","2026-03-24T14:46:50.778Z",1,1,0,failure
 stashedFailures[1]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}:
-  planning, 6e08c57b-b642-413f-a5cb-f6784cde5273, "[L3] TOON parse failed: Expected 8 list array items, but got 0
-[L4] TOON parse e", "[L3] TOON parse failed: Expected 8 list array items, but got 0
-[L4] TOON parse error: Expected 8 list array items, but got 0. Ensure file uses TOON format (key: value), not Markdown or JSON.
-[L4] TOON decode failed: Expected 8 list array items, but got 0", 1, 2026-03-15T22:39:08.841Z
+  test_impl,9e34853b-9ec3-42c7-9f4a-2c0e5f5d04fc,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)",1,"2026-03-23T22:56:33.952Z"

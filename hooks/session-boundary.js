@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { findProjectRoot, readStdin } = require('./hook-utils');
+const { findProjectRoot, readStdin, parseHookInput } = require('./hook-utils');
 
 const MARKER_STALE_MS = 30 * 60 * 1000;
 

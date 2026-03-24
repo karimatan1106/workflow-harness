@@ -1,0 +1,1 @@
+C:\ツール\Workflow\workflow-harness\mcp-server\src\state\manager-read.ts

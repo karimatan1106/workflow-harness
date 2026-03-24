@@ -74,7 +74,8 @@ describe('Retry and VDB-1 detection', () => {
       type: 'hearing',
     });
     expect(approveRes.error).toBeUndefined();
-    expect(approveRes.nextPhase).toBe('scope_definition');
+    expect(approveRes.nextPhase).toBeUndefined();
+    expect(approveRes.nextAction).toBe('call harness_next');
     // Now on scope_definition: create output that passes P2 (>=100 bytes) but fails DoD
     writeFileSync(join(docsDir, 'scope-definition.md'), 'x'.repeat(150), 'utf8');
     const res = await call(mgr, 'harness_next', {

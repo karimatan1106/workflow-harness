@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { findProjectRoot, isBypassPath } = require('./hook-utils');
+const { findProjectRoot, isBypassPath, readStdin, parseHookInput } = require('./hook-utils');
 
 const STATE_FILENAME = 'loop-detector-state.json';
 const MAX_EDITS_IN_WINDOW = 5;
@@ -18,8 +18,8 @@ function saveState(statePath, state) {
 }
 
 function runHook(raw) {
-  let inp;
-  try { inp = JSON.parse(raw); } catch (_) { process.exit(0); }
+  const inp = parseHookInput(raw);
+  if (!inp) process.exit(0);
 
   const tn = inp.tool_name || inp.tool || '';
   if (tn !== 'Edit' && tn !== 'Write') process.exit(0);
@@ -58,8 +58,4 @@ function runHook(raw) {
   process.exit(0);
 }
 
-let _raw = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', c => { _raw += c; });
-process.stdin.on('error', () => { process.exit(0); });
-process.stdin.on('end', () => { runHook(_raw); });
+readStdin().then(raw => { runHook(raw); });
