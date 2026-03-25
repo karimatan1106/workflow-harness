@@ -12,7 +12,14 @@ export interface DoDFailureEntry {
   phase: string;
   retryCount: number;
   errors: string[];
-  checks: Array<{ name: string; passed: boolean; message?: string }>;
+  checks: Array<{
+    name: string;
+    passed: boolean;
+    message?: string;
+    level?: string;
+    fix?: string;
+    example?: string;
+  }>;
 }
 
 interface ErrorToonData {
@@ -47,4 +54,25 @@ export function readErrorToon(docsDir: string): DoDFailureEntry[] {
     const data = toonDecodeSafe<ErrorToonData>(content);
     return data?.entries ?? [];
   } catch { return []; }
+}
+
+/** Map DoDCheckResult array to DoDFailureEntry.checks format. */
+export function mapChecksForErrorToon(
+  checks: Array<{
+    check: string;
+    passed: boolean;
+    evidence: string;
+    level?: string;
+    fix?: string;
+    example?: string;
+  }>,
+): DoDFailureEntry['checks'] {
+  return checks.map((c) => ({
+    name: c.check,
+    passed: c.passed,
+    message: c.evidence,
+    level: c.level,
+    fix: c.fix,
+    example: c.example,
+  }));
 }

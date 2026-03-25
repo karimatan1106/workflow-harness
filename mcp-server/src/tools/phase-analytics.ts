@@ -20,8 +20,17 @@ export interface HookObsStats {
   allowed: number; blocked: number;
   top5: Array<{ tool: string; count: number }>;
 }
+export interface ErrorHistoryEntry {
+  phase: string;
+  retryCount: number;
+  check: string;
+  level: string;
+  passed: boolean;
+  evidence: string;
+}
 export interface AnalyticsResult {
   errorAnalysis: PhaseErrorStats[];
+  errorHistory?: ErrorHistoryEntry[];
   bottlenecks: BottleneckResult;
   advice: string[];
   hookObsStats?: HookObsStats;
@@ -42,9 +51,10 @@ function buildErrorAnalysis(task: TaskState, metrics?: TaskMetrics): PhaseErrorS
   for (const entry of toonErrors) {
     const pd = ensure(entry.phase);
     for (const check of entry.checks) {
+      if (check.passed) continue;
       const ex = pd.checks.get(check.name);
       if (ex) ex.count += 1;
-      else pd.checks.set(check.name, { level: 'L1', count: 1 });
+      else pd.checks.set(check.name, { level: check.level ?? 'L1', count: 1 });
     }
   }
   // Fallback: proofLog for legacy data
@@ -156,6 +166,26 @@ function parseHookObsLog(): HookObsStats | undefined {
   } catch { return undefined; }
 }
 
+// ─── Error History ───────────────────────────────
+function buildErrorHistory(task: TaskState): ErrorHistoryEntry[] {
+  const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
+  const entries = readErrorToon(docsDir);
+  const history: ErrorHistoryEntry[] = [];
+  for (const entry of entries) {
+    for (const check of entry.checks) {
+      history.push({
+        phase: entry.phase,
+        retryCount: entry.retryCount,
+        check: check.name,
+        level: check.level ?? 'L1',
+        passed: check.passed,
+        evidence: check.message ?? '',
+      });
+    }
+  }
+  return history;
+}
+
 // ─── Public API ──────────────────────────────────
 export function buildAnalytics(task: TaskState, timings?: PhaseTimingsResult): AnalyticsResult {
   const metrics = getTaskMetrics(task.taskId);
@@ -163,5 +193,6 @@ export function buildAnalytics(task: TaskState, timings?: PhaseTimingsResult): A
   const bottlenecks = findBottlenecks(errorAnalysis, timings);
   const advice = generateAdvice(errorAnalysis, timings);
   const hookObsStats = parseHookObsLog();
-  return { errorAnalysis, bottlenecks, advice, ...(hookObsStats ? { hookObsStats } : {}) };
+  const errorHistory = buildErrorHistory(task);
+  return { errorAnalysis, errorHistory, bottlenecks, advice, ...(hookObsStats ? { hookObsStats } : {}) };
 }

@@ -4,7 +4,7 @@
  */
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
-import type { AnalyticsResult } from './phase-analytics.js';
+import type { AnalyticsResult, ErrorHistoryEntry } from './phase-analytics.js';
 import type { PhaseTimingsResult } from './phase-timings.js';
 import { toonEncode } from '../state/toon-io-adapter.js';
 
@@ -34,6 +34,14 @@ export function writeAnalyticsToon(
       topFailure: e.failures.length > 0
         ? `${e.failures[0].check}(${e.failures[0].level}) x${e.failures[0].count}`
         : 'none',
+    })),
+    errorHistory: (analytics.errorHistory ?? []).map(h => ({
+      phase: h.phase,
+      retry: h.retryCount,
+      check: h.check,
+      level: h.level,
+      passed: h.passed,
+      evidence: h.evidence,
     })),
     bottlenecks: {
       ...(analytics.bottlenecks.slowestPhase ? {

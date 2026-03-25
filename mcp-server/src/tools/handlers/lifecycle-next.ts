@@ -6,6 +6,8 @@
 import { existsSync, statSync } from 'node:fs';
 import { resolveProjectPath } from '../../utils/project-root.js';
 import type { StateManager } from '../../state/manager.js';
+import type { TaskState } from '../../state/types.js';
+import type { DoDResult } from '../../gates/dod-types.js';
 import { runDoDChecks } from '../../gates/dod.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
 import { getPhaseDefinition } from '../../phases/definitions.js';
@@ -20,7 +22,7 @@ import {
   recordPhaseStart, recordPhaseEnd, recordRetry, recordDoDFailure,
 } from '../metrics.js';
 import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
-import { appendErrorToon } from '../error-toon.js';
+import { appendErrorToon, mapChecksForErrorToon } from '../error-toon.js';
 import { appendTrace, recordDoDResults } from '../../observability/trace-writer.js';
 import { handleTaskCompletion } from './lifecycle-completion.js';
 
@@ -49,7 +51,7 @@ export async function handleHarnessNext(
   if (shouldRequireApproval(
     task.phase, task.size,
     task.acceptanceCriteria.length,
-    (task as any).openQuestions?.length ?? 0,
+    task.openQuestions?.length ?? 0,
   )) {
     const requiredApproval = PHASE_APPROVAL_GATES[task.phase];
     if (requiredApproval && !(task.approvals && task.approvals[requiredApproval])) {
@@ -133,8 +135,8 @@ export async function handleHarnessNext(
 }
 
 function buildDoDFailureResponse(
-  task: any, docsDir: string, retryCount: number,
-  dodResult: any, taskId: string,
+  task: TaskState, docsDir: string, retryCount: number,
+  dodResult: DoDResult, taskId: string,
 ): HandlerResult {
   const registryConfig = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY];
   const retryCtx: RetryContext = {
@@ -161,9 +163,7 @@ function buildDoDFailureResponse(
     appendErrorToon(docsDir, {
       timestamp: new Date().toISOString(), phase: task.phase, retryCount,
       errors: dodResult.errors,
-      checks: dodResult.checks.map((c: any) => ({
-        name: c.check, passed: c.passed, message: c.evidence,
-      })),
+      checks: mapChecksForErrorToon(dodResult.checks),
     });
   } catch { /* non-blocking */ }
   const vdb1Warning = retryCount >= 3
