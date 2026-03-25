@@ -16,9 +16,11 @@
 
 set -euo pipefail
 trap 'exit 2' ERR
+source "$(dirname "$0")/trace-logger.sh"
 
 # Emergency bypass
 if [ "${TOOL_GUARD_DISABLE:-}" = "true" ]; then
+  log_trace_event "ALLOW" "unknown" "system" "bypass" "TOOL_GUARD_DISABLE"
   exit 0
 fi
 
@@ -33,6 +35,7 @@ AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id":"[^"]*"' | head -1 | sed 's/"agen
 # Subagent: full tool access (Coordinator, Worker, Explore, etc.)
 # ============================================================
 if [ -n "$AGENT_ID" ]; then
+  log_trace_event "ALLOW" "$TOOL_NAME" "worker" "subagent" "agent_id=$AGENT_ID"
   exit 0
 fi
 
@@ -53,6 +56,7 @@ is_lifecycle_mcp() {
 if [[ "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" ]]; then
   FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | sed 's/"file_path":"//;s/"//g')
   if [[ "$FILE_PATH" == *.toon || "$FILE_PATH" == *.mmd ]]; then
+    log_trace_event "ALLOW" "$TOOL_NAME" "orchestrator" "artifact-write" "$FILE_PATH"
     exit 0
   fi
 fi
@@ -65,6 +69,7 @@ if [ "$TOOL_NAME" = "Agent" ]; then
     coordinator|worker|hearing-worker)
       ;; # allowed
     *)
+      log_trace_event "BLOCK" "Agent" "orchestrator" "invalid-subagent" "$SUBAGENT_TYPE"
       echo "BLOCKED: Orchestrator Agent() requires subagent_type=coordinator|worker|hearing-worker. Got: '$SUBAGENT_TYPE'" >&2
       exit 2
       ;;
@@ -74,6 +79,7 @@ fi
 # Control-plane tools (no Edit — handled separately below)
 case "$TOOL_NAME" in
   Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read|Bash)
+    log_trace_event "ALLOW" "$TOOL_NAME" "orchestrator" "control-plane" ""
     exit 0
     ;;
 esac
@@ -82,17 +88,21 @@ esac
 if [ "$TOOL_NAME" = "Edit" ]; then
   AUTH_FILE=".agent/edit-auth.txt"
   if [ ! -f "$AUTH_FILE" ]; then
+    log_trace_event "BLOCK" "Edit" "orchestrator" "no-auth-file" ""
     echo "BLOCKED: Edit not authorized - no pending edit authorizations from Worker" >&2
     exit 2
   fi
   FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | sed 's/"file_path":"//;s/"//g')
   if [ -z "$FILE_PATH" ]; then
+    log_trace_event "BLOCK" "Edit" "orchestrator" "no-file-path" ""
     echo "BLOCKED: Edit - could not extract file_path" >&2
     exit 2
   fi
   if grep -qF "$FILE_PATH" "$AUTH_FILE"; then
+    log_trace_event "ALLOW" "Edit" "orchestrator" "edit-authorized" "$FILE_PATH"
     exit 0
   else
+    log_trace_event "BLOCK" "Edit" "orchestrator" "not-authorized" "$FILE_PATH"
     echo "BLOCKED: Edit not authorized for $FILE_PATH - not in Worker edit-auth list" >&2
     exit 2
   fi
@@ -100,8 +110,10 @@ fi
 
 # Lifecycle MCP
 if is_lifecycle_mcp "$TOOL_NAME"; then
+  log_trace_event "ALLOW" "$TOOL_NAME" "orchestrator" "lifecycle-mcp" ""
   exit 0
 fi
 
+log_trace_event "BLOCK" "$TOOL_NAME" "orchestrator" "not-whitelisted" ""
 echo "BLOCKED: Orchestrator can only use Agent, Skill, ToolSearch, AskUserQuestion, TeamCreate, SendMessage, Task*, and lifecycle MCP tools" >&2
 exit 2

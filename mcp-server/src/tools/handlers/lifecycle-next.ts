@@ -21,6 +21,7 @@ import {
 } from '../metrics.js';
 import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
 import { appendErrorToon } from '../error-toon.js';
+import { appendTrace, recordDoDResults } from '../../observability/trace-writer.js';
 import { handleTaskCompletion } from './lifecycle-completion.js';
 
 export async function handleHarnessNext(
@@ -80,6 +81,12 @@ export async function handleHarnessNext(
       );
     }
   }
+  try {
+    appendTrace(docsDir + '/observability-trace.toon', {
+      timestamp: new Date().toISOString(), axis: 'phase-time',
+      layer: 'system', event: 'phase-enter', detail: task.phase,
+    });
+  } catch { /* non-blocking */ }
   const dodResult = await runDoDChecks(task, docsDir);
   if (!dodResult.passed) {
     return buildDoDFailureResponse(task, docsDir, retryCount, dodResult, taskId);
@@ -88,6 +95,12 @@ export async function handleHarnessNext(
     try { promoteStashedFailure(taskId, task.phase, retryCount); } catch { /* non-blocking */ }
   }
   try { recordPhaseEnd(taskId, task.phase); } catch { /* non-blocking */ }
+  try {
+    appendTrace(docsDir + '/observability-trace.toon', {
+      timestamp: new Date().toISOString(), axis: 'phase-time',
+      layer: 'system', event: 'phase-exit', detail: task.phase,
+    });
+  } catch { /* non-blocking */ }
   sm.resetRetryCount(taskId, task.phase);
   const result = sm.advancePhase(taskId);
   if (!result.success) return respondError(result.error ?? 'Failed to advance phase');
@@ -136,6 +149,13 @@ function buildDoDFailureResponse(
   try {
     recordRetry(taskId, task.phase, dodResult.errors.join('\n'));
     recordDoDFailure(taskId, task.phase, dodResult.errors);
+  } catch { /* non-blocking */ }
+  try {
+    recordDoDResults(
+      docsDir + '/observability-trace.toon',
+      dodResult.checks.map((c: any) => ({ checkId: c.check, passed: c.passed, message: c.evidence })),
+      retryCount,
+    );
   } catch { /* non-blocking */ }
   try {
     appendErrorToon(docsDir, {

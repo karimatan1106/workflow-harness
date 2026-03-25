@@ -14,6 +14,7 @@ import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
 import { buildPhaseTimings, type PhaseTimingsResult } from '../phase-timings.js';
 import { buildAnalytics } from '../phase-analytics.js';
 import { writeAnalyticsToon } from '../analytics-toon.js';
+import { initTraceFile } from '../../observability/trace-writer.js';
 
 const AMBIGUOUS_PATTERNS = [
   'とか', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
@@ -48,6 +49,9 @@ export async function handleHarnessStart(
   let gcCount = 0;
   try { gcCount = sm.gcAbandonedTasks(); } catch { /* non-blocking */ }
   const task = sm.createTask(taskName, userIntent, files, dirs, size);
+  try {
+    initTraceFile(task.docsDir + '/observability-trace.toon', task.taskId);
+  } catch { /* non-blocking: trace init failure must not stop harness */ }
   // S1-3 PF-2: warn if git working tree is dirty
   let gitWarning: string | undefined;
   try {

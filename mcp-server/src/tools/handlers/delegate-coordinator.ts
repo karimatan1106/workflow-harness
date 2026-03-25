@@ -8,6 +8,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { StreamProgressTracker } from './stream-progress-tracker.js';
 import { spawnAsync, buildResponse, parseToonKv } from './coordinator-spawn.js';
+import { appendTrace } from '../../observability/trace-writer.js';
 import {
   buildAllowedTools,
   buildCoordinatorPrompt,
@@ -157,6 +158,14 @@ export async function handleDelegateCoordinator(
     FORCE_COLOR: '1',
   };
 
+  const traceFile = (task.docsDir ?? 'docs/workflows/' + task.taskName) + '/observability-trace.toon';
+  try {
+    appendTrace(traceFile, {
+      timestamp: new Date().toISOString(), axis: 'delegation',
+      layer: 'coordinator', event: 'spawn-start',
+      detail: paneId, sizeBytes: fullInstruction.length,
+    });
+  } catch { /* non-blocking */ }
   try {
     const startTime = Date.now();
     const { stdout } = await spawnAsync('claude', cmdArgs, {
@@ -166,9 +175,23 @@ export async function handleDelegateCoordinator(
       progressTracker,
     });
     const durationMs = Date.now() - startTime;
+    try {
+      appendTrace(traceFile, {
+        timestamp: new Date().toISOString(), axis: 'delegation',
+        layer: 'coordinator', event: 'spawn-complete',
+        detail: paneId, durationMs, sizeBytes: stdout.length,
+      });
+    } catch { /* non-blocking */ }
     return buildResponse(stdout, durationMs, planOnly, files);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    try {
+      appendTrace(traceFile, {
+        timestamp: new Date().toISOString(), axis: 'delegation',
+        layer: 'coordinator', event: 'spawn-fail',
+        detail: paneId + ': ' + message,
+      });
+    } catch { /* non-blocking */ }
     return respondError(`Worker failed: ${message}`);
   }
 }
