@@ -6,6 +6,8 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import type { AnalyticsResult, ErrorHistoryEntry } from './phase-analytics.js';
 import type { PhaseTimingsResult } from './phase-timings.js';
+import type { OutlierResult } from '../analytics/outlier-detection.js';
+import type { ErrorClassification } from '../analytics/error-classification.js';
 import { toonEncode } from '../state/toon-io-adapter.js';
 
 export function writeAnalyticsToon(
@@ -55,6 +57,20 @@ export function writeAnalyticsToon(
       } : {}),
     },
     advice: analytics.advice,
+    ...(analytics.bottlenecks.outlierPhases?.length ? {
+      outlierPhases: analytics.bottlenecks.outlierPhases.map(o => ({
+        phase: o.phase,
+        seconds: o.seconds,
+        iqrScore: Math.round(o.iqrScore * 100) / 100,
+      })),
+    } : {}),
+    ...(analytics.errorClassification ? {
+      errorClassification: {
+        recurring: analytics.errorClassification.recurring,
+        cascading: analytics.errorClassification.cascading,
+        oneOff: analytics.errorClassification.oneOff,
+      },
+    } : {}),
     ...(analytics.hookObsStats ? {
       hookStats: {
         totalCalls: analytics.hookObsStats.allowed + analytics.hookObsStats.blocked,

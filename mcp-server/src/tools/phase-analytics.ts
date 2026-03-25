@@ -7,6 +7,8 @@ import type { TaskState } from '../state/types.js';
 import type { PhaseTimingsResult } from './phase-timings.js';
 import { getTaskMetrics, type TaskMetrics } from './metrics.js';
 import { readErrorToon } from './error-toon.js';
+import { detectOutliers, type OutlierResult } from '../analytics/outlier-detection.js';
+import { classifyErrors, type ErrorClassification } from '../analytics/error-classification.js';
 
 export interface CheckFailure { check: string; level: string; count: number }
 export interface PhaseErrorStats { phase: string; retries: number; failures: CheckFailure[] }
@@ -14,6 +16,7 @@ export interface BottleneckResult {
   slowestPhase?: { phase: string; seconds: number };
   mostRetried?: { phase: string; retries: number };
   mostFailedCheck?: { check: string; count: number };
+  outlierPhases?: OutlierResult[];
 }
 export interface HookObsStats {
   toolCounts: Record<string, number>;
@@ -34,20 +37,18 @@ export interface AnalyticsResult {
   bottlenecks: BottleneckResult;
   advice: string[];
   hookObsStats?: HookObsStats;
+  errorClassification?: ErrorClassification;
 }
 
 // ─── DoD Failure Analysis ────────────────────────
 type PhaseData = { retries: number; checks: Map<string, { level: string; count: number }> };
 
-function buildErrorAnalysis(task: TaskState, metrics?: TaskMetrics): PhaseErrorStats[] {
+function buildErrorAnalysis(task: TaskState, toonErrors: ReturnType<typeof readErrorToon>, metrics?: TaskMetrics): PhaseErrorStats[] {
   const pm = new Map<string, PhaseData>();
   const ensure = (p: string) => {
     if (!pm.has(p)) pm.set(p, { retries: 0, checks: new Map() });
     return pm.get(p)!;
   };
-  // Read from phase-errors.toon (primary source)
-  const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
-  const toonErrors = readErrorToon(docsDir);
   for (const entry of toonErrors) {
     const pd = ensure(entry.phase);
     for (const check of entry.checks) {
@@ -79,13 +80,18 @@ function buildErrorAnalysis(task: TaskState, metrics?: TaskMetrics): PhaseErrorS
     if (data.retries === 0 && data.checks.size === 0) continue;
     result.push({
       phase, retries: data.retries,
-      failures: Array.from(data.checks.entries()).map(([c, v]) => ({ check: c, level: v.level, count: v.count })),
+      failures: Array.from(data.checks.entries())
+        .map(([c, v]) => ({ check: c, level: v.level, count: v.count }))
+        .sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          const levelOrder = (l: string) => l === 'L1' ? 0 : 1;
+          return levelOrder(b.level) - levelOrder(a.level);
+        }),
     });
   }
   return result.sort((a, b) => b.retries - a.retries);
 }
 
-// ─── Bottleneck Detection ────────────────────────
 function findBottlenecks(errors: PhaseErrorStats[], timings?: PhaseTimingsResult): BottleneckResult {
   const r: BottleneckResult = {};
   if (timings) {
@@ -110,7 +116,6 @@ function findBottlenecks(errors: PhaseErrorStats[], timings?: PhaseTimingsResult
   return r;
 }
 
-// ─── Advice Generation ──────────────────────────
 const ADVICE_RULES: Array<{ pattern: string; message: string }> = [
   { pattern: 'toon_safety', message: 'TOONスケルトンのフィールド定義を確認' },
   { pattern: 'toon_field_count', message: 'カンマ含む値の引用符忘れ' },
@@ -131,6 +136,8 @@ function generateAdvice(errors: PhaseErrorStats[], timings?: PhaseTimingsResult)
       seen.add(rule.pattern);
     }
   }
+  const tddTotal = allFails.filter(f => f.check === 'tdd_red_evidence').reduce((s, f) => s + f.count, 0);
+  if (tddTotal >= 3) advice.push(`tdd_red_evidence ${tddTotal}回失敗: record_test_result(exitCode=1)とrecord_proof(tdd_red_evidence)の両方が必要です`);
   for (const e of errors) {
     if (e.retries >= 3) advice.push(`テンプレートの改善が必要: ${e.phase} (${e.retries}回リトライ)`);
   }
@@ -166,33 +173,28 @@ function parseHookObsLog(): HookObsStats | undefined {
   } catch { return undefined; }
 }
 
-// ─── Error History ───────────────────────────────
-function buildErrorHistory(task: TaskState): ErrorHistoryEntry[] {
-  const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
-  const entries = readErrorToon(docsDir);
-  const history: ErrorHistoryEntry[] = [];
-  for (const entry of entries) {
-    for (const check of entry.checks) {
-      history.push({
-        phase: entry.phase,
-        retryCount: entry.retryCount,
-        check: check.name,
-        level: check.level ?? 'L1',
-        passed: check.passed,
-        evidence: check.message ?? '',
-      });
-    }
-  }
-  return history;
-}
-
-// ─── Public API ──────────────────────────────────
 export function buildAnalytics(task: TaskState, timings?: PhaseTimingsResult): AnalyticsResult {
+  const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
+  const toonErrors = readErrorToon(docsDir);
   const metrics = getTaskMetrics(task.taskId);
-  const errorAnalysis = buildErrorAnalysis(task, metrics ?? undefined);
+  const errorAnalysis = buildErrorAnalysis(task, toonErrors, metrics ?? undefined);
   const bottlenecks = findBottlenecks(errorAnalysis, timings);
+  if (timings) {
+    const outliers = detectOutliers(timings.phaseTimings);
+    if (outliers.length > 0) bottlenecks.outlierPhases = outliers;
+  }
   const advice = generateAdvice(errorAnalysis, timings);
   const hookObsStats = parseHookObsLog();
-  const errorHistory = buildErrorHistory(task);
-  return { errorAnalysis, errorHistory, bottlenecks, advice, ...(hookObsStats ? { hookObsStats } : {}) };
+  const history: ErrorHistoryEntry[] = [];
+  for (const entry of toonErrors) {
+    for (const check of entry.checks) {
+      history.push({ phase: entry.phase, retryCount: entry.retryCount, check: check.name,
+        level: check.level ?? 'L1', passed: check.passed, evidence: check.message ?? '' });
+    }
+  }
+  const classEntries = toonErrors.map(e => ({ phase: e.phase, checks: e.checks.map(c => ({ name: c.name, passed: c.passed })) }));
+  const ec = classifyErrors(classEntries);
+  const hasClass = ec.recurring.length > 0 || ec.cascading.length > 0 || ec.oneOff.length > 0;
+  return { errorAnalysis, errorHistory: history, bottlenecks, advice,
+    ...(hookObsStats ? { hookObsStats } : {}), ...(hasClass ? { errorClassification: ec } : {}) };
 }
