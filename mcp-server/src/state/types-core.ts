@@ -168,6 +168,7 @@ export interface PhaseConfig {
   parallelGroup?: ParallelGroupName;
   dependencies?: PhaseName[];
   allowedTools?: string[];
+  noCodeFences?: boolean;
 }
 
 // ─── Zod Schemas for Validation ─────────────────

@@ -72,8 +72,8 @@ describe('Approval Gates', () => {
     const status = await call(mgr, 'harness_status', { taskId });
     expect(status.phase).toBe('requirements');
 
-    // IA-2: Add minimum 3 acceptance criteria before approving requirements
-    for (let i = 1; i <= 3; i++) {
+    // IA-2: Add minimum 5 acceptance criteria before approving requirements
+    for (let i = 1; i <= 5; i++) {
       await call(mgr, 'harness_add_ac', {
         taskId,
         id: `AC-${i}`,

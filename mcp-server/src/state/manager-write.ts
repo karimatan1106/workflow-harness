@@ -146,10 +146,12 @@ export function sanitizeTaskName(name: string): string {
 }
 
 export function applyUpdateRTMStatus(state: TaskState, rtmId: string, status: 'pending' | 'implemented' | 'tested' | 'verified', codeRef?: string, testRef?: string): boolean {
-  const entry = state.rtmEntries.find(e => e.id === rtmId);
-  if (!entry) return false;
-  entry.status = status;
-  if (codeRef !== undefined) entry.codeRef = codeRef;
-  if (testRef !== undefined) entry.testRef = testRef;
+  const entries = state.rtmEntries.filter(e => e.id === rtmId);
+  if (entries.length === 0) return false;
+  for (const entry of entries) {
+    entry.status = status;
+    if (codeRef !== undefined) entry.codeRef = codeRef;
+    if (testRef !== undefined) entry.testRef = testRef;
+  }
   state.updatedAt = new Date().toISOString(); refreshCheckpointTraceability(state); return true;
 }

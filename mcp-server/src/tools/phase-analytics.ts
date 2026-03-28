@@ -123,7 +123,7 @@ const ADVICE_RULES: Array<{ pattern: string; message: string }> = [
   { pattern: 'dci_broken_links', message: '仕様書パスの確認' },
   { pattern: 'exit_code_zero', message: 'Bashコマンドの事前検証' },
   { pattern: 'rtm_required', message: 'requirements作成時にF-NNNエントリを同時登録' },
-  { pattern: 'ac_format', message: 'AC-N形式の最低3件を確認' },
+  { pattern: 'ac_format', message: 'AC-N形式の最低5件を確認' },
 ];
 
 function generateAdvice(errors: PhaseErrorStats[], timings?: PhaseTimingsResult): string[] {

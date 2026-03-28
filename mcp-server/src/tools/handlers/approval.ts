@@ -7,6 +7,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { StateManager } from '../../state/manager.js';
 import { respond, respondError, validateSession, PHASE_APPROVAL_GATES, USER_APPROVAL_REQUIRED, type HandlerResult } from '../handler-shared.js';
+import { MIN_ACCEPTANCE_CRITERIA } from '../../gates/dod-l4-requirements.js';
 
 const APPROVAL_ARTIFACT_MAP: Record<string, string> = {
   hearing: '/hearing.md',
@@ -51,16 +52,16 @@ export async function handleHarnessApprove(args: Record<string, unknown>, sm: St
       }
     } catch { /* skip check on file read failure */ }
   }
-  // IA-2: Block requirements approval when AC count < 3
+  // IA-2: Block requirements approval when AC count < MIN_ACCEPTANCE_CRITERIA
   if (approvalType === 'requirements') {
     const acCount = task.acceptanceCriteria?.length ?? 0;
-    if (acCount < 3) {
-      return respondError('Cannot approve requirements: at least 3 acceptance criteria (AC-N) are required, ' +
+    if (acCount < MIN_ACCEPTANCE_CRITERIA) {
+      return respondError('Cannot approve requirements: at least ' + MIN_ACCEPTANCE_CRITERIA + ' acceptance criteria (AC-N) are required, ' +
         'but only ' + acCount + ' found. Use harness_add_ac to add more criteria.');
     }
   }
   // Generate refinedIntent from AC descriptions after IA-2 validation
-  if (approvalType === 'requirements' && task.acceptanceCriteria && task.acceptanceCriteria.length >= 3) {
+  if (approvalType === 'requirements' && task.acceptanceCriteria && task.acceptanceCriteria.length >= MIN_ACCEPTANCE_CRITERIA) {
     sm.setRefinedIntent(taskId, task.acceptanceCriteria.map(ac => ac.description).join(' / '));
   }
   // Update refinedIntent from design review content if available

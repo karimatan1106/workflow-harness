@@ -10,7 +10,7 @@ vi.mock('fs', async (importOriginal) => {
 });
 
 import { existsSync } from 'fs';
-import { checkFileLineLimit, checkBrokenPointers, detectGhostFiles } from '../gates/dod-helpers.js';
+import { checkFileLineLimit, checkBrokenPointers, detectGhostFiles, isStructuralLine } from '../gates/dod-helpers.js';
 import { FEEDBACK_SPEED_LAYERS } from '../tools/archgate.js';
 
 describe('N-29: checkFileLineLimit', () => {
@@ -62,5 +62,47 @@ describe('N-32: detectGhostFiles', () => {
 describe('N-27: FEEDBACK_SPEED_LAYERS', () => {
   it('has 4 speed layer keys', () => {
     expect(Object.keys(FEEDBACK_SPEED_LAYERS)).toEqual(['ms', 's', 'min', 'h']);
+  });
+});
+
+// ─── P3: AI Slop Detection TDD Red Tests ──────────
+
+describe('P3: AI slop pattern detection', () => {
+  it('TC-AC1-01: detects hedging pattern when appearing 2+ times', async () => {
+    // checkAiSlopPatterns does not exist yet - this will fail
+    const { checkAiSlopPatterns } = await import('../gates/dod-helpers.js');
+    const content = 'it is important to note that X.\nit is important to note that Y.';
+    const result = (checkAiSlopPatterns as Function)(content);
+    expect(result).toContainEqual(expect.stringContaining('hedging'));
+  });
+
+  it('TC-AC5-01: does not warn when hedging appears only once', async () => {
+    const { checkAiSlopPatterns } = await import('../gates/dod-helpers.js');
+    const content = 'it is important to note that X.';
+    const result = (checkAiSlopPatterns as Function)(content);
+    expect(result).toHaveLength(0);
+  });
+});
+
+// ─── P7: Structural Line Filter TDD Red Tests ─────
+
+describe('P7: structural line filter for duplicate exclusion', () => {
+  it('TC-AC21-01: code fence lines are excluded as structural', () => {
+    expect(isStructuralLine('```typescript')).toBe(true);
+    expect(isStructuralLine('```')).toBe(true);
+    expect(isStructuralLine('````')).toBe(true);
+  });
+
+  it('TC-AC22-01: Mermaid syntax lines are excluded as structural', () => {
+    expect(isStructuralLine('graph TD')).toBe(true);
+    expect(isStructuralLine('subgraph section1')).toBe(true);
+    expect(isStructuralLine('end')).toBe(true);
+    expect(isStructuralLine('A --> B')).toBe(true);
+  });
+
+  it('TC-AC23-01: table separator lines are excluded as structural', () => {
+    expect(isStructuralLine('| --- | --- |')).toBe(true);
+    expect(isStructuralLine('|:---|:---|')).toBe(true);
+    expect(isStructuralLine('| col1 | col2 |')).toBe(true);
   });
 });

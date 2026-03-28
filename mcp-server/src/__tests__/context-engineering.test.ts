@@ -80,6 +80,8 @@ describe('AC-2: refinedIntent header fallback', () => {
         'Acceptance criterion 1 for testing approval',
         'Acceptance criterion 2 for testing approval',
         'Acceptance criterion 3 for testing approval',
+        'Acceptance criterion 4 for testing approval',
+        'Acceptance criterion 5 for testing approval',
       ];
       for (let i = 0; i < acDescs.length; i++) {
         await call(mgr, 'harness_add_ac', { taskId, id: `AC-${i + 1}`, description: acDescs[i], sessionToken: token });

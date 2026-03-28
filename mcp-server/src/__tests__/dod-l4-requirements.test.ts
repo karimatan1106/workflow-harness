@@ -23,24 +23,24 @@ afterEach(() => {
 // ─── L4: AC Format Validation (IA-2) ─────────────
 
 describe('L4 AC format validation', () => {
-  it('fails when requirements.md has fewer than 3 acceptanceCriteria entries', async () => {
+  it('fails when requirements.md has fewer than 5 acceptanceCriteria entries', async () => {
     const state = makeMinimalState('requirements', tempDir, docsDir);
-    const content = buildValidRequirementsToon({ acCount: 2 });
+    const content = buildValidRequirementsToon({ acCount: 4 });
     writeFileSync(join(docsDir, 'requirements.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const acFmt = result.checks.find(c => c.check === 'ac_format')!;
     expect(acFmt.passed).toBe(false);
-    expect(acFmt.evidence).toContain('only 2');
+    expect(acFmt.evidence).toContain('only 4');
   });
 
-  it('passes when requirements.md has 3 or more acceptanceCriteria entries', async () => {
+  it('passes when requirements.md has 5 or more acceptanceCriteria entries', async () => {
     const state = makeMinimalState('requirements', tempDir, docsDir);
-    const content = buildValidRequirementsToon({ acCount: 3 });
+    const content = buildValidRequirementsToon({ acCount: 5 });
     writeFileSync(join(docsDir, 'requirements.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const acFmt = result.checks.find(c => c.check === 'ac_format')!;
     expect(acFmt.passed).toBe(true);
-    expect(acFmt.evidence).toContain('3');
+    expect(acFmt.evidence).toContain('5');
   });
 
   it('skips AC format check for non-requirements phases', async () => {
@@ -81,7 +81,7 @@ describe('L4 intent consistency check (CIC-1)', () => {
   it('fails when 3+ userIntent keywords are absent from requirements.md', async () => {
     const state = { ...makeMinimalState('requirements', tempDir, docsDir), userIntent: 'postgresql kubernetes elasticsearch microservice containerization orchestration' };
     // content does NOT include these keywords
-    const content = buildValidRequirementsToon({ acCount: 3 });
+    const content = buildValidRequirementsToon({ acCount: 5 });
     writeFileSync(join(docsDir, 'requirements.md'), content, 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const ic = result.checks.find(c => c.check === 'intent_consistency')!;
@@ -108,5 +108,44 @@ describe('L4 intent consistency check (CIC-1)', () => {
     const result = await runDoDChecks(state, docsDir);
     const ic = result.checks.find(c => c.check === 'intent_consistency')!;
     expect(ic.passed).toBe(true);
+  });
+});
+
+// ─── P6: AC Count Change (3→5) TDD Red Tests ───────
+
+describe('P6: AC count change to minimum 5', () => {
+  it('TC-AC16-01: MIN_ACCEPTANCE_CRITERIA is defined as 5', async () => {
+    // This import will fail until the constant is created
+    const mod = await import('../gates/dod-l4-requirements.js');
+    expect((mod as any).MIN_ACCEPTANCE_CRITERIA).toBe(5);
+  });
+
+  it('TC-AC17-01: fails with 4 ACs, passes with 5 ACs', async () => {
+    const state = makeMinimalState('requirements', tempDir, docsDir);
+    // 4 ACs should fail with new minimum of 5
+    const content4 = buildValidRequirementsToon({ acCount: 4 });
+    writeFileSync(join(docsDir, 'requirements.md'), content4, 'utf8');
+    const result4 = await runDoDChecks(state, docsDir);
+    const acFmt4 = result4.checks.find(c => c.check === 'ac_format')!;
+    expect(acFmt4.passed).toBe(false);
+
+    // 5 ACs should pass with new minimum of 5
+    const content5 = buildValidRequirementsToon({ acCount: 5 });
+    writeFileSync(join(docsDir, 'requirements.md'), content5, 'utf8');
+    const result5 = await runDoDChecks(state, docsDir);
+    const acFmt5 = result5.checks.find(c => c.check === 'ac_format')!;
+    expect(acFmt5.passed).toBe(true);
+  });
+
+  it('TC-AC18-01: error message includes current count and minimum count', async () => {
+    const state = makeMinimalState('requirements', tempDir, docsDir);
+    const content = buildValidRequirementsToon({ acCount: 3 });
+    writeFileSync(join(docsDir, 'requirements.md'), content, 'utf8');
+    const result = await runDoDChecks(state, docsDir);
+    const acFmt = result.checks.find(c => c.check === 'ac_format')!;
+    // acCount=3 is below minimum 5, so this should fail with both numbers in the message
+    expect(acFmt.passed).toBe(false);
+    expect(acFmt.evidence).toContain('3');
+    expect(acFmt.evidence).toContain('5');
   });
 });

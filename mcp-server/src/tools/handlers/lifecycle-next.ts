@@ -25,6 +25,7 @@ import { writeAllowedToolsFile } from '../../state/manager-lifecycle.js';
 import { appendErrorToon, mapChecksForErrorToon } from '../error-toon.js';
 import { appendTrace, recordDoDResults } from '../../observability/trace-writer.js';
 import { handleTaskCompletion } from './lifecycle-completion.js';
+import { detectRepeatedPattern, generatePivotSuggestion } from './pivot-advisor.js';
 
 export async function handleHarnessNext(
   args: Record<string, unknown>,
@@ -83,8 +84,9 @@ export async function handleHarnessNext(
       );
     }
   }
+  const tracePath = docsDir + '/observability-trace.toon';
   try {
-    appendTrace(docsDir + '/observability-trace.toon', {
+    appendTrace(tracePath, {
       timestamp: new Date().toISOString(), axis: 'phase-time',
       layer: 'system', event: 'phase-enter', detail: task.phase,
     });
@@ -98,7 +100,7 @@ export async function handleHarnessNext(
   }
   try { recordPhaseEnd(taskId, task.phase); } catch { /* non-blocking */ }
   try {
-    appendTrace(docsDir + '/observability-trace.toon', {
+    appendTrace(tracePath, {
       timestamp: new Date().toISOString(), axis: 'phase-time',
       layer: 'system', event: 'phase-exit', detail: task.phase,
     });
@@ -153,11 +155,8 @@ function buildDoDFailureResponse(
     recordDoDFailure(taskId, task.phase, dodResult.errors);
   } catch { /* non-blocking */ }
   try {
-    recordDoDResults(
-      docsDir + '/observability-trace.toon',
-      dodResult.checks.map((c: any) => ({ checkId: c.check, passed: c.passed, message: c.evidence })),
-      retryCount,
-    );
+    const mapped = dodResult.checks.map((c: any) => ({ checkId: c.check, passed: c.passed, message: c.evidence }));
+    recordDoDResults(docsDir + '/observability-trace.toon', mapped, retryCount);
   } catch { /* non-blocking */ }
   try {
     appendErrorToon(docsDir, {
@@ -167,11 +166,12 @@ function buildDoDFailureResponse(
     });
   } catch { /* non-blocking */ }
   const vdb1Warning = retryCount >= 3
-    ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. `
-      + 'Same validation error recurring. '
-      + 'Diagnose the validator before retrying. '
-      + 'Check if the DoD check itself has a bug.'
+    ? `VDB-1: Phase "${task.phase}" failed ${retryCount} times. Same validation error recurring. `
+      + 'Diagnose the validator before retrying. Check if the DoD check itself has a bug.'
     : undefined;
+  const failedChecks = dodResult.checks.filter(c => !c.passed);
+  const pivotPattern = detectRepeatedPattern(failedChecks);
+  const pivotSuggestion = pivotPattern ? generatePivotSuggestion(pivotPattern, failedChecks) : undefined;
   return respond({
     error: 'DoD checks failed. Fix the following issues before advancing.',
     dodChecks: dodResult.checks, errors: dodResult.errors,
@@ -181,6 +181,7 @@ function buildDoDFailureResponse(
       suggestedModel: retryResult.suggestedModel,
     },
     ...(vdb1Warning ? { vdb1Warning } : {}),
+    ...(pivotSuggestion ? { pivotSuggestion } : {}),
   });
 }
 
@@ -188,11 +189,10 @@ function addNextPhaseOutputFile(
   responseObj: Record<string, unknown>, nextPhase: string,
   freshTask: any, docsDir: string, task: any,
 ): void {
-  const nextPhaseConfig = PHASE_REGISTRY[nextPhase as keyof typeof PHASE_REGISTRY];
-  if (nextPhaseConfig?.outputFile) {
-    const resolvedDocsDir = freshTask?.docsDir ?? docsDir;
-    responseObj.expectedOutputFile = nextPhaseConfig.outputFile
-      .replace('{docsDir}', resolvedDocsDir)
+  const cfg = PHASE_REGISTRY[nextPhase as keyof typeof PHASE_REGISTRY];
+  if (cfg?.outputFile) {
+    responseObj.expectedOutputFile = cfg.outputFile
+      .replace('{docsDir}', freshTask?.docsDir ?? docsDir)
       .replace('{workflowDir}', freshTask?.workflowDir ?? task.workflowDir ?? '');
   }
 }

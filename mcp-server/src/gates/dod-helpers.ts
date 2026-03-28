@@ -24,6 +24,14 @@ export function isStructuralLine(line: string): boolean {
   if (/^\*\*[^*]+\*\*[:：]?\s*$/.test(trimmed)) return true;
   if (/^[-*]\s+\*\*[^*]+\*\*[:：]?\s*$/.test(trimmed)) return true;
   if (/^(?:[-*]\s+)?.{1,50}[:：]\s*$/.test(trimmed)) return true;
+  // Mermaid syntax keywords
+  if (/^(graph|subgraph|end|classDef|class |pie|gantt|sequenceDiagram|flowchart)\b/.test(trimmed)) return true;
+  // Mermaid arrows
+  if (/^\S+\s*-->/.test(trimmed) || /^\S+\s*---/.test(trimmed)) return true;
+  // HTML tags
+  if (/^<\/?[a-z]/i.test(trimmed)) return true;
+  // Shell commands
+  if (/^(#!\/|\$\s)/.test(trimmed)) return true;
   return false;
 }
 
@@ -66,6 +74,27 @@ export function checkForbiddenPatterns(content: string): string[] {
 
 export function checkBracketPlaceholders(content: string): boolean {
   return BRACKET_PLACEHOLDER_REGEX.test(extractNonCodeLines(content).join('\n'));
+}
+
+const AI_SLOP_CATEGORIES: Record<string, RegExp> = {
+  hedging: /\b(it seems like|perhaps|maybe|might be|could potentially|it appears that)\b/gi,
+  empty_emphasis: /\b(it is important to note|it is worth noting|it should be noted)\b/gi,
+  redundant_preamble: /\b(as mentioned (earlier|above|before|previously))\b/gi,
+  vague_connectors: /\b(in terms of|with respect to|in the context of)\b/gi,
+  ai_buzzwords: /\b(delve|tapestry|intricate|landscape|leverag(?:e|ing)|comprehensive|robust|holistic|synerg(?:y|ies|istic))\b/gi,
+};
+
+export function checkAiSlopPatterns(content: string): string[] {
+  const textLines = extractNonCodeLines(content);
+  const text = textLines.join('\n');
+  const warnings: string[] = [];
+  for (const [category, regex] of Object.entries(AI_SLOP_CATEGORIES)) {
+    const matches = text.match(regex);
+    if (matches && matches.length >= 2) {
+      warnings.push(`AI hedging: ${category} pattern found ${matches.length} times`);
+    }
+  }
+  return warnings;
 }
 
 export function checkDuplicateLines(content: string): string[] {

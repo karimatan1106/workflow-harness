@@ -13,6 +13,7 @@ import {
   checkForbiddenPatterns,
   checkBracketPlaceholders,
   checkDuplicateLines,
+  checkAiSlopPatterns,
 } from './dod-helpers.js';
 import type { DoDCheckResult } from './dod-types.js';
 
@@ -60,6 +61,25 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
     if (duplicates.length > 0) errors.push(`Duplicate lines (3+ times): ${duplicates.slice(0, 3).join('; ')}`);
   }
 
+  const slopWarnings = checkAiSlopPatterns(content);
+
+  // Code fence check: phases with noCodeFences=true must not contain fenced code blocks
+  if (config.noCodeFences && extname(outputFile) !== '.mmd') {
+    const CODE_FENCE_REGEX = /^`{3,}/gm;
+    const lines = content.split('\n');
+    const fenceLines: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (CODE_FENCE_REGEX.test(lines[i])) {
+        fenceLines.push(`line ${i + 1}`);
+      }
+      CODE_FENCE_REGEX.lastIndex = 0;
+    }
+    if (fenceLines.length > 0) {
+      const fenceBasename = outputFile.split(/[\\/]/).pop() ?? outputFile;
+      slopWarnings.push(`[WARN] Code fences found in ${fenceBasename}: at ${fenceLines.join(', ')}`);
+    }
+  }
+
   // TOON key checks only apply to .toon files; skip for .mmd and other non-TOON formats
   if (extname(outputFile) === '.toon') {
     const toonCheck = checkRequiredToonKeys(content, config.requiredSections ?? []);
@@ -78,9 +98,10 @@ export function checkL4ContentValidation(phase: string, docsDir: string, workflo
   }
 
   const passed = errors.length === 0;
+  const warnSuffix = slopWarnings.length > 0 ? ` [WARN] ${slopWarnings.join('; ')}` : '';
   return {
     level: 'L4', check: 'content_validation', passed,
-    evidence: passed ? 'Content validation passed: no forbidden patterns, placeholders, or duplicates' : errors.join('; '),
+    evidence: (passed ? 'Content validation passed: no forbidden patterns, placeholders, or duplicates' : errors.join('; ')) + warnSuffix,
     ...(!passed && { fix: errors.some(e => e.includes('Forbidden')) ? '指摘された禁止語を削除し、具体的な実例に置き換えてください。' : errors.some(e => e.includes('Duplicate')) ? '繰り返されている行をそれぞれ異なる内容に書き換えてください。' : errors.some(e => e.includes('Missing required TOON')) ? '必須TOONキー(decisions/artifacts/next)を成果物に追加してください。' : errors.some(e => e.includes('Missing required Markdown')) ? '必須セクション(## decisions/## artifacts/## next)を追加してください。' : errors.some(e => e.includes('TOON parse')) ? '.toonファイルに ## ヘッダーやMarkdown記法を書かないこと。TOON形式は key: value のみ。' : '指摘された内容バリデーションエラーを修正してください。' }),
   };
 }

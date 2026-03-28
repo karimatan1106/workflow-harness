@@ -99,7 +99,7 @@ export function buildValidRequirementsMd(opts: {
   extraContent?: string;
   userIntent?: string;
 }): string {
-  const { acCount = 3, hasNotInScope = true, hasOpenQuestions = true } = opts;
+  const { acCount = 5, hasNotInScope = true, hasOpenQuestions = true } = opts;
   const lines: string[] = [];
   lines.push('## decisions');
   for (let i = 1; i <= 5; i++) {

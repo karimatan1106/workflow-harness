@@ -27,7 +27,7 @@ afterAll(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('IA-2 AC count requirement', () => {
-  it('harness_approve rejects requirements with fewer than 3 ACs', async () => {
+  it('harness_approve rejects requirements with fewer than 5 ACs', async () => {
     const mgr = createMgr();
     const startRes = await call(mgr, 'harness_start', {
       taskName: 'ac-count-test',
@@ -38,17 +38,18 @@ describe('IA-2 AC count requirement', () => {
 
     token = await advanceUntilPhase(mgr, taskId, token, 'requirements');
 
-    // Add only 2 ACs (less than minimum 3)
-    await call(mgr, 'harness_add_ac', { taskId, id: 'AC-1', description: 'First criterion for test', sessionToken: token });
-    await call(mgr, 'harness_add_ac', { taskId, id: 'AC-2', description: 'Second criterion for test', sessionToken: token });
+    // Add only 4 ACs (less than minimum 5)
+    for (let i = 1; i <= 4; i++) {
+      await call(mgr, 'harness_add_ac', { taskId, id: `AC-${i}`, description: `Criterion ${i} for test`, sessionToken: token });
+    }
 
     const res = await call(mgr, 'harness_approve', { taskId, type: 'requirements', sessionToken: token });
     expect(typeof res.error).toBe('string');
-    expect((res.error as string)).toContain('at least 3 acceptance criteria');
-    expect((res.error as string)).toContain('only 2 found');
+    expect((res.error as string)).toContain('at least 5 acceptance criteria');
+    expect((res.error as string)).toContain('only 4 found');
   });
 
-  it('harness_approve succeeds with exactly 3 ACs', async () => {
+  it('harness_approve succeeds with exactly 5 ACs', async () => {
     const mgr = createMgr();
     const startRes = await call(mgr, 'harness_start', {
       taskName: 'ac-count-pass-test',
@@ -59,7 +60,7 @@ describe('IA-2 AC count requirement', () => {
 
     token = await advanceUntilPhase(mgr, taskId, token, 'requirements');
 
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 5; i++) {
       await call(mgr, 'harness_add_ac', {
         taskId, id: `AC-${i}`, description: `Criterion ${i} for AC count test`, sessionToken: token,
       });

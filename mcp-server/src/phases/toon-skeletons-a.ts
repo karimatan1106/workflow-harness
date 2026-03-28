@@ -144,7 +144,7 @@ next:
   warnings: <注意点>
 
 注意: カンマを含む値は "..." で囲むこと。[N]は実際の件数に置換すること。
-acceptanceCriteriaは最低3件必須(DoD L4)。notInScopeとopenQuestionsは必須キー。
+acceptanceCriteriaは最低5件必須(DoD L4)。notInScopeとopenQuestionsは必須キー。
 openQuestionsが空なら [0] で空配列にすること。未解決質問が残っているとDoD失敗。
 harness_add_ac / harness_add_rtm を呼んでACとRTMを登録すること。`;
 

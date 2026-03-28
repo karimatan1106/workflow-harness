@@ -43,8 +43,8 @@ describe('Parallel Phases', () => {
     // Advance to requirements, add ACs, approve, then advance one more
     token = await advanceUntilPhase(mgr, taskId, token, 'requirements');
 
-    // IA-2: Add minimum 3 acceptance criteria before approving requirements
-    for (let i = 1; i <= 3; i++) {
+    // IA-2: Add minimum 5 acceptance criteria before approving requirements
+    for (let i = 1; i <= 5; i++) {
       await call(mgr, 'harness_add_ac', {
         taskId,
         id: `AC-${i}`,
@@ -66,6 +66,8 @@ describe('Parallel Phases', () => {
       '- AC-1: Acceptance criterion 1 for parallel phase testing',
       '- AC-2: Acceptance criterion 2 for parallel phase testing',
       '- AC-3: Acceptance criterion 3 for parallel phase testing',
+      '- AC-4: Acceptance criterion 4 for parallel phase testing',
+      '- AC-5: Acceptance criterion 5 for parallel phase testing',
       '',
       '## notInScope',
       '- Performance optimization is excluded from this task',
@@ -82,7 +84,7 @@ describe('Parallel Phases', () => {
     writeFileSync(join(docsDir, 'requirements.md'), requirementsContent, 'utf8');
 
     // RTM-REQ: requirements phase needs RTM entries referencing ACs
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 5; i++) {
       await call(mgr, 'harness_add_rtm', {
         taskId,
         id: `F-00${i}`,
@@ -142,6 +144,8 @@ describe('Parallel Phases', () => {
       '- AC-1: System authenticates users correctly',
       '- AC-2: System logs all access events',
       '- AC-3: System encrypts sensitive data',
+      '- AC-4: System enforces rate limiting on all endpoints',
+      '- AC-5: System validates all input before processing',
       '',
       '## notInScope',
       '- Mobile application development is excluded',

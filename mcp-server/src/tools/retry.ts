@@ -5,6 +5,7 @@
 
 import type { DoDCheckResult } from '../gates/dod-types.js';
 import { getActiveADRs } from './adr.js';
+import { MIN_ACCEPTANCE_CRITERIA } from '../gates/dod-l4-requirements.js';
 
 export interface RetryContext {
   phase: string;
@@ -90,8 +91,8 @@ function errorToImprovement(errorMessage: string): string[] {
     improvements.push('RTMエントリのステータスを更新してください。harness_update_rtm_statusで各F-NNNのステータスをimplemented以上に更新すること。');
   if (/AC not met/i.test(errorMessage) || /AC still open/i.test(errorMessage))
     improvements.push('受入基準のステータスを更新してください。harness_update_ac_statusで各AC-Nのステータスをmetに更新すること。');
-  if (/AC-N entries.*minimum 3/i.test(errorMessage))
-    improvements.push('requirements.mdに最低3件のAC-N形式の受入基準を追加してください。形式: AC-1: <具体的な条件>');
+  if (/AC-N entries.*minimum \d+/i.test(errorMessage))
+    improvements.push(`requirements.mdに最低${MIN_ACCEPTANCE_CRITERIA}件のAC-N形式の受入基準を追加してください。形式: AC-1: <具体的な条件>`);
   if (/NOT_IN_SCOPE/i.test(errorMessage) || /スコープ外/i.test(errorMessage))
     improvements.push('requirements.mdに ## NOT_IN_SCOPE セクションを追加し、スコープ外の項目を明示してください。');
   if (/OPEN_QUESTIONS/i.test(errorMessage))

@@ -8,6 +8,8 @@ import type { TaskState } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
 import { resolveProjectPath } from '../utils/project-root.js';
 
+export const MIN_ACCEPTANCE_CRITERIA = 5;
+
 /** Parse Markdown content into sections keyed by heading text (lowercased). */
 function parseMarkdownSections(content: string): Record<string, string> {
   const sections: Record<string, string> = {};
@@ -32,56 +34,59 @@ function parseMarkdownSections(content: string): Record<string, string> {
   return sections;
 }
 
-function readRequirementsMarkdown(docsDir: string): Record<string, string> | null {
+interface ReqFileResult {
+  reqPath: string;
+  content: string;
+  sections: Record<string, string>;
+}
+
+/** Load requirements.md: read file and parse sections. Returns null if missing/unparseable. */
+function loadRequirementsFile(docsDir: string): ReqFileResult | null {
   const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
   if (!existsSync(reqPath)) return null;
   const content = readFileSync(reqPath, 'utf8');
   const sections = parseMarkdownSections(content);
   if (Object.keys(sections).length === 0) return null;
-  return sections;
+  return { reqPath, content, sections };
+}
+
+/** Build a skip result for non-requirements phases. */
+function skipForNonRequirements(check: string, phase: string): DoDCheckResult {
+  return { level: 'L4', check, passed: true, evidence: `${check} check not required for phase: ${phase}` };
+}
+
+/** Build a fail result when requirements.md is missing or unparseable. */
+function reqFileMissing(check: string, docsDir: string): DoDCheckResult {
+  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
+  return {
+    level: 'L4', check, passed: false,
+    evidence: `requirements.md not found or unparseable at: ${reqPath}`,
+    fix: 'requirementsフェーズの成果物(requirements.md)を作成し、## ヘッダーでセクションを定義してください。',
+  };
 }
 
 export function checkACFormat(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
-  if (phase !== 'requirements') {
-    return { level: 'L4', check: 'ac_format', passed: true, evidence: 'AC format check not required for phase: ' + phase };
-  }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
-  if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
-  }
-  const content = readFileSync(reqPath, 'utf8');
-  const sections = readRequirementsMarkdown(docsDir);
-  if (!sections) {
-    return { level: 'L4', check: 'ac_format', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
-  }
-  // Count unique AC-N patterns in the entire content
-  const acMatches = content.match(/AC-\d+/g) ?? [];
-  const uniqueACs = new Set(acMatches);
-  const acCount = uniqueACs.size;
-  if (acCount < 3) {
+  if (phase !== 'requirements') return skipForNonRequirements('ac_format', phase);
+  const req = loadRequirementsFile(docsDir);
+  if (!req) return reqFileMissing('ac_format', docsDir);
+  const acMatches = req.content.match(/AC-\d+/g) ?? [];
+  const acCount = new Set(acMatches).size;
+  if (acCount < MIN_ACCEPTANCE_CRITERIA) {
     return {
       level: 'L4', check: 'ac_format', passed: false,
-      evidence: `requirements.md contains only ${acCount} acceptanceCriteria entries (minimum 3 required)\n修正方法: acceptanceCriteriaセクションにAC項目を${3 - acCount}件追加してください。`,
-      fix: '最低3件のAC-N形式の受入基準を追加してください。',
+      evidence: `requirements.md contains only ${acCount} acceptanceCriteria entries (minimum ${MIN_ACCEPTANCE_CRITERIA} required)\n修正方法: acceptanceCriteriaセクションにAC項目を${MIN_ACCEPTANCE_CRITERIA - acCount}件追加してください。`,
+      fix: `最低${MIN_ACCEPTANCE_CRITERIA}件のAC-N形式の受入基準を追加してください。`,
       example: '## acceptanceCriteria\n- AC-1: 機能Xが正常に動作すること',
     };
   }
-  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.md contains ${acCount} acceptanceCriteria entries (minimum 3 met)` };
+  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.md contains ${acCount} acceptanceCriteria entries (minimum ${MIN_ACCEPTANCE_CRITERIA} met)` };
 }
 
 export function checkNotInScope(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
-  if (phase !== 'requirements') {
-    return { level: 'L4', check: 'not_in_scope_section', passed: true, evidence: 'NOT_IN_SCOPE check not required for phase: ' + phase };
-  }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
-  if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
-  }
-  const sections = readRequirementsMarkdown(docsDir);
-  if (!sections) {
-    return { level: 'L4', check: 'not_in_scope_section', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
-  }
-  const hasNotInScope = Object.keys(sections).some(k => k.replace(/[_\s]/g, '').includes('notinscope'));
+  if (phase !== 'requirements') return skipForNonRequirements('not_in_scope_section', phase);
+  const req = loadRequirementsFile(docsDir);
+  if (!req) return reqFileMissing('not_in_scope_section', docsDir);
+  const hasNotInScope = Object.keys(req.sections).some(k => k.replace(/[_\s]/g, '').includes('notinscope'));
   return {
     level: 'L4', check: 'not_in_scope_section', passed: hasNotInScope,
     evidence: hasNotInScope
@@ -92,14 +97,11 @@ export function checkNotInScope(state: TaskState, phase: string, docsDir: string
 }
 
 // CIC-1 (S2-28): Cross-phase intent consistency — ensure requirements.md reflects userIntent
+// Note: this check reads raw content only (no section parsing needed), so it bypasses loadRequirementsFile.
 export function checkIntentConsistency(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
-  if (phase !== 'requirements') {
-    return { level: 'L4', check: 'intent_consistency', passed: true, evidence: 'Intent consistency check not required for phase: ' + phase };
-  }
+  if (phase !== 'requirements') return skipForNonRequirements('intent_consistency', phase);
   const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
-  if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'intent_consistency', passed: false, evidence: 'requirements.md not found for intent consistency check', fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
-  }
+  if (!existsSync(reqPath)) return reqFileMissing('intent_consistency', docsDir);
   const rawContent = readFileSync(reqPath, 'utf8').toLowerCase();
   const stopWords = new Set(['する', 'ある', 'いる', 'こと', 'ため', 'から', 'まで', 'また', 'この', 'その', 'また', 'そして', 'the', 'and', 'for', 'this', 'that', 'with', 'from', 'into']);
   const keywords = state.userIntent
@@ -141,22 +143,14 @@ export function isOpenQuestion(q: unknown): boolean {
 }
 
 export function checkOpenQuestions(state: TaskState, phase: string, docsDir: string): DoDCheckResult {
-  if (phase !== 'requirements') {
-    return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'OPEN_QUESTIONS check not required for phase: ' + phase };
-  }
-  const reqPath = resolveProjectPath(docsDir) + '/requirements.md';
-  if (!existsSync(reqPath)) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md not found at: ' + reqPath, fix: 'requirementsフェーズの成果物(requirements.md)を作成してください。' };
-  }
-  const sections = readRequirementsMarkdown(docsDir);
-  if (!sections) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md could not be parsed at: ' + reqPath, fix: 'Markdown形式で ## ヘッダーを使用してセクションを定義してください。' };
-  }
-  const oqKey = Object.keys(sections).find(k => k.replace(/[_\s]/g, '').includes('openquestions'));
+  if (phase !== 'requirements') return skipForNonRequirements('open_questions_section', phase);
+  const req = loadRequirementsFile(docsDir);
+  if (!req) return reqFileMissing('open_questions_section', docsDir);
+  const oqKey = Object.keys(req.sections).find(k => k.replace(/[_\s]/g, '').includes('openquestions'));
   if (!oqKey) {
     return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md is missing openQuestions section\n修正方法: requirements.md に ## openQuestions セクションを追加してください。未解決の場合は空にしてください。', fix: 'openQuestionsセクションを追加してください。不明点がなければ空セクション。', example: '## openQuestions\n' };
   }
-  const content = sections[oqKey];
+  const content = req.sections[oqKey];
   // Empty or "なし" means no open questions (resolved)
   const hasOpen = content !== '' && content !== 'なし' && content.trim().length > 0;
   if (hasOpen) {
