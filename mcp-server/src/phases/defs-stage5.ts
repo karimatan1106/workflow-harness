@@ -20,6 +20,9 @@ export const DEFS_STAGE5: Record<string, PhaseDefinition> = {
 - タスク名: {taskName}
 - タスクID: {taskId}
 
+重要: harness_capture_baselineは実装変更前に必ず実行すること。
+テスト実行前にベースラインが未記録の場合、regression_testフェーズで比較基準が存在せず再実行が必要になる。
+
 作業内容
 全テストを実行し結果を記録してください。
 1. テストスイートの実行

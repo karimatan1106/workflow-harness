@@ -9,7 +9,6 @@ import { getTaskMetrics, type TaskMetrics } from './metrics.js';
 import { readErrorToon } from './error-toon.js';
 import { detectOutliers, type OutlierResult } from '../analytics/outlier-detection.js';
 import { classifyErrors, type ErrorClassification } from '../analytics/error-classification.js';
-
 export interface CheckFailure { check: string; level: string; count: number }
 export interface PhaseErrorStats { phase: string; retries: number; failures: CheckFailure[] }
 export interface BottleneckResult {
@@ -39,10 +38,8 @@ export interface AnalyticsResult {
   hookObsStats?: HookObsStats;
   errorClassification?: ErrorClassification;
 }
-
 // ─── DoD Failure Analysis ────────────────────────
 type PhaseData = { retries: number; checks: Map<string, { level: string; count: number }> };
-
 function buildErrorAnalysis(task: TaskState, toonErrors: ReturnType<typeof readErrorToon>, metrics?: TaskMetrics): PhaseErrorStats[] {
   const pm = new Map<string, PhaseData>();
   const ensure = (p: string) => {
@@ -91,7 +88,6 @@ function buildErrorAnalysis(task: TaskState, toonErrors: ReturnType<typeof readE
   }
   return result.sort((a, b) => b.retries - a.retries);
 }
-
 function findBottlenecks(errors: PhaseErrorStats[], timings?: PhaseTimingsResult): BottleneckResult {
   const r: BottleneckResult = {};
   if (timings) {
@@ -115,6 +111,8 @@ function findBottlenecks(errors: PhaseErrorStats[], timings?: PhaseTimingsResult
   }
   return r;
 }
+
+const COMPLETED_STALE_THRESHOLD_SEC = 3600;
 
 const ADVICE_RULES: Array<{ pattern: string; message: string }> = [
   { pattern: 'toon_safety', message: 'TOONスケルトンのフィールド定義を確認' },
@@ -143,7 +141,11 @@ function generateAdvice(errors: PhaseErrorStats[], timings?: PhaseTimingsResult)
   }
   if (timings) {
     for (const [phase, t] of Object.entries(timings.phaseTimings)) {
-      if (!t.current && t.seconds > 600) advice.push(`フェーズ分割またはスコープ縮小を検討: ${phase} (${t.seconds}s)`);
+      const sec = t.seconds ?? (t as any).duration ?? 0;
+      if (!t.current && sec > 600) advice.push(`フェーズ分割またはスコープ縮小を検討: ${phase} (${sec}s)`);
+      if (!t.current && phase === 'completed' && sec > COMPLETED_STALE_THRESHOLD_SEC) {
+        advice.push(`completedフェーズが${sec}s滞留 (閾値: ${COMPLETED_STALE_THRESHOLD_SEC}s)`);
+      }
     }
     if (timings.totalElapsed.seconds > 1800) {
       advice.push(`タスクサイズの見直しを推奨 (総所要時間: ${timings.totalElapsed.seconds}s)`);
@@ -154,7 +156,6 @@ function generateAdvice(errors: PhaseErrorStats[], timings?: PhaseTimingsResult)
 
 // ─── Hook obs log parsing ────────────────────────
 const HOOK_OBS_LOG = '/tmp/harness-hook-obs.log';
-
 function parseHookObsLog(): HookObsStats | undefined {
   try {
     if (!existsSync(HOOK_OBS_LOG)) return undefined;
@@ -172,7 +173,6 @@ function parseHookObsLog(): HookObsStats | undefined {
     return { toolCounts, allowed, blocked, top5 };
   } catch { return undefined; }
 }
-
 export function buildAnalytics(task: TaskState, timings?: PhaseTimingsResult): AnalyticsResult {
   const docsDir = task.docsDir ?? ('docs/workflows/' + task.taskName);
   const toonErrors = readErrorToon(docsDir);

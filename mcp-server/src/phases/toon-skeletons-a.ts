@@ -161,6 +161,7 @@ export const TOON_SKELETON_HEARING = `
   - [不明確な点1]
 :assumptions
   - [前提として置いた仮定1]
+:userResponse [AskUserQuestionの回答全文]
 :end intent-analysis
 
 :section implementation-plan

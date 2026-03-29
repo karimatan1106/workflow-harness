@@ -10,7 +10,7 @@ import { PHASE_REGISTRY } from '../../phases/registry.js';
 import { getPhaseDefinition } from '../../phases/definitions.js';
 import { buildRetryPrompt, type RetryContext } from '../retry.js';
 import { stashFailure, promoteStashedFailure } from '../reflector.js';
-import { respond, respondError, validateSession, PARALLEL_GROUPS, type HandlerResult } from '../handler-shared.js';
+import { respond, respondError, validateSession, PARALLEL_GROUPS, PHASE_APPROVAL_GATES, type HandlerResult } from '../handler-shared.js';
 
 export async function handleHarnessSetScope(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
   const taskId = String(args.taskId ?? '');
@@ -83,16 +83,37 @@ export async function handleHarnessBack(args: Record<string, unknown>, sm: State
   const taskId = String(args.taskId ?? '');
   const targetPhase = String(args.targetPhase ?? '');
   const reason = args.reason ? String(args.reason) : 'No reason provided';
+  const cascade = Boolean(args.cascade ?? false);
   if (!taskId) return respondError('taskId is required');
   if (!targetPhase) return respondError('targetPhase is required');
   const task = sm.loadTask(taskId);
   if (!task) return respondError('Task not found: ' + taskId);
   const sessionErr = validateSession(task, args.sessionToken);
   if (sessionErr) return respondError(sessionErr);
+  const previousPhase = task.phase;
   const backResult = sm.goBack(taskId, targetPhase as PhaseName);
   if (!backResult.success) return respondError(backResult.error ?? 'Failed to go back to phase: ' + targetPhase);
-  sm.addProof(taskId, { phase: targetPhase as PhaseName, level: 'L4' as ControlLevel, check: 'rollback to ' + targetPhase, result: true, evidence: 'Rollback reason: ' + reason + '. Rolled back from ' + task.phase, timestamp: new Date().toISOString() });
-  return respond({ taskId, previousPhase: task.phase, targetPhase, rolledBack: true, reason });
+  sm.addProof(taskId, { phase: targetPhase as PhaseName, level: 'L4' as ControlLevel, check: 'rollback to ' + targetPhase, result: true, evidence: 'Rollback reason: ' + reason + '. Rolled back from ' + previousPhase, timestamp: new Date().toISOString() });
+  if (!cascade) {
+    return respond({ taskId, previousPhase, targetPhase, rolledBack: true, reason });
+  }
+  const cascadeReapproved: string[] = [];
+  const cascadeFailed: { phase: string; reason: string }[] = [];
+  // deleteApprovals for rolled-back gate phases during cascade
+  const refreshed = sm.loadTask(taskId);
+  if (refreshed?.approvals) {
+    const gatePhases = Object.keys(PHASE_APPROVAL_GATES);
+    for (const gp of gatePhases) {
+      if (refreshed.approvals[PHASE_APPROVAL_GATES[gp]]) {
+        delete refreshed.approvals[PHASE_APPROVAL_GATES[gp]];
+        cascadeReapproved.push(gp);
+      }
+    }
+  }
+  if (cascadeFailed.length > 0) {
+    return respond({ taskId, previousPhase, targetPhase, rolledBack: true, reason, cascadeFailed, cascadeReapproved });
+  }
+  return respond({ taskId, previousPhase, targetPhase, rolledBack: true, reason, cascadeReapproved });
 }
 
 export async function handleHarnessReset(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {

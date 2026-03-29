@@ -42,6 +42,7 @@ artifacts[1]{path,role,summary}:
   docs/workflows/task/scope-definition.md, spec, "スコープ定義"
 
 ルール: キー: 値 / カンマ・改行含む値のみ引用符 / 配列: \`名[N]{列1,列2}:\` + 各行カンマ区切り / ネスト: インデント
+フィールド順序: phase→status→summary→配列セクション→decisions→artifacts→next
 
 必須: decisions[N≥5]{id,statement,rationale} / artifacts[N]{path,role,summary} / next(criticalDecisions,readFiles,warnings)
 role: spec|design|test|impl|report|diagram。[N]は実数に置換。

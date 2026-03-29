@@ -105,6 +105,7 @@ export const TOOL_DEFS_A = [
         targetPhase: { type: 'string', description: 'Target phase.' },
         reason: { type: 'string', description: 'Reason.' },
         sessionToken: { type: 'string', description: 'Session token.' },
+        cascade: { type: 'boolean', description: 'Re-approve intermediate approval gates.' },
       },
       required: ['taskId', 'targetPhase', 'sessionToken'],
     },

@@ -21,6 +21,7 @@ export const DEFS_STAGE0: Record<string, PhaseDefinition> = {
 1. ユーザー意図を分析し、不明確な点を特定する
 
 2. AskUserQuestion で確認事項をヒアリング（1回のAskで最大4問）
+   - AskUserQuestion呼び出しは必須。選択肢は2個以上提示すること。
    - 各質問に2-4個の選択肢を用意
    - 技術的判断が必要な場合は推奨を(Recommended)で明示
    - 不明確な点が多い場合は複数回に分けて質問
@@ -36,6 +37,7 @@ export const DEFS_STAGE0: Record<string, PhaseDefinition> = {
    - decisions: 確認で決まった事項
 
 {TOON_SKELETON_HEARING}
+{SUMMARY_SECTION}
 {ARTIFACT_QUALITY}
 {EXIT_CODE_RULE}`,
   },
