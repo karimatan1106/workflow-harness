@@ -30,4 +30,10 @@ describe('hearing template reliability', () => {
       expect(template).toMatch(/\{SUMMARY_SECTION\}/);
     });
   });
+
+  it('TC-AC4-01: hearing template contains concrete quality rules with examples', () => {
+    const template = DEFS_STAGE0.hearing.subagentTemplate;
+    expect(template).toMatch(/悪い例|bad example/i);
+    expect(template).toMatch(/良い例|good example/i);
+  });
 });
