@@ -77,3 +77,41 @@ describe('TDD-1 Red evidence check', () => {
   });
 
 });
+
+// ─── scopeFiles exemption (new feature: non-code-only tasks skip TDD Red) ──
+
+describe('checkTDDRedEvidence scopeFiles exemption', () => {
+  it('TC-AC1-01: should exempt when scopeFiles are all .md/.mmd', () => {
+    const state = makeMinimalState('test_impl', tempDir, docsDir);
+    state.scopeFiles = ['readme.md', 'spec.mmd'];
+    state.proofLog = [];
+    const result = checkTDDRedEvidence(state, 'test_impl');
+    expect(result.passed).toBe(true);
+    expect(result.evidence).toMatch(/exempt/i);
+  });
+
+  it('TC-AC1-02: should fall through to existing logic when scopeFiles is empty', () => {
+    const state = makeMinimalState('test_impl', tempDir, docsDir);
+    state.scopeFiles = [];
+    state.proofLog = [];
+    const result = checkTDDRedEvidence(state, 'test_impl');
+    // Empty scopeFiles should NOT be exempt; no proof log means fail
+    expect(result.passed).not.toBe(true);
+  });
+
+  it('TC-AC2-01: should preserve existing logic when scopeFiles contain .ts', () => {
+    const state = makeMinimalState('test_impl', tempDir, docsDir);
+    state.scopeFiles = ['src/main.ts'];
+    state.proofLog = [];
+    const result = checkTDDRedEvidence(state, 'test_impl');
+    expect(result.passed).toBe(false);
+  });
+
+  it('TC-AC2-02: should not exempt when scopeFiles contain mixed extensions', () => {
+    const state = makeMinimalState('test_impl', tempDir, docsDir);
+    state.scopeFiles = ['readme.md', 'src/main.ts'];
+    state.proofLog = [];
+    const result = checkTDDRedEvidence(state, 'test_impl');
+    expect(result.passed).toBe(false);
+  });
+});

@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setupHandlerTest, teardownHandlerTest, type TestCtx } from './handler-test-setup.js';
+import { ARTIFACT_QUALITY_RULES } from '../phases/definitions-shared.js';
 
 let ctx: TestCtx;
 let createMgr: TestCtx['createMgr'];
@@ -160,5 +161,16 @@ describe('Validation', () => {
     expect(res.phase).toBe('hearing');
     expect(res.passed).toBe(true);
     expect(res.retry).toBeUndefined();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ARTIFACT_QUALITY_RULES unique constraint
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('ARTIFACT_QUALITY_RULES unique constraint', () => {
+  it('TC-AC3-01: should contain unique line constraint in ARTIFACT_QUALITY_RULES', () => {
+    // ARTIFACT_QUALITY_RULES should mention uniqueness or duplicate prevention
+    expect(ARTIFACT_QUALITY_RULES).toMatch(/ユニーク|unique|重複.*2回/i);
   });
 });

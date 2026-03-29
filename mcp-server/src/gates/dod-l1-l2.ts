@@ -4,6 +4,7 @@
  */
 
 import { existsSync } from 'node:fs';
+import { extname } from 'node:path';
 import { resolveProjectPath } from '../utils/project-root.js';
 import type { TaskState, PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
@@ -77,6 +78,15 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   if (phase !== 'test_impl') {
     return { level: 'L2', check: 'tdd_red_evidence', passed: true, evidence: 'TDD Red evidence check not required for phase: ' + phase };
   }
+  // Doc-only scope exemption: skip TDD Red for documentation-only tasks
+  if (state.scopeFiles && state.scopeFiles.length > 0) {
+    const allDocsOnly = state.scopeFiles.every((f: string) =>
+      DOC_ONLY_EXTENSIONS.includes(extname(f))
+    );
+    if (allDocsOnly) {
+      return { level: 'L2', check: 'tdd_red_evidence', passed: true, evidence: 'TDD Red exempt: scopeFiles contain only documentation files (.md/.mmd)' };
+    }
+  }
   const testImplProofs = state.proofLog.filter(e => e.phase === 'test_impl' && e.level === 'L2');
   if (testImplProofs.length === 0) {
     return {
@@ -95,6 +105,7 @@ export function checkTDDRedEvidence(state: TaskState, phase: string): DoDCheckRe
   };
 }
 
+const DOC_ONLY_EXTENSIONS = ['.md', '.mmd'];
 const TEST_EXECUTION_PHASES = new Set(['testing', 'regression_test']);
 
 /** Test Results Exist: ensure at least one test result has been recorded for testing phases */
