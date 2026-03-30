@@ -26,6 +26,12 @@ export function buildAllowedTools(phaseGuide: PhaseGuide): string {
   ];
   const phaseTools = (phaseGuide as PhaseGuide & { allowedTools?: string[] }).allowedTools ?? [];
   const merged = new Set([...coordinatorBase, ...phaseTools]);
+  const isReadonly = phaseGuide.bashCategories?.length === 1
+    && phaseGuide.bashCategories[0] === 'readonly';
+  if (isReadonly) {
+    merged.delete('Write');
+    merged.delete('Edit');
+  }
   return [...merged].join(',');
 }
 

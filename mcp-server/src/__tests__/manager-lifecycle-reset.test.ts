@@ -98,6 +98,46 @@ describe('goBack', () => {
     // After goBack, retryCount is empty (normalized away during TOON roundtrip)
     expect(loaded!.retryCount === undefined || Object.keys(loaded!.retryCount).length === 0).toBe(true);
   });
+
+  it('TC-AC4-01: goBack clears artifactHashes to empty object', () => {
+    const mgr = createMgr();
+    const state = mgr.createTask('gb-artifact-clear', 'Intent for goBack artifactHashes clear test with enough length.');
+    mgr.advancePhase(state.taskId);
+    // Set artifactHashes via internal state mutation before goBack
+    const loaded1 = mgr.loadTask(state.taskId)!;
+    (loaded1 as any).artifactHashes = { phase1: 'hash1' };
+    mgr.saveTask(loaded1);
+    const result = mgr.goBack(state.taskId, 'scope_definition' as any);
+    expect(result.success).toBe(true);
+    const loaded2 = mgr.loadTask(state.taskId);
+    expect(loaded2!.artifactHashes === undefined || Object.keys(loaded2!.artifactHashes).length === 0).toBe(true);
+  });
+
+  it('TC-AC4-02: goBack clears retryCount to empty (regression)', () => {
+    const mgr = createMgr();
+    const state = mgr.createTask('gb-retry-regress', 'Intent for goBack retryCount regression test with enough length.');
+    mgr.advancePhase(state.taskId);
+    mgr.incrementRetryCount(state.taskId, 'research');
+    const result = mgr.goBack(state.taskId, 'scope_definition' as any);
+    expect(result.success).toBe(true);
+    const loaded = mgr.loadTask(state.taskId);
+    expect(loaded!.retryCount === undefined || Object.keys(loaded!.retryCount).length === 0).toBe(true);
+  });
+
+  it('TC-AC4-03: goBack slices completedPhases correctly', () => {
+    const mgr = createMgr();
+    const state = mgr.createTask('gb-completed-slice', 'Intent for goBack completedPhases slice test with enough length.');
+    mgr.advancePhase(state.taskId);
+    mgr.advancePhase(state.taskId);
+    mgr.advancePhase(state.taskId);
+    const loaded1 = mgr.loadTask(state.taskId)!;
+    const secondPhase = loaded1.completedPhases[1];
+    const result = mgr.goBack(state.taskId, secondPhase as any);
+    expect(result.success).toBe(true);
+    const loaded2 = mgr.loadTask(state.taskId);
+    expect(loaded2!.completedPhases).toHaveLength(1);
+    expect(loaded2!.phase).toBe(secondPhase);
+  });
 });
 
 describe('sub-phase dependency enforcement', () => {

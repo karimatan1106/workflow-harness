@@ -16,6 +16,7 @@ export const BRACKET_PLACEHOLDER_REGEX = /\[#[^\]]{0,50}#\]/;
 
 export function isStructuralLine(line: string): boolean {
   const trimmed = line.trim();
+  if (/^(?:[-*]\s+)?[A-Z]{1,5}-[A-Z0-9]{1,5}(?:-\d{1,4})?[:：]/.test(trimmed)) return true;
   if (/^#{1,6}\s/.test(trimmed)) return true;
   if (/^[-*_]{3,}\s*$/.test(trimmed)) return true;
   if (/^`{3,}/.test(trimmed)) return true;

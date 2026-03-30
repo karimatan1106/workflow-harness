@@ -124,7 +124,12 @@ export function applyAddAC(state: TaskState, criterion: AcceptanceCriterion): vo
 }
 
 export function applyAddRTM(state: TaskState, entry: RTMEntry): void {
-  state.rtmEntries.push(entry);
+  const idx = state.rtmEntries.findIndex(e => e.id === entry.id);
+  if (idx >= 0) {
+    state.rtmEntries.splice(idx, 1, entry);
+  } else {
+    state.rtmEntries.push(entry);
+  }
   state.updatedAt = new Date().toISOString();
   refreshCheckpointTraceability(state);
 }

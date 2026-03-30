@@ -106,3 +106,23 @@ describe('P7: structural line filter for duplicate exclusion', () => {
     expect(isStructuralLine('| col1 | col2 |')).toBe(true);
   });
 });
+
+// --- AC-2: Test case ID structural line patterns ---
+
+describe('AC-2: isStructuralLine test case ID patterns', () => {
+  it('TC-AC2-01: "TC-001: test name" is structural', () => {
+    expect(isStructuralLine('TC-001: test name')).toBe(true);
+  });
+
+  it('TC-AC2-02: "- TC-AC1-01: test name" is structural', () => {
+    expect(isStructuralLine('- TC-AC1-01: test name')).toBe(true);
+  });
+
+  it('TC-AC2-03: "FEAT-123: feature name" is structural', () => {
+    expect(isStructuralLine('FEAT-123: feature name')).toBe(true);
+  });
+
+  it('TC-AC2-04: plain text is not structural', () => {
+    expect(isStructuralLine('plain text without any pattern')).toBe(false);
+  });
+});
