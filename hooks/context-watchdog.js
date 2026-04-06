@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { findProjectRoot, readStdin, parseHookInput } = require('./hook-utils');
 
-const THRESHOLD = 30;
+const THRESHOLD = 0;
 const REREAD_LIMIT = 3;
 const EDIT_THRESHOLD = 10;
 const CHECKPOINT_MAX_AGE_MS = 10 * 60 * 1000;
