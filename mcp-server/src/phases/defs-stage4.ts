@@ -78,6 +78,11 @@ TDD Red記録: harness_record_test_result(taskId, exitCode: 1, summary: "Red pha
 - テストファイル（*.test.ts, *.spec.ts）にも @spec を付与（testedBy として追跡される）
 - 既存ファイルの修正時は、@spec がなければ追加を推奨（必須ではない）
 
+★必須: Baseline Capture（Green達成後）
+テスト全PASS後、baseline情報を記録してください:
+- harness_capture_baseline(taskId, totalTests, passedTests, failedTests, sessionToken)
+  例: harness_capture_baseline("{taskId}", 843, 843, [], "{sessionToken}")
+
 {BASH_CATEGORIES}
 {EXIT_CODE_RULE}`,
   },
@@ -171,6 +176,12 @@ ${REFACTORING_STRATEGY}
 |----|---------|-------------------|
 | AC-1 | 合格/不合格 | src/xxx.ts:42 |
 不合格のACが1件でもある場合、承認がブロックされる。
+
+★必須: RTM F-NNN Verification
+全F-NNN要件の実装・テスト状況を確認してください:
+1. harness_update_rtm_status("{fId}", "implemented", codeRef, sessionToken)
+2. harness_update_rtm_status("{fId}", "tested", testRef, sessionToken)
+3. 全F-NNNが「verified」状態でコード_reviewが承認される
 
 出力
 {docsDir}/code-review.md に保存してください。

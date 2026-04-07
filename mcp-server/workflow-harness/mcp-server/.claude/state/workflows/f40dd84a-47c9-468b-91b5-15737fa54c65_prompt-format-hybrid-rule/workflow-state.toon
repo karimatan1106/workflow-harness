@@ -1,0 +1,149 @@
+taskId: f40dd84a-47c9-468b-91b5-15737fa54c65
+taskName: prompt-format-hybrid-rule
+version: 4
+phase: test_design
+completedPhases[10]: scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: subagent/MCP向けプロンプトのハイブリッド形式（トップレベルTOON + 中身Markdown）をworkflow-delegation.mdまたは適切なスキルファイルにルールとして適用する。入力形式が出力形式に伝染する問題を防止し、プロンプト品質を標準化する。
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[1]: .claude/skills/workflow-harness/workflow-delegation.md
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[10]{id,description,status}:
+  AC-1,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,open
+  AC-2,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,open
+  AC-3,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,open
+  AC-4,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,open
+  AC-5,変更後のworkflow-delegation.mdが200行以下を維持している,open
+  AC-1,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,open
+  AC-2,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,open
+  AC-3,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,open
+  AC-4,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,open
+  AC-5,変更後のworkflow-delegation.mdが200行以下を維持している,open
+rtmEntries[17]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001,"AC-1: Prompt Format Rulesセクション追加（ハイブリッド形式定義）","-","-","-",pending
+  F-002,"AC-2: Agent委譲+MCPパラメータ両方の形式ルール","-","-","-",pending
+  F-003,"AC-3: 出力形式伝染防止ルール","-","-","-",pending
+  F-004,"AC-4: 長文閾値ルール(20行超→ファイル参照)+セクション間空行ルール","-","-","-",pending
+  F-005,"AC-5: workflow-delegation.md 200行以下維持","-","-","-",pending
+  F-001,Prompt Format Rulesセクションをworkflow-delegation.mdのCommon Constraints直前(L117後)に追加。トップレベルTOON + 中身Markdownのハイブリッド形式ルールを定義。,AC-1,.claude/skills/workflow-harness/workflow-delegation.md L118-L135(予定),TC-AC1-01,pending
+  F-002,"Agent委譲プロンプトの形式ルール: トップレベルキー(Task/Why/Context/What/How/Constraints)はTOON key-value、内部コンテンツ(How手順/Sections一覧)はMarkdownリスト+インデント。",AC-2,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC2-01,pending
+  F-003,"MCP toolパラメータの形式ルール: 短パラメータ(summary/evidence)は一文プレーンテキスト、長パラメータ(instruction/output)はハイブリッド形式を適用。",AC-2,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC2-02,pending
+  F-004,"出力形式伝染防止: Common Constraintsに「Format: 成果物はMarkdown形式で記述。プロンプト入力形式(TOON)を出力に使用しない」を追加。",AC-3,.claude/skills/workflow-harness/workflow-delegation.md Common Constraints内,TC-AC3-01,pending
+  F-005,"長文閾値ルール: 20行超のプロンプトコンテンツはファイル参照で渡す。セクション間は空行で区切る。",AC-4,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC4-01,pending
+  F-006,変更後のworkflow-delegation.md総行数が200行以下を維持。追加は最大15行以内に収める。,AC-5,.claude/skills/workflow-harness/workflow-delegation.md 全体,TC-AC5-01,pending
+  F-001,Prompt Format Rulesセクション追加（ハイブリッド形式定義）,AC-1,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC1-01,pending
+  F-002,Agent委譲プロンプトの形式ルール,AC-2,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC2-01,pending
+  F-003,MCP toolパラメータの形式ルール,AC-2,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC2-02,pending
+  F-004,出力形式伝染防止ルール,AC-3,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC3-01,pending
+  F-005,長文閾値+空行ルール,AC-4,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC4-01,pending
+  F-006,200行以下維持,AC-5,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC5-01,pending
+proofLog[29]{phase,level,check,result,evidence,timestamp}:
+  requirements,L4,"AC defined: AC-1",true,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,"2026-03-28T10:56:15.350Z"
+  requirements,L4,"AC defined: AC-2",true,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,"2026-03-28T10:56:17.794Z"
+  requirements,L4,"AC defined: AC-3",true,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,"2026-03-28T10:56:19.927Z"
+  requirements,L4,"AC defined: AC-4",true,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,"2026-03-28T10:56:20.865Z"
+  requirements,L4,"AC defined: AC-5",true,変更後のworkflow-delegation.mdが200行以下を維持している,"2026-03-28T10:56:22.285Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"AC-1: Prompt Format Rulesセクション追加（ハイブリッド形式定義）\",\"designRef\":\"-\",\"codeRef\":\"-\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T10:57:27.885Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"AC-2: Agent委譲+MCPパラメータ両方の形式ルール\",\"designRef\":\"-\",\"codeRef\":\"-\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T10:57:29.700Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"AC-3: 出力形式伝染防止ルール\",\"designRef\":\"-\",\"codeRef\":\"-\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T10:57:30.368Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"AC-4: 長文閾値ルール(20行超→ファイル参照)+セクション間空行ルール\",\"designRef\":\"-\",\"codeRef\":\"-\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T10:58:00.118Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"AC-5: workflow-delegation.md 200行以下維持\",\"designRef\":\"-\",\"codeRef\":\"-\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T10:58:02.003Z"
+  planning,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"Prompt Format Rulesセクションをworkflow-delegation.mdのCommon Constraints直前(L117後)に追加。トップレベルTOON + 中身Markdownのハイブリッド形式ルールを定義。\",\"designRef\":\"AC-1\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md L118-L135(予定)\",\"testRef\":\"TC-AC1-01\",\"status\":\"pending\"}","2026-03-28T11:01:52.444Z"
+  planning,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"Agent委譲プロンプトの形式ルール: トップレベルキー(Task/Why/Context/What/How/Constraints)はTOON key-value、内部コンテンツ(How手順/Sections一覧)はMarkdownリスト+インデント。\",\"designRef\":\"AC-2\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内\",\"testRef\":\"TC-AC2-01\",\"status\":\"pending\"}","2026-03-28T11:01:56.224Z"
+  planning,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"MCP toolパラメータの形式ルール: 短パラメータ(summary/evidence)は一文プレーンテキスト、長パラメータ(instruction/output)はハイブリッド形式を適用。\",\"designRef\":\"AC-2\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内\",\"testRef\":\"TC-AC2-02\",\"status\":\"pending\"}","2026-03-28T11:01:58.468Z"
+  planning,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"出力形式伝染防止: Common Constraintsに「Format: 成果物はMarkdown形式で記述。プロンプト入力形式(TOON)を出力に使用しない」を追加。\",\"designRef\":\"AC-3\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md Common Constraints内\",\"testRef\":\"TC-AC3-01\",\"status\":\"pending\"}","2026-03-28T11:02:01.102Z"
+  planning,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"長文閾値ルール: 20行超のプロンプトコンテンツはファイル参照で渡す。セクション間は空行で区切る。\",\"designRef\":\"AC-4\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内\",\"testRef\":\"TC-AC4-01\",\"status\":\"pending\"}","2026-03-28T11:02:03.768Z"
+  planning,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"変更後のworkflow-delegation.md総行数が200行以下を維持。追加は最大15行以内に収める。\",\"designRef\":\"AC-5\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md 全体\",\"testRef\":\"TC-AC5-01\",\"status\":\"pending\"}","2026-03-28T11:02:06.010Z"
+  test_design,L4,artifact_drift,true,"hearing.md, requirements.md, design-review.md were edited post-approval to add mandatory DoD sections (decisions, userResponse, acDesignMapping, RTM entries). These are additive fixes required by DoD gates, not semantic changes to approved content. Re-approved via test_design gate.","2026-03-28T11:13:40.567Z"
+  scope_definition,L4,reset to scope_definition,true,"Reset reason: artifact_drift on hearing.md/requirements.md/design-review.md due to post-approval DoD fixes. Cannot re-approve older gate types. Reset to re-run with existing artifacts.. Reset from test_design","2026-03-28T12:20:02.305Z"
+  requirements,L4,"AC defined: AC-1",true,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,"2026-03-28T12:20:28.597Z"
+  requirements,L4,"AC defined: AC-2",true,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,"2026-03-28T12:20:30.957Z"
+  requirements,L4,"AC defined: AC-3",true,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,"2026-03-28T12:20:32.828Z"
+  requirements,L4,"AC defined: AC-4",true,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,"2026-03-28T12:20:35.172Z"
+  requirements,L4,"AC defined: AC-5",true,変更後のworkflow-delegation.mdが200行以下を維持している,"2026-03-28T12:20:36.456Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"Prompt Format Rulesセクション追加（ハイブリッド形式定義）\",\"designRef\":\"AC-1\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC1-01\",\"status\":\"pending\"}","2026-03-28T12:20:43.072Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"Agent委譲プロンプトの形式ルール\",\"designRef\":\"AC-2\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC2-01\",\"status\":\"pending\"}","2026-03-28T12:20:44.784Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"MCP toolパラメータの形式ルール\",\"designRef\":\"AC-2\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC2-02\",\"status\":\"pending\"}","2026-03-28T12:20:47.339Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"出力形式伝染防止ルール\",\"designRef\":\"AC-3\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC3-01\",\"status\":\"pending\"}","2026-03-28T12:20:48.349Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"長文閾値+空行ルール\",\"designRef\":\"AC-4\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC4-01\",\"status\":\"pending\"}","2026-03-28T12:20:50.115Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"200行以下維持\",\"designRef\":\"AC-5\",\"codeRef\":\".claude/skills/workflow-harness/workflow-delegation.md\",\"testRef\":\"TC-AC5-01\",\"status\":\"pending\"}","2026-03-28T12:20:51.600Z"
+invariants[0]:
+checkpoint:
+  taskId: f40dd84a-47c9-468b-91b5-15737fa54c65
+  phase: test_design
+  completedPhases[10]: scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review
+  timestamp: "2026-03-28T12:21:28.949Z"
+  sha256: 318902a5e6030054592ac5c2ed9bbc2cc9adf5eced2c2845e94b14a4502f29dc
+  userIntent: subagent/MCP向けプロンプトのハイブリッド形式（トップレベルTOON + 中身Markdown）をworkflow-delegation.mdまたは適切なスキルファイルにルールとして適用する。入力形式が出力形式に伝染する問題を防止し、プロンプト品質を標準化する。
+  scopeFiles[1]: .claude/skills/workflow-harness/workflow-delegation.md
+  scopeDirs[0]:
+  acceptanceCriteria[10]{id,description,status}:
+    AC-1,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,open
+    AC-2,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,open
+    AC-3,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,open
+    AC-4,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,open
+    AC-5,変更後のworkflow-delegation.mdが200行以下を維持している,open
+    AC-1,workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている,open
+    AC-2,Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている,open
+    AC-3,出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている,open
+    AC-4,長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている,open
+    AC-5,変更後のworkflow-delegation.mdが200行以下を維持している,open
+  rtmEntries[17]{id,requirement,designRef,codeRef,testRef,status}:
+    F-001,"AC-1: Prompt Format Rulesセクション追加（ハイブリッド形式定義）","-","-","-",pending
+    F-002,"AC-2: Agent委譲+MCPパラメータ両方の形式ルール","-","-","-",pending
+    F-003,"AC-3: 出力形式伝染防止ルール","-","-","-",pending
+    F-004,"AC-4: 長文閾値ルール(20行超→ファイル参照)+セクション間空行ルール","-","-","-",pending
+    F-005,"AC-5: workflow-delegation.md 200行以下維持","-","-","-",pending
+    F-001,Prompt Format Rulesセクションをworkflow-delegation.mdのCommon Constraints直前(L117後)に追加。トップレベルTOON + 中身Markdownのハイブリッド形式ルールを定義。,AC-1,.claude/skills/workflow-harness/workflow-delegation.md L118-L135(予定),TC-AC1-01,pending
+    F-002,"Agent委譲プロンプトの形式ルール: トップレベルキー(Task/Why/Context/What/How/Constraints)はTOON key-value、内部コンテンツ(How手順/Sections一覧)はMarkdownリスト+インデント。",AC-2,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC2-01,pending
+    F-003,"MCP toolパラメータの形式ルール: 短パラメータ(summary/evidence)は一文プレーンテキスト、長パラメータ(instruction/output)はハイブリッド形式を適用。",AC-2,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC2-02,pending
+    F-004,"出力形式伝染防止: Common Constraintsに「Format: 成果物はMarkdown形式で記述。プロンプト入力形式(TOON)を出力に使用しない」を追加。",AC-3,.claude/skills/workflow-harness/workflow-delegation.md Common Constraints内,TC-AC3-01,pending
+    F-005,"長文閾値ルール: 20行超のプロンプトコンテンツはファイル参照で渡す。セクション間は空行で区切る。",AC-4,.claude/skills/workflow-harness/workflow-delegation.md Prompt Format Rules内,TC-AC4-01,pending
+    F-006,変更後のworkflow-delegation.md総行数が200行以下を維持。追加は最大15行以内に収める。,AC-5,.claude/skills/workflow-harness/workflow-delegation.md 全体,TC-AC5-01,pending
+    F-001,Prompt Format Rulesセクション追加（ハイブリッド形式定義）,AC-1,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC1-01,pending
+    F-002,Agent委譲プロンプトの形式ルール,AC-2,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC2-01,pending
+    F-003,MCP toolパラメータの形式ルール,AC-2,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC2-02,pending
+    F-004,出力形式伝染防止ルール,AC-3,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC3-01,pending
+    F-005,長文閾値+空行ルール,AC-4,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC4-01,pending
+    F-006,200行以下維持,AC-5,.claude/skills/workflow-harness/workflow-delegation.md,TC-AC5-01,pending
+  refinedIntent: workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている / Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている / 出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている / 長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている / 変更後のworkflow-delegation.mdが200行以下を維持している
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\prompt-format-hybrid-rule"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\f40dd84a-47c9-468b-91b5-15737fa54c65_prompt-format-hybrid-rule"
+sessionToken: 6b8b8175451b984a5af1c6a353e52c4b42313767ec3e4ccb9d3543394150ec56
+stateIntegrity: e0487248be2b7840898e872b76806c1f5c6260e1327ecbe1e5a0301cace54398
+createdAt: "2026-03-28T10:48:02.963Z"
+updatedAt: "2026-03-28T12:21:36.402Z"
+approvals:
+  hearing:
+    approvedAt: "2026-03-28T10:51:23.033Z"
+  requirements:
+    approvedAt: "2026-03-28T12:20:55.949Z"
+  design:
+    approvedAt: "2026-03-28T12:21:23.559Z"
+  test_design:
+    approvedAt: "2026-03-28T12:21:32.872Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\prompt-format-hybrid-rule/hearing.md": ce5134a049a6bd250955508ba235eefcc3e0587652465e84f2968036a20c238e
+  "C:\\ツール\\Workflow\\docs\\workflows\\prompt-format-hybrid-rule/requirements.md": c2d0d654b74caec54357aac82a29b9603bc3766f331e3ca0d96a82f77cad0da0
+  "C:\\ツール\\Workflow\\docs\\workflows\\prompt-format-hybrid-rule/design-review.md": b06bb9109e6eedce3f38d2d20f293f4d89fca5998d4b28115a48adf4c532efd3
+  "C:\\ツール\\Workflow\\docs\\workflows\\prompt-format-hybrid-rule/test-design.md": 57775cfd4ee053dc5117e868cbe24bc6ac5dd045af6fcc6517041c2aaae2f92e
+requirementCount: 10
+refinedIntent: workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている / Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている / 出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている / 長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている / 変更後のworkflow-delegation.mdが200行以下を維持している / workflow-delegation.mdに## Prompt Format Rulesセクションが追加され、トップレベルTOON+中身Markdownのハイブリッド形式ルールが定義されている / Agent委譲プロンプトとMCP toolパラメータの両方に対する形式ルールが記載されている / 出力形式伝染防止ルール(Constraints内にFormat指定明記)が含まれている / 長文閾値ルール(20行超→ファイル参照)とセクション間空行ルールが含まれている / 変更後のworkflow-delegation.mdが200行以下を維持している
+integrityWarning: false
+resetHistory[1]{reason,resetAt,targetPhase}:
+  artifact_drift on hearing.md/requirements.md/design-review.md due to post-approval DoD fixes. Cannot re-approve older gate types. Reset to re-run with existing artifacts.,"2026-03-28T12:20:02.216Z",scope_definition
+retryCount:
+  test_design: 1

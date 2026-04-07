@@ -98,17 +98,28 @@ export function checkAiSlopPatterns(content: string): string[] {
   return warnings;
 }
 
+const DUPLICATE_THRESHOLD = 3;
+
 export function checkDuplicateLines(content: string): string[] {
-  const nonCodeLines = extractNonCodeLines(content);
-  const countMap = new Map<string, number>();
-  for (const line of nonCodeLines) {
-    const trimmed = line.trim();
-    if (!trimmed || isStructuralLine(trimmed)) continue;
-    countMap.set(trimmed, (countMap.get(trimmed) ?? 0) + 1);
-  }
+  // Split content by section headers (## )
+  const sections = content.split(/(?=^##\s)/m);
   const duplicates: string[] = [];
-  for (const [line, count] of countMap) {
-    if (count >= 3) duplicates.push(`"${line.substring(0, 60)}..." (${count}x)`);
+
+  for (const section of sections) {
+    const nonCodeLines = extractNonCodeLines(section);
+    const countMap = new Map<string, number>();
+
+    for (const line of nonCodeLines) {
+      const trimmed = line.trim();
+      if (!trimmed || isStructuralLine(trimmed)) continue;
+      countMap.set(trimmed, (countMap.get(trimmed) ?? 0) + 1);
+    }
+
+    for (const [line, count] of countMap) {
+      if (count >= DUPLICATE_THRESHOLD) {
+        duplicates.push(`"${line.substring(0, 60)}..." (${count}x)`);
+      }
+    }
   }
   return duplicates;
 }

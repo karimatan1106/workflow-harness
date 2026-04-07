@@ -1,0 +1,51 @@
+taskId: a2e871af-3495-4917-832d-c5ebaed2180d
+taskName: fix-dod-duplicate-validation
+version: 4
+phase: requirements
+completedPhases[4]: hearing,scope_definition,research,impact_analysis
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "DoDバリデーターの7x重複行エラー修正。dod-helpers.tsのcontent_validationロジックで、別セクションの別内容を同一ハイフン行として誤って重複判定している問題の原因特定と修正。問題: decisions(6行)、next(1行)、DoD条件(3行)等が異なるセクションでもハイフン始まり行を横断してカウントし7回以上で重複エラー出している。修正対象: dod-helpers.tsのcontent_validation関数"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[0]:
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[0]:
+rtmEntries[0]:
+proofLog[0]:
+invariants[0]:
+checkpoint:
+  taskId: a2e871af-3495-4917-832d-c5ebaed2180d
+  phase: requirements
+  completedPhases[4]: hearing,scope_definition,research,impact_analysis
+  timestamp: "2026-04-07T12:21:23.628Z"
+  sha256: 97bc2e0a663bde2818bd9b1e7d9633b7b226c2f2cb3f32ac1c66b0d00978335a
+  userIntent: "DoDバリデーターの7x重複行エラー修正。dod-helpers.tsのcontent_validationロジックで、別セクションの別内容を同一ハイフン行として誤って重複判定している問題の原因特定と修正。問題: decisions(6行)、next(1行)、DoD条件(3行)等が異なるセクションでもハイフン始まり行を横断してカウントし7回以上で重複エラー出している。修正対象: dod-helpers.tsのcontent_validation関数"
+  scopeFiles[0]:
+  scopeDirs[0]:
+  acceptanceCriteria[0]:
+  rtmEntries[0]:
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\fix-dod-duplicate-validation"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\a2e871af-3495-4917-832d-c5ebaed2180d_fix-dod-duplicate-validation"
+sessionToken: 2ab0bb3d2ef0e8b8f25d1165c8e6323d2e9262bbe5a887ce06d8a601e155aadd
+stateIntegrity: 6d7442610c0986534c67eeaa3366f26aa25e4bef799e3b9dffe705faf5dbe637
+createdAt: "2026-04-07T11:47:58.669Z"
+updatedAt: "2026-04-07T12:22:08.677Z"
+approvals:
+  hearing:
+    approvedAt: "2026-04-07T11:53:52.886Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\fix-dod-duplicate-validation/hearing.md": 8bfc7d28e73e7e8150fac8a3ca29ffa3cb255c3bac9ab083a4c297a06f3fecc0
+retryCount:
+  requirements: 1

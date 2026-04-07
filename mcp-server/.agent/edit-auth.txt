@@ -1,1 +1,8 @@
 C:\ツール\Workflow\workflow-harness\mcp-server\src\state\manager-read.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\gates\dod-l4-requirements.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\gates\dod-helpers.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\gates\dod-l4-content.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\state\types-core.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\phases\registry.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\tools\handlers\pivot-advisor.ts
+C:\ツール\Workflow\workflow-harness\mcp-server\src\tools\handlers\lifecycle-next.ts

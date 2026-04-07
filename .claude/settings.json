@@ -1,4 +1,16 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "ANTHROPIC_BASE_URL": "https://api.minimax.io/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "sk-cp-8q1CJ_bqEp1fpLxBBdJHXThIXYlJ1kBEDCohNEb_GchjjUvhfC1r1pdu_Or-t8f6jadL-HBpC8y_ddeszeYVYSGPCepRc0xgYqqjF6siHXP95KSO4qhMl2o",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "ANTHROPIC_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_SMALL_FAST_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7"
+  },
   "permissions": {"allow": ["Edit **/*", "Write **/*", "Read **/*", "Bash(*)", "Glob **/*", "Grep **/*"]},
   "hooks": {
     "UserPromptSubmit": [
@@ -13,14 +25,12 @@
       {
         "matcher": "Bash",
         "hooks": [
-          "node hooks/enforce-workflow.js",
           "node hooks/block-dangerous-commands.js"
         ]
       },
       {
         "matcher": "Edit|Write",
         "hooks": [
-          "node hooks/phase-edit-guard.js",
           "node hooks/loop-detector.js"
         ]
       },

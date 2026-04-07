@@ -25,7 +25,7 @@ afterEach(() => {
  * This produces N identical raw lines, triggering duplicate detection.
  */
 function buildMdWithDuplicateRows(count: number): string {
-  const dupRow = '- DUP-001: This exact duplicate line appears multiple times in the document and is very problematic for quality (Duplicate rationale text for testing purposes only)';
+  const dupRow = 'This exact duplicate line appears multiple times in the document and is very problematic for quality (Duplicate rationale text for testing purposes only)';
   const rows = Array(count).fill(dupRow).join('\n');
   return [
     '## decisions',

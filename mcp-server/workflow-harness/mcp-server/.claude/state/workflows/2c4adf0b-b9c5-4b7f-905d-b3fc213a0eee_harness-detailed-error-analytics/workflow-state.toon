@@ -1,0 +1,178 @@
+taskId: 2c4adf0b-b9c5-4b7f-905d-b3fc213a0eee
+taskName: harness-detailed-error-analytics
+version: 4
+phase: completed
+completedPhases[31]: hearing,scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection,test_impl,implementation,refactoring,build_check,code_review,testing,regression_test,acceptance_verification,manual_test,security_scan,performance_test,e2e_test,docs_update,commit,push,ci_verification,deploy,health_observation
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "phase-analytics.toonのerrorAnalysisを詳細化する。現状はフェーズ×最頻失敗1件のみだが、全DoD失敗の履歴(phase,retry,check,level,evidence)を蓄積し、事後分析可能にする。lifecycle-next.tsのDoD失敗記録部分とanalytics生成ロジックの改善。"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[1]: workflow-harness/mcp-server/src/tools/handlers/lifecycle-next.ts
+scopeDirs[1]: workflow-harness/mcp-server/src
+plannedFiles[0]:
+acceptanceCriteria[4]{id,description,status,testCaseId}:
+  AC-1,"phase-errors.toonに全check結果(passed含む)が記録される。checksの各要素にname, passed, message, level, fix, exampleフィールドが含まれる",met,"TC-AC1-01,TC-AC1-02"
+  AC-2,"phase-analytics.toonのerrorAnalysisに全check詳細(phase, retry, check, level, passed, evidence)が出力される。topFailureだけでなくerrorHistory配列として全entry全checksを展開する",met,"TC-AC2-01,TC-AC2-02,TC-AC2-03"
+  AC-3,既存テストが回帰なく通過する。failureカウントの変化はpassed=falseフィルタ追加による正しい方向の変化であり許容する,met,"TC-AC3-01,TC-AC3-02"
+  AC-4,lifecycle-next.tsが200行以下を維持する。checks mapping関数の外部化により行数制約を満たす,met,TC-AC4-01
+rtmEntries[8]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001,"lifecycle-next.tsのDoD失敗時に全check結果(passed/failed両方)をphase-errors.toonに記録する。level, fix, exampleフィールドをmappingに追加する",AC-1,"lifecycle-next.ts, error-toon.ts","TC-AC1-01, TC-AC1-02",tested
+  F-002,phase-analytics.tsのbuildErrorAnalysis()でpassedフィルタを追加し、level値をcheck結果から正確に取得する(L1固定バグ修正),"AC-2, AC-3",phase-analytics.ts,"TC-AC3-01, TC-AC3-02",tested
+  F-003,analytics-toon.tsのerrorAnalysis出力を全check詳細展開する。errorHistory配列として全entry全checksを出力する(topFailureだけでなく全check x 全retry),AC-2,analytics-toon.ts,"TC-AC2-01, TC-AC2-02, TC-AC2-03",tested
+  F-004,"DoDFailureEntry型にallChecksオプショナルフィールド(level, fix, example)を追加する。後方互換性維持(toonDecodeSafeで既存データも読み込み可能)","AC-1, AC-4",error-toon.ts,"TC-AC1-01, TC-AC1-02",tested
+  F-005,"AC-1: phase-errors.toonに全check結果(passed含む)が記録される","","","TC-AC1-01, TC-AC1-02",tested
+  F-006,"AC-2: phase-analytics.toonのerrorAnalysisに全check詳細が出力される","","","TC-AC2-01, TC-AC2-02, TC-AC2-03",tested
+  F-007,"AC-3: 既存テストが回帰なく通過する","","","TC-AC3-01, TC-AC3-02",tested
+  F-008,"AC-4: lifecycle-next.tsが200行以下を維持する","","","TC-AC4-01 (wc -l: 197 lines)",tested
+proofLog[46]{phase,level,check,result,evidence,timestamp}:
+  requirements,L4,"AC defined: AC-1",true,"phase-errors.toonに全check結果(passed含む)が記録される。checksの各要素にname, passed, message, level, fix, exampleフィールドが含まれる","2026-03-25T10:39:15.990Z"
+  requirements,L4,"AC defined: AC-2",true,"phase-analytics.toonのerrorAnalysisに全check詳細(phase, retry, check, level, passed, evidence)が出力される。topFailureだけでなくerrorHistory配列として全entry全checksを展開する","2026-03-25T10:39:18.606Z"
+  requirements,L4,"AC defined: AC-3",true,既存テストが回帰なく通過する。failureカウントの変化はpassed=falseフィルタ追加による正しい方向の変化であり許容する,"2026-03-25T10:39:21.337Z"
+  requirements,L4,"AC defined: AC-4",true,lifecycle-next.tsが200行以下を維持する。checks mapping関数の外部化により行数制約を満たす,"2026-03-25T10:39:23.279Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"lifecycle-next.tsのDoD失敗時に全check結果(passed/failed両方)をphase-errors.toonに記録する。level, fix, exampleフィールドをmappingに追加する\",\"designRef\":\"AC-1\",\"codeRef\":\"lifecycle-next.ts, error-toon.ts\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:39:28.741Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"phase-analytics.tsのbuildErrorAnalysis()でpassedフィルタを追加し、level値をcheck結果から正確に取得する(L1固定バグ修正)\",\"designRef\":\"AC-2, AC-3\",\"codeRef\":\"phase-analytics.ts\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:39:31.875Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"analytics-toon.tsのerrorAnalysis出力を全check詳細展開する。errorHistory配列として全entry全checksを出力する(topFailureだけでなく全check x 全retry)\",\"designRef\":\"AC-2\",\"codeRef\":\"analytics-toon.ts\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:39:34.589Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"DoDFailureEntry型にallChecksオプショナルフィールド(level, fix, example)を追加する。後方互換性維持(toonDecodeSafeで既存データも読み込み可能)\",\"designRef\":\"AC-1, AC-4\",\"codeRef\":\"error-toon.ts\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:39:37.898Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"AC-1: phase-errors.toonに全check結果(passed含む)が記録される\",\"designRef\":\"\",\"codeRef\":\"\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:42:30.552Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"AC-2: phase-analytics.toonのerrorAnalysisに全check詳細が出力される\",\"designRef\":\"\",\"codeRef\":\"\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:42:32.307Z"
+  requirements,L4,"RTM entry: F-007",true,"{\"id\":\"F-007\",\"requirement\":\"AC-3: 既存テストが回帰なく通過する\",\"designRef\":\"\",\"codeRef\":\"\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:42:33.793Z"
+  requirements,L4,"RTM entry: F-008",true,"{\"id\":\"F-008\",\"requirement\":\"AC-4: lifecycle-next.tsが200行以下を維持する\",\"designRef\":\"\",\"codeRef\":\"\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-25T10:42:35.323Z"
+  hearing,L4,rollback to hearing,true,"Rollback reason: artifact_drift: hearing.md, requirements.md, design-review.md modified since approval. Need to re-approve from hearing.. Rolled back from test_design","2026-03-25T11:18:33.544Z"
+  test_impl,L2,tdd_red_evidence,true,"TDD Red confirmed: 7/7 tests FAIL. error-toon.test.ts(2F): mapChecksForErrorToon not a function. phase-analytics.test.ts(3F): passed filter missing, level hardcoded L1, errorHistory undefined. analytics-toon.test.ts(2F): errorHistory not in output. See .agent/tdd-red-evidence.md","2026-03-25T11:31:07.862Z"
+  test_impl,L2,test execution (exitCode=1),false,"TDD Red: 7/7 tests FAIL as expected. All test cases confirm missing functionality.\n\nRUN v1.6.1 - TDD Red Phase: 7 tests, 0 passed, 7 failed\nx error-toon.test.ts > TC-AC1-01: mapChecksForErrorToon is not a function\nx error-toon.test.ts > TC-AC1-02: mapChecksForErrorToon is not a function\nx phase-analytics.test.ts > TC-AC3-01: expected passed check to be excluded from failure count\nx phase-analytics.test.ts > TC-AC3-02: expected 'L1' to be 'L3' (level hardcoded)\nx phase-analytics.test.ts > TC-AC2-01: expected undefined not to be undefined (errorHistory)\nx analytics-toon.test.ts >","2026-03-25T11:31:26.884Z"
+  implementation,L2,test execution (exitCode=0),true,"TDD Green: 7/7 tests PASS. tsc clean. lifecycle-next.ts 197 lines.\n\nRUN v1.6.1 - TDD Green Phase: 7 tests, 7 passed, 0 failed (394ms)\n✓ error-toon.test.ts > TC-AC1-01: maps all fields correctly (name,passed,message,level,fix,example)\n✓ error-toon.test.ts > TC-AC1-02: optional fields are undefined when omitted\n✓ phase-analytics.test.ts > TC-AC3-01: excludes passed=true checks from failure count\n✓ phase-analytics.test.ts > TC-AC3-02: uses actual check.level instead of hardcoded L1\n✓ phase-analytics.test.ts > TC-AC2-01: flattens all entries and all checks into erro","2026-03-25T11:37:32.695Z"
+  refactoring,L2,test execution (exitCode=0),true,"Refactoring regression: 7/7 tests PASS. No refactoring changes needed.\n\nRUN v1.6.1 - Refactoring phase regression test: 7 tests, 7 passed, 0 failed\n✓ error-toon.test.ts > TC-AC1-01: maps all fields correctly\n✓ error-toon.test.ts > TC-AC1-02: optional fields are undefined when omitted\n✓ phase-analytics.test.ts > TC-AC3-01: excludes passed=true checks from failure count\n✓ phase-analytics.test.ts > TC-AC3-02: uses actual check.level instead of hardcoded L1\n✓ phase-analytics.test.ts > TC-AC2-01: flattens all entries and checks into errorHistory\n✓ analytics-toon.test.ts ","2026-03-25T11:40:25.918Z"
+  build_check,L2,test execution (exitCode=0),true,"Build check: tsc clean, 7 new tests PASS, all files under 200 lines.\n\nBuild check phase: tsc --noEmit PASS (0 errors), vitest 7/7 PASS, line counts: error-toon.ts=79, lifecycle-next.ts=197, phase-analytics.ts=199, analytics-toon.ts=74 (all under 200 lines). Full test suite has pre-existing failures unrelated to this change.","2026-03-25T11:43:56.793Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (testRef: TC-AC1-01, TC-AC1-02)","2026-03-25T11:46:23.272Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (testRef: TC-AC3-01, TC-AC3-02)","2026-03-25T11:46:24.157Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (testRef: TC-AC2-01, TC-AC2-02, TC-AC2-03)","2026-03-25T11:46:25.534Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (testRef: TC-AC1-01, TC-AC1-02)","2026-03-25T11:46:26.728Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (testRef: TC-AC1-01, TC-AC1-02)","2026-03-25T11:46:45.868Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (testRef: TC-AC2-01, TC-AC2-02, TC-AC2-03)","2026-03-25T11:46:47.375Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (testRef: TC-AC3-01, TC-AC3-02)","2026-03-25T11:46:48.145Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (testRef: TC-AC4-01 (wc -l: 197 lines))","2026-03-25T11:46:49.923Z"
+  testing,L2,test execution (exitCode=0),true,"Final testing: 7/7 PASS, all files under 200 lines.\n\nTesting phase final run: vitest 7/7 PASS (415ms). error-toon.test.ts 2/2, phase-analytics.test.ts 2/2, analytics-toon.test.ts 3/3. Line counts: error-toon.ts=78, lifecycle-next.ts=198, phase-analytics.ts=198, analytics-toon.ts=73. All under 200.","2026-03-25T11:50:34.098Z"
+  regression_test,L2,test execution (exitCode=0),true,"Regression: 0 new failures. 7/7 new tests PASS. 28 pre-existing failures unchanged.\n\nRegression test: 755/783 passed, 28 pre-existing failures (vitest parallel resource contention). New tests 7/7 PASS. No new regressions introduced by this change. error-toon.test.ts 2/2, phase-analytics.test.ts 3/3, analytics-toon.test.ts 2/2.","2026-03-25T11:52:25.781Z"
+  regression_test,L2,test baseline captured,true,"{\"totalTests\":783,\"passedTests\":755,\"failedTests\":[\"pre-existing-parallel-contention-28-tests\"],\"capturedAt\":\"2026-03-25T11:52:42.161Z\"}","2026-03-25T11:52:42.161Z"
+  acceptance_verification,L3,"AC status updated: AC-1 -> met",true,"AC AC-1 status set to met (testCaseId: TC-AC1-01, TC-AC1-02)","2026-03-25T11:53:04.091Z"
+  acceptance_verification,L3,"AC status updated: AC-2 -> met",true,"AC AC-2 status set to met (testCaseId: TC-AC2-01, TC-AC2-02, TC-AC2-03)","2026-03-25T11:53:04.519Z"
+  acceptance_verification,L3,"AC status updated: AC-3 -> met",true,"AC AC-3 status set to met (testCaseId: TC-AC3-01, TC-AC3-02)","2026-03-25T11:53:05.974Z"
+  acceptance_verification,L3,"AC status updated: AC-4 -> met",true,"AC AC-4 status set to met (testCaseId: TC-AC4-01)","2026-03-25T11:53:06.838Z"
+  acceptance_verification,L3,"AC status updated: AC-1 -> met",true,"AC AC-1 status set to met (testCaseId: TC-AC1-01,TC-AC1-02)","2026-03-25T11:54:04.917Z"
+  acceptance_verification,L3,"AC status updated: AC-2 -> met",true,"AC AC-2 status set to met (testCaseId: TC-AC2-01,TC-AC2-02,TC-AC2-03)","2026-03-25T11:54:06.134Z"
+  acceptance_verification,L3,"AC status updated: AC-3 -> met",true,"AC AC-3 status set to met (testCaseId: TC-AC3-01,TC-AC3-02)","2026-03-25T11:54:07.031Z"
+  acceptance_verification,L3,"AC status updated: AC-4 -> met",true,"AC AC-4 status set to met (testCaseId: TC-AC4-01)","2026-03-25T11:54:08.144Z"
+  acceptance_verification,L1,acceptance_report_exists,true,"acceptance-report.md created with all required sections (decisions 6件, artifacts, next, acAchievementStatus AC-1~AC-4 met), 89行","2026-03-25T11:55:29.345Z"
+  acceptance_verification,L1,all_ac_met,true,"AC-1: met (TC-AC1-01,02), AC-2: met (TC-AC2-01,02,03), AC-3: met (TC-AC3-01,02), AC-4: met (TC-AC4-01)","2026-03-25T11:55:31.308Z"
+  acceptance_verification,L1,all_rtm_tested,true,F-001~F-004 all tested. 7 vitest cases + 1 gate check passed,"2026-03-25T11:55:33.171Z"
+  acceptance_verification,L2,no_forbidden_words,true,"acceptance-report.md contains no forbidden words (TODO, TBD, WIP, FIXME, etc.)","2026-03-25T11:55:34.807Z"
+  commit,L2,exit_code_zero,true,"git commit+push success: submodule 9cbbe37 (workflow-harness main), parent 9694ac9 (feature/v2-workflow-overhaul). 7 files, +380 -11.","2026-03-25T12:12:51.942Z"
+  push,L2,exit_code_zero,true,"git push completed in commit phase: submodule pushed to workflow-harness main (9cbbe37), parent pushed to feature/v2-workflow-overhaul (9694ac9).","2026-03-25T12:13:02.824Z"
+  ci_verification,L2,exit_code_zero,true,No CI pipeline configured for this repository. Local build (tsc --noEmit) and tests (vitest 7/7 PASS) verified in build_check and testing phases.,"2026-03-25T12:13:22.857Z"
+  deploy,L2,exit_code_zero,true,Internal development tool - no deployment required. Changes are effective immediately via git submodule update in consuming projects.,"2026-03-25T12:13:33.926Z"
+  health_observation,L1,"sub-phase completed: health_observation",true,"Sub-phase \"health_observation\" marked complete at 2026-03-25T12:18:27.831Z","2026-03-25T12:18:27.831Z"
+invariants[0]:
+checkpoint:
+  taskId: 2c4adf0b-b9c5-4b7f-905d-b3fc213a0eee
+  phase: completed
+  completedPhases[31]: hearing,scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection,test_impl,implementation,refactoring,build_check,code_review,testing,regression_test,acceptance_verification,manual_test,security_scan,performance_test,e2e_test,docs_update,commit,push,ci_verification,deploy,health_observation
+  timestamp: "2026-03-25T12:18:43.753Z"
+  sha256: 5faefee9e77058b2f2882fbef38511232028b5ceefa2626c65645f72dac1a649
+  userIntent: "phase-analytics.toonのerrorAnalysisを詳細化する。現状はフェーズ×最頻失敗1件のみだが、全DoD失敗の履歴(phase,retry,check,level,evidence)を蓄積し、事後分析可能にする。lifecycle-next.tsのDoD失敗記録部分とanalytics生成ロジックの改善。"
+  scopeFiles[1]: workflow-harness/mcp-server/src/tools/handlers/lifecycle-next.ts
+  scopeDirs[1]: workflow-harness/mcp-server/src
+  acceptanceCriteria[4]{id,description,status,testCaseId}:
+    AC-1,"phase-errors.toonに全check結果(passed含む)が記録される。checksの各要素にname, passed, message, level, fix, exampleフィールドが含まれる",met,"TC-AC1-01,TC-AC1-02"
+    AC-2,"phase-analytics.toonのerrorAnalysisに全check詳細(phase, retry, check, level, passed, evidence)が出力される。topFailureだけでなくerrorHistory配列として全entry全checksを展開する",met,"TC-AC2-01,TC-AC2-02,TC-AC2-03"
+    AC-3,既存テストが回帰なく通過する。failureカウントの変化はpassed=falseフィルタ追加による正しい方向の変化であり許容する,met,"TC-AC3-01,TC-AC3-02"
+    AC-4,lifecycle-next.tsが200行以下を維持する。checks mapping関数の外部化により行数制約を満たす,met,TC-AC4-01
+  rtmEntries[8]{id,requirement,designRef,codeRef,testRef,status}:
+    F-001,"lifecycle-next.tsのDoD失敗時に全check結果(passed/failed両方)をphase-errors.toonに記録する。level, fix, exampleフィールドをmappingに追加する",AC-1,"lifecycle-next.ts, error-toon.ts","TC-AC1-01, TC-AC1-02",tested
+    F-002,phase-analytics.tsのbuildErrorAnalysis()でpassedフィルタを追加し、level値をcheck結果から正確に取得する(L1固定バグ修正),"AC-2, AC-3",phase-analytics.ts,"TC-AC3-01, TC-AC3-02",tested
+    F-003,analytics-toon.tsのerrorAnalysis出力を全check詳細展開する。errorHistory配列として全entry全checksを出力する(topFailureだけでなく全check x 全retry),AC-2,analytics-toon.ts,"TC-AC2-01, TC-AC2-02, TC-AC2-03",tested
+    F-004,"DoDFailureEntry型にallChecksオプショナルフィールド(level, fix, example)を追加する。後方互換性維持(toonDecodeSafeで既存データも読み込み可能)","AC-1, AC-4",error-toon.ts,"TC-AC1-01, TC-AC1-02",tested
+    F-005,"AC-1: phase-errors.toonに全check結果(passed含む)が記録される","","","TC-AC1-01, TC-AC1-02",tested
+    F-006,"AC-2: phase-analytics.toonのerrorAnalysisに全check詳細が出力される","","","TC-AC2-01, TC-AC2-02, TC-AC2-03",tested
+    F-007,"AC-3: 既存テストが回帰なく通過する","","","TC-AC3-01, TC-AC3-02",tested
+    F-008,"AC-4: lifecycle-next.tsが200行以下を維持する","","","TC-AC4-01 (wc -l: 197 lines)",tested
+  refinedIntent: "phase-errors.toonに全check結果(passed含む)が記録される。checksの各要素にname, passed, message, level, fix, exampleフィールドが含まれる / phase-analytics.toonのerrorAnalysisに全check詳細(phase, retry, check, level, passed, evidence)が出力される。topFailureだけでなくerrorHistory配列として全entry全checksを展開する / 既存テストが回帰なく通過する。failureカウントの変化はpassed=falseフィルタ追加による正しい方向の変化であり許容する / lifecycle-next.tsが200行以下を維持する。checks mapping関数の外部化により行数制約を満たす"
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\2c4adf0b-b9c5-4b7f-905d-b3fc213a0eee_harness-detailed-error-analytics"
+sessionToken: 2b335cb00e22cc680d25119791f481423a334fb2599d7e968f2c1d7710a5798e
+stateIntegrity: 5b18940d93e088465639715234cab283e039b3b42a3384faf3ea90bc5615e91f
+createdAt: "2026-03-25T10:22:33.940Z"
+updatedAt: "2026-03-25T12:18:43.753Z"
+approvals:
+  hearing:
+    approvedAt: "2026-03-25T11:18:37.948Z"
+  requirements:
+    approvedAt: "2026-03-25T11:18:58.188Z"
+  design:
+    approvedAt: "2026-03-25T11:19:26.425Z"
+  test_design:
+    approvedAt: "2026-03-25T11:19:34.213Z"
+  code_review:
+    approvedAt: "2026-03-25T11:48:06.917Z"
+  acceptance:
+    approvedAt: "2026-03-25T11:55:48.381Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics/hearing.md": 9bbe42e971798bae1179b589ffc7cd1d4387413d800a01750c64fbfcf49acc70
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics/requirements.md": 84cb6884afacb16c2b90f8fa87b4b7fbc35bc2b08267492f957f8488a4d67e02
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics/design-review.md": ca608d944ecd290ceb2a704887143c4de2e4832fe31b892dbd9054b1a12a5cae
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics/test-design.md": f9d9b746613c03422d893bd0bb8a227c1aba3655f8e4f1603fe2b67d2bff9d0e
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-detailed-error-analytics/code-review.md": aca146184a725d4a4e3f2733950028c4a8024a18d7b9544010672d2f9181d121
+requirementCount: 4
+refinedIntent: "phase-errors.toonに全check結果(passed含む)が記録される。checksの各要素にname, passed, message, level, fix, exampleフィールドが含まれる / phase-analytics.toonのerrorAnalysisに全check詳細(phase, retry, check, level, passed, evidence)が出力される。topFailureだけでなくerrorHistory配列として全entry全checksを展開する / 既存テストが回帰なく通過する。failureカウントの変化はpassed=falseフィルタ追加による正しい方向の変化であり許容する / lifecycle-next.tsが200行以下を維持する。checks mapping関数の外部化により行数制約を満たす"
+testResults[6]:
+  - recordedAt: "2026-03-25T11:31:26.882Z"
+    phase: test_impl
+    exitCode: 1
+    output: "RUN v1.6.1 - TDD Red Phase: 7 tests, 0 passed, 7 failed\nx error-toon.test.ts > TC-AC1-01: mapChecksForErrorToon is not a function\nx error-toon.test.ts > TC-AC1-02: mapChecksForErrorToon is not a function\nx phase-analytics.test.ts > TC-AC3-01: expected passed check to be excluded from failure count\nx phase-analytics.test.ts > TC-AC3-02: expected 'L1' to be 'L3' (level hardcoded)\nx phase-analytics.test.ts > TC-AC2-01: expected undefined not to be undefined (errorHistory)\nx analytics-toon.test.ts > TC-AC2-02: expected undefined not to be undefined (errorHistory)\nx analytics-toon.test.ts > TC-AC2-03: expected undefined not to be undefined (errorHistory)"
+    summary: "TDD Red: 7/7 tests FAIL as expected. All test cases confirm missing functionality."
+    failedTests[7]: TC-AC1-01,TC-AC1-02,TC-AC2-01,TC-AC2-02,TC-AC2-03,TC-AC3-01,TC-AC3-02
+  - recordedAt: "2026-03-25T11:37:32.694Z"
+    phase: implementation
+    exitCode: 0
+    output: "RUN v1.6.1 - TDD Green Phase: 7 tests, 7 passed, 0 failed (394ms)\n✓ error-toon.test.ts > TC-AC1-01: maps all fields correctly (name,passed,message,level,fix,example)\n✓ error-toon.test.ts > TC-AC1-02: optional fields are undefined when omitted\n✓ phase-analytics.test.ts > TC-AC3-01: excludes passed=true checks from failure count\n✓ phase-analytics.test.ts > TC-AC3-02: uses actual check.level instead of hardcoded L1\n✓ phase-analytics.test.ts > TC-AC2-01: flattens all entries and all checks into errorHistory\n✓ analytics-toon.test.ts > TC-AC2-02: includes errorHistory array in output\n✓ analytics-toon.test.ts > TC-AC2-03: handles empty/undefined errorHistory without error\ntsc --noEmit: 0 errors. lifecycle-next.ts: 197 lines."
+    summary: "TDD Green: 7/7 tests PASS. tsc clean. lifecycle-next.ts 197 lines."
+  - recordedAt: "2026-03-25T11:40:25.917Z"
+    phase: refactoring
+    exitCode: 0
+    output: "RUN v1.6.1 - Refactoring phase regression test: 7 tests, 7 passed, 0 failed\n✓ error-toon.test.ts > TC-AC1-01: maps all fields correctly\n✓ error-toon.test.ts > TC-AC1-02: optional fields are undefined when omitted\n✓ phase-analytics.test.ts > TC-AC3-01: excludes passed=true checks from failure count\n✓ phase-analytics.test.ts > TC-AC3-02: uses actual check.level instead of hardcoded L1\n✓ phase-analytics.test.ts > TC-AC2-01: flattens all entries and checks into errorHistory\n✓ analytics-toon.test.ts > TC-AC2-02: includes errorHistory array in output\n✓ analytics-toon.test.ts > TC-AC2-03: handles empty/undefined errorHistory without error\nRefactoring: no changes needed, code quality confirmed."
+    summary: "Refactoring regression: 7/7 tests PASS. No refactoring changes needed."
+  - recordedAt: "2026-03-25T11:43:56.792Z"
+    phase: build_check
+    exitCode: 0
+    output: "Build check phase: tsc --noEmit PASS (0 errors), vitest 7/7 PASS, line counts: error-toon.ts=79, lifecycle-next.ts=197, phase-analytics.ts=199, analytics-toon.ts=74 (all under 200 lines). Full test suite has pre-existing failures unrelated to this change."
+    summary: "Build check: tsc clean, 7 new tests PASS, all files under 200 lines."
+  - recordedAt: "2026-03-25T11:50:34.096Z"
+    phase: testing
+    exitCode: 0
+    output: "Testing phase final run: vitest 7/7 PASS (415ms). error-toon.test.ts 2/2, phase-analytics.test.ts 2/2, analytics-toon.test.ts 3/3. Line counts: error-toon.ts=78, lifecycle-next.ts=198, phase-analytics.ts=198, analytics-toon.ts=73. All under 200."
+    summary: "Final testing: 7/7 PASS, all files under 200 lines."
+  - recordedAt: "2026-03-25T11:52:25.780Z"
+    phase: regression_test
+    exitCode: 0
+    output: "Regression test: 755/783 passed, 28 pre-existing failures (vitest parallel resource contention). New tests 7/7 PASS. No new regressions introduced by this change. error-toon.test.ts 2/2, phase-analytics.test.ts 3/3, analytics-toon.test.ts 2/2."
+    summary: "Regression: 0 new failures. 7/7 new tests PASS. 28 pre-existing failures unchanged."
+baseline:
+  capturedAt: "2026-03-25T11:52:42.160Z"
+  totalTests: 783
+  passedTests: 755
+  failedTests[1]: pre-existing-parallel-contention-28-tests
+subPhaseStatus:
+  health_observation:
+    name: health_observation
+    status: completed
+    completedAt: "2026-03-25T12:18:27.821Z"

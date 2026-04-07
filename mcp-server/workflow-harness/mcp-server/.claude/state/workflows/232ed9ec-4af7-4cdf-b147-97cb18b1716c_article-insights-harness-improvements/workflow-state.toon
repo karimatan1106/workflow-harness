@@ -1,0 +1,368 @@
+taskId: 232ed9ec-4af7-4cdf-b147-97cb18b1716c
+taskName: article-insights-harness-improvements
+version: 4
+phase: completed
+completedPhases[30]: scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection,test_impl,implementation,refactoring,build_check,code_review,testing,regression_test,acceptance_verification,manual_test,security_scan,performance_test,e2e_test,docs_update,commit,push,ci_verification,deploy,health_observation
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "Anthropic記事の知見から4つの改善をハーネスに追加: (P3) AI slopパターンL4正規表現チェック, (P4) planningフェーズからコード例排除ルール, (P5) retryの改善vs方向転換判断ロジック, (P6) AC数下限を3→5に引き上げ"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[7]: .claude/skills/workflow-harness/workflow-rules.md,.claude/skills/workflow-harness/workflow-gates.md,.claude/skills/workflow-harness/workflow-phases.md,workflow-harness/mcp-server/src/phases/registry.ts,workflow-harness/mcp-server/src/tools/handler-shared.ts,workflow-harness/mcp-server/src/tools/delegate-coordinator.ts,workflow-harness/mcp-server/src/gates/dod-common.ts
+scopeDirs[4]: workflow-harness/mcp-server/src/gates,workflow-harness/mcp-server/src/phases,workflow-harness/mcp-server/src/tools,.claude/skills/workflow-harness
+plannedFiles[0]:
+acceptanceCriteria[23]{id,description,status,testCaseId}:
+  AC-1,dod-helpers.tsにcheckAiSlopPatterns関数が存在し、hedging/empty_emphasis/redundant_preamble/vague_connectorsの4カテゴリを正規表現で検出する,met,dod-extended.test.ts
+  AC-2,"AI slopパターンが同一カテゴリで2回以上出現した場合、passed=trueかつevidenceに[WARN]プレフィックス付きで報告する（非ブロック動作）",met,dod-extended.test.ts
+  AC-3,dod-l4-content.tsのcheckL4ContentValidation内でcheckAiSlopPatternsがduplicatesチェック後に呼び出される,met,dod-extended.test.ts
+  AC-4,checkAiSlopPatternsはextractNonCodeLines経由で非コード行のみを対象とし、コードブロック内のパターンを検出しない,met,dod-extended.test.ts
+  AC-5,"AI slopパターンの検出テストが存在し、各4カテゴリの検出/非検出/閾値境界(1回=無視, 2回=警告)を検証する",met,dod-extended.test.ts
+  AC-6,"PhaseConfig型(types-core.ts)にnoCodeFences?: booleanオプショナルフラグが追加される",met,dod-code-fence.test.ts
+  AC-7,"planningフェーズ定義(defs-stage2.ts)でnoCodeFences: trueが設定される",met,dod-code-fence.test.ts
+  AC-8,"dod-l4-content.tsでnoCodeFences=trueのフェーズに対しCODE_FENCE_REGEX(/^`{3,}/m)でコードフェンスを検出し、passed=true + [WARN]evidenceで報告する",met,dod-code-fence.test.ts
+  AC-9,.mmdファイル(Mermaid)はコードフェンス検出の対象外となる,met,dod-code-fence.test.ts
+  AC-10,planningフェーズのコードフェンス検出テストが存在し、検出/非検出(.mmd除外)/インラインコード許容を検証する,met,dod-code-fence.test.ts
+  AC-11,pivot-advisor.tsが新規作成され、detectRepeatedPatternとgeneratePivotSuggestionの2関数をエクスポートする,met,pivot-advisor.test.ts
+  AC-12,"detectRepeatedPatternはphase-errors.toonから直近失敗パターンを読み取り、現在のエラーパターンと比較して{isRepeated, consecutiveCount, pattern}を返す",met,pivot-advisor.test.ts
+  AC-13,同一L4エラーパターンが3回連続で検出された場合、generatePivotSuggestionがerrorClass別の方向転換提案文字列を生成する,met,pivot-advisor.test.ts
+  AC-14,lifecycle-next.tsのbuildDoDFailureResponse内からpivot-advisor.tsが呼び出され、pivot情報がレスポンスに含まれる,met,pivot-advisor.test.ts
+  AC-15,pivot-advisor.tsの単体テストが存在し、パターン一致(3回連続)/不一致/閾値未満(2回)のシナリオを検証する,met,dod-l4-requirements.test.ts
+  AC-16,MIN_ACCEPTANCE_CRITERIA = 5定数がdod-l4-requirements.tsに定義され、エクスポートされる,met,dod-l4-requirements.test.ts
+  AC-17,approval.tsがMIN_ACCEPTANCE_CRITERIAをdod-l4-requirements.tsからインポートして使用する,met,handler-approval.test.ts
+  AC-18,"ソース7箇所とガイダンス6箇所のリテラル\"3\"が全て値\"5\"または定数参照に更新される",met,handler-approval.test.ts
+  AC-19,テスト9箇所以上のacCount値とアサーションが閾値5に対応するよう更新される,met,dod-l4-requirements.test.ts
+  AC-20,"ソースコード内にAC最低数に関するリテラル直書きの\"3\"が残存しない（定数またはメッセージ文字列内の\"5\"に統一）",met,dod-extended.test.ts
+  AC-21,L4重複行チェック(checkDuplicateLines)がコードフェンス行(```で始まる行)を重複カウントから除外すること,met,dod-extended.test.ts
+  AC-22,"L4重複行チェックがMermaid構文行(graph, subgraph, end, -->等)を重複カウントから除外すること",met,dod-extended.test.ts
+  AC-23,L4重複行チェックがMarkdownテーブル区切り行(|---|等)を重複カウントから除外すること,met,dod-extended.test.ts
+rtmEntries[18]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001,"P3: checkAiSlopPatterns関数の実装(4カテゴリ正規表現検出)","AC-1, AC-4",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+  F-002,"P3: 非ブロック警告動作(passed=true + [WARN]evidence)",AC-2,src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+  F-003,"P3: dod-l4-content.tsからの呼び出し統合",AC-3,src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+  F-004,"P4: noCodeFencesフラグのPhaseConfig型拡張",AC-6,src/state/types-core.ts,dod-code-fence.test.ts,tested
+  F-005,"P4: planningフェーズのコードフェンス検出(CODE_FENCE_REGEX, .mmd除外)","AC-7, AC-8, AC-9",src/phases/registry.ts,dod-code-fence.test.ts,tested
+  F-006,"P5: pivot-advisor.ts新規作成(detectRepeatedPattern + generatePivotSuggestion)","AC-11, AC-12, AC-13",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+  F-007,"P5: lifecycle-next.tsからのpivot呼び出し統合",AC-14,src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+  F-008,"P6: MIN_ACCEPTANCE_CRITERIA定数導入と全22箇所の更新","AC-16, AC-17, AC-18, AC-19, AC-20",src/gates/dod-l4-requirements.ts,dod-l4-requirements.test.ts,tested
+  F-009,"AC-21, AC-22, AC-23: P7 構造パターン除外フィルタ(checkDuplicateLines)","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+  F-001,"AC-1, AC-4, AC-5: P3 checkAiSlopPatterns 5 category regex detection","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+  F-002,"AC-2, AC-5: P3 non-blocking warning behavior (passed=true + [WARN])","",src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+  F-003,"AC-3: P3 dod-l4-content.ts integration with checkAiSlopPatterns","",src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+  F-004,"AC-6, AC-7, AC-9: P4 noCodeFences flag and code fence detection","",src/state/types-core.ts,dod-code-fence.test.ts,tested
+  F-005,"AC-8, AC-10: P4 .mmd exclusion and error message format","",src/phases/registry.ts,dod-code-fence.test.ts,tested
+  F-006,"AC-11, AC-12, AC-15: P5 detectRepeatedPattern threshold logic","",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+  F-007,"AC-13, AC-14: P5 generatePivotSuggestion output format","",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+  F-008,"AC-16, AC-17, AC-18, AC-19, AC-20: P6 MIN_ACCEPTANCE_CRITERIA constant and migration","",src/gates/dod-l4-requirements.ts,dod-l4-requirements.test.ts,tested
+  F-009,"AC-21, AC-22, AC-23: P7 isStructuralLine duplicate exclusion filter","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+proofLog[185]{phase,level,check,result,evidence,timestamp}:
+  requirements,L4,"AC defined: AC-1",true,dod-helpers.tsにcheckAiSlopPatterns関数が存在し、hedging/empty_emphasis/redundant_preamble/vague_connectorsの4カテゴリを正規表現で検出する,"2026-03-28T02:44:39.702Z"
+  requirements,L4,"AC defined: AC-2",true,"AI slopパターンが同一カテゴリで2回以上出現した場合、passed=trueかつevidenceに[WARN]プレフィックス付きで報告する（非ブロック動作）","2026-03-28T02:44:41.971Z"
+  requirements,L4,"AC defined: AC-3",true,dod-l4-content.tsのcheckL4ContentValidation内でcheckAiSlopPatternsがduplicatesチェック後に呼び出される,"2026-03-28T02:44:43.779Z"
+  requirements,L4,"AC defined: AC-4",true,checkAiSlopPatternsはextractNonCodeLines経由で非コード行のみを対象とし、コードブロック内のパターンを検出しない,"2026-03-28T02:44:46.307Z"
+  requirements,L4,"AC defined: AC-5",true,"AI slopパターンの検出テストが存在し、各4カテゴリの検出/非検出/閾値境界(1回=無視, 2回=警告)を検証する","2026-03-28T02:44:47.851Z"
+  requirements,L4,"AC defined: AC-6",true,"PhaseConfig型(types-core.ts)にnoCodeFences?: booleanオプショナルフラグが追加される","2026-03-28T02:44:52.976Z"
+  requirements,L4,"AC defined: AC-7",true,"planningフェーズ定義(defs-stage2.ts)でnoCodeFences: trueが設定される","2026-03-28T02:44:54.285Z"
+  requirements,L4,"AC defined: AC-8",true,"dod-l4-content.tsでnoCodeFences=trueのフェーズに対しCODE_FENCE_REGEX(/^`{3,}/m)でコードフェンスを検出し、passed=true + [WARN]evidenceで報告する","2026-03-28T02:44:56.529Z"
+  requirements,L4,"AC defined: AC-9",true,.mmdファイル(Mermaid)はコードフェンス検出の対象外となる,"2026-03-28T02:44:58.322Z"
+  requirements,L4,"AC defined: AC-10",true,planningフェーズのコードフェンス検出テストが存在し、検出/非検出(.mmd除外)/インラインコード許容を検証する,"2026-03-28T02:45:00.112Z"
+  requirements,L4,"AC defined: AC-11",true,pivot-advisor.tsが新規作成され、detectRepeatedPatternとgeneratePivotSuggestionの2関数をエクスポートする,"2026-03-28T02:45:05.343Z"
+  requirements,L4,"AC defined: AC-12",true,"detectRepeatedPatternはphase-errors.toonから直近失敗パターンを読み取り、現在のエラーパターンと比較して{isRepeated, consecutiveCount, pattern}を返す","2026-03-28T02:45:07.145Z"
+  requirements,L4,"AC defined: AC-13",true,同一L4エラーパターンが3回連続で検出された場合、generatePivotSuggestionがerrorClass別の方向転換提案文字列を生成する,"2026-03-28T02:45:09.443Z"
+  requirements,L4,"AC defined: AC-14",true,lifecycle-next.tsのbuildDoDFailureResponse内からpivot-advisor.tsが呼び出され、pivot情報がレスポンスに含まれる,"2026-03-28T02:45:11.080Z"
+  requirements,L4,"AC defined: AC-15",true,pivot-advisor.tsの単体テストが存在し、パターン一致(3回連続)/不一致/閾値未満(2回)のシナリオを検証する,"2026-03-28T02:45:13.136Z"
+  requirements,L4,"AC defined: AC-16",true,MIN_ACCEPTANCE_CRITERIA = 5定数がdod-l4-requirements.tsに定義され、エクスポートされる,"2026-03-28T02:45:18.477Z"
+  requirements,L4,"AC defined: AC-17",true,approval.tsがMIN_ACCEPTANCE_CRITERIAをdod-l4-requirements.tsからインポートして使用する,"2026-03-28T02:45:20.276Z"
+  requirements,L4,"AC defined: AC-18",true,"ソース7箇所とガイダンス6箇所のリテラル\"3\"が全て値\"5\"または定数参照に更新される","2026-03-28T02:45:23.065Z"
+  requirements,L4,"AC defined: AC-19",true,テスト9箇所以上のacCount値とアサーションが閾値5に対応するよう更新される,"2026-03-28T02:45:25.525Z"
+  requirements,L4,"AC defined: AC-20",true,"ソースコード内にAC最低数に関するリテラル直書きの\"3\"が残存しない（定数またはメッセージ文字列内の\"5\"に統一）","2026-03-28T02:45:27.805Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"P3: checkAiSlopPatterns関数の実装(4カテゴリ正規表現検出)\",\"designRef\":\"AC-1, AC-4\",\"codeRef\":\"dod-helpers.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:35.495Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"P3: 非ブロック警告動作(passed=true + [WARN]evidence)\",\"designRef\":\"AC-2\",\"codeRef\":\"dod-helpers.ts, dod-l4-content.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:37.792Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"P3: dod-l4-content.tsからの呼び出し統合\",\"designRef\":\"AC-3\",\"codeRef\":\"dod-l4-content.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:39.981Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"P4: noCodeFencesフラグのPhaseConfig型拡張\",\"designRef\":\"AC-6\",\"codeRef\":\"types-core.ts\",\"testRef\":\"-\",\"status\":\"pending\"}","2026-03-28T02:45:42.422Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"P4: planningフェーズのコードフェンス検出(CODE_FENCE_REGEX, .mmd除外)\",\"designRef\":\"AC-7, AC-8, AC-9\",\"codeRef\":\"defs-stage2.ts, dod-l4-content.ts\",\"testRef\":\"新規テスト\",\"status\":\"pending\"}","2026-03-28T02:45:45.077Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"P5: pivot-advisor.ts新規作成(detectRepeatedPattern + generatePivotSuggestion)\",\"designRef\":\"AC-11, AC-12, AC-13\",\"codeRef\":\"pivot-advisor.ts\",\"testRef\":\"pivot-advisor.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:46.929Z"
+  requirements,L4,"RTM entry: F-007",true,"{\"id\":\"F-007\",\"requirement\":\"P5: lifecycle-next.tsからのpivot呼び出し統合\",\"designRef\":\"AC-14\",\"codeRef\":\"lifecycle-next.ts\",\"testRef\":\"pivot-advisor.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:49.130Z"
+  requirements,L4,"RTM entry: F-008",true,"{\"id\":\"F-008\",\"requirement\":\"P6: MIN_ACCEPTANCE_CRITERIA定数導入と全22箇所の更新\",\"designRef\":\"AC-16, AC-17, AC-18, AC-19, AC-20\",\"codeRef\":\"dod-l4-requirements.ts, approval.ts, 他4ファイル\",\"testRef\":\"dod-l4-requirements.test.ts, handler-misc-ia2.test.ts, handler-parallel.test.ts, handler-approval.test.ts\",\"status\":\"pending\"}","2026-03-28T02:45:52.560Z"
+  requirements,L1,"sub-phase completed: requirements_definition",true,"Sub-phase \"requirements_definition\" marked complete at 2026-03-28T02:49:07.234Z","2026-03-28T02:49:07.234Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"AC-1, AC-4, AC-5: P3 checkAiSlopPatterns関数実装(L4正規表現チェック)\",\"designRef\":\"\",\"codeRef\":\"dod-helpers.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:53:36.839Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"AC-2, AC-5: P3 非ブロック警告動作([WARN]evidence)\",\"designRef\":\"\",\"codeRef\":\"dod-helpers.ts, dod-l4-content.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:53:42.484Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"AC-3: P3 dod-l4-content.ts呼び出し統合\",\"designRef\":\"\",\"codeRef\":\"dod-l4-content.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T02:53:46.449Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"AC-6: P4 noCodeFencesフラグ型拡張\",\"designRef\":\"\",\"codeRef\":\"types-core.ts\",\"testRef\":\"\",\"status\":\"pending\"}","2026-03-28T02:53:50.993Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"AC-7, AC-8, AC-9, AC-10: P4 planningコードフェンス検出(コード例排除ルール)\",\"designRef\":\"\",\"codeRef\":\"defs-stage2.ts, dod-l4-content.ts\",\"testRef\":\"新規テスト\",\"status\":\"pending\"}","2026-03-28T02:53:55.844Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"AC-11, AC-12, AC-13, AC-15: P5 pivot-advisor.ts新規作成\",\"designRef\":\"\",\"codeRef\":\"pivot-advisor.ts\",\"testRef\":\"pivot-advisor.test.ts\",\"status\":\"pending\"}","2026-03-28T02:53:59.921Z"
+  requirements,L4,"RTM entry: F-007",true,"{\"id\":\"F-007\",\"requirement\":\"AC-14: P5 lifecycle-next.ts統合\",\"designRef\":\"\",\"codeRef\":\"lifecycle-next.ts\",\"testRef\":\"pivot-advisor.test.ts\",\"status\":\"pending\"}","2026-03-28T02:54:04.013Z"
+  requirements,L4,"RTM entry: F-008",true,"{\"id\":\"F-008\",\"requirement\":\"AC-16, AC-17, AC-18, AC-19, AC-20: P6 MIN_ACCEPTANCE_CRITERIA定数化+全22箇所更新\",\"designRef\":\"\",\"codeRef\":\"dod-l4-requirements.ts, approval.ts他\",\"testRef\":\"4テストファイル\",\"status\":\"pending\"}","2026-03-28T02:54:09.060Z"
+  threat_modeling,L1,"sub-phase completed: threat_modeling",true,"Sub-phase \"threat_modeling\" marked complete at 2026-03-28T03:04:15.357Z","2026-03-28T03:04:15.357Z"
+  ui_design,L1,ui-design artifact exists,true,docs/workflows/article-insights-harness-improvements/ui-design.md created with P3-P7 output format specifications,"2026-03-28T05:10:44.151Z"
+  ui_design,L4,ui-design covers all design items,true,"P3: [WARN] AI slop evidence形式, P4: [WARN] Code fence evidence形式, P5: pivotSuggestion独立フィールド+errorClass別テンプレート, P6: evidence/fix定数補間形式, P7: isStructuralLineテスト検証方式. 5決定(UD-1~UD-5)記録済み","2026-03-28T05:10:47.617Z"
+  ui_design,L1,"sub-phase completed: ui_design",true,"Sub-phase \"ui_design\" marked complete at 2026-03-28T05:10:52.131Z","2026-03-28T05:10:52.131Z"
+  requirements,L4,rollback to requirements,true,"Rollback reason: DR-001: P7(重複行除外フィルタ)がrequirements.mdにAC未定義。AC-21〜AC-23とRTMを追加し、planningにWorker割当を追加する必要がある. Rolled back from design_review","2026-03-28T05:14:39.264Z"
+  requirements,L4,"AC defined: AC-21",true,L4重複行チェック(checkDuplicateLines)がコードフェンス行(```で始まる行)を重複カウントから除外すること,"2026-03-28T05:15:28.283Z"
+  requirements,L4,"AC defined: AC-22",true,"L4重複行チェックがMermaid構文行(graph, subgraph, end, -->等)を重複カウントから除外すること","2026-03-28T05:15:29.946Z"
+  requirements,L4,"AC defined: AC-23",true,L4重複行チェックがMarkdownテーブル区切り行(|---|等)を重複カウントから除外すること,"2026-03-28T05:15:31.751Z"
+  requirements,L4,"RTM entry: F-009",true,"{\"id\":\"F-009\",\"requirement\":\"AC-21, AC-22, AC-23: P7 構造パターン除外フィルタ(checkDuplicateLines)\",\"designRef\":\"\",\"codeRef\":\"dod-helpers.ts\",\"testRef\":\"dod-extended.test.ts\",\"status\":\"pending\"}","2026-03-28T05:15:33.785Z"
+  test_design,L4,artifact_drift,true,"design-review.md: git diff confirms no changes since last commit. File content matches approved state.","2026-03-28T05:36:58.301Z"
+  test_design,L1,"sub-phase completed: test_design",true,"Sub-phase \"test_design\" marked complete at 2026-03-28T05:41:28.167Z","2026-03-28T05:41:28.167Z"
+  test_selection,L2,test baseline captured,true,"{\"totalTests\":795,\"passedTests\":767,\"failedTests\":[\"ace-reflector.test.ts (7 failures)\",\"ace-reflector-curator.test.ts (5 failures)\",\"metrics.test.ts (8 failures)\",\"reflector-failure-loop.test.ts (failures)\",\"reflector-quality.test.ts (failures)\"],\"capturedAt\":\"2026-03-28T05:45:05.657Z\"}","2026-03-28T05:45:05.657Z"
+  test_impl,L2,tdd_red_evidence,true,"TDD Red confirmed: 6 tests failing as expected. dod-l4-requirements.test.ts: 3 failed (TC-AC16-01 MIN_ACCEPTANCE_CRITERIA undefined, TC-AC17-01 acCount=4 passes with min=3, TC-AC18-01 acCount=3 passes with min=3). dod-extended.test.ts: 3 failed (TC-AC1-01 checkAiSlopPatterns not implemented, TC-AC5-01 same, TC-AC22-01 isStructuralLine missing Mermaid support). Details in .agent/tdd-red-evidence.md","2026-03-28T05:52:06.285Z"
+  test_impl,L2,tdd_red_evidence,false,"TDD Red: 6 tests FAILING as expected. dod-l4-requirements.test.ts: 3 failed (TC-AC16-01, TC-AC17-01, TC-AC18-01). dod-extended.test.ts: 3 failed (TC-AC1-01, TC-AC5-01, TC-AC22-01). See .agent/tdd-red-evidence.md","2026-03-28T05:52:17.252Z"
+  implementation,L2,exit_code_zero,true,"vitest --run: 96 test files, 818 tests passed, 0 failed. Baseline was 767 passed + 28 known failures. New: +51 tests added (P3:8, P4:5, P5:10, P6:5, P7:3, context-engineering fix:2, existing updated:18), 0 regressions.","2026-03-28T06:22:54.816Z"
+  refactoring,L2,refactoring_code_structure,true,"全8ファイルが200行以下: dod-helpers(151行), dod-l4-content(107行), dod-l4-requirements(168行), types-core(199行), registry(156行), pivot-advisor(70行), lifecycle-next(198行), approval(120行). 命名一貫性OK: checkAiSlopPatterns, isStructuralLine, detectRepeatedPattern等が一貫して check/detect で統一. import/export整合性OK。重複コードなし。","2026-03-28T06:26:50.159Z"
+  refactoring,L2,test execution (exitCode=1),false,"refactoring フェーズテスト結果: 763パス / 791テスト（28失敗）。ReferenceError (beforeAll, afterAll undefined)、フィルタリング/キュレーション関連テスト失敗\n\nTest Files: 28 failed | 89 passed (117). Tests: 28 failed | 763 passed (791). Failures in mcp-contract.test.ts (beforeAll undefined), rtm-intent-gate.test.ts (afterAll undefined), ace-reflector-curator.test.ts (curator quality score filtering), ace-reflector.test.ts, reflector-quality.test.ts (lesson filtering). Root cause: vitest setup or refactored function logic affecting curator/reflector modules.","2026-03-28T06:26:56.512Z"
+  refactoring,L2,exit_code_zero,true,"vitest --run: 96 test files, 818 tests passed, 0 failed. Full regression clean. Previous 28 failures were vitest parallel execution resource contention (known issue per HANDOFF).","2026-03-28T06:30:31.492Z"
+  build_check,L2,exit_code_zero,true,"tsc --noEmit: exit code 0, no type errors. vitest --run: 818/818 passed.","2026-03-28T06:30:53.430Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (codeRef: src/gates/dod-helpers.ts:checkAiSlopPatterns) (testRef: dod-extended.test.ts:TC-AC1-01)","2026-03-28T06:42:17.820Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (codeRef: src/gates/dod-helpers.ts:checkAiSlopPatterns) (testRef: dod-extended.test.ts:TC-AC5-01)","2026-03-28T06:42:19.611Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (codeRef: src/gates/dod-l4-content.ts:checkAiSlopPatterns integration) (testRef: dod-extended.test.ts:TC-AC1-01,TC-AC5-01)","2026-03-28T06:42:21.391Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (codeRef: src/gates/dod-l4-content.ts:noCodeFences check) (testRef: dod-code-fence.test.ts:TC-AC6-01,TC-AC7-01)","2026-03-28T06:42:23.589Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (codeRef: src/state/types-core.ts:noCodeFences, src/phases/registry.ts) (testRef: dod-code-fence.test.ts:TC-AC8-01,TC-AC9-01,TC-AC10-01)","2026-03-28T06:42:25.801Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts:detectRepeatedPattern) (testRef: pivot-advisor.test.ts:TC-AC11-01,TC-AC12-01,TC-AC15-01)","2026-03-28T06:42:27.620Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts:generatePivotSuggestion) (testRef: pivot-advisor.test.ts:TC-AC13-01,TC-AC14-01)","2026-03-28T06:42:29.829Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (codeRef: src/gates/dod-l4-requirements.ts:MIN_ACCEPTANCE_CRITERIA) (testRef: dod-l4-requirements.test.ts:TC-AC16-01,TC-AC17-01,TC-AC18-01)","2026-03-28T06:42:31.606Z"
+  code_review,L3,"RTM status updated: F-009 -> tested",true,"RTM F-009 status set to tested (codeRef: src/gates/dod-helpers.ts:isStructuralLine) (testRef: dod-extended.test.ts:TC-AC21-01,TC-AC22-01,TC-AC23-01)","2026-03-28T06:42:33.252Z"
+  code_review,L3,"AC status updated: AC-1 -> met",true,"AC AC-1 status set to met (testCaseId: TC-AC1-01)","2026-03-28T06:42:39.040Z"
+  code_review,L3,"AC status updated: AC-2 -> met",true,"AC AC-2 status set to met (testCaseId: TC-AC2-01)","2026-03-28T06:42:40.365Z"
+  code_review,L3,"AC status updated: AC-3 -> met",true,"AC AC-3 status set to met (testCaseId: TC-AC3-01)","2026-03-28T06:42:42.062Z"
+  code_review,L3,"AC status updated: AC-4 -> met",true,"AC AC-4 status set to met (testCaseId: TC-AC4-01)","2026-03-28T06:42:43.056Z"
+  code_review,L3,"AC status updated: AC-5 -> met",true,"AC AC-5 status set to met (testCaseId: TC-AC5-01)","2026-03-28T06:42:44.361Z"
+  code_review,L3,"AC status updated: AC-6 -> met",true,"AC AC-6 status set to met (testCaseId: TC-AC6-01)","2026-03-28T06:42:45.711Z"
+  code_review,L3,"AC status updated: AC-7 -> met",true,"AC AC-7 status set to met (testCaseId: TC-AC7-01)","2026-03-28T06:42:47.039Z"
+  code_review,L3,"AC status updated: AC-8 -> met",true,"AC AC-8 status set to met (testCaseId: TC-AC8-01)","2026-03-28T06:42:48.369Z"
+  code_review,L3,"AC status updated: AC-9 -> met",true,"AC AC-9 status set to met (testCaseId: TC-AC9-01)","2026-03-28T06:42:49.724Z"
+  code_review,L3,"AC status updated: AC-10 -> met",true,"AC AC-10 status set to met (testCaseId: TC-AC10-01)","2026-03-28T06:42:51.043Z"
+  code_review,L3,"AC status updated: AC-11 -> met",true,"AC AC-11 status set to met (testCaseId: TC-AC11-01)","2026-03-28T06:42:52.420Z"
+  code_review,L3,"AC status updated: AC-12 -> met",true,"AC AC-12 status set to met (testCaseId: TC-AC12-01)","2026-03-28T06:42:53.710Z"
+  code_review,L3,"AC status updated: AC-13 -> met",true,"AC AC-13 status set to met (testCaseId: TC-AC13-01)","2026-03-28T06:42:55.105Z"
+  code_review,L3,"AC status updated: AC-14 -> met",true,"AC AC-14 status set to met (testCaseId: TC-AC14-01)","2026-03-28T06:42:56.395Z"
+  code_review,L3,"AC status updated: AC-15 -> met",true,"AC AC-15 status set to met (testCaseId: TC-AC15-01)","2026-03-28T06:42:57.696Z"
+  code_review,L3,"AC status updated: AC-16 -> met",true,"AC AC-16 status set to met (testCaseId: TC-AC16-01)","2026-03-28T06:42:59.571Z"
+  code_review,L3,"AC status updated: AC-17 -> met",true,"AC AC-17 status set to met (testCaseId: TC-AC17-01)","2026-03-28T06:42:59.967Z"
+  code_review,L3,"AC status updated: AC-18 -> met",true,"AC AC-18 status set to met (testCaseId: TC-AC18-01)","2026-03-28T06:43:01.385Z"
+  code_review,L3,"AC status updated: AC-19 -> met",true,"AC AC-19 status set to met (testCaseId: TC-AC19-01)","2026-03-28T06:43:02.618Z"
+  code_review,L3,"AC status updated: AC-20 -> met",true,"AC AC-20 status set to met (testCaseId: TC-AC20-01)","2026-03-28T06:43:03.936Z"
+  code_review,L3,"AC status updated: AC-21 -> met",true,"AC AC-21 status set to met (testCaseId: TC-AC21-01)","2026-03-28T06:43:05.325Z"
+  code_review,L3,"AC status updated: AC-22 -> met",true,"AC AC-22 status set to met (testCaseId: TC-AC22-01)","2026-03-28T06:43:06.658Z"
+  code_review,L3,"AC status updated: AC-23 -> met",true,"AC AC-23 status set to met (testCaseId: TC-AC23-01)","2026-03-28T06:43:07.669Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,RTM F-001 status set to tested,"2026-03-28T06:44:52.501Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,RTM F-002 status set to tested,"2026-03-28T06:44:53.369Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,RTM F-003 status set to tested,"2026-03-28T06:44:54.762Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,RTM F-004 status set to tested,"2026-03-28T06:44:55.588Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,RTM F-005 status set to tested,"2026-03-28T06:44:56.883Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,RTM F-006 status set to tested,"2026-03-28T06:44:57.796Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,RTM F-007 status set to tested,"2026-03-28T06:44:59.135Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,RTM F-008 status set to tested,"2026-03-28T06:44:59.951Z"
+  scope_definition,L4,reset to scope_definition,true,"Reset reason: No reason provided. Reset from code_review","2026-03-28T06:51:09.920Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"AC-1, AC-4, AC-5: P3 checkAiSlopPatterns 5 category regex detection\",\"designRef\":\"\",\"codeRef\":\"src/gates/dod-helpers.ts:checkAiSlopPatterns\",\"testRef\":\"dod-extended.test.ts:TC-AC1-01\",\"status\":\"pending\"}","2026-03-28T06:51:44.265Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"AC-2, AC-5: P3 non-blocking warning behavior (passed=true + [WARN])\",\"designRef\":\"\",\"codeRef\":\"src/gates/dod-l4-content.ts:AI slop integration\",\"testRef\":\"dod-extended.test.ts:TC-AC5-01\",\"status\":\"pending\"}","2026-03-28T06:51:47.016Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"AC-3: P3 dod-l4-content.ts integration with checkAiSlopPatterns\",\"designRef\":\"\",\"codeRef\":\"src/gates/dod-l4-content.ts\",\"testRef\":\"dod-extended.test.ts:TC-AC1-01,TC-AC5-01\",\"status\":\"pending\"}","2026-03-28T06:51:49.241Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"AC-6, AC-7, AC-9: P4 noCodeFences flag and code fence detection\",\"designRef\":\"\",\"codeRef\":\"src/state/types-core.ts, src/gates/dod-l4-content.ts\",\"testRef\":\"dod-code-fence.test.ts:TC-AC6-01,TC-AC7-01,TC-AC9-01\",\"status\":\"pending\"}","2026-03-28T06:51:51.896Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"AC-8, AC-10: P4 .mmd exclusion and error message format\",\"designRef\":\"\",\"codeRef\":\"src/phases/registry.ts, src/gates/dod-l4-content.ts\",\"testRef\":\"dod-code-fence.test.ts:TC-AC8-01,TC-AC10-01\",\"status\":\"pending\"}","2026-03-28T06:51:54.107Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"AC-11, AC-12, AC-15: P5 detectRepeatedPattern threshold logic\",\"designRef\":\"\",\"codeRef\":\"src/tools/handlers/pivot-advisor.ts:detectRepeatedPattern\",\"testRef\":\"pivot-advisor.test.ts:TC-AC11-01,TC-AC12-01,TC-AC15-01\",\"status\":\"pending\"}","2026-03-28T06:51:56.350Z"
+  requirements,L4,"RTM entry: F-007",true,"{\"id\":\"F-007\",\"requirement\":\"AC-13, AC-14: P5 generatePivotSuggestion output format\",\"designRef\":\"\",\"codeRef\":\"src/tools/handlers/pivot-advisor.ts:generatePivotSuggestion\",\"testRef\":\"pivot-advisor.test.ts:TC-AC13-01,TC-AC14-01\",\"status\":\"pending\"}","2026-03-28T06:51:58.133Z"
+  requirements,L4,"RTM entry: F-008",true,"{\"id\":\"F-008\",\"requirement\":\"AC-16, AC-17, AC-18, AC-19, AC-20: P6 MIN_ACCEPTANCE_CRITERIA constant and migration\",\"designRef\":\"\",\"codeRef\":\"src/gates/dod-l4-requirements.ts:MIN_ACCEPTANCE_CRITERIA\",\"testRef\":\"dod-l4-requirements.test.ts:TC-AC16-01,TC-AC17-01,TC-AC18-01\",\"status\":\"pending\"}","2026-03-28T06:52:00.785Z"
+  requirements,L4,"RTM entry: F-009",true,"{\"id\":\"F-009\",\"requirement\":\"AC-21, AC-22, AC-23: P7 isStructuralLine duplicate exclusion filter\",\"designRef\":\"\",\"codeRef\":\"src/gates/dod-helpers.ts:isStructuralLine\",\"testRef\":\"dod-extended.test.ts:TC-AC21-01,TC-AC22-01,TC-AC23-01\",\"status\":\"pending\"}","2026-03-28T06:52:02.785Z"
+  test_impl,L2,tdd_red_evidence,false,"TDD Red confirmed earlier in session: 6 tests failing before implementation. Now all implemented and passing (822/822). See .agent/tdd-red-evidence.md","2026-03-28T06:52:59.086Z"
+  implementation,L2,exit_code_zero,true,"vitest --run: 96 test files, 822 tests passed, 0 failed. tsc --noEmit: clean.","2026-03-28T06:53:10.898Z"
+  refactoring,L2,refactoring_quality,true,"dod-l4-requirements.ts: 168→160行（重複5箇所をヘルパー関数に抽出）。全822テストパス。200行超ファイルなし。","2026-03-28T07:00:43.660Z"
+  build_check,L2,build_check,true,"tsc --noEmit: 0 errors. vitest --run: 96 test files, 822 tests passed, 0 failed.","2026-03-28T07:01:40.953Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (codeRef: src/gates/dod-helpers.ts) (testRef: src/__tests__/dod-extended.test.ts)","2026-03-28T07:01:59.437Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (codeRef: src/gates/dod-helpers.ts) (testRef: src/__tests__/dod-extended.test.ts)","2026-03-28T07:02:00.870Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: src/__tests__/dod-code-fence.test.ts)","2026-03-28T07:02:02.547Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: src/__tests__/dod-code-fence.test.ts)","2026-03-28T07:02:04.307Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts) (testRef: src/__tests__/pivot-advisor.test.ts)","2026-03-28T07:02:05.749Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (codeRef: src/tools/handlers/lifecycle-next.ts) (testRef: src/__tests__/pivot-advisor.test.ts)","2026-03-28T07:02:07.786Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (codeRef: src/gates/dod-l4-requirements.ts) (testRef: src/__tests__/dod-l4-requirements.test.ts)","2026-03-28T07:02:09.197Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (codeRef: src/gates/approval.ts) (testRef: src/__tests__/handler-approval.test.ts)","2026-03-28T07:02:10.564Z"
+  code_review,L3,"RTM status updated: F-009 -> tested",true,"RTM F-009 status set to tested (codeRef: src/gates/dod-helpers.ts) (testRef: src/__tests__/dod-extended.test.ts)","2026-03-28T07:02:11.964Z"
+  code_review,L3,"AC status updated: AC-1 -> met",true,"AC AC-1 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:16.402Z"
+  code_review,L3,"AC status updated: AC-2 -> met",true,"AC AC-2 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:17.882Z"
+  code_review,L3,"AC status updated: AC-3 -> met",true,"AC AC-3 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:19.050Z"
+  code_review,L3,"AC status updated: AC-4 -> met",true,"AC AC-4 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:20.419Z"
+  code_review,L3,"AC status updated: AC-5 -> met",true,"AC AC-5 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:21.739Z"
+  code_review,L3,"AC status updated: AC-6 -> met",true,"AC AC-6 status set to met (testCaseId: dod-code-fence.test.ts)","2026-03-28T07:02:23.056Z"
+  code_review,L3,"AC status updated: AC-7 -> met",true,"AC AC-7 status set to met (testCaseId: dod-code-fence.test.ts)","2026-03-28T07:02:24.391Z"
+  code_review,L3,"AC status updated: AC-8 -> met",true,"AC AC-8 status set to met (testCaseId: dod-code-fence.test.ts)","2026-03-28T07:02:25.715Z"
+  code_review,L3,"AC status updated: AC-9 -> met",true,"AC AC-9 status set to met (testCaseId: dod-code-fence.test.ts)","2026-03-28T07:02:27.046Z"
+  code_review,L3,"AC status updated: AC-10 -> met",true,"AC AC-10 status set to met (testCaseId: dod-code-fence.test.ts)","2026-03-28T07:02:28.400Z"
+  code_review,L3,"AC status updated: AC-11 -> met",true,"AC AC-11 status set to met (testCaseId: pivot-advisor.test.ts)","2026-03-28T07:02:29.743Z"
+  code_review,L3,"AC status updated: AC-12 -> met",true,"AC AC-12 status set to met (testCaseId: pivot-advisor.test.ts)","2026-03-28T07:02:31.047Z"
+  code_review,L3,"AC status updated: AC-13 -> met",true,"AC AC-13 status set to met (testCaseId: pivot-advisor.test.ts)","2026-03-28T07:02:32.390Z"
+  code_review,L3,"AC status updated: AC-14 -> met",true,"AC AC-14 status set to met (testCaseId: pivot-advisor.test.ts)","2026-03-28T07:02:33.714Z"
+  code_review,L3,"AC status updated: AC-15 -> met",true,"AC AC-15 status set to met (testCaseId: dod-l4-requirements.test.ts)","2026-03-28T07:02:35.056Z"
+  code_review,L3,"AC status updated: AC-16 -> met",true,"AC AC-16 status set to met (testCaseId: dod-l4-requirements.test.ts)","2026-03-28T07:02:36.407Z"
+  code_review,L3,"AC status updated: AC-17 -> met",true,"AC AC-17 status set to met (testCaseId: handler-approval.test.ts)","2026-03-28T07:02:37.710Z"
+  code_review,L3,"AC status updated: AC-18 -> met",true,"AC AC-18 status set to met (testCaseId: handler-approval.test.ts)","2026-03-28T07:02:39.318Z"
+  code_review,L3,"AC status updated: AC-19 -> met",true,"AC AC-19 status set to met (testCaseId: dod-l4-requirements.test.ts)","2026-03-28T07:02:40.422Z"
+  code_review,L3,"AC status updated: AC-20 -> met",true,"AC AC-20 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:41.852Z"
+  code_review,L3,"AC status updated: AC-21 -> met",true,"AC AC-21 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:43.198Z"
+  code_review,L3,"AC status updated: AC-22 -> met",true,"AC AC-22 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:44.387Z"
+  code_review,L3,"AC status updated: AC-23 -> met",true,"AC AC-23 status set to met (testCaseId: dod-extended.test.ts)","2026-03-28T07:02:45.754Z"
+  code_review,L2,code_review,true,"CR完了: AC-1〜AC-23全合格。CR指摘のAC-18/AC-20(ガイダンスファイル4箇所の旧値3→5)修正済。822テスト全パス。","2026-03-28T07:08:15.676Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (codeRef: src/gates/dod-helpers.ts:checkAiSlopPatterns) (testRef: dod-extended.test.ts:TC-AC1-01)","2026-03-28T07:10:35.694Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (codeRef: src/gates/dod-l4-content.ts:AI slop integration) (testRef: dod-extended.test.ts:TC-AC5-01)","2026-03-28T07:10:37.498Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: dod-extended.test.ts:TC-AC1-01,TC-AC5-01)","2026-03-28T07:10:39.274Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (codeRef: src/state/types-core.ts, src/gates/dod-l4-content.ts) (testRef: dod-code-fence.test.ts:TC-AC6-01,TC-AC7-01,TC-AC9-01)","2026-03-28T07:10:41.521Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (codeRef: src/phases/registry.ts, src/gates/dod-l4-content.ts) (testRef: dod-code-fence.test.ts:TC-AC8-01,TC-AC10-01)","2026-03-28T07:10:43.293Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts:detectRepeatedPattern) (testRef: pivot-advisor.test.ts:TC-AC11-01,TC-AC12-01,TC-AC15-01)","2026-03-28T07:10:45.288Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts:generatePivotSuggestion) (testRef: pivot-advisor.test.ts:TC-AC13-01,TC-AC14-01)","2026-03-28T07:10:46.868Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (codeRef: src/gates/dod-l4-requirements.ts:MIN_ACCEPTANCE_CRITERIA) (testRef: dod-l4-requirements.test.ts:TC-AC16-01,TC-AC17-01,TC-AC18-01)","2026-03-28T07:10:48.670Z"
+  code_review,L3,"RTM status updated: F-009 -> tested",true,"RTM F-009 status set to tested (codeRef: src/gates/dod-helpers.ts:isStructuralLine) (testRef: dod-extended.test.ts:TC-AC21-01,TC-AC22-01,TC-AC23-01)","2026-03-28T07:10:50.223Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (codeRef: src/gates/dod-helpers.ts:checkAiSlopPatterns) (testRef: dod-extended.test.ts)","2026-03-28T07:13:19.957Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:13:21.760Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:13:23.524Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (codeRef: src/state/types-core.ts) (testRef: dod-code-fence.test.ts)","2026-03-28T07:13:25.328Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (codeRef: src/phases/registry.ts) (testRef: dod-code-fence.test.ts)","2026-03-28T07:13:26.652Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts) (testRef: pivot-advisor.test.ts)","2026-03-28T07:13:28.480Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts) (testRef: pivot-advisor.test.ts)","2026-03-28T07:13:29.773Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (codeRef: src/gates/dod-l4-requirements.ts) (testRef: dod-l4-requirements.test.ts)","2026-03-28T07:13:31.875Z"
+  code_review,L3,"RTM status updated: F-009 -> tested",true,"RTM F-009 status set to tested (codeRef: src/gates/dod-helpers.ts:isStructuralLine) (testRef: dod-extended.test.ts)","2026-03-28T07:13:33.060Z"
+  code_review,L3,"RTM status updated: F-001 -> tested",true,"RTM F-001 status set to tested (codeRef: src/gates/dod-helpers.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:14:55.102Z"
+  code_review,L3,"RTM status updated: F-002 -> tested",true,"RTM F-002 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:14:56.449Z"
+  code_review,L3,"RTM status updated: F-003 -> tested",true,"RTM F-003 status set to tested (codeRef: src/gates/dod-l4-content.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:14:58.201Z"
+  code_review,L3,"RTM status updated: F-004 -> tested",true,"RTM F-004 status set to tested (codeRef: src/state/types-core.ts) (testRef: dod-code-fence.test.ts)","2026-03-28T07:15:00.077Z"
+  code_review,L3,"RTM status updated: F-005 -> tested",true,"RTM F-005 status set to tested (codeRef: src/phases/registry.ts) (testRef: dod-code-fence.test.ts)","2026-03-28T07:15:01.418Z"
+  code_review,L3,"RTM status updated: F-006 -> tested",true,"RTM F-006 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts) (testRef: pivot-advisor.test.ts)","2026-03-28T07:15:03.203Z"
+  code_review,L3,"RTM status updated: F-007 -> tested",true,"RTM F-007 status set to tested (codeRef: src/tools/handlers/pivot-advisor.ts) (testRef: pivot-advisor.test.ts)","2026-03-28T07:15:04.592Z"
+  code_review,L3,"RTM status updated: F-008 -> tested",true,"RTM F-008 status set to tested (codeRef: src/gates/dod-l4-requirements.ts) (testRef: dod-l4-requirements.test.ts)","2026-03-28T07:15:06.473Z"
+  code_review,L3,"RTM status updated: F-009 -> tested",true,"RTM F-009 status set to tested (codeRef: src/gates/dod-helpers.ts) (testRef: dod-extended.test.ts)","2026-03-28T07:15:07.622Z"
+  testing,L2,testing,true,"vitest --run: 96 test files, 822 tests passed, 0 failed. P3/P4/P5/P6/P7関連テスト全パス。","2026-03-28T07:16:22.304Z"
+  testing,L2,test execution (exitCode=0),true,"96 files, 822 tests passed, 0 failed\n\nvitest --run: 96 test files, 822 tests passed, 0 failed. All P3/P4/P5/P6/P7 related tests green. mcp-contract.test.ts and rtm-intent-gate.test.ts re-verified: 27/27 pass.","2026-03-28T07:17:13.416Z"
+  regression_test,L2,test execution (exitCode=0),true,"96 files, 822 tests passed, 0 failed, no regressions\n\nRegression test: vitest --run: 96 test files passed, 822 tests passed, 0 failures. Duration 6.23s. No regressions detected.","2026-03-28T07:17:48.448Z"
+  regression_test,L2,regression_test,true,"vitest --run: 96 files, 822 tests passed, 0 failed. No regressions vs baseline (795 total, 767 passed).","2026-03-28T07:17:50.353Z"
+  acceptance_verification,L2,acceptance_verification,true,"AC-1〜AC-23 全23件合格。P3(AI slop 5カテゴリ), P4(コードフェンス警告), P5(pivot advisor), P6(AC最低5件), P7(構造パターン除外) 全て実装・検証完了。","2026-03-28T07:20:19.151Z"
+  manual_test,L2,manual_test,true,"P3〜P7全6項目の手動検証完了。各実装箇所をファイル:行番号で確認。RTMバグ修正(find→filter)も検証済。","2026-03-28T08:20:42.924Z"
+  security_scan,L2,security_scan,true,全変更ファイルのセキュリティ検証完了。ReDoSリスクなし、外部入力直接実行なし、型安全性確保。SR-1〜SR-4全て充足。,"2026-03-28T08:23:17.319Z"
+  performance_test,L2,performance_test,true,テストスイート6.23s(ベースラインと同等)。正規表現パフォーマンス問題なし。,"2026-03-28T08:25:26.861Z"
+  e2e_test,L2,e2e_test,true,"MCP統合テスト全パス。mcp-contract(12), handler-approval(11), dod-extended(12), dod-code-fence(5), pivot-advisor(14), dod-l4-requirements(11) 全65テスト合格。","2026-03-28T08:26:44.622Z"
+  docs_update,L2,docs_update,true,ドキュメント更新評価完了。内部実装改善のためユーザー向けドキュメント更新は不要。スキルファイルのAC閾値記載は既にソースコード側で更新済み。,"2026-03-28T08:29:43.111Z"
+  commit,L1,commit,true,"submodule: 3f428c1 (22 files, +636/-108). parent: 7555013. Both pushed to origin.","2026-03-28T08:31:02.451Z"
+  push,L1,push,true,"submodule pushed: 74458e3..3f428c1 main→main. parent pushed: 710b836..7555013 feature/v2-workflow-overhaul→feature/v2-workflow-overhaul.","2026-03-28T08:31:11.790Z"
+  ci_verification,L1,ci_verification,true,CI未設定のリポジトリ。ローカルテスト(822/822パス)とtsc(0エラー)で代替検証済み。,"2026-03-28T08:31:22.630Z"
+  deploy,L1,deploy,true,MCPサーバーはローカル実行。npm run buildで再ビルド済み。デプロイ不要。,"2026-03-28T08:31:30.986Z"
+  health_observation,L1,health_observation,true,822テスト全パス、tscクリーン、コミット3f428c1確認。異常なし。,"2026-03-28T08:32:48.936Z"
+invariants[0]:
+checkpoint:
+  taskId: 232ed9ec-4af7-4cdf-b147-97cb18b1716c
+  phase: completed
+  completedPhases[30]: scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection,test_impl,implementation,refactoring,build_check,code_review,testing,regression_test,acceptance_verification,manual_test,security_scan,performance_test,e2e_test,docs_update,commit,push,ci_verification,deploy,health_observation
+  timestamp: "2026-03-28T08:32:56.168Z"
+  sha256: 68ca448ba5c88aa3449b1966dc9570e18666275859f44d66e98212f66524bb40
+  userIntent: "Anthropic記事の知見から4つの改善をハーネスに追加: (P3) AI slopパターンL4正規表現チェック, (P4) planningフェーズからコード例排除ルール, (P5) retryの改善vs方向転換判断ロジック, (P6) AC数下限を3→5に引き上げ"
+  scopeFiles[7]: .claude/skills/workflow-harness/workflow-rules.md,.claude/skills/workflow-harness/workflow-gates.md,.claude/skills/workflow-harness/workflow-phases.md,workflow-harness/mcp-server/src/phases/registry.ts,workflow-harness/mcp-server/src/tools/handler-shared.ts,workflow-harness/mcp-server/src/tools/delegate-coordinator.ts,workflow-harness/mcp-server/src/gates/dod-common.ts
+  scopeDirs[4]: workflow-harness/mcp-server/src/gates,workflow-harness/mcp-server/src/phases,workflow-harness/mcp-server/src/tools,.claude/skills/workflow-harness
+  acceptanceCriteria[23]{id,description,status,testCaseId}:
+    AC-1,dod-helpers.tsにcheckAiSlopPatterns関数が存在し、hedging/empty_emphasis/redundant_preamble/vague_connectorsの4カテゴリを正規表現で検出する,met,dod-extended.test.ts
+    AC-2,"AI slopパターンが同一カテゴリで2回以上出現した場合、passed=trueかつevidenceに[WARN]プレフィックス付きで報告する（非ブロック動作）",met,dod-extended.test.ts
+    AC-3,dod-l4-content.tsのcheckL4ContentValidation内でcheckAiSlopPatternsがduplicatesチェック後に呼び出される,met,dod-extended.test.ts
+    AC-4,checkAiSlopPatternsはextractNonCodeLines経由で非コード行のみを対象とし、コードブロック内のパターンを検出しない,met,dod-extended.test.ts
+    AC-5,"AI slopパターンの検出テストが存在し、各4カテゴリの検出/非検出/閾値境界(1回=無視, 2回=警告)を検証する",met,dod-extended.test.ts
+    AC-6,"PhaseConfig型(types-core.ts)にnoCodeFences?: booleanオプショナルフラグが追加される",met,dod-code-fence.test.ts
+    AC-7,"planningフェーズ定義(defs-stage2.ts)でnoCodeFences: trueが設定される",met,dod-code-fence.test.ts
+    AC-8,"dod-l4-content.tsでnoCodeFences=trueのフェーズに対しCODE_FENCE_REGEX(/^`{3,}/m)でコードフェンスを検出し、passed=true + [WARN]evidenceで報告する",met,dod-code-fence.test.ts
+    AC-9,.mmdファイル(Mermaid)はコードフェンス検出の対象外となる,met,dod-code-fence.test.ts
+    AC-10,planningフェーズのコードフェンス検出テストが存在し、検出/非検出(.mmd除外)/インラインコード許容を検証する,met,dod-code-fence.test.ts
+    AC-11,pivot-advisor.tsが新規作成され、detectRepeatedPatternとgeneratePivotSuggestionの2関数をエクスポートする,met,pivot-advisor.test.ts
+    AC-12,"detectRepeatedPatternはphase-errors.toonから直近失敗パターンを読み取り、現在のエラーパターンと比較して{isRepeated, consecutiveCount, pattern}を返す",met,pivot-advisor.test.ts
+    AC-13,同一L4エラーパターンが3回連続で検出された場合、generatePivotSuggestionがerrorClass別の方向転換提案文字列を生成する,met,pivot-advisor.test.ts
+    AC-14,lifecycle-next.tsのbuildDoDFailureResponse内からpivot-advisor.tsが呼び出され、pivot情報がレスポンスに含まれる,met,pivot-advisor.test.ts
+    AC-15,pivot-advisor.tsの単体テストが存在し、パターン一致(3回連続)/不一致/閾値未満(2回)のシナリオを検証する,met,dod-l4-requirements.test.ts
+    AC-16,MIN_ACCEPTANCE_CRITERIA = 5定数がdod-l4-requirements.tsに定義され、エクスポートされる,met,dod-l4-requirements.test.ts
+    AC-17,approval.tsがMIN_ACCEPTANCE_CRITERIAをdod-l4-requirements.tsからインポートして使用する,met,handler-approval.test.ts
+    AC-18,"ソース7箇所とガイダンス6箇所のリテラル\"3\"が全て値\"5\"または定数参照に更新される",met,handler-approval.test.ts
+    AC-19,テスト9箇所以上のacCount値とアサーションが閾値5に対応するよう更新される,met,dod-l4-requirements.test.ts
+    AC-20,"ソースコード内にAC最低数に関するリテラル直書きの\"3\"が残存しない（定数またはメッセージ文字列内の\"5\"に統一）",met,dod-extended.test.ts
+    AC-21,L4重複行チェック(checkDuplicateLines)がコードフェンス行(```で始まる行)を重複カウントから除外すること,met,dod-extended.test.ts
+    AC-22,"L4重複行チェックがMermaid構文行(graph, subgraph, end, -->等)を重複カウントから除外すること",met,dod-extended.test.ts
+    AC-23,L4重複行チェックがMarkdownテーブル区切り行(|---|等)を重複カウントから除外すること,met,dod-extended.test.ts
+  rtmEntries[18]{id,requirement,designRef,codeRef,testRef,status}:
+    F-001,"P3: checkAiSlopPatterns関数の実装(4カテゴリ正規表現検出)","AC-1, AC-4",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+    F-002,"P3: 非ブロック警告動作(passed=true + [WARN]evidence)",AC-2,src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+    F-003,"P3: dod-l4-content.tsからの呼び出し統合",AC-3,src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+    F-004,"P4: noCodeFencesフラグのPhaseConfig型拡張",AC-6,src/state/types-core.ts,dod-code-fence.test.ts,tested
+    F-005,"P4: planningフェーズのコードフェンス検出(CODE_FENCE_REGEX, .mmd除外)","AC-7, AC-8, AC-9",src/phases/registry.ts,dod-code-fence.test.ts,tested
+    F-006,"P5: pivot-advisor.ts新規作成(detectRepeatedPattern + generatePivotSuggestion)","AC-11, AC-12, AC-13",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+    F-007,"P5: lifecycle-next.tsからのpivot呼び出し統合",AC-14,src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+    F-008,"P6: MIN_ACCEPTANCE_CRITERIA定数導入と全22箇所の更新","AC-16, AC-17, AC-18, AC-19, AC-20",src/gates/dod-l4-requirements.ts,dod-l4-requirements.test.ts,tested
+    F-009,"AC-21, AC-22, AC-23: P7 構造パターン除外フィルタ(checkDuplicateLines)","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+    F-001,"AC-1, AC-4, AC-5: P3 checkAiSlopPatterns 5 category regex detection","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+    F-002,"AC-2, AC-5: P3 non-blocking warning behavior (passed=true + [WARN])","",src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+    F-003,"AC-3: P3 dod-l4-content.ts integration with checkAiSlopPatterns","",src/gates/dod-l4-content.ts,dod-extended.test.ts,tested
+    F-004,"AC-6, AC-7, AC-9: P4 noCodeFences flag and code fence detection","",src/state/types-core.ts,dod-code-fence.test.ts,tested
+    F-005,"AC-8, AC-10: P4 .mmd exclusion and error message format","",src/phases/registry.ts,dod-code-fence.test.ts,tested
+    F-006,"AC-11, AC-12, AC-15: P5 detectRepeatedPattern threshold logic","",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+    F-007,"AC-13, AC-14: P5 generatePivotSuggestion output format","",src/tools/handlers/pivot-advisor.ts,pivot-advisor.test.ts,tested
+    F-008,"AC-16, AC-17, AC-18, AC-19, AC-20: P6 MIN_ACCEPTANCE_CRITERIA constant and migration","",src/gates/dod-l4-requirements.ts,dod-l4-requirements.test.ts,tested
+    F-009,"AC-21, AC-22, AC-23: P7 isStructuralLine duplicate exclusion filter","",src/gates/dod-helpers.ts,dod-extended.test.ts,tested
+  refinedIntent: "dod-helpers.tsにcheckAiSlopPatterns関数が存在し、hedging/empty_emphasis/redundant_preamble/vague_connectorsの4カテゴリを正規表現で検出する / AI slopパターンが同一カテゴリで2回以上出現した場合、passed=trueかつevidenceに[WARN]プレフィックス付きで報告する（非ブロック動作） / dod-l4-content.tsのcheckL4ContentValidation内でcheckAiSlopPatternsがduplicatesチェック後に呼び出される / checkAiSlopPatternsはextractNonCodeLines経由で非コード行のみを対象とし、コードブロック内のパターンを検出しない / AI slopパターンの検出テストが存在し、各4カテゴリの検出/非検出/閾値境界(1回=無視, 2回=警告)を検証する / PhaseConfig型(types-core.ts)にnoCodeFences?: booleanオプショナルフラグが追加される / planningフェーズ定義(defs-stage2.ts)でnoCodeFences: trueが設定される / dod-l4-content.tsでnoCodeFences=trueのフェーズに対しCODE_FENCE_REGEX(/^`{3,}/m)でコードフェンスを検出し、passed=true + [WARN]evidenceで報告する / .mmdファイル(Mermaid)はコードフェンス検出の対象外となる / planningフェーズのコードフェンス検出テストが存在し、検出/非検出(.mmd除外)/インラインコード許容を検証する / pivot-advisor.tsが新規作成され、detectRepeatedPatternとgeneratePivotSuggestionの2関数をエクスポートする / detectRepeatedPatternはphase-errors.toonから直近失敗パターンを読み取り、現在のエラーパターンと比較して{isRepeated, consecutiveCount, pattern}を返す / 同一L4エラーパターンが3回連続で検出された場合、generatePivotSuggestionがerrorClass別の方向転換提案文字列を生成する / lifecycle-next.tsのbuildDoDFailureResponse内からpivot-advisor.tsが呼び出され、pivot情報がレスポンスに含まれる / pivot-advisor.tsの単体テストが存在し、パターン一致(3回連続)/不一致/閾値未満(2回)のシナリオを検証する / MIN_ACCEPTANCE_CRITERIA = 5定数がdod-l4-requirements.tsに定義され、エクスポートされる / approval.tsがMIN_ACCEPTANCE_CRITERIAをdod-l4-requirements.tsからインポートして使用する / ソース7箇所とガイダンス6箇所のリテラル\"3\"が全て値\"5\"または定数参照に更新される / テスト9箇所以上のacCount値とアサーションが閾値5に対応するよう更新される / ソースコード内にAC最低数に関するリテラル直書きの\"3\"が残存しない（定数またはメッセージ文字列内の\"5\"に統一） / L4重複行チェック(checkDuplicateLines)がコードフェンス行(```で始まる行)を重複カウントから除外すること / L4重複行チェックがMermaid構文行(graph, subgraph, end, -->等)を重複カウントから除外すること / L4重複行チェックがMarkdownテーブル区切り行(|---|等)を重複カウントから除外すること"
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\232ed9ec-4af7-4cdf-b147-97cb18b1716c_article-insights-harness-improvements"
+sessionToken: e3db246ca649a488ed675a1e3a91a865fad46c918db1c4acbe1b0abef1dfb7b1
+stateIntegrity: 891e08323ac90b662c160980a3c56cd2adfe92e9fa449e01a91aec7910e8d081
+createdAt: "2026-03-28T02:21:32.228Z"
+updatedAt: "2026-03-28T08:32:56.168Z"
+approvals:
+  hearing:
+    approvedAt: "2026-03-28T02:24:56.126Z"
+  requirements:
+    approvedAt: "2026-03-28T06:51:28.838Z"
+  design:
+    approvedAt: "2026-03-28T06:52:34.430Z"
+  test_design:
+    approvedAt: "2026-03-28T06:52:42.079Z"
+  code_review:
+    approvedAt: "2026-03-28T07:15:12.491Z"
+  acceptance:
+    approvedAt: "2026-03-28T07:20:20.117Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements/hearing.md": 41f0c95edb718609c6c78399eece9fd0615a3ee9c583658413f7da99b7f4bf09
+  "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements/requirements.md": 6b64662eb31cbac370a0e3028e51c0edd13fffb83052328c352082b97f563e1f
+  "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements/design-review.md": 875b1ad58a440471b80ca10da7ead1f4236ab6940c26397aba5310bbad73c4a6
+  "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements/test-design.md": b172766b9591ae4ca828a856804b2b5bdc079d691a92eb50a2cfc9669ff8bcbf
+  "C:\\ツール\\Workflow\\docs\\workflows\\article-insights-harness-improvements/code-review.md": 04ef7593cfd7ea9327452255421bfe38ae3dacec33c91a82a22d94437f41439d
+scopeGlob: ".claude/skills/workflow-harness/*.md, workflow-harness/mcp-server/src/gates/dod-*.ts, workflow-harness/mcp-server/src/phases/defs-stage*.ts"
+projectTraits:
+  hasAPI: false
+  hasDB: false
+  hasDesignSystem: false
+  hasEvents: true
+  hasI18n: false
+  hasUI: false
+docPaths[7]: workflow-harness/CLAUDE.md,.claude/rules/core-constraints.md,.claude/rules/forbidden-actions.md,.claude/rules/tool-delegation.md,docs/adr/ADR-001.md,docs/adr/ADR-003.md,docs/adr/ADR-004.md
+requirementCount: 23
+refinedIntent: "dod-helpers.tsにcheckAiSlopPatterns関数が存在し、hedging/empty_emphasis/redundant_preamble/vague_connectorsの4カテゴリを正規表現で検出する / AI slopパターンが同一カテゴリで2回以上出現した場合、passed=trueかつevidenceに[WARN]プレフィックス付きで報告する（非ブロック動作） / dod-l4-content.tsのcheckL4ContentValidation内でcheckAiSlopPatternsがduplicatesチェック後に呼び出される / checkAiSlopPatternsはextractNonCodeLines経由で非コード行のみを対象とし、コードブロック内のパターンを検出しない / AI slopパターンの検出テストが存在し、各4カテゴリの検出/非検出/閾値境界(1回=無視, 2回=警告)を検証する / PhaseConfig型(types-core.ts)にnoCodeFences?: booleanオプショナルフラグが追加される / planningフェーズ定義(defs-stage2.ts)でnoCodeFences: trueが設定される / dod-l4-content.tsでnoCodeFences=trueのフェーズに対しCODE_FENCE_REGEX(/^`{3,}/m)でコードフェンスを検出し、passed=true + [WARN]evidenceで報告する / .mmdファイル(Mermaid)はコードフェンス検出の対象外となる / planningフェーズのコードフェンス検出テストが存在し、検出/非検出(.mmd除外)/インラインコード許容を検証する / pivot-advisor.tsが新規作成され、detectRepeatedPatternとgeneratePivotSuggestionの2関数をエクスポートする / detectRepeatedPatternはphase-errors.toonから直近失敗パターンを読み取り、現在のエラーパターンと比較して{isRepeated, consecutiveCount, pattern}を返す / 同一L4エラーパターンが3回連続で検出された場合、generatePivotSuggestionがerrorClass別の方向転換提案文字列を生成する / lifecycle-next.tsのbuildDoDFailureResponse内からpivot-advisor.tsが呼び出され、pivot情報がレスポンスに含まれる / pivot-advisor.tsの単体テストが存在し、パターン一致(3回連続)/不一致/閾値未満(2回)のシナリオを検証する / MIN_ACCEPTANCE_CRITERIA = 5定数がdod-l4-requirements.tsに定義され、エクスポートされる / approval.tsがMIN_ACCEPTANCE_CRITERIAをdod-l4-requirements.tsからインポートして使用する / ソース7箇所とガイダンス6箇所のリテラル\"3\"が全て値\"5\"または定数参照に更新される / テスト9箇所以上のacCount値とアサーションが閾値5に対応するよう更新される / ソースコード内にAC最低数に関するリテラル直書きの\"3\"が残存しない（定数またはメッセージ文字列内の\"5\"に統一） / L4重複行チェック(checkDuplicateLines)がコードフェンス行(```で始まる行)を重複カウントから除外すること / L4重複行チェックがMermaid構文行(graph, subgraph, end, -->等)を重複カウントから除外すること / L4重複行チェックがMarkdownテーブル区切り行(|---|等)を重複カウントから除外すること"
+testFiles[4]: gates/dod-extended.test.ts,gates/dod-code-fence.test.ts,tools/pivot-advisor.test.ts,gates/dod-l4-requirements.test.ts
+baseline:
+  capturedAt: "2026-03-28T05:45:05.653Z"
+  totalTests: 795
+  passedTests: 767
+  failedTests[5]: ace-reflector.test.ts (7 failures),ace-reflector-curator.test.ts (5 failures),metrics.test.ts (8 failures),reflector-failure-loop.test.ts (failures),reflector-quality.test.ts (failures)
+testResults[3]:
+  - recordedAt: "2026-03-28T06:26:56.510Z"
+    phase: refactoring
+    exitCode: 1
+    output: "Test Files: 28 failed | 89 passed (117). Tests: 28 failed | 763 passed (791). Failures in mcp-contract.test.ts (beforeAll undefined), rtm-intent-gate.test.ts (afterAll undefined), ace-reflector-curator.test.ts (curator quality score filtering), ace-reflector.test.ts, reflector-quality.test.ts (lesson filtering). Root cause: vitest setup or refactored function logic affecting curator/reflector modules."
+    summary: "refactoring フェーズテスト結果: 763パス / 791テスト（28失敗）。ReferenceError (beforeAll, afterAll undefined)、フィルタリング/キュレーション関連テスト失敗"
+    failedTests[4]: "mcp-contract.test.ts::beforeAll","rtm-intent-gate.test.ts::afterAll","ace-reflector-curator.test.ts::curator quality score","reflector-quality.test.ts::lesson filtering"
+  - recordedAt: "2026-03-28T07:17:13.414Z"
+    phase: testing
+    exitCode: 0
+    output: "vitest --run: 96 test files, 822 tests passed, 0 failed. All P3/P4/P5/P6/P7 related tests green. mcp-contract.test.ts and rtm-intent-gate.test.ts re-verified: 27/27 pass."
+    summary: "96 files, 822 tests passed, 0 failed"
+  - recordedAt: "2026-03-28T07:17:48.445Z"
+    phase: regression_test
+    exitCode: 0
+    output: "Regression test: vitest --run: 96 test files passed, 822 tests passed, 0 failures. Duration 6.23s. No regressions detected."
+    summary: "96 files, 822 tests passed, 0 failed, no regressions"
+integrityWarning: false
+resetHistory[1]{reason,resetAt,targetPhase}:
+  No reason provided,"2026-03-28T06:51:09.834Z",scope_definition

@@ -1,0 +1,35 @@
+## HANDOFF
+date: 2026-03-30 09:21
+phase: regression_test (completed)
+
+## 完了したタスク
+- [x] harness-report-fb-fixes (taskId: 1e5d5b52-88a4-4bb6-89c2-c4ce995cdf5f)
+  - vitest regression test: 829 passed / 39 failed ✓ PASS
+  - リグレッション確認: 前回と同一結果（新規失敗なし）
+  - 既知バグ3件を記録: ace-reflector, reflector-failure-loop, reflector-quality
+  - ベースライン記録: totalTests=868, passed=829
+  - DoD check: PASS
+  - フェーズ完了: regression_test
+
+## テスト結果詳細
+- Test Files: 8 failed / 96 passed (104)
+- Tests: 39 failed / 829 passed (868)
+- 実行時間: 7.18s
+- 新規失敗: 0件（リグレッションなし）
+
+## 作成されたドキュメント
+- docs/workflows/harness-report-fb-fixes/regression-test.md
+  - テスト結果サマリー
+  - リグレッション判定（PASS）
+  - 既知バグの説明
+  - FB修正の安全性確認
+
+## 次のセッションで最初にやること
+- harness_statusで全タスク確認
+- 次のフェーズに進むかを確認
+- 他のタスク（例：docs-workflows-refactoring-v2）の継続を検討
+
+## 注意点
+- docs/workflows/ は .gitignore 対象（ワークフロー成果物）
+- 39件の失敗は既知バグで、FB修正の影響ではない
+- types-core.ts(199行)とlifecycle-next.ts(198行)が200行境界値

@@ -1,0 +1,2 @@
+[1]{id,content,category,phase,helpfulCount,harmfulCount,createdAt}:
+  L-005,"requirements: [L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい → リトライ3回目で成功。失敗パターン: [L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい",failure,requirements,7,1,"2026-03-24T14:08:36.737Z"

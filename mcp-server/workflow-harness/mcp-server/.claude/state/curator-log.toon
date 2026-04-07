@@ -1,4 +1,4 @@
-[2]:
+[14]:
   - timestamp: "2026-03-23T21:51:07.628Z"
     taskId: a0e87be6-7db4-4213-9988-977dae15a4e1
     taskName: workflow-harness-refactoring
@@ -26,3 +26,401 @@
       kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=1"
       kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
       kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=1"
+  - timestamp: "2026-03-25T06:47:43.349Z"
+    taskId: bc36ed81-8ade-49c7-b1b7-44fd1135a277
+    taskName: harness-observability-logging
+    lessonsBefore: 11
+    lessonsAfter: 11
+    stashedBefore: 7
+    stashedAfter: 1
+    actions[11]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=2"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=1"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=3"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=4"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=1"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=1"
+  - timestamp: "2026-03-25T12:18:43.855Z"
+    taskId: 2c4adf0b
+    taskName: harness-detailed-error-analytics
+    lessonsBefore: 13
+    lessonsAfter: 13
+    stashedBefore: 11
+    stashedAfter: 1
+    actions[13]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=2"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=1"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=3"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=4"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=2"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=1"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+  - timestamp: "2026-03-28T08:32:56.310Z"
+    taskId: 232ed9ec-4af7-4cdf-b147-97cb18b1716c
+    taskName: article-insights-harness-improvements
+    lessonsBefore: 23
+    lessonsAfter: 20
+    stashedBefore: 9
+    stashedAfter: 4
+    actions[23]{action,phase,errorPattern,reason}:
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1,","Fuzzy dedup: similarity 0.82 >= 0.7"
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6,","Fuzzy dedup: similarity 0.82 >= 0.7"
+      merged,test_design,"[L4] Approved artifacts modified since approval: design-review.md (ART-1)\n修正方法:","Fuzzy dedup: similarity 0.82 >= 0.7"
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=2"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=4"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=3"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=5"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=3"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+  - timestamp: "2026-03-28T10:35:29.331Z"
+    taskId: dd7e439b-4097-4736-b78c-0673274da7e0
+    taskName: agent-delegation-prompt-templates
+    lessonsBefore: 25
+    lessonsAfter: 25
+    stashedBefore: 6
+    stashedAfter: 4
+    actions[25]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=4"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=5"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=5"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=3"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=2"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+  - timestamp: "2026-03-28T13:03:50.343Z"
+    taskId: cef1bb7a-cdfb-4d3c-a4d7-1b3c04bdec08
+    taskName: prompt-format-hybrid-v2
+    lessonsBefore: 26
+    lessonsAfter: 25
+    stashedBefore: 11
+    stashedAfter: 8
+    actions[26]{action,phase,errorPattern,reason}:
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-4, AC-5","Fuzzy dedup: similarity 0.82 >= 0.7"
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=5"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=6"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=3"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=2"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=2"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+  - timestamp: "2026-03-28T14:15:14.873Z"
+    taskId: 5127ee0c-0fad-4088-a2bc-e7c590595738
+    taskName: docs-workflows-refactoring-v2
+    lessonsBefore: 25
+    lessonsAfter: 25
+    stashedBefore: 9
+    stashedAfter: 8
+    actions[25]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=5"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=6"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=2"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=2"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+  - timestamp: "2026-03-28T19:13:53.471Z"
+    taskId: d113c137-c400-401c-9e3e-bb968f5e84e9
+    taskName: hearing-askuserquestion-rule
+    lessonsBefore: 25
+    lessonsAfter: 25
+    stashedBefore: 8
+    stashedAfter: 8
+    actions[25]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=5"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=6"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=2"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=2"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+  - timestamp: "2026-03-29T00:29:24.859Z"
+    taskId: 80980f59-a211-46af-bd52-19d5e623790d
+    taskName: harness-reporting-fixes
+    lessonsBefore: 25
+    lessonsAfter: 25
+    stashedBefore: 10
+    stashedAfter: 8
+    actions[25]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=5"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=6"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=3"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=1"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=2"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+  - timestamp: "2026-03-29T05:09:58.123Z"
+    taskId: b160b7f1-1db4-4bd5-a4b1-603492c8bdff
+    taskName: harness-template-reliability
+    lessonsBefore: 27
+    lessonsAfter: 27
+    stashedBefore: 9
+    stashedAfter: 8
+    actions[27]{action,phase,errorPattern,reason}:
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=5"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=6"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=7"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=3"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=2"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=4"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+      kept,security_scan,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,performance_test,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+  - timestamp: "2026-03-29T09:16:49.153Z"
+    taskId: 47bc7d35-75db-4c52-a5a8-1b42edf9f83e
+    taskName: hearing-worker-real-choices
+    lessonsBefore: 30
+    lessonsAfter: 29
+    stashedBefore: 13
+    stashedAfter: 8
+    actions[30]{action,phase,errorPattern,reason}:
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-5, AC-6\n[L4] 意図整合性警告: 5語が requir","Fuzzy dedup: similarity 0.82 >= 0.7"
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=6"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=8"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=8"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=3"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=3"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=4"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+      kept,security_scan,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,performance_test,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"- result: PASS...\" (5x)","Active lesson: hitCount=1"
+  - timestamp: "2026-03-29T12:07:46.340Z"
+    taskId: ce320677-d107-4cc9-ad90-978291c61666
+    taskName: harness-first-pass-improvement
+    lessonsBefore: 33
+    lessonsAfter: 32
+    stashedBefore: 12
+    stashedAfter: 8
+    actions[33]{action,phase,errorPattern,reason}:
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5\n[L4] 意","Fuzzy dedup: similarity 0.82 >= 0.7"
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=7"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=8"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=4"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=8"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=3"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=3"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=4"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+      kept,security_scan,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,performance_test,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"- result: PASS...\" (5x)","Active lesson: hitCount=1"
+      kept,hearing,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,scope_definition,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP [WARN] [WARN] Code fences found in plan","Active lesson: hitCount=1"
+  - timestamp: "2026-03-30T02:33:15.869Z"
+    taskId: 1e5d5b52-88a4-4bb6-89c2-c4ce995cdf5f
+    taskName: harness-report-fb-fixes
+    lessonsBefore: 39
+    lessonsAfter: 38
+    stashedBefore: 10
+    stashedAfter: 8
+    actions[39]{action,phase,errorPattern,reason}:
+      merged,requirements,"[L3] RTM entries do not reference these ACs: AC-5, AC-5\n[L4] openQuestionsに未解決の質","Fuzzy dedup: similarity 0.82 >= 0.7"
+      kept,hearing,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=4"
+      kept,scope_definition,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,research,Bracket placeholder,"Active lesson: hitCount=1"
+      kept,impact_analysis,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L3] RTM entries do not reference these ACs: AC-7\n[L4] openQuestionsに未解決の質問が残ってい","Active lesson: hitCount=8"
+      kept,planning,"Duplicate lines (3+ times): \"- dependsOn: なし...\" (3x)","Active lesson: hitCount=1"
+      kept,design_review,"[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-rev","Active lesson: hitCount=8"
+      kept,test_design,"[L4] Approved artifacts modified since approval: hearing.md, requirements.md, de","Active lesson: hitCount=8"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","Active lesson: hitCount=5"
+      kept,implementation,"[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\docs-workflows-refactor","Active lesson: hitCount=1"
+      kept,code_review,"[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003","Active lesson: hitCount=8"
+      kept,hearing,"[L2] userResponse: key missing from hearing artifact","Active lesson: hitCount=3"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 現状はフェーズ×最頻失敗1件のみだが, 全DoD失敗の履歴(phase, evi","Active lesson: hitCount=1"
+      kept,test_selection,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_e","Active lesson: hitCount=1"
+      kept,threat_modeling,"Missing required sections: next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,test_impl,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","Active lesson: hitCount=5"
+      kept,testing,"[L1] Test results exist but none recorded for current phase: testing\n[L2] New te","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"Status: PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,e2e_test,"Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)","Active lesson: hitCount=1"
+      kept,research,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,requirements,"Missing required sections: notInScope, openQuestions. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP, FIXME, 未定, 未確定, 要検討, 検討中, 対応予定, サンプル, ","Active lesson: hitCount=1"
+      kept,code_review,"[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更","Active lesson: hitCount=6"
+      kept,regression_test,"[L2] New test failures detected (3): reflector-quality.test.ts:4, metrics.test.t","Active lesson: hitCount=1"
+      kept,security_scan,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,performance_test,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## dec","Active lesson: hitCount=1"
+      kept,manual_test,"Duplicate lines (3+ times): \"- result: PASS...\" (5x)","Active lesson: hitCount=1"
+      kept,hearing,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,scope_definition,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,planning,"Forbidden patterns found: TODO, TBD, WIP [WARN] [WARN] Code fences found in plan","Active lesson: hitCount=1"
+      kept,threat_modeling,"Forbidden patterns found: 未定; Duplicate lines (3+ times): \"Severity: High...\" (3","Active lesson: hitCount=1"
+      kept,planning,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,manual_test,"Missing required sections: artifacts, next. Add ## headings for each.","Active lesson: hitCount=1"
+      kept,security_scan,"Duplicate lines (3+ times): \"risk: low...\" (4x); \"verdict: safe...\" (4x)","Active lesson: hitCount=1"
+      kept,performance_test,"Duplicate lines (3+ times): \"- result: パフォーマンス影響なし...\" (4x)","Active lesson: hitCount=1"
+      kept,docs_update,"Missing required sections: decisions. Add ## headings for each.","Active lesson: hitCount=1"

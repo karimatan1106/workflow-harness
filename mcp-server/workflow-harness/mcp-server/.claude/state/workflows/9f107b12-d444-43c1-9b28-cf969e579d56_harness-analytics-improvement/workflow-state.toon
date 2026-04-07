@@ -1,0 +1,101 @@
+taskId: 9f107b12-d444-43c1-9b28-cf969e579d56
+taskName: harness-analytics-improvement
+version: 4
+phase: test_impl
+completedPhases[13]: hearing,scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "phase-analytics.toonの分析結果を改善する。4軸: (1) topFailure精度(count降順ソート) (2) IQR外れ値検出 (3) tdd_red_evidenceアドバイスルール (4) エラー分類(recurring/cascading/one-off)"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[7]: workflow-harness/mcp-server/src/analytics/phase-analytics.ts,workflow-harness/mcp-server/src/analytics/analytics-toon.ts,workflow-harness/mcp-server/src/__tests__/phase-analytics.test.ts,workflow-harness/mcp-server/src/analytics/outlier-detection.ts,workflow-harness/mcp-server/src/analytics/error-classification.ts,workflow-harness/mcp-server/src/__tests__/outlier-detection.test.ts,workflow-harness/mcp-server/src/__tests__/error-classification.test.ts
+scopeDirs[2]: workflow-harness/mcp-server/src/analytics,workflow-harness/mcp-server/src/__tests__
+plannedFiles[0]:
+acceptanceCriteria[5]{id,description,status}:
+  AC-1,topFailureがcount降順ソートで最頻失敗チェックを正しく表示する,open
+  AC-2,IQR外れ値検出がセッション中断相当の異常値をoutlierとしてフラグ付けする,open
+  AC-3,tdd_red_evidence連続失敗時にテンプレート改善を示唆するadviceが生成される,open
+  AC-4,errorHistoryから失敗パターンが3分類(recurring/cascading/one-off)に正しく分類される,open
+  AC-5,全ファイル200行以下を維持する,open
+rtmEntries[6]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001,"AC-1: buildErrorAnalysis()のfailures配列をcount降順でソートしtopFailureが最頻失敗チェックを反映する","AC-1, FR-1","phase-analytics.ts:buildErrorAnalysis",phase-analytics.test.ts,pending
+  F-002,"AC-2: outlier-detection.tsにIQR法による外れ値検出関数を実装しfindBottlenecksから呼び出す","AC-2, FR-2","outlier-detection.ts:detectOutliers",outlier-detection.test.ts,pending
+  F-003,"AC-3: generateAdviceにtdd_red_evidence連続失敗パターン向けルールを追加する","AC-3, FR-3","phase-analytics.ts:generateAdvice",phase-analytics.test.ts,pending
+  F-004,"AC-4: error-classification.tsに失敗パターン分類(recurring/cascading/one-off)を実装する","AC-4, FR-4","error-classification.ts:classifyErrors",error-classification.test.ts,pending
+  F-005,"AC-4: analytics-toon.tsにoutlier/classification結果の出力を追加する","AC-4, FR-5","analytics-toon.ts:writeAnalyticsToon",phase-analytics.test.ts,pending
+  F-006,"AC-5: phase-analytics.tsから外れ値検出・分類ロジックを分離し全ファイル200行以下を維持する","AC-5, FR-6","outlier-detection.ts, error-classification.ts",line count verification,pending
+proofLog[12]{phase,level,check,result,evidence,timestamp}:
+  requirements,L4,"AC defined: AC-1",true,topFailureがcount降順ソートで最頻失敗チェックを正しく表示する,"2026-03-25T18:02:09.203Z"
+  requirements,L4,"AC defined: AC-2",true,IQR外れ値検出がセッション中断相当の異常値をoutlierとしてフラグ付けする,"2026-03-25T18:02:11.009Z"
+  requirements,L4,"AC defined: AC-3",true,tdd_red_evidence連続失敗時にテンプレート改善を示唆するadviceが生成される,"2026-03-25T18:02:12.785Z"
+  requirements,L4,"AC defined: AC-4",true,errorHistoryから失敗パターンが3分類(recurring/cascading/one-off)に正しく分類される,"2026-03-25T18:02:14.529Z"
+  requirements,L4,"AC defined: AC-5",true,全ファイル200行以下を維持する,"2026-03-25T18:02:15.812Z"
+  requirements,L4,"RTM entry: F-001",true,"{\"id\":\"F-001\",\"requirement\":\"AC-1: buildErrorAnalysis()のfailures配列をcount降順でソートしtopFailureが最頻失敗チェックを反映する\",\"designRef\":\"AC-1, FR-1\",\"codeRef\":\"phase-analytics.ts:buildErrorAnalysis\",\"testRef\":\"phase-analytics.test.ts\",\"status\":\"pending\"}","2026-03-25T18:02:23.361Z"
+  requirements,L4,"RTM entry: F-002",true,"{\"id\":\"F-002\",\"requirement\":\"AC-2: outlier-detection.tsにIQR法による外れ値検出関数を実装しfindBottlenecksから呼び出す\",\"designRef\":\"AC-2, FR-2\",\"codeRef\":\"outlier-detection.ts:detectOutliers\",\"testRef\":\"outlier-detection.test.ts\",\"status\":\"pending\"}","2026-03-25T18:02:26.098Z"
+  requirements,L4,"RTM entry: F-003",true,"{\"id\":\"F-003\",\"requirement\":\"AC-3: generateAdviceにtdd_red_evidence連続失敗パターン向けルールを追加する\",\"designRef\":\"AC-3, FR-3\",\"codeRef\":\"phase-analytics.ts:generateAdvice\",\"testRef\":\"phase-analytics.test.ts\",\"status\":\"pending\"}","2026-03-25T18:02:28.291Z"
+  requirements,L4,"RTM entry: F-004",true,"{\"id\":\"F-004\",\"requirement\":\"AC-4: error-classification.tsに失敗パターン分類(recurring/cascading/one-off)を実装する\",\"designRef\":\"AC-4, FR-4\",\"codeRef\":\"error-classification.ts:classifyErrors\",\"testRef\":\"error-classification.test.ts\",\"status\":\"pending\"}","2026-03-25T18:02:30.082Z"
+  requirements,L4,"RTM entry: F-005",true,"{\"id\":\"F-005\",\"requirement\":\"AC-4: analytics-toon.tsにoutlier/classification結果の出力を追加する\",\"designRef\":\"AC-4, FR-5\",\"codeRef\":\"analytics-toon.ts:writeAnalyticsToon\",\"testRef\":\"phase-analytics.test.ts\",\"status\":\"pending\"}","2026-03-25T18:02:32.338Z"
+  requirements,L4,"RTM entry: F-006",true,"{\"id\":\"F-006\",\"requirement\":\"AC-5: phase-analytics.tsから外れ値検出・分類ロジックを分離し全ファイル200行以下を維持する\",\"designRef\":\"AC-5, FR-6\",\"codeRef\":\"outlier-detection.ts, error-classification.ts\",\"testRef\":\"line count verification\",\"status\":\"pending\"}","2026-03-25T18:02:34.225Z"
+  requirements,L4,rollback to requirements,true,"Rollback reason: artifact_drift: requirements.md modified after approval. Rolled back from test_design","2026-03-25T18:03:50.279Z"
+invariants[0]:
+checkpoint:
+  taskId: 9f107b12-d444-43c1-9b28-cf969e579d56
+  phase: test_impl
+  completedPhases[13]: hearing,scope_definition,research,impact_analysis,requirements,threat_modeling,planning,state_machine,flowchart,ui_design,design_review,test_design,test_selection
+  timestamp: "2026-03-25T18:04:54.984Z"
+  sha256: e935201c6095cc6c2cdc6e48a9252f0705d0b28359bcb5d5a3a8aa7176383e5d
+  userIntent: "phase-analytics.toonの分析結果を改善する。4軸: (1) topFailure精度(count降順ソート) (2) IQR外れ値検出 (3) tdd_red_evidenceアドバイスルール (4) エラー分類(recurring/cascading/one-off)"
+  scopeFiles[7]: workflow-harness/mcp-server/src/analytics/phase-analytics.ts,workflow-harness/mcp-server/src/analytics/analytics-toon.ts,workflow-harness/mcp-server/src/__tests__/phase-analytics.test.ts,workflow-harness/mcp-server/src/analytics/outlier-detection.ts,workflow-harness/mcp-server/src/analytics/error-classification.ts,workflow-harness/mcp-server/src/__tests__/outlier-detection.test.ts,workflow-harness/mcp-server/src/__tests__/error-classification.test.ts
+  scopeDirs[2]: workflow-harness/mcp-server/src/analytics,workflow-harness/mcp-server/src/__tests__
+  acceptanceCriteria[5]{id,description,status}:
+    AC-1,topFailureがcount降順ソートで最頻失敗チェックを正しく表示する,open
+    AC-2,IQR外れ値検出がセッション中断相当の異常値をoutlierとしてフラグ付けする,open
+    AC-3,tdd_red_evidence連続失敗時にテンプレート改善を示唆するadviceが生成される,open
+    AC-4,errorHistoryから失敗パターンが3分類(recurring/cascading/one-off)に正しく分類される,open
+    AC-5,全ファイル200行以下を維持する,open
+  rtmEntries[6]{id,requirement,designRef,codeRef,testRef,status}:
+    F-001,"AC-1: buildErrorAnalysis()のfailures配列をcount降順でソートしtopFailureが最頻失敗チェックを反映する","AC-1, FR-1","phase-analytics.ts:buildErrorAnalysis",phase-analytics.test.ts,pending
+    F-002,"AC-2: outlier-detection.tsにIQR法による外れ値検出関数を実装しfindBottlenecksから呼び出す","AC-2, FR-2","outlier-detection.ts:detectOutliers",outlier-detection.test.ts,pending
+    F-003,"AC-3: generateAdviceにtdd_red_evidence連続失敗パターン向けルールを追加する","AC-3, FR-3","phase-analytics.ts:generateAdvice",phase-analytics.test.ts,pending
+    F-004,"AC-4: error-classification.tsに失敗パターン分類(recurring/cascading/one-off)を実装する","AC-4, FR-4","error-classification.ts:classifyErrors",error-classification.test.ts,pending
+    F-005,"AC-4: analytics-toon.tsにoutlier/classification結果の出力を追加する","AC-4, FR-5","analytics-toon.ts:writeAnalyticsToon",phase-analytics.test.ts,pending
+    F-006,"AC-5: phase-analytics.tsから外れ値検出・分類ロジックを分離し全ファイル200行以下を維持する","AC-5, FR-6","outlier-detection.ts, error-classification.ts",line count verification,pending
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\9f107b12-d444-43c1-9b28-cf969e579d56_harness-analytics-improvement"
+sessionToken: ed8ac9e952cc62769a918ba97873bf4f37b69bc7a0cfaa2cd9629c8ea63dec16
+stateIntegrity: 23d0c703e8bfb3029d14ea13809afda2cd103575a55e4b4c6f1dee2c9052a5f4
+createdAt: "2026-03-25T18:01:05.337Z"
+updatedAt: "2026-03-25T18:05:08.851Z"
+approvals:
+  hearing:
+    approvedAt: "2026-03-25T18:01:21.014Z"
+  requirements:
+    approvedAt: "2026-03-25T18:03:55.138Z"
+  design:
+    approvedAt: "2026-03-25T18:04:37.683Z"
+  test_design:
+    approvedAt: "2026-03-25T18:04:46.829Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement/hearing.md": 103cfb81ca92b5d8e07e4cb09a0f79543733f14b665f15d8fbf4b623bdcaf40e
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement/requirements.md": a8ae54a478a18d2867bb7b0b1038cfb4a3990d6961baaa46b9f84c637b3e2537
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement/design-review.md": da56606ae47741d869098249b31290fdd580e2342881b17315fb2c36e306ae3e
+  "C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement/test-design.md": bcec53cc86376c50d609725e3c833b4f022a3bdaa26a89f4e246703a23776dbc
+requirementCount: 5
+refinedIntent: topFailureがcount降順ソートで最頻失敗チェックを正しく表示する / IQR外れ値検出がセッション中断相当の異常値をoutlierとしてフラグ付けする / tdd_red_evidence連続失敗時にテンプレート改善を示唆するadviceが生成される / errorHistoryから失敗パターンが3分類(recurring/cascading/one-off)に正しく分類される / 全ファイル200行以下を維持する
+testResults[1]:
+  - recordedAt: "2026-03-25T18:05:08.851Z"
+    phase: test_impl
+    exitCode: 1
+    output: "FAIL src/__tests__/outlier-detection.test.ts - Cannot find module '../analytics/outlier-detection.js'\nFAIL src/__tests__/error-classification.test.ts - Cannot find module '../analytics/error-classification.js'\nFAIL src/__tests__/phase-analytics.test.ts > topFailure sort > TC-AC1-01: failures sorted by count descending - expected failures[0].count >= failures[1].count\nFAIL src/__tests__/phase-analytics.test.ts > topFailure sort > TC-AC1-02: L2+ checks prioritized over L1 at same count\nFAIL src/__tests__/phase-analytics.test.ts > tdd_red_evidence advice > TC-AC3-01n: generates advice for tdd_red_evidence repeated failures\n5 tests failed, 8 tests passed. TDD Red phase confirmed."
+    summary: "TDD Red: 5 new tests fail as expected (modules missing, sort not implemented, advice rule missing)"
+    failedTests[10]: TC-AC2-01,TC-AC2-02,TC-AC2-03,TC-AC4-01,TC-AC4-02,TC-AC4-03,TC-AC4-04,TC-AC1-01,TC-AC1-02,TC-AC3-01n

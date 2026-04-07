@@ -1,0 +1,49 @@
+taskId: a30dbfda-f9d9-4584-a3f7-b4c008129a12
+taskName: harness-phase-transition-investigation
+version: 4
+phase: hearing
+completedPhases[0]:
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "ハーネスフェーズ遷移不良の調査と修正。delegate_coordinator実行後、coordinatorが完了したにもかかわらずフェーズが進行しない問題の原因特定と修正。現象: 1時間放置してもフェーズが進まず、止めると完了していた。予想原因: lifecycle-next.tsの出力ファイル存在チェック(100bytes以上)、DoD失敗、承認ゲート未達、パラレルグループ未完了、リトライ上限超過、coordinatorサブプロセス異常終了のいずれか。"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[0]:
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[0]:
+rtmEntries[0]:
+proofLog[0]:
+invariants[0]:
+checkpoint:
+  taskId: a30dbfda-f9d9-4584-a3f7-b4c008129a12
+  phase: hearing
+  completedPhases[0]:
+  timestamp: "2026-04-07T11:11:33.430Z"
+  sha256: f26036e4edb79bef6f93f48a3d2bc6a54910fd9983b479b8927379a1b5a3c33a
+  userIntent: "ハーネスフェーズ遷移不良の調査と修正。delegate_coordinator実行後、coordinatorが完了したにもかかわらずフェーズが進行しない問題の原因特定と修正。現象: 1時間放置してもフェーズが進まず、止めると完了していた。予想原因: lifecycle-next.tsの出力ファイル存在チェック(100bytes以上)、DoD失敗、承認ゲート未達、パラレルグループ未完了、リトライ上限超過、coordinatorサブプロセス異常終了のいずれか。"
+  scopeFiles[0]:
+  scopeDirs[0]:
+  acceptanceCriteria[0]:
+  rtmEntries[0]:
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\harness-phase-transition-investigation"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\a30dbfda-f9d9-4584-a3f7-b4c008129a12_harness-phase-transition-investigation"
+sessionToken: de297ca073eb31cd3d28717759f3893124d043901a046aaa2c724b34464aae64
+stateIntegrity: 1979a91c8af1d95f92a18effd106a2d8fb40b932525e299a9ccf3f580b4d30b0
+createdAt: "2026-04-07T11:11:33.430Z"
+updatedAt: "2026-04-07T11:11:51.775Z"
+retryCount:
+  hearing: 1
+approvals:
+  hearing:
+    approvedAt: "2026-04-07T11:11:51.775Z"

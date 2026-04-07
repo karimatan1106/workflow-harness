@@ -1,0 +1,1232 @@
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/ツール/Workflow/workflow-harness/mcp-server[39m
+
+ [32m✓[39m src/__tests__/dci.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 67[2mms[22m[39m
+ [33m❯[39m src/__tests__/ace-reflector.test.ts [2m ([22m[2m9 tests[22m [2m|[22m [31m7 failed[39m[2m)[22m[90m 18[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-01: 新規lessonがid/helpfulCount/harmfulCount/category付きで生成される[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-03: nextLessonIdが採番ごとにインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-01: stashFailure()で同一パターンのharmfulCountがインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-02: promoteStashedFailure()でhelpfulCountがインクリメントされる[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-03: hitCountがhelpfulCount+harmfulCountと一致する[39m
+[31m     → reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-01: formatLessonsForPrompt()が[L-001][failure] phase: pattern → lesson形式で出力する[39m
+[31m     → expected '' to match /\[L-001\]\[failure\] research: timeou…/[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-02: getLessonsForPhase()がquality score降順で返す[39m
+[31m     → actual value must be number or bigint, received "undefined"[39m
+ [33m❯[39m src/__tests__/ace-reflector-curator.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m5 failed[39m[2m)[22m[90m 17[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-02: curator trimがquality score昇順（低品質から）削除する[39m
+[31m     → expected 41 to be 40 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-03: 類似度0.7以上のlessonがfuzzy dedupで統合される[39m
+[31m     → expected 2 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-01: quality score>=0.6のlessonがace-context.toonに昇格される[39m
+[31m     → expected undefined not to be undefined[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-02: getTopCrossTaskBullets(5)が上位5件を返す[39m
+[31m     → expected +0 to be 5 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-04: runCuratorCycle後にgetTopCrossTaskBulletsで昇格件数が1件以上になる[39m
+[31m     → expected 0 to be greater than or equal to 1[39m
+ [32m✓[39m src/__tests__/n73-n87.test.ts [2m ([22m[2m28 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/__tests__/rtm-intent-gate.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 157[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-dynamic-categories-unit.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 168[2mms[22m[39m
+ [32m✓[39m src/__tests__/10m-resilience-p3p5p6.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+[90mstderr[2m | src/__tests__/stale-task-hmac.test.ts[2m > [22m[2mAC-3: HMAC failure returns integrityWarning[2m > [22m[2mTC-3-01: loadTaskFromDisk returns integrityWarning=true on mismatch[22m[39m
+{"event":"hmac_verification_failed","taskId":"hmac-fail-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+
+[90mstderr[2m | src/__tests__/stale-task-hmac.test.ts[2m > [22m[2mAC-3: HMAC failure returns integrityWarning[2m > [22m[2mTC-3-03: write ops blocked on integrityWarning tasks[22m[39m
+{"event":"hmac_verification_failed","taskId":"hmac-blk-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+{"event":"hmac_verification_failed","taskId":"hmac-blk-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+{"event":"hmac_verification_failed","taskId":"hmac-blk-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+{"event":"hmac_verification_failed","taskId":"hmac-blk-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+
+ [32m✓[39m src/__tests__/dod-l4-sections.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 62[2mms[22m[39m
+[90mstderr[2m | src/__tests__/stale-task-hmac.test.ts[2m > [22m[2mAC-3: HMAC failure returns integrityWarning[2m > [22m[2mTC-3-04: handleHarnessStatus returns integrityWarning not "Task not found"[22m[39m
+{"event":"hmac_verification_failed","taskId":"hmac-st-01-abcdefgh","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+
+ [32m✓[39m src/__tests__/stale-task-hmac.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 266[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-basic.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[90m 66[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l3-l4-content.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 72[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-ia.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 83[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l4-requirements.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 92[2mms[22m[39m
+ [32m✓[39m src/__tests__/pivot-advisor.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/phase-analytics.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-lifecycle.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[90m 186[2mms[22m[39m
+ [32m✓[39m src/__tests__/hmac.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 42[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-core.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 179[2mms[22m[39m
+[90mstderr[2m | src/__tests__/manager-core.test.ts[2m > [22m[2mloadTask[2m > [22m[2mverifies HMAC and returns integrityWarning when state file is tampered with[22m[39m
+{"event":"hmac_verification_failed","taskId":"88c4e8cc-bcb8-4dbf-8a63-e7d6467c94fc","keysUsed":"current","stateIntegrityPresent":true,"errorContext":"key_mismatch"}
+
+ [32m✓[39m src/__tests__/manager-scope.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[33m 624[2mms[22m[39m
+ [33m❯[39m src/__tests__/metrics.test.ts [2m ([22m[2m12 tests[22m [2m|[22m [31m8 failed[39m[2m)[22m[90m 23[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mMetrics store lifecycle[2m > [22mloadMetrics loads existing store from disk[39m
+[31m     → expected undefined not to be undefined[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseStart records start timestamp for a phase[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd records end timestamp and calculates duration[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd without prior start creates entry with 0 duration[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry increments retry count for task and aggregate[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry records phase-level retry details[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mDoD failure tracking[2m > [22mrecordDoDFailure increments failure count and records pattern[39m
+[31m     → metrics store not found[39m
+[31m   [33m❯[31m src/__tests__/metrics.test.ts[2m > [22mTask completion[2m > [22mrecordTaskCompletion marks task as completed and updates aggregate[39m
+[31m     → metrics store not found[39m
+ [32m✓[39m src/__tests__/template-separator-cleanup.test.ts [2m ([22m[2m31 tests[22m[2m)[22m[33m 308[2mms[22m[39m
+ [32m✓[39m src/__tests__/n88-n93.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [33m❯[39m src/__tests__/reflector-quality.test.ts [2m ([22m[2m7 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[90m 19[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains lessons with qualityScore above threshold[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains new lessons with no feedback (score 0.5)[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mboundary: score=0.25 excluded, score=0.33 retained[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mformatLessonsForPrompt excludes harmful lessons[39m
+[31m     → expected '' to contain 'L-002'[39m
+ [32m✓[39m src/__tests__/risk-classifier-classify.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/__tests__/archgate.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-ia-coverage.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-code-fence.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [33m❯[39m src/__tests__/reflector-failure-loop.test.ts [2m ([22m[2m9 tests[22m [2m|[22m [31m4 failed[39m[2m)[22m[90m 24[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgenerates a prevention rule when same error pattern fails 2+ times[39m
+[31m     → reflector store not found[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mprevention rule contains actionable instruction[39m
+[31m     → reflector store not found[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgetPreventionRules returns rules for a phase[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [33m❯[31m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mformatLessonsForPrompt includes prevention rules section[39m
+[31m     → expected '' to contain '禁止'[39m
+ [32m✓[39m src/__tests__/dod-tdd.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+ [32m✓[39m src/__tests__/mcp-contract.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 98[2mms[22m[39m
+ [32m✓[39m src/__tests__/risk-classifier.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-extended.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m src/__tests__/archgate-extended.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m src/__tests__/gc.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m src/__tests__/n63-n72.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 52[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-s6-docs.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-toon-safety.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-validation.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 1764[2mms[22m[39m
+ [32m✓[39m src/__tests__/context-engineering.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 1099[2mms[22m[39m
+ [32m✓[39m src/__tests__/10m-resilience-p1.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+ [32m✓[39m src/__tests__/progress-json.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m src/__tests__/linter-runner.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-misc.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 1158[2mms[22m[39m
+ [32m✓[39m src/__tests__/adr.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-ia5.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l4-refs.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+ [32m✓[39m src/__tests__/invariant-manager.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[33m 715[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-parallel.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 2246[2mms[22m[39m
+ [32m✓[39m src/__tests__/serena-integration.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 196[2mms[22m[39m
+ [32m✓[39m src/__tests__/n94-n97.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-parallel-pha1.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 1338[2mms[22m[39m
+ [32m✓[39m src/__tests__/retry-adr.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-lifecycle.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 2602[2mms[22m[39m
+ [32m✓[39m src/__tests__/retry.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m src/__tests__/llm-quality-gates.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m src/__tests__/size-argument.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+ [32m✓[39m src/observability/__tests__/trace-writer.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 61[2mms[22m[39m
+[90mstderr[2m | src/observability/__tests__/trace-writer.test.ts[2m > [22m[2mtrace-writer[2m > [22m[2mTC-AC6-04: skips append when file exceeds 10MB[22m[39m
+TRACE_SIZE_EXCEEDED: C:\Users\owner\AppData\Local\Temp\trace-writer-test\trace-large.toon (10485761 bytes)
+
+ [32m✓[39m src/__tests__/handler-traceability.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 2665[2mms[22m[39m
+ [33m❯[39m src/__tests__/dod-l4-duplicate.test.ts [2m ([22m[2m4 tests[22m [2m|[22m [31m1 failed[39m[2m)[22m[90m 33[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mfails L4 when the same non-structural line appears 3 or more times[39m
+[31m     → expected true to be false // Object.is equality[39m
+ [32m✓[39m src/__tests__/manager-lifecycle-reset.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[33m 2845[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l4-commit.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32m✓[39m src/__tests__/doc-inventory.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 1010[2mms[22m[39m
+ [32m✓[39m src/__tests__/analytics-toon.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-dynamic-categories-integration.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 2143[2mms[22m[39m
+ [32m✓[39m src/__tests__/hooks/hook-existence.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [33m❯[39m src/__tests__/first-pass-improvement.test.ts [2m ([22m[2m12 tests[22m [2m|[22m [31m7 failed[39m[2m)[22m[90m 18[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-01: Phase Output Rules section exists[39m
+[31m     → expected '---\nname: coordinator\ndescription: …' to contain '## Phase Output Rules'[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-02: decisions quantitative rule (5 or more)[39m
+[31m     → expected '---\nname: coordinator\ndescription: …' to match /decisions.*5件以上/[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-03: artifacts enumeration rule[39m
+[31m     → expected '---\nname: coordinator\ndescription: …' to match /artifacts.*列挙/[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-04: next field must not be empty[39m
+[31m     → expected '---\nname: coordinator\ndescription: …' to match /next.*空欄禁止/[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-01: Edit Completeness section exists[39m
+[31m     → expected '---\nname: worker\ndescription: L3 Wo…' to contain '## Edit Completeness'[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-02: partial application prohibition[39m
+[31m     → expected '---\nname: worker\ndescription: L3 Wo…' to match /部分適用.*禁止/[39m
+[31m   [33m❯[31m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-03: all-or-nothing principle[39m
+[31m     → expected '---\nname: worker\ndescription: L3 Wo…' to contain '全件適用'[39m
+ [32m✓[39m src/__tests__/eval-runner.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/__tests__/manager-write-rtm.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/dci-phase-integration.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/__tests__/e2e-patterns.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-s1.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 202[2mms[22m[39m
+ [32m✓[39m src/__tests__/plankton.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-session-force.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 953[2mms[22m[39m
+ [32m✓[39m src/__tests__/antipattern.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/plankton-routing.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/skill-rules.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/__tests__/mvh-roadmap.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/error-adr-map.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/harness-back-cascade.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 87[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-misc-ia2.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 1890[2mms[22m[39m
+ [32m✓[39m src/__tests__/cli.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 375[2mms[22m[39m
+ [32m✓[39m src/__tests__/phase-analytics-stale.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 68[2mms[22m[39m
+ [32m✓[39m tests/infra/state-integration.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 821[2mms[22m[39m
+ [32m✓[39m src/__tests__/error-classification.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/garbage-collector.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/error-toon.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-templates-s6-docs-integration.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[33m 642[2mms[22m[39m
+ [32m✓[39m src/__tests__/delegate-coordinator-readonly.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/hearing-template.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-format.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m src/__tests__/outlier-detection.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/hybrid-strategy.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/safety.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [33m❯[39m src/__tests__/hearing-worker-rules.test.ts [2m ([22m[2m4 tests[22m [2m|[22m [31m3 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [33m❯[31m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC1-01: confirmation-only prohibition rule exists[39m
+[31m     → expected '---\nname: hearing-worker\ndescriptio…' to match /禁止|prohibited/i[39m
+[31m   [33m❯[31m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC2-01: 2+ substantively different approaches required[39m
+[31m     → expected '---\nname: hearing-worker\ndescriptio…' to match /2.*以上|2\+|two.*or.*more/i[39m
+[31m   [33m❯[31m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC3-01: merit and demerit required for each option[39m
+[31m     → expected '---\nname: hearing-worker\ndescriptio…' to match /メリット|merit|trade-off|トレードオフ/i[39m
+ [32m✓[39m src/__tests__/invariant-dogfooding.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/e2e-mcp-chain.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 1580[2mms[22m[39m
+ [32m✓[39m src/__tests__/invariant-types.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 50[2mms[22m[39m
+ [32m✓[39m src/__tests__/toon-helpers.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/dod-l3-baseline.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m src/__tests__/testing-template.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/getDocsPath.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 315[2mms[22m[39m
+ [32m✓[39m src/__tests__/handler-approval.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 3892[2mms[22m[39m
+ [32m✓[39m src/__tests__/10m-resilience-p2p4.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 4370[2mms[22m[39m
+ [32m✓[39m src/__tests__/hooks/pre-tool-config-guard.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[33m 4325[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 39 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-02: curator trimがquality score昇順（低品質から）削除する
+[31m[1mAssertionError[22m: expected 41 to be 40 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 40[39m
+[31m+ 41[39m
+
+[36m [2m❯[22m src/__tests__/ace-reflector-curator.test.ts:[2m82:35[22m[39m
+    [90m 80| [39m
+    [90m 81| [39m    [35mconst[39m stored [33m=[39m [34mgetReflectorStore[39m()[33m;[39m
+    [90m 82| [39m    [34mexpect[39m(stored[33m.[39mlessons[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m40[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m 83| [39m    [34mexpect[39m(stored[33m.[39mlessons[33m.[39m[34mfind[39m((l[33m:[39m any) [33m=>[39m l[33m.[39merrorPattern [33m===[39m [32m'zzz-wor[39m…
+    [90m 84| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-4: Curatorのquality scoreベース刈り込み[2m > [22mTC-AC4-03: 類似度0.7以上のlessonがfuzzy dedupで統合される
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m src/__tests__/ace-reflector-curator.test.ts:[2m99:35[22m[39m
+    [90m 97| [39m
+    [90m 98| [39m    [35mconst[39m stored [33m=[39m [34mgetReflectorStore[39m()[33m;[39m
+    [90m 99| [39m    [34mexpect[39m(stored[33m.[39mlessons[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                  [31m^[39m
+    [90m100| [39m    [34mexpect[39m(stored[33m.[39mlessons[[34m0[39m][33m.[39mharmfulCount)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m2[39m)[33m;[39m
+    [90m101| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-01: quality score>=0.6のlessonがace-context.toonに昇格される
+[31m[1mAssertionError[22m: expected undefined not to be undefined[39m
+[36m [2m❯[22m src/__tests__/ace-reflector-curator.test.ts:[2m118:17[22m[39m
+    [90m116| [39m    [34mextractAndStoreBullets[39m(lessons)[33m;[39m
+    [90m117| [39m    [35mconst[39m raw [33m=[39m fsStore[33m.[39m[35mget[39m([33mACE_PATH[39m)[33m;[39m
+    [90m118| [39m    [34mexpect[39m(raw)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m119| [39m    [35mconst[39m stored [33m=[39m [34mgetTopCrossTaskBullets[39m([34m100[39m)[33m;[39m
+    [90m120| [39m    [34mexpect[39m(stored[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-02: getTopCrossTaskBullets(5)が上位5件を返す
+[31m[1mAssertionError[22m: expected +0 to be 5 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 5[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/__tests__/ace-reflector-curator.test.ts:[2m134:27[22m[39m
+    [90m132| [39m
+    [90m133| [39m    [35mconst[39m result [33m=[39m [34mgetTopCrossTaskBullets[39m([34m5[39m)[33m;[39m
+    [90m134| [39m    [34mexpect[39m(result[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m5[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m135| [39m    [35mconst[39m scores [33m=[39m result[33m.[39m[34mmap[39m((b[33m:[39m any) [33m=>[39m b[33m.[39mhelpfulCount [33m/[39m (b[33m.[39mhelpfulC…
+    [90m136| [39m    [34mexpect[39m(scores[[34m0[39m])[33m.[39m[34mtoBeGreaterThanOrEqual[39m(scores[[34m4[39m])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector-curator.test.ts[2m > [22mAC-5: cross-task knowledge[2m > [22mTC-AC5-04: runCuratorCycle後にgetTopCrossTaskBulletsで昇格件数が1件以上になる
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 1[39m
+[36m [2m❯[22m src/__tests__/ace-reflector-curator.test.ts:[2m174:28[22m[39m
+    [90m172| [39m
+    [90m173| [39m    [35mconst[39m bullets [33m=[39m [34mgetTopCrossTaskBullets[39m([34m10[39m)[33m;[39m
+    [90m174| [39m    [34mexpect[39m(bullets[33m.[39mlength)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m175| [39m    [34mexpect[39m([[32m'failure'[39m[33m,[39m [32m'strategy'[39m[33m,[39m [32m'constraint'[39m])[33m.[39m[34mtoContain[39m(bullets[[34m0[39m]…
+    [90m176| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-01: 新規lessonがid/helpfulCount/harmfulCount/category付きで生成される
+[31m[1mError[22m: reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/ace-reflector.test.ts:[2m49:17[22m[39m
+    [90m 47| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 48| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 49| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m`reflector store not found at [39m[36m${[39m[33mREFLECTOR_PA[39m…
+    [90m   | [39m                [31m^[39m
+    [90m 50| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 51| [39m}
+[90m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m63:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-1: ReflectorLessonのACEフィールド追加[2m > [22mTC-AC1-03: nextLessonIdが採番ごとにインクリメントされる
+[31m[1mError[22m: reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/ace-reflector.test.ts:[2m49:17[22m[39m
+    [90m 47| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 48| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 49| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m`reflector store not found at [39m[36m${[39m[33mREFLECTOR_PA[39m…
+    [90m   | [39m                [31m^[39m
+    [90m 50| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 51| [39m}
+[90m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m96:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-01: stashFailure()で同一パターンのharmfulCountがインクリメントされる
+[31m[1mError[22m: reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/ace-reflector.test.ts:[2m49:17[22m[39m
+    [90m 47| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 48| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 49| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m`reflector store not found at [39m[36m${[39m[33mREFLECTOR_PA[39m…
+    [90m   | [39m                [31m^[39m
+    [90m 50| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 51| [39m}
+[90m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m117:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-02: promoteStashedFailure()でhelpfulCountがインクリメントされる
+[31m[1mError[22m: reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/ace-reflector.test.ts:[2m49:17[22m[39m
+    [90m 47| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 48| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 49| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m`reflector store not found at [39m[36m${[39m[33mREFLECTOR_PA[39m…
+    [90m   | [39m                [31m^[39m
+    [90m 50| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 51| [39m}
+[90m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m128:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-2: helpful/harmful更新ロジック[2m > [22mTC-AC2-03: hitCountがhelpfulCount+harmfulCountと一致する
+[31m[1mError[22m: reflector store not found at .claude\state\reflector-log.toon. Keys: workflow-harness\mcp-server\.claude\state\reflector-log.toon[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/ace-reflector.test.ts:[2m49:17[22m[39m
+    [90m 47| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 48| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 49| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m`reflector store not found at [39m[36m${[39m[33mREFLECTOR_PA[39m…
+    [90m   | [39m                [31m^[39m
+    [90m 50| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 51| [39m}
+[90m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m136:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-01: formatLessonsForPrompt()が[L-001][failure] phase: pattern → lesson形式で出力する
+[31m[1mAssertionError[22m: expected '' to match /\[L-001\]\[failure\] research: timeou…/[39m
+
+[32m- Expected:[39m 
+/\[L-001\]\[failure\] research: timeout → increase timeout to 60s/
+
+[31m+ Received:[39m 
+""
+
+[36m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m160:20[22m[39m
+    [90m158| [39m    })[33m;[39m
+    [90m159| [39m    [35mconst[39m output [33m=[39m [34mformatLessonsForPrompt[39m([32m'research'[39m)[33m;[39m
+    [90m160| [39m    [34mexpect[39m(output)[33m.[39m[34mtoMatch[39m([36m/\[L-001\]\[failure\] research: timeout → i[39m…
+    [90m   | [39m                   [31m^[39m
+    [90m161| [39m  })[33m;[39m
+    [90m162| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/ace-reflector.test.ts[2m > [22mAC-3: ACE形式プロンプト注入[2m > [22mTC-AC3-02: getLessonsForPhase()がquality score降順で返す
+[31m[1mTypeError[22m: actual value must be number or bigint, received "undefined"[39m
+[36m [2m❯[22m src/__tests__/ace-reflector.test.ts:[2m181:23[22m[39m
+    [90m179| [39m        [33m:[39m l[33m.[39mhelpfulCount [33m/[39m (l[33m.[39mhelpfulCount [33m+[39m l[33m.[39mharmfulCount [33m+[39m [34m1[39m)
+    [90m180| [39m    )[33m;[39m
+    [90m181| [39m    [34mexpect[39m(scores[[34m0[39m])[33m.[39m[34mtoBeGreaterThan[39m(scores[[34m1[39m])[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m182| [39m    [34mexpect[39m(scores[[34m1[39m])[33m.[39m[34mtoBeGreaterThan[39m(scores[[34m2[39m])[33m;[39m
+    [90m183| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/dod-l4-duplicate.test.ts[2m > [22mL4 duplicate line detection[2m > [22mfails L4 when the same non-structural line appears 3 or more times
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/__tests__/dod-l4-duplicate.test.ts:[2m51:23[22m[39m
+    [90m 49| [39m    [35mconst[39m result [33m=[39m [35mawait[39m [34mrunDoDChecks[39m(state[33m,[39m docsDir)[33m;[39m
+    [90m 50| [39m    [35mconst[39m l4 [33m=[39m result[33m.[39mchecks[33m.[39m[34mfind[39m(c [33m=>[39m c[33m.[39mcheck [33m===[39m [32m'content_validation[39m…
+    [90m 51| [39m    [34mexpect[39m(l4[33m.[39mpassed)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 52| [39m    [34mexpect[39m(l4[33m.[39mevidence)[33m.[39m[34mtoContain[39m([32m'3x'[39m)[33m;[39m
+    [90m 53| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-01: Phase Output Rules section exists
+[31m[1mAssertionError[22m: expected '---\nname: coordinator\ndescription: …' to contain '## Phase Output Rules'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- ## Phase Output Rules[39m
+[31m+ ---[39m
+[31m+ name: coordinator[39m
+[31m+ description: L2 Coordinator for harness workflow phases. Analyzes scope, decomposes tasks, Worker に移譲, and reports results. Use when orchestrator needs to delegate phase work.[39m
+[31m+ tools: Read, Glob, Grep, Bash, Skill, ToolSearch[39m
+[31m+ model: inherit[39m
+[31m+ maxTurns: 30[39m
+[31m+ ---[39m
+[31m+[39m
+[31m+ You are a Coordinator (L2) in a 2-layer workflow harness.[39m
+[31m+[39m
+[31m+ ## Role[39m
+[31m+ - Analyze phase work scope by reading input files[39m
+[31m+ - Decompose work into independent tasks[39m
+[31m+ - Write task decomposition to files for Workers to consume[39m
+[31m+ - Report decomposition summary back to L1 (keep it to 1-2 lines)[39m
+[31m+[39m
+[31m+ ## Context Handoff[39m
+[31m+ - Read input from: prompt に指定されたファイルパス[39m
+[31m+ - Write output to: docs/workflows/ 配下に適切な拡張子で書き出す[39m
+[31m+   - 構造化データ(AC, RTM, スコープ) → .md[39m
+[31m+   - 分析・散文・コード含む内容 → .md[39m
+[31m+ - L1 にはファイルパスと1行サマリのみ返す。詳細はファイルに書く。[39m
+[31m+[39m
+[31m+ ## On Hook Error[39m
+[31m+ - DO NOT retry the blocked tool[39m
+[31m+ - Return error description immediately: "BLOCKED: {tool} - {reason}"[39m
+[31m+[39m
+[31m+ ## Result Format[39m
+[31m+ 完了時は以下のフォーマットで報告:[39m
+[31m+ - 成功: `[OK] {1行サマリ}`[39m
+[31m+ - 失敗: `[FAIL] {理由}`[39m
+[31m+[39m
+[31m+ ## On Completion[39m
+[31m+ - Return to L1:[39m
+[31m+   - Output file paths (written artifacts)[39m
+[31m+   - 1-line summary of analysis[39m
+[31m+   - Worker task list (if decomposed for parallel execution)[39m
+[31m+[39m
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m25:23[22m[39m
+    [90m 23| [39m
+    [90m 24| [39m  [34mit[39m([32m'TC-AC1-01: Phase Output Rules section exists'[39m[33m,[39m () [33m=>[39m {
+    [90m 25| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoContain[39m([32m'## Phase Output Rules'[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 26| [39m  })[33m;[39m
+    [90m 27| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-02: decisions quantitative rule (5 or more)
+[31m[1mAssertionError[22m: expected '---\nname: coordinator\ndescription: …' to match /decisions.*5件以上/[39m
+
+[32m- Expected:[39m 
+/decisions.*5件以上/
+
+[31m+ Received:[39m 
+"---
+name: coordinator
+description: L2 Coordinator for harness workflow phases. Analyzes scope, decomposes tasks, Worker に移譲, and reports results. Use when orchestrator needs to delegate phase work.
+tools: Read, Glob, Grep, Bash, Skill, ToolSearch
+model: inherit
+maxTurns: 30
+---
+
+You are a Coordinator (L2) in a 2-layer workflow harness.
+
+## Role
+- Analyze phase work scope by reading input files
+- Decompose work into independent tasks
+- Write task decomposition to files for Workers to consume
+- Report decomposition summary back to L1 (keep it to 1-2 lines)
+
+## Context Handoff
+- Read input from: prompt に指定されたファイルパス
+- Write output to: docs/workflows/ 配下に適切な拡張子で書き出す
+  - 構造化データ(AC, RTM, スコープ) → .md
+  - 分析・散文・コード含む内容 → .md
+- L1 にはファイルパスと1行サマリのみ返す。詳細はファイルに書く。
+
+## On Hook Error
+- DO NOT retry the blocked tool
+- Return error description immediately: \"BLOCKED: {tool} - {reason}\"
+
+## Result Format
+完了時は以下のフォーマットで報告:
+- 成功: `[OK] {1行サマリ}`
+- 失敗: `[FAIL] {理由}`
+
+## On Completion
+- Return to L1:
+  - Output file paths (written artifacts)
+  - 1-line summary of analysis
+  - Worker task list (if decomposed for parallel execution)
+"
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m29:23[22m[39m
+    [90m 27| [39m
+    [90m 28| [39m  [34mit[39m([32m'TC-AC1-02: decisions quantitative rule (5 or more)'[39m[33m,[39m () [33m=>[39m {
+    [90m 29| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoMatch[39m([36m/decisions.*5件以上/[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 30| [39m  })[33m;[39m
+    [90m 31| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-03: artifacts enumeration rule
+[31m[1mAssertionError[22m: expected '---\nname: coordinator\ndescription: …' to match /artifacts.*列挙/[39m
+
+[32m- Expected:[39m 
+/artifacts.*列挙/
+
+[31m+ Received:[39m 
+"---
+name: coordinator
+description: L2 Coordinator for harness workflow phases. Analyzes scope, decomposes tasks, Worker に移譲, and reports results. Use when orchestrator needs to delegate phase work.
+tools: Read, Glob, Grep, Bash, Skill, ToolSearch
+model: inherit
+maxTurns: 30
+---
+
+You are a Coordinator (L2) in a 2-layer workflow harness.
+
+## Role
+- Analyze phase work scope by reading input files
+- Decompose work into independent tasks
+- Write task decomposition to files for Workers to consume
+- Report decomposition summary back to L1 (keep it to 1-2 lines)
+
+## Context Handoff
+- Read input from: prompt に指定されたファイルパス
+- Write output to: docs/workflows/ 配下に適切な拡張子で書き出す
+  - 構造化データ(AC, RTM, スコープ) → .md
+  - 分析・散文・コード含む内容 → .md
+- L1 にはファイルパスと1行サマリのみ返す。詳細はファイルに書く。
+
+## On Hook Error
+- DO NOT retry the blocked tool
+- Return error description immediately: \"BLOCKED: {tool} - {reason}\"
+
+## Result Format
+完了時は以下のフォーマットで報告:
+- 成功: `[OK] {1行サマリ}`
+- 失敗: `[FAIL] {理由}`
+
+## On Completion
+- Return to L1:
+  - Output file paths (written artifacts)
+  - 1-line summary of analysis
+  - Worker task list (if decomposed for parallel execution)
+"
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m33:23[22m[39m
+    [90m 31| [39m
+    [90m 32| [39m  [34mit[39m([32m'TC-AC1-03: artifacts enumeration rule'[39m[33m,[39m () [33m=>[39m {
+    [90m 33| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoMatch[39m([36m/artifacts.*列挙/[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 34| [39m  })[33m;[39m
+    [90m 35| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-1: Phase Output Rules in coordinator.md[2m > [22mTC-AC1-04: next field must not be empty
+[31m[1mAssertionError[22m: expected '---\nname: coordinator\ndescription: …' to match /next.*空欄禁止/[39m
+
+[32m- Expected:[39m 
+/next.*空欄禁止/
+
+[31m+ Received:[39m 
+"---
+name: coordinator
+description: L2 Coordinator for harness workflow phases. Analyzes scope, decomposes tasks, Worker に移譲, and reports results. Use when orchestrator needs to delegate phase work.
+tools: Read, Glob, Grep, Bash, Skill, ToolSearch
+model: inherit
+maxTurns: 30
+---
+
+You are a Coordinator (L2) in a 2-layer workflow harness.
+
+## Role
+- Analyze phase work scope by reading input files
+- Decompose work into independent tasks
+- Write task decomposition to files for Workers to consume
+- Report decomposition summary back to L1 (keep it to 1-2 lines)
+
+## Context Handoff
+- Read input from: prompt に指定されたファイルパス
+- Write output to: docs/workflows/ 配下に適切な拡張子で書き出す
+  - 構造化データ(AC, RTM, スコープ) → .md
+  - 分析・散文・コード含む内容 → .md
+- L1 にはファイルパスと1行サマリのみ返す。詳細はファイルに書く。
+
+## On Hook Error
+- DO NOT retry the blocked tool
+- Return error description immediately: \"BLOCKED: {tool} - {reason}\"
+
+## Result Format
+完了時は以下のフォーマットで報告:
+- 成功: `[OK] {1行サマリ}`
+- 失敗: `[FAIL] {理由}`
+
+## On Completion
+- Return to L1:
+  - Output file paths (written artifacts)
+  - 1-line summary of analysis
+  - Worker task list (if decomposed for parallel execution)
+"
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m37:23[22m[39m
+    [90m 35| [39m
+    [90m 36| [39m  [34mit[39m([32m'TC-AC1-04: next field must not be empty'[39m[33m,[39m () [33m=>[39m {
+    [90m 37| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoMatch[39m([36m/next.*空欄禁止/[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 38| [39m  })[33m;[39m
+    [90m 39| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-01: Edit Completeness section exists
+[31m[1mAssertionError[22m: expected '---\nname: worker\ndescription: L3 Wo…' to contain '## Edit Completeness'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- ## Edit Completeness[39m
+[31m+ ---[39m
+[31m+ name: worker[39m
+[31m+ description: L3 Worker for file read/write operations in harness phases. Executes specific file tasks assigned by coordinator.[39m
+[31m+ tools: Read, Write, Edit, Glob, Grep, Bash[39m
+[31m+ model: inherit[39m
+[31m+ maxTurns: 15[39m
+[31m+ ---[39m
+[31m+[39m
+[31m+ You are a Worker (L3) in a 2-layer workflow harness.[39m
+[31m+[39m
+[31m+ ## Role[39m
+[31m+ - Execute specific file operation tasks as instructed in prompt[39m
+[31m+ - Read source files, write/edit target files[39m
+[31m+ - Return results back to L1[39m
+[31m+[39m
+[31m+ ## Edit Modes[39m
+[31m+ Worker has two edit modes. Orchestrator specifies which mode in the prompt.[39m
+[31m+[39m
+[31m+ ### direct-edit (default)[39m
+[31m+ Worker directly edits files via Edit/Write tools.[39m
+[31m+ Result format:[39m
+[31m+ - `[OK] {1行サマリ}`[39m
+[31m+ - `Files: {変更ファイルパス一覧}`[39m
+[31m+ - 新規作成ファイルがある場合: `[NEW] {file_path}: {目的・役割の1行説明}`[39m
+[31m+[39m
+[31m+ ### edit-preview[39m
+[31m+ Worker does NOT edit files. Instead, returns edit instructions for Orchestrator to execute via Edit tool (for rich diff preview).[39m
+[31m+ Result format:[39m
+[31m+ ```[39m
+[31m+ [EDIT] {file_path}[39m
+[31m+ OLD:[39m
+[31m+ {old_string (exact match)}[39m
+[31m+ NEW:[39m
+[31m+ {new_string}[39m
+[31m+ ---[39m
+[31m+ [OK] {1行サマリ}[39m
+[31m+ ```[39m
+[31m+ Rules:[39m
+[31m+ - old_string must be an exact copy from the file (read first)[39m
+[31m+ - One [EDIT] block per change[39m
+[31m+ - Multiple edits to different files are OK[39m
+[31m+ - Separate each block with `---`[39m
+[31m+ - End with [OK] or [FAIL][39m
+[31m+ - MUST write authorized file paths to `.agent/edit-auth.txt` (one path per line, append mode) before returning. Orchestrator's Edit is hook-gated by this file.[39m
+[31m+[39m
+[31m+ ## Context Handoff[39m
+[31m+ - Read input from: prompt に指定されたファイルパス (coordinator の出力ファイル等)[39m
+[31m+ - Write output to: 指示されたパスに成果物を書き出す[39m
+[31m+   - 構造化データ → .md[39m
+[31m+   - 散文・分析・コード含む内容 → .md[39m
+[31m+   - ソースコード → 適切な拡張子 (.ts, .js, .py 等)[39m
+[31m+[39m
+[31m+ ## On Hook Error[39m
+[31m+ - DO NOT retry the blocked tool[39m
+[31m+ - Return error description immediately: "BLOCKED: {tool} - {reason}"[39m
+[31m+ - Suggest alternative approach if possible[39m
+[31m+[39m
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m45:23[22m[39m
+    [90m 43| [39m
+    [90m 44| [39m  [34mit[39m([32m'TC-AC2-01: Edit Completeness section exists'[39m[33m,[39m () [33m=>[39m {
+    [90m 45| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoContain[39m([32m'## Edit Completeness'[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 46| [39m  })[33m;[39m
+    [90m 47| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-02: partial application prohibition
+[31m[1mAssertionError[22m: expected '---\nname: worker\ndescription: L3 Wo…' to match /部分適用.*禁止/[39m
+
+[32m- Expected:[39m 
+/部分適用.*禁止/
+
+[31m+ Received:[39m 
+"---
+name: worker
+description: L3 Worker for file read/write operations in harness phases. Executes specific file tasks assigned by coordinator.
+tools: Read, Write, Edit, Glob, Grep, Bash
+model: inherit
+maxTurns: 15
+---
+
+You are a Worker (L3) in a 2-layer workflow harness.
+
+## Role
+- Execute specific file operation tasks as instructed in prompt
+- Read source files, write/edit target files
+- Return results back to L1
+
+## Edit Modes
+Worker has two edit modes. Orchestrator specifies which mode in the prompt.
+
+### direct-edit (default)
+Worker directly edits files via Edit/Write tools.
+Result format:
+- `[OK] {1行サマリ}`
+- `Files: {変更ファイルパス一覧}`
+- 新規作成ファイルがある場合: `[NEW] {file_path}: {目的・役割の1行説明}`
+
+### edit-preview
+Worker does NOT edit files. Instead, returns edit instructions for Orchestrator to execute via Edit tool (for rich diff preview).
+Result format:
+```
+[EDIT] {file_path}
+OLD:
+{old_string (exact match)}
+NEW:
+{new_string}
+---
+[OK] {1行サマリ}
+```
+Rules:
+- old_string must be an exact copy from the file (read first)
+- One [EDIT] block per change
+- Multiple edits to different files are OK
+- Separate each block with `---`
+- End with [OK] or [FAIL]
+- MUST write authorized file paths to `.agent/edit-auth.txt` (one path per line, append mode) before returning. Orchestrator's Edit is hook-gated by this file.
+
+## Context Handoff
+- Read input from: prompt に指定されたファイルパス (coordinator の出力ファイル等)
+- Write output to: 指示されたパスに成果物を書き出す
+  - 構造化データ → .md
+  - 散文・分析・コード含む内容 → .md
+  - ソースコード → 適切な拡張子 (.ts, .js, .py 等)
+
+## On Hook Error
+- DO NOT retry the blocked tool
+- Return error description immediately: \"BLOCKED: {tool} - {reason}\"
+- Suggest alternative approach if possible
+"
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m49:23[22m[39m
+    [90m 47| [39m
+    [90m 48| [39m  [34mit[39m([32m'TC-AC2-02: partial application prohibition'[39m[33m,[39m () [33m=>[39m {
+    [90m 49| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoMatch[39m([36m/部分適用.*禁止/[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 50| [39m  })[33m;[39m
+    [90m 51| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/first-pass-improvement.test.ts[2m > [22mAC-2: Edit Completeness in worker.md[2m > [22mTC-AC2-03: all-or-nothing principle
+[31m[1mAssertionError[22m: expected '---\nname: worker\ndescription: L3 Wo…' to contain '全件適用'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 全件適用[39m
+[31m+ ---[39m
+[31m+ name: worker[39m
+[31m+ description: L3 Worker for file read/write operations in harness phases. Executes specific file tasks assigned by coordinator.[39m
+[31m+ tools: Read, Write, Edit, Glob, Grep, Bash[39m
+[31m+ model: inherit[39m
+[31m+ maxTurns: 15[39m
+[31m+ ---[39m
+[31m+[39m
+[31m+ You are a Worker (L3) in a 2-layer workflow harness.[39m
+[31m+[39m
+[31m+ ## Role[39m
+[31m+ - Execute specific file operation tasks as instructed in prompt[39m
+[31m+ - Read source files, write/edit target files[39m
+[31m+ - Return results back to L1[39m
+[31m+[39m
+[31m+ ## Edit Modes[39m
+[31m+ Worker has two edit modes. Orchestrator specifies which mode in the prompt.[39m
+[31m+[39m
+[31m+ ### direct-edit (default)[39m
+[31m+ Worker directly edits files via Edit/Write tools.[39m
+[31m+ Result format:[39m
+[31m+ - `[OK] {1行サマリ}`[39m
+[31m+ - `Files: {変更ファイルパス一覧}`[39m
+[31m+ - 新規作成ファイルがある場合: `[NEW] {file_path}: {目的・役割の1行説明}`[39m
+[31m+[39m
+[31m+ ### edit-preview[39m
+[31m+ Worker does NOT edit files. Instead, returns edit instructions for Orchestrator to execute via Edit tool (for rich diff preview).[39m
+[31m+ Result format:[39m
+[31m+ ```[39m
+[31m+ [EDIT] {file_path}[39m
+[31m+ OLD:[39m
+[31m+ {old_string (exact match)}[39m
+[31m+ NEW:[39m
+[31m+ {new_string}[39m
+[31m+ ---[39m
+[31m+ [OK] {1行サマリ}[39m
+[31m+ ```[39m
+[31m+ Rules:[39m
+[31m+ - old_string must be an exact copy from the file (read first)[39m
+[31m+ - One [EDIT] block per change[39m
+[31m+ - Multiple edits to different files are OK[39m
+[31m+ - Separate each block with `---`[39m
+[31m+ - End with [OK] or [FAIL][39m
+[31m+ - MUST write authorized file paths to `.agent/edit-auth.txt` (one path per line, append mode) before returning. Orchestrator's Edit is hook-gated by this file.[39m
+[31m+[39m
+[31m+ ## Context Handoff[39m
+[31m+ - Read input from: prompt に指定されたファイルパス (coordinator の出力ファイル等)[39m
+[31m+ - Write output to: 指示されたパスに成果物を書き出す[39m
+[31m+   - 構造化データ → .md[39m
+[31m+   - 散文・分析・コード含む内容 → .md[39m
+[31m+   - ソースコード → 適切な拡張子 (.ts, .js, .py 等)[39m
+[31m+[39m
+[31m+ ## On Hook Error[39m
+[31m+ - DO NOT retry the blocked tool[39m
+[31m+ - Return error description immediately: "BLOCKED: {tool} - {reason}"[39m
+[31m+ - Suggest alternative approach if possible[39m
+[31m+[39m
+
+[36m [2m❯[22m src/__tests__/first-pass-improvement.test.ts:[2m53:23[22m[39m
+    [90m 51| [39m
+    [90m 52| [39m  [34mit[39m([32m'TC-AC2-03: all-or-nothing principle'[39m[33m,[39m () [33m=>[39m {
+    [90m 53| [39m    [34mexpect[39m([34mcontent[39m())[33m.[39m[34mtoContain[39m([32m'全件適用'[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 54| [39m  })[33m;[39m
+    [90m 55| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC1-01: confirmation-only prohibition rule exists
+[31m[1mAssertionError[22m: expected '---\nname: hearing-worker\ndescriptio…' to match /禁止|prohibited/i[39m
+
+[32m- Expected:[39m 
+/禁止|prohibited/i
+
+[31m+ Received:[39m 
+"---
+name: hearing-worker
+description: Specialized worker for hearing phase. Has AskUserQuestion to interview users with structured selection choices.
+tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+model: inherit
+maxTurns: 15
+---
+
+You are a Hearing Worker for the hearing phase of the workflow harness.
+
+## Role
+- Analyze user intent and identify unclear points
+- Use AskUserQuestion to interview the user with structured choices (2-4 options per question)
+- Investigate the codebase (readonly) to understand impact
+- Generate hearing.md with intent analysis and implementation plan
+
+## AskUserQuestion Guidelines
+- Maximum 4 questions per AskUserQuestion call
+- Provide 2-4 concrete options per question
+- Mark recommended option with (Recommended) suffix
+- If many unclear points, split into multiple AskUserQuestion calls
+- Always include technical context in option descriptions
+
+## Result Format
+- Success: `[OK] {1行サマリ}`
+- Failure: `[FAIL] {理由}`
+"
+
+[36m [2m❯[22m src/__tests__/hearing-worker-rules.test.ts:[2m14:21[22m[39m
+    [90m 12| [39m
+    [90m 13| [39m  [34mit[39m([32m'TC-AC1-01: confirmation-only prohibition rule exists'[39m[33m,[39m () [33m=>[39m {
+    [90m 14| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/禁止|prohibited/i[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 15| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/確認.*禁止|confirmation.*prohibit|Yes.*No[39m…
+    [90m 16| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC2-01: 2+ substantively different approaches required
+[31m[1mAssertionError[22m: expected '---\nname: hearing-worker\ndescriptio…' to match /2.*以上|2\+|two.*or.*more/i[39m
+
+[32m- Expected:[39m 
+/2.*以上|2\+|two.*or.*more/i
+
+[31m+ Received:[39m 
+"---
+name: hearing-worker
+description: Specialized worker for hearing phase. Has AskUserQuestion to interview users with structured selection choices.
+tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+model: inherit
+maxTurns: 15
+---
+
+You are a Hearing Worker for the hearing phase of the workflow harness.
+
+## Role
+- Analyze user intent and identify unclear points
+- Use AskUserQuestion to interview the user with structured choices (2-4 options per question)
+- Investigate the codebase (readonly) to understand impact
+- Generate hearing.md with intent analysis and implementation plan
+
+## AskUserQuestion Guidelines
+- Maximum 4 questions per AskUserQuestion call
+- Provide 2-4 concrete options per question
+- Mark recommended option with (Recommended) suffix
+- If many unclear points, split into multiple AskUserQuestion calls
+- Always include technical context in option descriptions
+
+## Result Format
+- Success: `[OK] {1行サマリ}`
+- Failure: `[FAIL] {理由}`
+"
+
+[36m [2m❯[22m src/__tests__/hearing-worker-rules.test.ts:[2m19:21[22m[39m
+    [90m 17| [39m
+    [90m 18| [39m  [34mit[39m([32m'TC-AC2-01: 2+ substantively different approaches required'[39m[33m,[39m () [33m=[39m…
+    [90m 19| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/2.*以上|2\+|two.*or.*more/i[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 20| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/異なる|different|substantiv/i[39m)[33m;[39m
+    [90m 21| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/hearing-worker-rules.test.ts[2m > [22mhearing-worker.md AskUserQuestion Quality Rules[2m > [22mTC-AC3-01: merit and demerit required for each option
+[31m[1mAssertionError[22m: expected '---\nname: hearing-worker\ndescriptio…' to match /メリット|merit|trade-off|トレードオフ/i[39m
+
+[32m- Expected:[39m 
+/メリット|merit|trade-off|トレードオフ/i
+
+[31m+ Received:[39m 
+"---
+name: hearing-worker
+description: Specialized worker for hearing phase. Has AskUserQuestion to interview users with structured selection choices.
+tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+model: inherit
+maxTurns: 15
+---
+
+You are a Hearing Worker for the hearing phase of the workflow harness.
+
+## Role
+- Analyze user intent and identify unclear points
+- Use AskUserQuestion to interview the user with structured choices (2-4 options per question)
+- Investigate the codebase (readonly) to understand impact
+- Generate hearing.md with intent analysis and implementation plan
+
+## AskUserQuestion Guidelines
+- Maximum 4 questions per AskUserQuestion call
+- Provide 2-4 concrete options per question
+- Mark recommended option with (Recommended) suffix
+- If many unclear points, split into multiple AskUserQuestion calls
+- Always include technical context in option descriptions
+
+## Result Format
+- Success: `[OK] {1行サマリ}`
+- Failure: `[FAIL] {理由}`
+"
+
+[36m [2m❯[22m src/__tests__/hearing-worker-rules.test.ts:[2m24:21[22m[39m
+    [90m 22| [39m
+    [90m 23| [39m  [34mit[39m([32m'TC-AC3-01: merit and demerit required for each option'[39m[33m,[39m () [33m=>[39m {
+    [90m 24| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/メリット|merit|trade-off|トレードオフ/i[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 25| [39m    [34mexpect[39m(content)[33m.[39m[34mtoMatch[39m([36m/デメリット|demerit|downside/i[39m)[33m;[39m
+    [90m 26| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mMetrics store lifecycle[2m > [22mloadMetrics loads existing store from disk
+[31m[1mAssertionError[22m: expected undefined not to be undefined[39m
+[36m [2m❯[22m src/__tests__/metrics.test.ts:[2m60:31[22m[39m
+    [90m 58| [39m    }))[33m;[39m
+    [90m 59| [39m    [35mconst[39m store [33m=[39m [34mloadMetrics[39m()[33m;[39m
+    [90m 60| [39m    [34mexpect[39m(store[33m.[39mtasks[[32m't1'[39m])[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m 61| [39m    [34mexpect[39m(store[33m.[39maggregate[33m.[39mtotalTasks)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m 62| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseStart records start timestamp for a phase
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m71:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd records end timestamp and calculates duration
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m81:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mPhase timing[2m > [22mrecordPhaseEnd without prior start creates entry with 0 duration
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m91:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry increments retry count for task and aggregate
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m104:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mRetry tracking[2m > [22mrecordRetry records phase-level retry details
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m112:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mDoD failure tracking[2m > [22mrecordDoDFailure increments failure count and records pattern
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m124:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/metrics.test.ts[2m > [22mTask completion[2m > [22mrecordTaskCompletion marks task as completed and updates aggregate
+[31m[1mError[22m: metrics store not found[39m
+[36m [2m❯[22m getMetricsStore src/__tests__/metrics.test.ts:[2m38:17[22m[39m
+    [90m 36| [39m[35mfunction[39m [34mgetMetricsStore[39m()[33m:[39m any {
+    [90m 37| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mMETRICS_PATH[39m)[33m;[39m
+    [90m 38| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'metrics store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 39| [39m  [35mreturn[39m [34mparseMetrics[39m(v)[33m;[39m
+    [90m 40| [39m}
+[90m [2m❯[22m src/__tests__/metrics.test.ts:[2m138:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgenerates a prevention rule when same error pattern fails 2+ times
+[31m[1mError[22m: reflector store not found[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/reflector-failure-loop.test.ts:[2m40:17[22m[39m
+    [90m 38| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 39| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 40| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'reflector store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 41| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 42| [39m}
+[90m [2m❯[22m src/__tests__/reflector-failure-loop.test.ts:[2m56:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mprevention rule contains actionable instruction
+[31m[1mError[22m: reflector store not found[39m
+[36m [2m❯[22m getReflectorStore src/__tests__/reflector-failure-loop.test.ts:[2m40:17[22m[39m
+    [90m 38| [39m[35mfunction[39m [34mgetReflectorStore[39m()[33m:[39m any {
+    [90m 39| [39m  [35mconst[39m v [33m=[39m fsStore[33m.[39m[35mget[39m([33mREFLECTOR_PATH[39m)[33m;[39m
+    [90m 40| [39m  [35mif[39m ([33m![39mv) [35mthrow[39m [35mnew[39m [33mError[39m([32m'reflector store not found'[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 41| [39m  [35mreturn[39m [34mparseStore[39m(v)[33m;[39m
+    [90m 42| [39m}
+[90m [2m❯[22m src/__tests__/reflector-failure-loop.test.ts:[2m70:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mgetPreventionRules returns rules for a phase
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/__tests__/reflector-failure-loop.test.ts:[2m88:26[22m[39m
+    [90m 86| [39m    })[33m;[39m
+    [90m 87| [39m    [35mconst[39m rules [33m=[39m [34mgetPreventionRules[39m([32m'research'[39m)[33m;[39m
+    [90m 88| [39m    [34mexpect[39m(rules[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m 89| [39m    [34mexpect[39m(rules[[34m0[39m])[33m.[39m[34mtoContain[39m([32m'禁止'[39m)[33m;[39m
+    [90m 90| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-failure-loop.test.ts[2m > [22mG-08: Prevention rule generation[2m > [22mformatLessonsForPrompt includes prevention rules section
+[31m[1mAssertionError[22m: expected '' to contain '禁止'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 禁止[39m
+
+[36m [2m❯[22m src/__tests__/reflector-failure-loop.test.ts:[2m109:20[22m[39m
+    [90m107| [39m    })[33m;[39m
+    [90m108| [39m    [35mconst[39m output [33m=[39m [34mformatLessonsForPrompt[39m([32m'research'[39m)[33m;[39m
+    [90m109| [39m    [34mexpect[39m(output)[33m.[39m[34mtoContain[39m([32m'禁止'[39m)[33m;[39m
+    [90m   | [39m                   [31m^[39m
+    [90m110| [39m    [34mexpect[39m(output)[33m.[39m[34mtoContain[39m([32m'L-001'[39m)[33m;[39m
+    [90m111| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains lessons with qualityScore above threshold
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/__tests__/reflector-quality.test.ts:[2m69:28[22m[39m
+    [90m 67| [39m    })[33m;[39m
+    [90m 68| [39m    [35mconst[39m lessons [33m=[39m [34mgetLessonsForPhase[39m([32m'research'[39m)[33m;[39m
+    [90m 69| [39m    [34mexpect[39m(lessons[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m 70| [39m  })[33m;[39m
+    [90m 71| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mretains new lessons with no feedback (score 0.5)
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/__tests__/reflector-quality.test.ts:[2m83:28[22m[39m
+    [90m 81| [39m    })[33m;[39m
+    [90m 82| [39m    [35mconst[39m lessons [33m=[39m [34mgetLessonsForPhase[39m([32m'research'[39m)[33m;[39m
+    [90m 83| [39m    [34mexpect[39m(lessons[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m 84| [39m  })[33m;[39m
+    [90m 85| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mboundary: score=0.25 excluded, score=0.33 retained
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/__tests__/reflector-quality.test.ts:[2m106:28[22m[39m
+    [90m104| [39m    })[33m;[39m
+    [90m105| [39m    [35mconst[39m lessons [33m=[39m [34mgetLessonsForPhase[39m([32m'research'[39m)[33m;[39m
+    [90m106| [39m    [34mexpect[39m(lessons[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m107| [39m    [34mexpect[39m(lessons[[34m0[39m][33m.[39mid)[33m.[39m[34mtoBe[39m([32m'L-002'[39m)[33m;[39m
+    [90m108| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/39]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/reflector-quality.test.ts[2m > [22mN-07: Reflector quality score filtering[2m > [22mformatLessonsForPrompt excludes harmful lessons
+[31m[1mAssertionError[22m: expected '' to contain 'L-002'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- L-002[39m
+
+[36m [2m❯[22m src/__tests__/reflector-quality.test.ts:[2m128:20[22m[39m
+    [90m126| [39m    })[33m;[39m
+    [90m127| [39m    [35mconst[39m output [33m=[39m [34mformatLessonsForPrompt[39m([32m'research'[39m)[33m;[39m
+    [90m128| [39m    [34mexpect[39m(output)[33m.[39m[34mtoContain[39m([32m'L-002'[39m)[33m;[39m
+    [90m   | [39m                   [31m^[39m
+    [90m129| [39m    [34mexpect[39m(output)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'L-001'[39m)[33m;[39m
+    [90m130| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/39]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m96 passed[39m[22m[90m (104)[39m
+[2m      Tests [22m [1m[31m39 failed[39m[22m[2m | [22m[1m[32m829 passed[39m[22m[90m (868)[39m
+[2m   Start at [22m 09:15:08
+[2m   Duration [22m 7.25s[2m (transform 3.74s, setup 9ms, collect 9.28s, tests 42.91s, environment 22ms, prepare 19.39s)[22m
+

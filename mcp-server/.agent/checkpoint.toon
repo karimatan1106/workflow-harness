@@ -1,0 +1,8 @@
+:toon checkpoint v1
+task: TDD Red tests for template reliability and cascade
+phase: test_impl
+done[1]{hearing-template.test.ts created}
+done[2]{testing-template.test.ts created}
+done[3]{phase-analytics-stale.test.ts created}
+next[1]{create harness-back-cascade.test.ts}
+next[2]{run all 4 tests to confirm TDD Red failure}
