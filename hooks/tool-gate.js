@@ -8,6 +8,12 @@ const fs = require('fs');
 const HARNESS_LIFECYCLE = new Set([
   'harness_start', 'harness_next', 'harness_approve',
   'harness_status', 'harness_back', 'harness_reset',
+  'harness_delegate_coordinator', 'harness_set_scope', 'harness_complete_sub',
+  'harness_record_proof', 'harness_add_ac', 'harness_add_rtm',
+  'harness_record_feedback', 'harness_capture_baseline', 'harness_record_test_result',
+  'harness_record_test', 'harness_get_test_info', 'harness_record_known_bug',
+  'harness_get_known_bugs', 'harness_get_subphase_template', 'harness_pre_validate',
+  'harness_update_ac_status', 'harness_update_rtm_status',
 ]);
 
 // ── Layer detection ──
