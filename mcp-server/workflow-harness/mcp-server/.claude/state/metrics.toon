@@ -3504,22 +3504,58 @@ tasks:
     dodFailures: 4
     startedAt: "2026-04-07T11:47:58.835Z"
     completedAt: null
+  "5f5e6163-f679-4923-92f3-4ee046cc1c14":
+    taskName: fix-tool-gate-mcp-allowlist
+    phases:
+      hearing:
+        startedAt: "2026-04-07T12:25:47.075Z"
+        durationMs: 148690
+        retries: 1
+        dodFailurePatterns[1]: "[L4] decisions count: 2 < required 5\n修正方法: ## decisions にあと3件追加してください。"
+        endedAt: "2026-04-07T12:28:15.765Z"
+      scope_definition:
+        startedAt: "2026-04-07T12:28:15.833Z"
+        durationMs: 174390
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-04-07T12:31:10.223Z"
+      research:
+        startedAt: "2026-04-07T12:31:10.299Z"
+        durationMs: 122928
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-04-07T12:33:13.227Z"
+      impact_analysis:
+        startedAt: "2026-04-07T12:33:13.301Z"
+        durationMs: 115726
+        retries: 0
+        dodFailurePatterns[0]:
+        endedAt: "2026-04-07T12:35:09.027Z"
+      requirements:
+        startedAt: "2026-04-07T12:35:09.101Z"
+        durationMs: 0
+        retries: 0
+        dodFailurePatterns[0]:
+    retries: 1
+    dodFailures: 1
+    startedAt: "2026-04-07T12:25:47.075Z"
+    completedAt: null
 aggregate:
-  totalTasks: 62
+  totalTasks: 63
   completedTasks: 18
-  totalRetries: 182
-  totalDoDFailures: 182
-  totalPhaseTransitions: 714
-  firstPassPhases: 554
+  totalRetries: 183
+  totalDoDFailures: 183
+  totalPhaseTransitions: 718
+  firstPassPhases: 557
   phaseTimings:
     scope_definition:
-      count: 39
-      totalMs: 25284509
-      avgMs: 648321
+      count: 40
+      totalMs: 25458899
+      avgMs: 636472
     research:
-      count: 38
-      totalMs: 6522360
-      avgMs: 171641
+      count: 39
+      totalMs: 6645288
+      avgMs: 170392
     requirements:
       count: 37
       totalMs: 21086721
@@ -3557,9 +3593,9 @@ aggregate:
       totalMs: 340417
       avgMs: 18912
     impact_analysis:
-      count: 27
-      totalMs: 5269057
-      avgMs: 195150
+      count: 28
+      totalMs: 5384783
+      avgMs: 192314
     threat_modeling:
       count: 32
       totalMs: 2336753
@@ -3621,9 +3657,9 @@ aggregate:
       totalMs: 1827253
       avgMs: 130518
     hearing:
-      count: 22
-      totalMs: 41537478
-      avgMs: 1888067
+      count: 23
+      totalMs: 41686168
+      avgMs: 1812442
     design_review:
       count: 30
       totalMs: 3772280

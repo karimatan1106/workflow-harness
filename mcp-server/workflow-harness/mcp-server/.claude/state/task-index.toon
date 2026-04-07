@@ -1,9 +1,10 @@
-tasks[15]{taskId,taskName,phase,size,status}:
+tasks[16]{taskId,taskName,phase,size,status}:
   1e5d5b52-88a4-4bb6-89c2-c4ce995cdf5f,harness-report-fb-fixes,completed,large,completed
   232ed9ec-4af7-4cdf-b147-97cb18b1716c,article-insights-harness-improvements,completed,large,completed
   2c4adf0b-b9c5-4b7f-905d-b3fc213a0eee,harness-detailed-error-analytics,completed,large,completed
   47bc7d35-75db-4c52-a5a8-1b42edf9f83e,hearing-worker-real-choices,completed,large,completed
   5127ee0c-0fad-4088-a2bc-e7c590595738,docs-workflows-refactoring-v2,completed,large,completed
+  5f5e6163-f679-4923-92f3-4ee046cc1c14,fix-tool-gate-mcp-allowlist,requirements,large,active
   80980f59-a211-46af-bd52-19d5e623790d,harness-reporting-fixes,completed,large,completed
   a2e871af-3495-4917-832d-c5ebaed2180d,fix-dod-duplicate-validation,requirements,large,active
   a30dbfda-f9d9-4584-a3f7-b4c008129a12,harness-phase-transition-investigation,hearing,large,active
@@ -14,4 +15,4 @@ tasks[15]{taskId,taskName,phase,size,status}:
   d113c137-c400-401c-9e3e-bb968f5e84e9,hearing-askuserquestion-rule,completed,large,completed
   dd7e439b-4097-4736-b78c-0673274da7e0,agent-delegation-prompt-templates,completed,large,completed
   f40dd84a-47c9-468b-91b5-15737fa54c65,prompt-format-hybrid-rule,test_design,large,active
-updatedAt: "2026-04-07T12:21:23.645Z"
+updatedAt: "2026-04-07T12:35:09.053Z"
