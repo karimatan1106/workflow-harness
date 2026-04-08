@@ -16,7 +16,6 @@ FAIL=0
 HARNESS_TOOLS=(
   mcp__harness__harness_record_proof
   mcp__harness__harness_add_ac
-  mcp__harness__harness_delegate_coordinator
   mcp__harness__harness_set_scope
   mcp__harness__harness_start
   mcp__harness__harness_status

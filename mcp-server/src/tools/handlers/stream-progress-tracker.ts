@@ -1,5 +1,5 @@
 /**
- * StreamProgressTracker - Tracks coordinator subprocess output and writes progress to a Markdown file.
+ * StreamProgressTracker - Tracks coordinator agent output and writes progress to a Markdown file.
  */
 
 import { writeFileSync } from 'node:fs';
