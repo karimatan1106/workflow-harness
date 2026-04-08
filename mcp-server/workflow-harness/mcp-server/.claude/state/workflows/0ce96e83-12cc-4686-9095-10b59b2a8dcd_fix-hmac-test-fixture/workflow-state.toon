@@ -1,0 +1,49 @@
+taskId: 0ce96e83-12cc-4686-9095-10b59b2a8dcd
+taskName: fix-hmac-test-fixture
+version: 4
+phase: scope_definition
+completedPhases[1]: hearing
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: HMAC鍵不一致によるテスト失敗12件の修正。first-pass-improvement.test.ts (7件) と hearing-worker-rules.test.ts (3件) のhmac_verification_failedエラー解決。テストフィクスチャまたは鍵設定の問題。
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[0]:
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[0]:
+rtmEntries[0]:
+proofLog[0]:
+invariants[0]:
+checkpoint:
+  taskId: 0ce96e83-12cc-4686-9095-10b59b2a8dcd
+  phase: scope_definition
+  completedPhases[1]: hearing
+  timestamp: "2026-04-07T13:10:49.856Z"
+  sha256: d3ce9bb829cfc0835b059a2f0cca5c4aaa8dc3902630d02aa38f365539e95eb3
+  userIntent: HMAC鍵不一致によるテスト失敗12件の修正。first-pass-improvement.test.ts (7件) と hearing-worker-rules.test.ts (3件) のhmac_verification_failedエラー解決。テストフィクスチャまたは鍵設定の問題。
+  scopeFiles[0]:
+  scopeDirs[0]:
+  acceptanceCriteria[0]:
+  rtmEntries[0]:
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\fix-hmac-test-fixture"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\0ce96e83-12cc-4686-9095-10b59b2a8dcd_fix-hmac-test-fixture"
+sessionToken: 4ec177e9f3292ff390cbd03a8dc2e1691e25c197a65fd4a0fbf2c1ce0cc2e31f
+stateIntegrity: 1c8f6c173e8245d71032c0b6b386c65017b238fc6bb454c36e4b758192e3598e
+createdAt: "2026-04-07T13:09:13.156Z"
+updatedAt: "2026-04-07T13:10:49.856Z"
+approvals:
+  hearing:
+    approvedAt: "2026-04-07T13:10:45.005Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\fix-hmac-test-fixture/hearing.md": 1e6ef1e8e5bf890dcc8c3d3e8a05663864c6748c43180d63845c685da71d0820

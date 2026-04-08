@@ -17,7 +17,6 @@ import { handleHarnessSetScope, handleHarnessCompleteSub, handleHarnessBack, han
 import { handleHarnessRecordProof, handleHarnessAddAc, handleHarnessAddRtm, handleHarnessRecordFeedback, handleHarnessCaptureBaseline, handleHarnessRecordTestResult, handleHarnessRecordTest } from './handlers/recording.js';
 import { handleHarnessGetTestInfo, handleHarnessRecordKnownBug, handleHarnessGetKnownBugs, handleHarnessGetSubphaseTemplate, handleHarnessPreValidate, handleHarnessUpdateAcStatus, handleHarnessUpdateRtmStatus } from './handlers/query.js';
 import { handleDciBuildIndex, handleDciQueryDocs, handleDciQueryFiles, handleDciValidate } from './handlers/dci.js';
-import { handleDelegateCoordinator } from './handlers/delegate-coordinator.js';
 
 export const TOOL_DEFINITIONS = [...TOOL_DEFS_A, ...TOOL_DEFS_B, ...TOOL_DEFS_C];
 
@@ -76,7 +75,6 @@ export async function handleToolCall(
       case 'dci_query_docs':             result = await handleDciQueryDocs(args); break;
       case 'dci_query_files':            result = await handleDciQueryFiles(args); break;
       case 'dci_validate':               result = await handleDciValidate(); break;
-      case 'harness_delegate_coordinator': result = await handleDelegateCoordinator(args, stateManager); break;
     }
   } catch (err) {
     isError = true;

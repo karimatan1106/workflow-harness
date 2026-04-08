@@ -1,0 +1,51 @@
+taskId: fa88bf1c-7298-4aef-ad6f-efc457b658ae
+taskName: WTI原油シンボルマッピング
+version: 4
+phase: hearing
+completedPhases[0]:
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "WTI原油のシンボルマッピングを設定。CL(Binance), CRUDE(Bybit), XTI(Phemex/Bitget)を全てXTIとして扱うようマッピング追加。symbol-normalizer.ts等に使用。"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[0]:
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[0]:
+rtmEntries[0]:
+proofLog[0]:
+invariants[0]:
+checkpoint:
+  taskId: fa88bf1c-7298-4aef-ad6f-efc457b658ae
+  phase: hearing
+  completedPhases[0]:
+  timestamp: "2026-04-07T16:28:25.746Z"
+  sha256: 17bee17d1865cbaf5ed3d0d2171610d04acb13163ea3149378e0e9695dd1b0a7
+  userIntent: "WTI原油のシンボルマッピングを設定。CL(Binance), CRUDE(Bybit), XTI(Phemex/Bitget)を全てXTIとして扱うようマッピング追加。symbol-normalizer.ts等に使用。"
+  scopeFiles[0]:
+  scopeDirs[0]:
+  acceptanceCriteria[0]:
+  rtmEntries[0]:
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\WTI原油シンボルマッピング"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\fa88bf1c-7298-4aef-ad6f-efc457b658ae_WTI原油シンボルマッピング"
+sessionToken: 4a95e321ad63f9a9817830becef06e66024a32500940f828598af6eebb331e54
+stateIntegrity: 4359c3b327eb3b4a4b0d512c7897451b56025924d027c5e36d636c43f289de06
+createdAt: "2026-04-07T16:28:25.746Z"
+updatedAt: "2026-04-07T16:29:50.072Z"
+approvals:
+  hearing:
+    approvedAt: "2026-04-07T16:29:50.019Z"
+retryCount:
+  hearing: 1
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\WTI原油シンボルマッピング/hearing.md": aef8a799ad552bc47eea1cb5335fad972f59aa995179e29119e0877673019b09

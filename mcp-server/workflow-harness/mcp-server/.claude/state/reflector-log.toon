@@ -348,7 +348,7 @@ lessons[38]:
     helpfulCount: 1
     harmfulCount: 0
     category: failure
-stashedFailures[13]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}:
+stashedFailures[15]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}:
   test_impl,9e34853b-9ec3-42c7-9f4a-2c0e5f5d04fc,"[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)",1,"2026-03-23T22:56:33.952Z"
   hearing,df23cc84,"Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.\n[L4] Missing required Markdown sections: decisions, artifacts, next\n[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。\n[L2] userResponse: key missing from hearing artifact",1,"2026-03-25T16:44:51.044Z"
   test_design,df23cc84,"[L4] Approved artifacts modified since approval: requirements.md, test-design.md","[L4] Approved artifacts modified since approval: requirements.md, test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。",2,"2026-03-25T17:52:34.303Z"
@@ -362,3 +362,5 @@ stashedFailures[13]{phase,taskId,errorPattern,errorMessage,retryCount,createdAt}
   research,a2e871af-3495-4917-832d-c5ebaed2180d,"[L4] decisions count: 4 < required 5\n修正方法: ## decisions にあと1件追加してください。","[L4] decisions count: 4 < required 5\n修正方法: ## decisions にあと1件追加してください。",1,"2026-04-07T12:17:32.972Z"
   impact_analysis,a2e871af-3495-4917-832d-c5ebaed2180d,"Missing required sections: artifacts. Add ## headings for each.","[L3] Missing required sections: artifacts. Add ## headings for each.\n[L4] Missing required Markdown sections: artifacts\n[L4] decisions count: 3 < required 5\n修正方法: ## decisions にあと2件追加してください。",1,"2026-04-07T12:20:36.881Z"
   hearing,5f5e6163-f679-4923-92f3-4ee046cc1c14,"[L4] decisions count: 2 < required 5\n修正方法: ## decisions にあと3件追加してください。","[L4] decisions count: 2 < required 5\n修正方法: ## decisions にあと3件追加してください。",1,"2026-04-07T12:26:30.617Z"
+  hearing,0ce96e83-12cc-4686-9095-10b59b2a8dcd,"Missing required sections: artifacts. Add ## headings for each.","[L3] Missing required sections: artifacts. Add ## headings for each.\n[L4] Missing required Markdown sections: artifacts\n[L4] decisions count: 3 < required 5\n修正方法: ## decisions にあと2件追加してください。",1,"2026-04-07T13:09:54.399Z"
+  hearing,94d28fef-2405-4e57-b5c8-684d7b04981b,"[L4] decisions count: 3 < required 5\n修正方法: ## decisions にあと2件追加してください。","[L4] decisions count: 3 < required 5\n修正方法: ## decisions にあと2件追加してください。",1,"2026-04-08T00:03:14.446Z"

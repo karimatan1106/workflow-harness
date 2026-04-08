@@ -1,0 +1,49 @@
+taskId: 94d28fef-2405-4e57-b5c8-684d7b04981b
+taskName: delegate-coordinator-to-agent
+version: 4
+phase: scope_definition
+completedPhases[1]: hearing
+skippedPhases[0]:
+size: large
+riskScore:
+  total: 8
+  factors:
+    fileCount: 0
+    hasTests: false
+    hasConfig: false
+    hasInfra: false
+    hasSecurity: false
+    hasDatabase: false
+    codeLineEstimate: 0
+userIntent: "delegate-coordinator.ts を Agent tool 方式に書き換える。claude -p subprocess 方式を廃止し、Agent(subagent_type=\"coordinator\") で直接協調器を起動するように変更。maxTurns=30 制限により自動終了。"
+openQuestions[0]:
+notInScope[0]:
+scopeFiles[0]:
+scopeDirs[0]:
+plannedFiles[0]:
+acceptanceCriteria[0]:
+rtmEntries[0]:
+proofLog[0]:
+invariants[0]:
+checkpoint:
+  taskId: 94d28fef-2405-4e57-b5c8-684d7b04981b
+  phase: scope_definition
+  completedPhases[1]: hearing
+  timestamp: "2026-04-08T00:04:58.598Z"
+  sha256: f27a69968720d2d5176eed363641d8f768b061dcc19ca58c625b29c209a7c695
+  userIntent: "delegate-coordinator.ts を Agent tool 方式に書き換える。claude -p subprocess 方式を廃止し、Agent(subagent_type=\"coordinator\") で直接協調器を起動するように変更。maxTurns=30 制限により自動終了。"
+  scopeFiles[0]:
+  scopeDirs[0]:
+  acceptanceCriteria[0]:
+  rtmEntries[0]:
+docsDir: "C:\\ツール\\Workflow\\docs\\workflows\\delegate-coordinator-to-agent"
+workflowDir: "workflow-harness\\mcp-server\\.claude\\state\\workflows\\94d28fef-2405-4e57-b5c8-684d7b04981b_delegate-coordinator-to-agent"
+sessionToken: 47af8bbe8d38721fdbd03159eebb8c44d929266d9e96020be428dd4d3e1fbf98
+stateIntegrity: 10547df1aab755261644c0e0b9c14c5e4305046b09e9c1c868eead7ddeaf0c66
+createdAt: "2026-04-08T00:00:34.476Z"
+updatedAt: "2026-04-08T00:04:58.598Z"
+approvals:
+  hearing:
+    approvedAt: "2026-04-08T00:04:44.062Z"
+artifactHashes:
+  "C:\\ツール\\Workflow\\docs\\workflows\\delegate-coordinator-to-agent/hearing.md": 6b87ad79d27368d4a4861b70de361c0c8917e350ad1dc8b4c5c340d77a44a20d
