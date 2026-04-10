@@ -13,6 +13,127 @@ echo "=== Workflow Harness Setup ==="
 echo "Harness: $HARNESS_DIR"
 echo "Project: $PROJECT_DIR"
 
+# --- dependency bootstrap ---
+install_rtk() {
+  if command -v rtk >/dev/null 2>&1; then
+    echo "rtk: $(rtk --version 2>/dev/null | head -1)"
+    return 0
+  fi
+
+  local uname_s uname_m os_triple arch asset url tmpdir bin_dst found
+  uname_s="$(uname -s 2>/dev/null || echo unknown)"
+  uname_m="$(uname -m 2>/dev/null || echo unknown)"
+
+  case "$uname_s" in
+    Linux)                os_triple="unknown-linux-gnu" ;;
+    Darwin)               os_triple="apple-darwin" ;;
+    MINGW*|MSYS*|CYGWIN*) os_triple="pc-windows-msvc" ;;
+    *) echo "[rtk] WARNING: unsupported OS $uname_s, skipping rtk install" >&2; return 1 ;;
+  esac
+
+  case "$uname_m" in
+    x86_64|amd64)  arch="x86_64" ;;
+    arm64|aarch64) arch="aarch64" ;;
+    *) echo "[rtk] WARNING: unsupported arch $uname_m, skipping rtk install" >&2; return 1 ;;
+  esac
+
+  asset="rtk-${arch}-${os_triple}"
+  url="https://github.com/rtk-ai/rtk/releases/latest/download/${asset}.zip"
+
+  tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t rtk)"
+  if [ -z "$tmpdir" ] || [ ! -d "$tmpdir" ]; then
+    echo "[rtk] WARNING: mktemp failed, skipping rtk install" >&2
+    return 1
+  fi
+
+  echo "Downloading rtk: $url"
+  if command -v curl >/dev/null 2>&1; then
+    if ! curl -fsSL "$url" -o "$tmpdir/rtk.zip"; then
+      echo "[rtk] WARNING: curl download failed" >&2
+      rm -rf "$tmpdir"
+      return 1
+    fi
+  elif command -v wget >/dev/null 2>&1; then
+    if ! wget -q "$url" -O "$tmpdir/rtk.zip"; then
+      echo "[rtk] WARNING: wget download failed" >&2
+      rm -rf "$tmpdir"
+      return 1
+    fi
+  else
+    echo "[rtk] WARNING: neither curl nor wget available" >&2
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  if ! command -v unzip >/dev/null 2>&1; then
+    echo "[rtk] WARNING: unzip not available" >&2
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  if ! unzip -q "$tmpdir/rtk.zip" -d "$tmpdir"; then
+    echo "[rtk] WARNING: unzip failed" >&2
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  bin_dst="$HOME/.local/bin"
+  mkdir -p "$bin_dst"
+
+  if [ -f "$tmpdir/rtk.exe" ]; then
+    mv "$tmpdir/rtk.exe" "$bin_dst/rtk.exe"
+  elif [ -f "$tmpdir/rtk" ]; then
+    mv "$tmpdir/rtk" "$bin_dst/rtk"
+    chmod +x "$bin_dst/rtk"
+  else
+    found="$(find "$tmpdir" -maxdepth 3 -type f \( -name rtk -o -name rtk.exe \) 2>/dev/null | head -1)"
+    if [ -n "$found" ]; then
+      if [ "${found##*.}" = "exe" ]; then
+        mv "$found" "$bin_dst/rtk.exe"
+      else
+        mv "$found" "$bin_dst/rtk"
+        chmod +x "$bin_dst/rtk"
+      fi
+    else
+      echo "[rtk] WARNING: rtk binary not found in archive" >&2
+      rm -rf "$tmpdir"
+      return 1
+    fi
+  fi
+
+  rm -rf "$tmpdir"
+
+  case ":$PATH:" in
+    *":$bin_dst:"*) ;;
+    *) echo "[rtk] WARNING: $bin_dst is not in $PATH. Add 'export PATH=\"$HOME/.local/bin:$PATH\"' to your shell rc." >&2 ;;
+  esac
+
+  echo "rtk installed to $bin_dst"
+  return 0
+}
+
+check_jq() {
+  if command -v jq >/dev/null 2>&1; then
+    echo "jq: $(jq --version 2>/dev/null)"
+    return 0
+  fi
+
+  local uname_s
+  uname_s="$(uname -s 2>/dev/null || echo unknown)"
+  echo "[jq] WARNING: jq is not installed. rtk-rewrite hook requires jq." >&2
+  case "$uname_s" in
+    Linux)                echo "  Install: sudo apt install jq  (or your package manager)" >&2 ;;
+    Darwin)               echo "  Install: brew install jq" >&2 ;;
+    MINGW*|MSYS*|CYGWIN*) echo "  Install: scoop install jq  (or winget install jqlang.jq)" >&2 ;;
+    *)                    echo "  See: https://jqlang.github.io/jq/download/" >&2 ;;
+  esac
+  return 0
+}
+
+install_rtk || echo "rtk install skipped/failed (non-fatal)" >&2
+check_jq
+# --- end dependency bootstrap ---
+
 # 1. Create .claude/hooks/ if needed
 mkdir -p "$PROJECT_DIR/.claude/hooks"
 
