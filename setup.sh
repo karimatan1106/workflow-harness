@@ -232,6 +232,8 @@ EOF
   echo "Created $MCPJSON with harness MCP server"
 else
   # Auto-add harness entry to existing .mcp.json using node
+  # Skip if either "harness" or "workflow-harness" entry is already present
+  # (both names point to the same server; avoid duplicate registration).
   node -e "
 const fs = require('fs');
 const path = process.argv[1];
@@ -239,7 +241,11 @@ const harnessDir = process.argv[2];
 const mcp = JSON.parse(fs.readFileSync(path, 'utf8'));
 if (!mcp.mcpServers) mcp.mcpServers = {};
 
-if (!mcp.mcpServers.harness) {
+if (mcp.mcpServers.harness) {
+  console.log('harness MCP server already registered');
+} else if (mcp.mcpServers['workflow-harness']) {
+  console.log('workflow-harness MCP server already registered; skipping harness entry');
+} else {
   mcp.mcpServers.harness = {
     command: 'bash',
     args: [harnessDir + '/mcp-server/start.sh'],
@@ -249,8 +255,6 @@ if (!mcp.mcpServers.harness) {
     }
   };
   console.log('Added harness MCP server');
-} else {
-  console.log('harness MCP server already registered');
 }
 
 fs.writeFileSync(path, JSON.stringify(mcp, null, 2) + '\n');
