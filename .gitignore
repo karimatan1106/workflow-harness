@@ -15,3 +15,7 @@ mcp-server/.claude/generated-files.json
 .agent/.handoff-session-marker
 .agent/.pitfall-triggered
 .agent/checkpoint.toon
+
+# Runtime state (MCP server execution artifacts)
+mcp-server/.agent/
+mcp-server/workflow-harness/mcp-server/.claude/state/
