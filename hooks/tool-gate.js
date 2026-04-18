@@ -25,14 +25,11 @@ function detectLayer() {
   if (env === 'worker') return 'worker';
   if (env === 'coordinator') return 'coordinator';
   if (!hookInput || !hookInput.agent_id) return 'orchestrator';
-  // カスタムエージェント名で判別
-  var agentId = hookInput.agent_id || '';
-  if (agentId.startsWith('worker')) return 'worker';
-  return 'coordinator';
+  return 'worker';
 }
 
 // ── L1 Orchestrator rules (phase-independent) ──
-const L1_ALLOWED = new Set(['Skill', 'AskUserQuestion', 'ToolSearch', 'TeamCreate', 'SendMessage', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskUpdate', 'TaskStop', 'TaskOutput']);
+const L1_ALLOWED = new Set(['Read', 'Edit', 'Skill', 'AskUserQuestion', 'ToolSearch', 'TeamCreate', 'TeamDelete', 'SendMessage', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskUpdate', 'TaskStop', 'TaskOutput']);
 
 function checkL1(toolName, toolInput) {
   if (toolName.startsWith('mcp__harness__')) {
@@ -177,4 +174,24 @@ async function main() {
   process.exit(0);
 }
 
-main();
+// ── Test hooks ──
+// Expose internals for unit testing. Module-level `hookInput` is closed over by
+// detectLayer(), so tests need a setter rather than passing args, to avoid
+// changing the detectLayer signature.
+function _setHookInput(v) { hookInput = v; }
+function _getHookInput() { return hookInput; }
+
+module.exports = {
+  detectLayer,
+  checkWriteEdit,
+  checkL1,
+  checkL2,
+  checkL3,
+  _setHookInput,
+  _getHookInput,
+};
+
+// Only run main() when invoked as a script, not when required() by tests.
+if (require.main === module) {
+  main();
+}

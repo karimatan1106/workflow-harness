@@ -2,12 +2,14 @@
 
 // Bash: phase -> allowed command categories
 const BASH_COMMANDS = {
-  readonly: [],
+  // cd: shell builtin for directory navigation; no file-system side effects
+  readonly: ['cd'],
   testing: [
     'npm test', 'npm run test', 'npx vitest', 'npx jest',
-    'npx playwright', 'pytest',
+    'npx playwright', 'pytest', 'node --test',
   ],
-  git: ['git add', 'git commit', 'git push', 'git tag'],
+  // includes read-only inspection commands needed to verify before push
+  git: ['git add', 'git commit', 'git push', 'git tag', 'git status', 'git log', 'git show', 'git branch', 'git diff', 'git check-ignore'],
   security: [
     'npm audit', 'npx audit-ci', 'detect-secrets', 'semgrep',
     'npx snyk', 'trivy', 'gitleaks',
@@ -27,7 +29,7 @@ const PHASE_BASH = {
   testing: ['readonly', 'testing'], regression_test: ['readonly', 'testing'],
   performance_test: ['readonly', 'testing'], e2e_test: ['readonly', 'testing'],
   security_scan: ['readonly', 'testing', 'security'],
-  commit: ['git'], push: ['git'],
+  commit: ['readonly', 'git'], push: ['readonly', 'git'],
 };
 
 // Write/Edit: phase -> allowed extensions
