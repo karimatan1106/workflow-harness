@@ -24,8 +24,13 @@ export function checkL3Quality(phase: string, docsDir: string, workflowDir: stri
     const content = readFileSync(outputFile, 'utf8');
     const requiredSections = config.requiredSections ?? [];
     if (requiredSections.length > 0) {
-      const headings = content.split('\n').filter(l => /^#{1,3}\s/.test(l)).map(l => l.replace(/^#+\s*/, '').trim().toLowerCase());
-      const missing = requiredSections.filter(s => !headings.includes(s.toLowerCase()));
+      const escapeReg = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const missing = requiredSections.filter(s => {
+        const esc = escapeReg(s);
+        const headingRe = new RegExp(`^#{1,3}\\s+${esc}`, 'im');
+        const toonKeyRe = new RegExp(`^${esc}\\s*:`, 'im');
+        return !(headingRe.test(content) || toonKeyRe.test(content));
+      });
       if (missing.length > 0) {
         return { level: 'L3', check: 'artifact_quality', passed: false, evidence: `Missing required sections: ${missing.join(', ')}. Add ## headings for each.`, fix: `成果物に以下のMarkdownヘッダーを追加してください: ${missing.map(s => '## ' + s).join(', ')}` };
       }

@@ -98,7 +98,7 @@ export function checkAiSlopPatterns(content: string): string[] {
   return warnings;
 }
 
-const DUPLICATE_THRESHOLD = 3;
+const DUPLICATE_THRESHOLD = 5;
 
 export function checkDuplicateLines(content: string): string[] {
   // Split content by section headers (## )

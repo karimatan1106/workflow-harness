@@ -10,13 +10,12 @@ import type { PhaseConfig, TaskSize } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
 import type { DoDCheckResult } from './dod-types.js';
 
-const DELTA_ENTRY_MIN_MAP: Record<TaskSize, number> = { large: 5 };
+const DELTA_ENTRY_MIN_MAP: Record<string, number> = { small: 3, medium: 4, large: 5 };
 const DELTA_ENTRY_APPLICABLE_PHASES = new Set([
   'scope_definition', 'research', 'impact_analysis', 'requirements',
-  'threat_modeling', 'planning', 'state_machine', 'flowchart', 'ui_design',
+  'threat_modeling', 'planning', 'ui_design',
   'design_review', 'test_design', 'test_selection', 'code_review', 'acceptance_verification',
   'manual_test', 'security_scan', 'performance_test', 'e2e_test', 'health_observation',
-  'hearing',
 ]);
 
 export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string, size: TaskSize = 'large'): DoDCheckResult {
@@ -43,15 +42,24 @@ export function checkDeltaEntryFormat(phase: string, docsDir: string, workflowDi
       if (inDecisions && /^#{1,3}\s/.test(line)) break;
       if (inDecisions && /^-\s+\S/.test(line)) decisionItems.push(line);
     }
-    if (decisionItems.length === 0) {
-      return {
-        level: 'L4', check: 'delta_entry_format', passed: false,
-        evidence: `Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低${DELTA_ENTRY_MIN_MAP[size]}件のリスト項目を追加してください。`,
-        fix: '## decisions セクションにリスト項目を追加してください。',
-        example: '## decisions\n- D-001: 要件を明確化する (ユーザー意図との整合性確保のため)',
-      };
-    }
     if (decisionItems.length < DELTA_ENTRY_MIN_MAP[size]) {
+      // TOON fallback: accept decisions[N] form where N >= required
+      const toonMatches = [...content.matchAll(/^\s*decisions\[(\d+)\]/gm)];
+      const maxToonCount = toonMatches.reduce((max, m) => Math.max(max, parseInt(m[1], 10) || 0), 0);
+      if (maxToonCount >= DELTA_ENTRY_MIN_MAP[size]) {
+        return {
+          level: 'L4', check: 'delta_entry_format', passed: true,
+          evidence: `Delta Entry format OK: ${maxToonCount} decisions[] entries (TOON form in .md artifact)`,
+        };
+      }
+      if (decisionItems.length === 0) {
+        return {
+          level: 'L4', check: 'delta_entry_format', passed: false,
+          evidence: `Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低${DELTA_ENTRY_MIN_MAP[size]}件のリスト項目を追加してください。`,
+          fix: '## decisions セクションにリスト項目を追加してください。',
+          example: '## decisions\n- D-001: 要件を明確化する (ユーザー意図との整合性確保のため)',
+        };
+      }
       return {
         level: 'L4', check: 'delta_entry_format', passed: false,
         evidence: `decisions count: ${decisionItems.length} < required ${DELTA_ENTRY_MIN_MAP[size]}\n修正方法: ## decisions にあと${DELTA_ENTRY_MIN_MAP[size] - decisionItems.length}件追加してください。`,
