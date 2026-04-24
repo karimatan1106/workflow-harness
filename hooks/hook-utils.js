@@ -119,30 +119,39 @@ function readToonHeadFromFile(filePath) {
 function getActivePhaseFromWorkflowState(projectRoot) {
   const sd = path.join(projectRoot, '.claude', 'state', 'workflows');
   if (!fs.existsSync(sd)) return null;
+  const candidates = [];
   try {
     for (const e of fs.readdirSync(sd)) {
       const dir = path.join(sd, e);
-      const jsonPath = path.join(dir, 'workflow-state.json');
-      if (fs.existsSync(jsonPath)) {
-        try {
-          const d = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-          if (d.phase && d.phase !== 'completed') return d.phase;
-          continue;
-        } catch (_) { /* fall through to toon */ }
-      }
       const toonPath = path.join(dir, 'workflow-state.toon');
-      if (fs.existsSync(toonPath)) {
-        const phase = readToonPhase(toonPath);
-        if (phase && phase !== 'completed') return phase;
-      }
+      const jsonPath = path.join(dir, 'workflow-state.json');
+      let stateFile = null;
+      if (fs.existsSync(jsonPath)) stateFile = jsonPath;
+      else if (fs.existsSync(toonPath)) stateFile = toonPath;
+      if (!stateFile) continue;
+      let phase = null;
+      try {
+        if (stateFile.endsWith('.json')) {
+          const d = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+          phase = d.phase || null;
+        } else {
+          phase = readToonPhase(stateFile) || null;
+        }
+      } catch (_) { continue; }
+      if (!phase || phase === 'completed') continue;
+      try {
+        const mtime = fs.statSync(stateFile).mtimeMs;
+        candidates.push({ phase, mtime });
+      } catch (_) {}
     }
-  } catch (_) {}
-  return null;
+  } catch (_) { return null; }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.mtime - a.mtime);
+  return candidates[0].phase;
 }
 
 function getCurrentPhase(projectRoot) {
-  return readTaskIndexToon(projectRoot)
-      || getActivePhaseFromWorkflowState(projectRoot);
+  return getActivePhaseFromWorkflowState(projectRoot);
 }
 
 function isBypassPath(filePath) {

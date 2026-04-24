@@ -163,7 +163,7 @@ test('readTaskIndexToon handles quoted values with commas', () => {
   assert.strictEqual(readTaskIndexToon(root), 'planning');
 });
 
-test('getCurrentPhase falls back to workflow-state when TOON absent', () => {
+test('getCurrentPhase reads workflow-state.toon (single active task)', () => {
   const root = mkTempRoot('fallback');
   const wfDir = path.join(root, '.claude', 'state', 'workflows', 'task-1');
   fs.mkdirSync(wfDir, { recursive: true });
@@ -172,6 +172,47 @@ test('getCurrentPhase falls back to workflow-state when TOON absent', () => {
     'phase: impact_analysis\n'
   );
   assert.strictEqual(getCurrentPhase(root), 'impact_analysis');
+});
+
+test('getCurrentPhase returns phase of most recently modified workflow-state', () => {
+  const root = mkTempRoot('mtime');
+  const wf = path.join(root, '.claude', 'state', 'workflows');
+  const older = path.join(wf, 'older-task');
+  const newer = path.join(wf, 'newer-task');
+  fs.mkdirSync(older, { recursive: true });
+  fs.mkdirSync(newer, { recursive: true });
+  fs.writeFileSync(path.join(older, 'workflow-state.toon'), 'phase: scope_definition\n');
+  const start = Date.now();
+  while (Date.now() - start < 15) { /* spin */ }
+  fs.writeFileSync(path.join(newer, 'workflow-state.toon'), 'phase: implementation\n');
+  assert.strictEqual(getCurrentPhase(root), 'implementation');
+});
+
+test('getCurrentPhase skips completed tasks in mtime ordering', () => {
+  const root = mkTempRoot('skipcomplete');
+  const wf = path.join(root, '.claude', 'state', 'workflows');
+  const done = path.join(wf, 'done-task');
+  const active = path.join(wf, 'active-task');
+  fs.mkdirSync(done, { recursive: true });
+  fs.mkdirSync(active, { recursive: true });
+  fs.writeFileSync(path.join(active, 'workflow-state.toon'), 'phase: testing\n');
+  const start = Date.now();
+  while (Date.now() - start < 15) { /* spin */ }
+  fs.writeFileSync(path.join(done, 'workflow-state.toon'), 'phase: completed\n');
+  assert.strictEqual(getCurrentPhase(root), 'testing');
+});
+
+test('getCurrentPhase returns null when all workflow-state entries are completed', () => {
+  const root = mkTempRoot('allcomplete-wf');
+  const wf = path.join(root, '.claude', 'state', 'workflows', 'task-x');
+  fs.mkdirSync(wf, { recursive: true });
+  fs.writeFileSync(path.join(wf, 'workflow-state.toon'), 'phase: completed\n');
+  assert.strictEqual(getCurrentPhase(root), null);
+});
+
+test('getCurrentPhase returns null when workflows dir missing', () => {
+  const root = mkTempRoot('nowf');
+  assert.strictEqual(getCurrentPhase(root), null);
 });
 
 test('readTaskIndexToon silent null on parse exception', () => {
