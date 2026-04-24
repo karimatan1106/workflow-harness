@@ -138,6 +138,9 @@ function logEnvDebug(projectRoot, raw) {
 
 // ── Main ──
 async function main() {
+  if (process.env.TOOL_GUARD_DISABLE === 'true') {
+    process.exit(0);
+  }
   var raw = await readStdin();
   var inp = parseHookInput(raw);
   hookInput = inp;

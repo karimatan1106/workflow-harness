@@ -19,16 +19,49 @@ function findProjectRoot() {
   return process.cwd();
 }
 
-function getActivePhaseFromTaskIndex(projectRoot) {
-  const p = path.join(projectRoot, '.claude', 'state', 'task-index.json');
+function readTaskIndexToon(projectRoot) {
+  const p = path.join(projectRoot, '.claude', 'state', 'task-index.toon');
   if (!fs.existsSync(p)) return null;
+  let text;
   try {
-    const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-    const tasks = Array.isArray(data.tasks) ? data.tasks
-                : Array.isArray(data) ? data : [];
-    const active = tasks.find(t => t.status !== 'completed' && t.status !== 'idle');
-    return active ? (active.phase || null) : null;
+    text = fs.readFileSync(p, 'utf8');
   } catch (_) { return null; }
+  const headerMatch = text.match(/^tasks\[(\d+)\]\{([^}]+)\}:\s*$/m);
+  if (!headerMatch) return null;
+  const cols = headerMatch[2].split(',').map(s => s.trim());
+  const phaseIdx = cols.indexOf('phase');
+  const statusIdx = cols.indexOf('status');
+  if (phaseIdx < 0 || statusIdx < 0) return null;
+  const headerEnd = headerMatch.index + headerMatch[0].length;
+  const body = text.slice(headerEnd);
+  const lines = body.split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (/^[a-zA-Z_]+[:[]/.test(line)) break;
+    const parts = parseCsvLine(line);
+    if (parts.length !== cols.length) continue;
+    const status = parts[statusIdx];
+    const phase = parts[phaseIdx];
+    if (status !== 'completed' && status !== 'idle') {
+      return phase || null;
+    }
+  }
+  return null;
+}
+
+function parseCsvLine(line) {
+  const parts = [];
+  let cur = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQuote = !inQuote; continue; }
+    if (c === ',' && !inQuote) { parts.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  parts.push(cur.trim());
+  return parts;
 }
 
 // Extract the `phase:` value from TOON-ish content.
@@ -108,7 +141,7 @@ function getActivePhaseFromWorkflowState(projectRoot) {
 }
 
 function getCurrentPhase(projectRoot) {
-  return getActivePhaseFromTaskIndex(projectRoot)
+  return readTaskIndexToon(projectRoot)
       || getActivePhaseFromWorkflowState(projectRoot);
 }
 
@@ -139,7 +172,7 @@ function readStdin() {
 
 module.exports = {
   findProjectRoot,
-  getActivePhaseFromTaskIndex,
+  readTaskIndexToon,
   getActivePhaseFromWorkflowState,
   getCurrentPhase,
   isBypassPath,
