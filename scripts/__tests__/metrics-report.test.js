@@ -76,12 +76,13 @@ test('buildMarkdown renders per-phase rows when data present', () => {
 
 test('aggregateErrors counts check occurrences across tasks', () => {
   const tasks = [
-    { taskDir: 't1', errorPatterns: [{ check: 'artifact_quality', level: 'L3' }, { check: 'artifact_quality', level: 'L3' }] },
-    { taskDir: 't2', errorPatterns: [{ check: 'artifact_quality', level: 'L3' }] },
+    { taskDir: 't1', errorPatterns: [{ check: 'artifact_quality', level: 'L3', phase: 'hearing' }, { check: 'artifact_quality', level: 'L3', phase: 'hearing' }] },
+    { taskDir: 't2', errorPatterns: [{ check: 'artifact_quality', level: 'L3', phase: 'hearing' }] },
   ];
   const e = aggregateErrors(tasks);
   assert.strictEqual(e[0].total, 3);
   assert.strictEqual(e[0].tasks.size, 2);
+  assert.strictEqual(e[0].phases.size, 1);
 });
 
 test('buildJson produces valid JSON with expected shape', () => {

@@ -58,8 +58,19 @@ function readTaskErrors(taskDir) {
   let text;
   try { text = fs.readFileSync(errPath, 'utf8'); } catch (_) { return []; }
   const patterns = [];
-  for (const m of text.matchAll(/name:\s*"?([A-Za-z_][A-Za-z0-9_]*)"?[^]*?level:\s*"?(L[1-4])"?[^]*?passed:\s*false/g)) {
-    patterns.push({ check: m[1], level: m[2] });
+  let currentPhase = null;
+  let inChecks = false;
+  for (const raw of text.split(/\r?\n/)) {
+    const phaseMatch = raw.match(/^\s+phase:\s*([a-z_]+)\s*$/);
+    if (phaseMatch) { currentPhase = phaseMatch[1]; inChecks = false; continue; }
+    if (/^\s+checks\[\d+\]\{/.test(raw)) { inChecks = true; continue; }
+    if (!inChecks) continue;
+    const row = raw.match(/^\s{6,}([a-z_]+),(true|false),/);
+    if (!row) { if (raw.match(/^\s{0,4}\S/)) inChecks = false; continue; }
+    if (row[2] === 'false') {
+      const levelMatch = raw.match(/,(L[1-4]),/);
+      patterns.push({ check: row[1], level: levelMatch ? levelMatch[1] : 'L?', phase: currentPhase });
+    }
   }
   return patterns;
 }
@@ -109,8 +120,9 @@ function aggregateErrors(tasks) {
     const seenInTask = new Set();
     for (const p of t.errorPatterns) {
       const key = `${p.level}:${p.check}`;
-      counts[key] = counts[key] || { check: p.check, level: p.level, total: 0, tasks: new Set() };
+      counts[key] = counts[key] || { check: p.check, level: p.level, total: 0, tasks: new Set(), phases: new Set() };
       counts[key].total++;
+      if (p.phase) counts[key].phases.add(p.phase);
       if (!seenInTask.has(key)) { counts[key].tasks.add(t.taskDir); seenInTask.add(key); }
     }
   }
@@ -168,9 +180,12 @@ function buildMarkdown(tasks) {
   for (const r of retryRows) lines.push(`| ${r.name} | ${r.total} | ${r.avg} | ${r.max} |`);
   lines.push(``);
   lines.push(`## Top DoD failure patterns`);
-  lines.push(`| Check | Level | Count | Tasks affected |`);
-  lines.push(`|-------|-------|-------|----------------|`);
-  for (const e of errors.slice(0, 15)) lines.push(`| ${e.check} | ${e.level} | ${e.total} | ${e.tasks.size} |`);
+  lines.push(`| Check | Level | Count | Tasks | Phases |`);
+  lines.push(`|-------|-------|-------|-------|--------|`);
+  for (const e of errors.slice(0, 15)) {
+    const phases = [...e.phases].sort().join(', ');
+    lines.push(`| ${e.check} | ${e.level} | ${e.total} | ${e.tasks.size} | ${phases} |`);
+  }
   lines.push(``);
   lines.push(`## Outlier phases (P95 > 2x median)`);
   if (outliers.length === 0) lines.push(`- No significant outliers detected`);
@@ -200,7 +215,7 @@ function buildJson(tasks) {
       p95Ms: percentile(v.durations, 0.95),
       totalRetries: v.retries.reduce((a, b) => a + b, 0),
     }])),
-    topErrors: errors.slice(0, 15).map(e => ({ check: e.check, level: e.level, total: e.total, taskCount: e.tasks.size })),
+    topErrors: errors.slice(0, 15).map(e => ({ check: e.check, level: e.level, total: e.total, taskCount: e.tasks.size, phases: [...e.phases].sort() })),
     outliers: findOutliers(byPhase),
   }, null, 2) + '\n';
 }
