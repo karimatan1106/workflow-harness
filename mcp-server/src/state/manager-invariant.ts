@@ -51,6 +51,22 @@ export function applyResetRetryCount(state: TaskState, phase: string): boolean {
   return true;
 }
 
+export function applyBumpCheckStreak(state: TaskState, phase: string, checkName: string): TaskState {
+  const streak = state.checkFailureStreak ?? {};
+  const cur = streak[phase];
+  const newEntry = cur && cur.checkName === checkName
+    ? { checkName, count: cur.count + 1 }
+    : { checkName, count: 1 };
+  return { ...state, checkFailureStreak: { ...streak, [phase]: newEntry } };
+}
+
+export function applyClearCheckStreak(state: TaskState, phase: string): TaskState {
+  if (!state.checkFailureStreak || !(phase in state.checkFailureStreak)) return state;
+  const next = { ...state.checkFailureStreak };
+  delete next[phase];
+  return { ...state, checkFailureStreak: next };
+}
+
 /** Record artifact hash. */
 export function applyRecordArtifactHash(state: TaskState, fp: string, hash: string): void {
   if (!state.artifactHashes) state.artifactHashes = {};

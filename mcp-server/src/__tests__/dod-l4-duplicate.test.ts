@@ -43,18 +43,26 @@ function buildMdWithDuplicateRows(count: number): string {
 // ─── L4: Duplicate Line Detection ─────────────────
 
 describe('L4 duplicate line detection', () => {
-  it('fails L4 when the same non-structural line appears 3 or more times', async () => {
+  it('fails L4 when the same non-structural line appears 5 or more times', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
-    writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(3), 'utf8');
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(5), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(false);
-    expect(l4.evidence).toContain('3x');
+    expect(l4.evidence).toContain('5x');
   });
 
   it('does NOT fail L4 when a line appears only twice', async () => {
     const state = makeMinimalState('research', tempDir, docsDir);
     writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(2), 'utf8');
+    const result = await runDoDChecks(state, docsDir);
+    const l4 = result.checks.find(c => c.check === 'content_validation')!;
+    expect(l4.passed).toBe(true);
+  });
+
+  it('passes with 4 duplicates (boundary check below threshold of 5)', async () => {
+    const state = makeMinimalState('research', tempDir, docsDir);
+    writeFileSync(join(docsDir, 'research.md'), buildMdWithDuplicateRows(4), 'utf8');
     const result = await runDoDChecks(state, docsDir);
     const l4 = result.checks.find(c => c.check === 'content_validation')!;
     expect(l4.passed).toBe(true);

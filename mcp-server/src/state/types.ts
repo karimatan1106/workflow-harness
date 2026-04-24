@@ -112,6 +112,8 @@ export interface TaskState {
 
   // Sprint 1-2 additions
   retryCount?: Record<string, number>;                  // RLM-1: phase name → retry count
+  /** Per-phase streak of consecutive failures by the same DoD check. Tags with CBR-1. */
+  checkFailureStreak?: Record<string, { checkName: string; count: number }>;
   artifactTimestamps?: Record<string, number>;           // AFV-1: artifact path → mtime epoch ms
   requirementCount?: number;                             // IA-2: number of AC-N entries
   artifactHashes?: Record<string, string>;               // ART-1: artifact path → SHA-256 hash

@@ -93,6 +93,18 @@ export async function handleHarnessNext(
   } catch { /* non-blocking */ }
   const dodResult = await runDoDChecks(task, docsDir);
   if (!dodResult.passed) {
+    // CBR-1: circuit breaker — same check failing 3+ times consecutively
+    const failedChecks = dodResult.checks.filter(c => !c.passed);
+    const primaryFail = failedChecks[0];
+    if (primaryFail) {
+      sm.bumpCheckStreak(taskId, task.phase, primaryFail.check);
+      const streak = sm.getCheckStreak(taskId, task.phase);
+      if (streak && streak.count >= 3) {
+        return respondError(
+          `Circuit breaker triggered: DoD check "${streak.checkName}" failed ${streak.count} times consecutively on phase "${task.phase}". Retrying the same approach is unlikely to succeed. Consider: (a) revising the artifact manually, (b) rolling back to an earlier phase, or (c) disabling the check if it's truly wrong. (CBR-1)`,
+        );
+      }
+    }
     return buildDoDFailureResponse(task, docsDir, retryCount, dodResult, taskId);
   }
   if (retryCount > 1) {
@@ -106,6 +118,7 @@ export async function handleHarnessNext(
     });
   } catch { /* non-blocking */ }
   sm.resetRetryCount(taskId, task.phase);
+  sm.clearCheckStreak(taskId, task.phase);
   const result = sm.advancePhase(taskId);
   if (!result.success) return respondError(result.error ?? 'Failed to advance phase');
   const nextPhase = result.nextPhase ?? '';

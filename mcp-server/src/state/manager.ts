@@ -19,6 +19,7 @@ import {
 import {
   applyAddInvariant, applyUpdateInvariantStatus, applyGetKnownBugs,
   applyIncrementRetryCount, applyGetRetryCount, applyResetRetryCount, applyRecordArtifactHash,
+  applyBumpCheckStreak, applyClearCheckStreak,
 } from './manager-invariant.js';
 import {
   applyRecordFeedback, applyRecordBaseline, applyRecordTestResult,
@@ -181,5 +182,26 @@ export class StateManager {
       s.updatedAt = new Date().toISOString();
       signAndPersist(s, this.hmacKey);
     }
+  }
+
+  bumpCheckStreak(taskId: string, phase: string, checkName: string): void {
+    const s = this.loadTask(taskId);
+    if (!s) return;
+    const next = applyBumpCheckStreak(s, phase, checkName);
+    next.updatedAt = new Date().toISOString();
+    signAndPersist(next, this.hmacKey);
+  }
+
+  clearCheckStreak(taskId: string, phase: string): void {
+    const s = this.loadTask(taskId);
+    if (!s) return;
+    const next = applyClearCheckStreak(s, phase);
+    next.updatedAt = new Date().toISOString();
+    signAndPersist(next, this.hmacKey);
+  }
+
+  getCheckStreak(taskId: string, phase: string): { checkName: string; count: number } | undefined {
+    const s = this.loadTask(taskId);
+    return s?.checkFailureStreak?.[phase];
   }
 }
