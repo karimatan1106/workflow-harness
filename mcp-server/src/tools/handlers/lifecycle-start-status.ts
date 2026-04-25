@@ -71,10 +71,15 @@ export async function handleHarnessStart(
   const files = Array.isArray(args.files) ? (args.files as string[]) : [];
   const dirs = Array.isArray(args.dirs) ? (args.dirs as string[]) : [];
   const size: TaskSize = 'large'; // Always force large — small/medium abolished
+  const explicitMode = (args.mode as WorkflowMode | undefined);
+  const classified = classifyMode(userIntent, files);
+  const mode: WorkflowMode = explicitMode ?? classified.mode;
+  const modeRationale = explicitMode ? `User-explicit: ${explicitMode}` : classified.rationale;
   // GC abandoned tasks (created == updated, older than 24h)
   let gcCount = 0;
   try { gcCount = sm.gcAbandonedTasks(); } catch { /* non-blocking */ }
   const task = sm.createTask(taskName, userIntent, files, dirs, size);
+  try { sm.setMode(task.taskId, mode, modeRationale); } catch (e) { console.error('setMode failed:', e); }
   try {
     initTraceFile(task.docsDir + '/observability-trace.toon', task.taskId);
   } catch { /* non-blocking: trace init failure must not stop harness */ }
@@ -99,6 +104,7 @@ export async function handleHarnessStart(
   return respond({
     taskId: task.taskId, taskName: task.taskName,
     phase: task.phase, size: task.size,
+    mode, modeRationale,
     docsDir: task.docsDir, workflowDir: task.workflowDir,
     sessionToken: task.sessionToken,
     ...(gitWarning ? { gitWarning } : {}),
@@ -118,6 +124,8 @@ export async function handleHarnessStatus(
     const core: Record<string, unknown> = {
       taskId: task.taskId, taskName: task.taskName,
       phase: task.phase, size: task.size,
+      mode: (task as any).mode,
+      modeRationale: (task as any).modeRationale,
       docsDir: task.docsDir, workflowDir: task.workflowDir,
       sessionToken: task.sessionToken,
     };
