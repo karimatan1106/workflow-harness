@@ -7,8 +7,20 @@ import { readFileSync, existsSync } from 'node:fs';
 import type { TaskState } from '../state/types.js';
 import type { DoDCheckResult } from './dod-types.js';
 import { resolveProjectPath } from '../utils/project-root.js';
+import type { WorkflowMode } from '../state/workflow-mode.js';
 
-export const MIN_ACCEPTANCE_CRITERIA = 5;
+const MIN_AC_BY_MODE: Record<WorkflowMode, number> = {
+  express: 3,
+  standard: 5,
+  full: 5,
+};
+
+export function minACFor(mode?: WorkflowMode): number {
+  return MIN_AC_BY_MODE[mode ?? 'full'];
+}
+
+/** Backward-compat: default (full mode) minimum AC count. */
+export const MIN_ACCEPTANCE_CRITERIA = MIN_AC_BY_MODE.full;
 
 /** Parse Markdown content into sections keyed by heading text (lowercased). */
 function parseMarkdownSections(content: string): Record<string, string> {
@@ -71,15 +83,16 @@ export function checkACFormat(state: TaskState, phase: string, docsDir: string):
   if (!req) return reqFileMissing('ac_format', docsDir);
   const acMatches = req.content.match(/AC-\d+/g) ?? [];
   const acCount = new Set(acMatches).size;
-  if (acCount < MIN_ACCEPTANCE_CRITERIA) {
+  const minAC = minACFor(state.mode);
+  if (acCount < minAC) {
     return {
       level: 'L4', check: 'ac_format', passed: false,
-      evidence: `requirements.md contains only ${acCount} acceptanceCriteria entries (minimum ${MIN_ACCEPTANCE_CRITERIA} required)\n修正方法: acceptanceCriteriaセクションにAC項目を${MIN_ACCEPTANCE_CRITERIA - acCount}件追加してください。`,
-      fix: `最低${MIN_ACCEPTANCE_CRITERIA}件のAC-N形式の受入基準を追加してください。`,
+      evidence: `requirements.md contains only ${acCount} acceptanceCriteria entries (minimum ${minAC} required)\n修正方法: acceptanceCriteriaセクションにAC項目を${minAC - acCount}件追加してください。`,
+      fix: `最低${minAC}件のAC-N形式の受入基準を追加してください。`,
       example: '## acceptanceCriteria\n- AC-1: 機能Xが正常に動作すること',
     };
   }
-  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.md contains ${acCount} acceptanceCriteria entries (minimum ${MIN_ACCEPTANCE_CRITERIA} met)` };
+  return { level: 'L4', check: 'ac_format', passed: true, evidence: `requirements.md contains ${acCount} acceptanceCriteria entries (minimum ${minAC} met)` };
 }
 
 export function checkNotInScope(state: TaskState, phase: string, docsDir: string): DoDCheckResult {

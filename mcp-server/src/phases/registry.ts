@@ -106,6 +106,12 @@ export const SIZE_MINLINES_FACTOR: Record<TaskSize, number> = {
   large: 1.0,
 };
 
+const MODE_MINLINES_FACTOR: Record<WorkflowMode, number> = {
+  express: 0.5,
+  standard: 0.8,
+  full: 1.0,
+};
+
 /** Phase列 by mode (CBR-2). express=6, standard=14, full=30 */
 export const MODE_PHASES: Record<WorkflowMode, readonly PhaseName[]> = {
   express: [
@@ -184,11 +190,14 @@ export function getActiveParallelGroups(size: TaskSize): ParallelGroupName[] {
   return [...groups];
 }
 
-export function getPhaseConfig(phase: PhaseName, size?: TaskSize): PhaseConfig {
+export function getPhaseConfig(phase: PhaseName, size?: TaskSize, mode?: WorkflowMode): PhaseConfig {
   const config = PHASE_REGISTRY[phase];
   if (!config) throw new Error(`Unknown phase: ${phase}`);
-  if (size && SIZE_MINLINES_FACTOR[size] !== 1.0) {
-    return { ...config, minLines: Math.max(20, Math.floor((config.minLines ?? 0) * SIZE_MINLINES_FACTOR[size])) };
+  const sizeFactor = size ? (SIZE_MINLINES_FACTOR[size] ?? 1.0) : 1.0;
+  const modeFactor = mode ? MODE_MINLINES_FACTOR[mode] : 1.0;
+  const composedFactor = sizeFactor * modeFactor;
+  if (composedFactor !== 1.0) {
+    return { ...config, minLines: Math.max(20, Math.round((config.minLines ?? 0) * composedFactor)) };
   }
   return config;
 }
