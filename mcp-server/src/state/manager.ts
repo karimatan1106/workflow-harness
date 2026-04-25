@@ -4,6 +4,8 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry, WorkflowMode } from './types.js';
 import type { Invariant, InvariantStatus } from './types-invariant.js';
 import { ensureHmacKeys } from '../utils/hmac.js';
@@ -73,12 +75,63 @@ export class StateManager {
     });
   }
 
+  /**
+   * Write the single-source-of-truth active-task pointer file consumed by hooks.
+   * Non-blocking: errors are logged but do not propagate.
+   */
+  writeActiveTaskPointer(taskId: string, taskName: string, phase: string): void {
+    const stateDir = getStateDir();
+    if (!stateDir) return;
+    const p = path.join(stateDir, 'active-task.toon');
+    const content = [
+      '# Active task pointer (single source of truth for hook phase detection)',
+      `taskId: ${taskId}`,
+      `taskName: ${taskName}`,
+      `phase: ${phase}`,
+      `updatedAt: "${new Date().toISOString()}"`,
+      '',
+    ].join('\n');
+    try {
+      fs.mkdirSync(stateDir, { recursive: true });
+      fs.writeFileSync(p, content, 'utf8');
+    } catch (e) {
+      console.error('writeActiveTaskPointer failed:', e);
+    }
+  }
+
   // Lifecycle delegates (→ manager-lifecycle.ts)
-  advancePhase(taskId: string) { return doAdvance(taskId, this.hmacKey); }
+  advancePhase(taskId: string) {
+    const result = doAdvance(taskId, this.hmacKey);
+    if (result.success) {
+      try {
+        const t = this.loadTask(taskId);
+        if (t) this.writeActiveTaskPointer(t.taskId, t.taskName, t.phase);
+      } catch (e) { console.error('writeActiveTaskPointer (advance) failed:', e); }
+    }
+    return result;
+  }
   approveGate(taskId: string, approvalType: string) { return doApprove(taskId, this.hmacKey, approvalType); }
   completeSubPhase(taskId: string, subPhase: string) { return doComplete(taskId, this.hmacKey, subPhase); }
-  goBack(taskId: string, targetPhase: PhaseName) { return doGoBack(taskId, this.hmacKey, targetPhase); }
-  resetTask(taskId: string, targetPhase: PhaseName, reason: string) { return doReset(taskId, this.hmacKey, targetPhase, reason); }
+  goBack(taskId: string, targetPhase: PhaseName) {
+    const result = doGoBack(taskId, this.hmacKey, targetPhase);
+    if (result.success) {
+      try {
+        const t = this.loadTask(taskId);
+        if (t) this.writeActiveTaskPointer(t.taskId, t.taskName, t.phase);
+      } catch (e) { console.error('writeActiveTaskPointer (goBack) failed:', e); }
+    }
+    return result;
+  }
+  resetTask(taskId: string, targetPhase: PhaseName, reason: string) {
+    const result = doReset(taskId, this.hmacKey, targetPhase, reason);
+    if (result.success) {
+      try {
+        const t = this.loadTask(taskId);
+        if (t) this.writeActiveTaskPointer(t.taskId, t.taskName, t.phase);
+      } catch (e) { console.error('writeActiveTaskPointer (reset) failed:', e); }
+    }
+    return result;
+  }
 
   listTasks(): Array<{ taskId: string; taskName: string; phase: PhaseName; size: TaskSize }> {
     return listTasksFromDisk();

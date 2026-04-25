@@ -8,10 +8,32 @@ const path = require('path');
 const TOON_HEAD_BYTES = 4 * 1024;
 const TOON_LARGE_FILE_THRESHOLD = 64 * 1024;
 
+// Phases considered terminal — when present in a stale workflow-state.toon
+// they should not be returned as the "current" phase by the mtime fallback.
+const TERMINAL_PHASES = new Set([
+  'completed', 'commit', 'push', 'deploy', 'health_observation', 'ci_verification',
+]);
+
 function findProjectRoot() {
   let dir = process.cwd();
   for (let i = 0; i < 10; i++) {
-    if (fs.existsSync(path.join(dir, '.claude', 'state'))) return dir;
+    if (fs.existsSync(path.join(dir, '.claude', 'state'))) {
+      // Skip if this is a submodule (has .git file pointing to gitdir, not .git dir)
+      const gitMarker = path.join(dir, '.git');
+      if (fs.existsSync(gitMarker)) {
+        try {
+          const stat = fs.statSync(gitMarker);
+          if (stat.isFile()) {
+            // .git is a file (submodule marker) — skip and walk up
+            const parent = path.dirname(dir);
+            if (parent === dir) break;
+            dir = parent;
+            continue;
+          }
+        } catch (_) { /* fall through */ }
+      }
+      return dir;
+    }
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -138,7 +160,7 @@ function getActivePhaseFromWorkflowState(projectRoot) {
           phase = readToonPhase(stateFile) || null;
         }
       } catch (_) { continue; }
-      if (!phase || phase === 'completed') continue;
+      if (!phase || TERMINAL_PHASES.has(phase)) continue;
       try {
         const mtime = fs.statSync(stateFile).mtimeMs;
         candidates.push({ phase, mtime });
@@ -150,8 +172,22 @@ function getActivePhaseFromWorkflowState(projectRoot) {
   return candidates[0].phase;
 }
 
+function readActiveTaskPointer(projectRoot) {
+  const p = path.join(projectRoot, '.claude', 'state', 'active-task.toon');
+  if (!fs.existsSync(p)) return null;
+  try {
+    const text = fs.readFileSync(p, 'utf8');
+    const m = text.match(/^[ \t]*phase[ \t]*:[ \t]*([^\r\n]+?)[ \t]*$/m);
+    if (!m) return null;
+    const phase = m[1].trim();
+    if (!phase || phase === 'completed') return null;
+    return phase;
+  } catch (_) { return null; }
+}
+
 function getCurrentPhase(projectRoot) {
-  return getActivePhaseFromWorkflowState(projectRoot);
+  return readActiveTaskPointer(projectRoot)
+      || getActivePhaseFromWorkflowState(projectRoot);
 }
 
 function isBypassPath(filePath) {
@@ -182,6 +218,7 @@ function readStdin() {
 module.exports = {
   findProjectRoot,
   readTaskIndexToon,
+  readActiveTaskPointer,
   getActivePhaseFromWorkflowState,
   getCurrentPhase,
   isBypassPath,

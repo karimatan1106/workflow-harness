@@ -101,6 +101,9 @@ export async function handleHarnessStart(
   try {
     writeAllowedToolsFile(task.phase);
   } catch (e) { console.error('writeAllowedToolsFile failed:', e); }
+  try {
+    sm.writeActiveTaskPointer(task.taskId, task.taskName, task.phase);
+  } catch (e) { console.error('writeActiveTaskPointer failed:', e); }
   return respond({
     taskId: task.taskId, taskName: task.taskName,
     phase: task.phase, size: task.size,
