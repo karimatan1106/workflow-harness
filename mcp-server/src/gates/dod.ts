@@ -4,10 +4,11 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import type { TaskState } from '../state/types.js';
+import type { TaskState, PhaseName } from '../state/types.js';
 import { checkL1FileExists, checkL2ExitCode, checkInputFilesExist, checkTDDRedEvidence, checkSpecPathsExist, checkTestResultsExist, checkTestRegression } from './dod-l1-l2.js';
 import { checkHearingUserResponse } from './dod-l2-hearing.js';
 import { OUTPUT_FILE_TO_PHASE } from '../phases/definitions.js';
+import { MODE_PHASES, PHASE_ORDER } from '../phases/registry.js';
 import { checkL3Quality, checkRTMCompleteness, checkACCompleteness, checkRTMRequired, checkBaselineRequired, checkArtifactFreshness, checkInvariantCompleteness } from './dod-l3.js';
 import { checkL4ContentValidation } from './dod-l4-content.js';
 import { checkACFormat, checkNotInScope, checkOpenQuestions, checkIntentConsistency } from './dod-l4-requirements.js';
@@ -36,7 +37,14 @@ export async function runDoDChecks(state: TaskState, docsDir: string): Promise<i
   };
 
   push(checkL1FileExists(phase, docsDir, workflowDir), 'L1');
-  push(checkInputFilesExist(phase, docsDir, workflowDir, state.skippedPhases ?? [], OUTPUT_FILE_TO_PHASE), 'L1');
+  // Mode-aware skippedPhases: when state.mode is set (CBR-2), inputs from phases not in
+  // MODE_PHASES[mode] are treated as optional (Express skips research/planning/test_design etc.).
+  const baseSkipped: string[] = state.skippedPhases ?? [];
+  const modeInactivePhases: string[] = state.mode
+    ? PHASE_ORDER.filter(p => !MODE_PHASES[state.mode as keyof typeof MODE_PHASES].includes(p as PhaseName))
+    : [];
+  const effectiveSkipped: string[] = Array.from(new Set([...baseSkipped, ...modeInactivePhases]));
+  push(checkInputFilesExist(phase, docsDir, workflowDir, effectiveSkipped, OUTPUT_FILE_TO_PHASE), 'L1');
   push(checkSpecPathsExist(state, phase), 'L1');
   push(checkL2ExitCode(state), 'L2');
   push(checkL3Quality(phase, docsDir, workflowDir), 'L3');
