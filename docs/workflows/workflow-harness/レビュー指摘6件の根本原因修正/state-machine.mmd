@@ -1,0 +1,201 @@
+stateDiagram-v2
+    %% REQ-FIX-3: AST解析キャッシュの状態遷移
+    state ASTAnalysis {
+        [*] --> NoCache: ファイル読み込み
+        NoCache --> HashCalculation: ハッシュ計算開始
+        HashCalculation --> CacheCheck: キャッシュ確認
+        CacheCheck --> CacheHit: ハッシュ一致
+        CacheCheck --> CacheMiss: ハッシュ不一致
+        CacheHit --> ReturnCached: キャッシュから返却
+        CacheMiss --> Parsing: AST解析実行
+        Parsing --> StoreMemory: メモリキャッシュ保存
+        StoreMemory --> Persist: 永続化(.claude/cache/)
+        Persist --> ReturnResult: 解析結果を返却
+        ReturnCached --> [*]
+        ReturnResult --> [*]
+    }
+
+    %% REQ-FIX-4: BFS依存解析の状態遷移
+    state BFSAnalysis {
+        [*] --> InitQueue: キュー初期化
+        InitQueue --> BatchAcquisition: バッチ取得(batchSize=10)
+        BatchAcquisition --> ImportExtraction: import抽出
+        ImportExtraction --> ImportCache: importキャッシュ確認
+        ImportCache --> CacheHit_Imports: キャッシュヒット
+        ImportCache --> CacheMiss_Imports: キャッシュミス
+        CacheHit_Imports --> ReturnImports: キャッシュから返却
+        CacheMiss_Imports --> ExtractImports: import解析実行
+        ExtractImports --> StoreCached: キャッシュ保存
+        StoreCached --> ReturnImports
+        ReturnImports --> ParallelProcessing: バッチ並列処理(Promise.all)
+        ParallelProcessing --> UpdateQueue: キュー更新
+        UpdateQueue --> QueueEmpty: キュー空判定
+        QueueEmpty --> MoreItems: 未処理あり
+        MoreItems --> BatchAcquisition
+        QueueEmpty --> Complete: 完了
+        Complete --> [*]
+    }
+
+    %% REQ-FIX-5: タスクインデックスの状態遷移
+    state TaskIndexing {
+        [*] --> LoadIndex: インデックス読み込み
+        LoadIndex --> IndexFileCheck: task-index.json確認
+        IndexFileCheck --> FileExists: ファイル存在
+        IndexFileCheck --> FileNotExists: ファイル未作成
+        FileExists --> ParseJSON: JSON解析
+        ParseJSON --> ParseSuccess: 成功
+        ParseJSON --> ParseError: エラー
+        FileNotExists --> Rebuild: インデックス再構築
+        ParseError --> Rebuild
+        Rebuild --> DiscoverAll: 全タスクスキャン
+        DiscoverAll --> BuildIndex: インデックス構築
+        BuildIndex --> SaveIndex: task-index.json保存
+        ParseSuccess --> TaskLookup: taskId検索
+        SaveIndex --> TaskLookup
+        TaskLookup --> Found: ヒット
+        TaskLookup --> NotFound: ミス
+        Found --> LoadTask: タスク読み込み
+        NotFound --> Fallback: フォールバックスキャン
+        LoadTask --> ReturnTask: タスク返却
+        Fallback --> FoundInScan: スキャンで発見
+        Fallback --> StillNotFound: 見つからず
+        FoundInScan --> UpdateIndex: インデックス更新
+        UpdateIndex --> ReturnTask
+        StillNotFound --> ReturnNull: null返却
+        ReturnTask --> [*]
+        ReturnNull --> [*]
+    }
+
+    %% REQ-FIX-6: fail-closed判定の状態遷移
+    state FailClosedValidation {
+        [*] --> InputValidation: 入力受付
+        InputValidation --> ValidateType: 型検証
+        ValidateType --> TypeOK: 正常
+        ValidateType --> TypeError: 型エラー
+        TypeOK --> ValidatePath: ファイルパス検証
+        ValidatePath --> PathOK: 正常
+        ValidatePath --> PathError: パス検証エラー
+        PathOK --> ExecuteLogic: 処理実行
+        ExecuteLogic --> LogicSuccess: 成功
+        ExecuteLogic --> LogicError: 例外発生
+        TypeError --> LogError1: logError()記録
+        PathError --> LogError2: logError()記録
+        LogicError --> LogError3: logError()記録
+        LogError1 --> ExitBlock: exit(2)ブロック
+        LogError2 --> ExitBlock
+        LogError3 --> ExitBlock
+        LogicSuccess --> ExitAllow: exit(0)許可
+        ExitBlock --> ErrorLog: hook-errors.log記録
+        ExitAllow --> [*]
+        ErrorLog --> [*]
+    }
+
+    %% REQ-FIX-1とREQ-FIX-2の統合フロー
+    state UserIntentFlow {
+        [*] --> StartTask: workflow_start()
+        StartTask --> EmbedIntent: userIntent埋込
+        EmbedIntent --> PassToSubagent: subagentに伝搬
+        PassToSubagent --> CreateDocs: ドキュメント作成
+        CreateDocs --> IntentSection: 「ユーザーの意図」セクション
+        IntentSection --> NextPhase: 次フェーズへ
+        NextPhase --> CalculateSkips: fPhaseSkips計算(REQ-FIX-2)
+        CalculateSkips --> CheckIntent: ユーザー意図確認
+        CheckIntent --> HasTestIntent: テストキーワード検出
+        CheckIntent --> NoTestIntent: キーワードなし
+        HasTestIntent --> SkipTest_No: test_implスキップなし
+        NoTestIntent --> ScopeCheck: スコープベース判定
+        ScopeCheck --> SkipTest_Yes: test_implスキップ
+        ScopeCheck --> SkipTest_No
+        SkipTest_No --> ExecutePhase: フェーズ実行
+        SkipTest_Yes --> SkipPhase: フェーズスキップ
+        ExecutePhase --> [*]
+        SkipPhase --> [*]
+    }
+
+    %% 全体の依存関係
+    state ImplementationFlow {
+        [*] --> Phase1_Security: Phase 1: セキュリティ修正
+        Phase1_Security --> REQ6_LoopDetector: REQ-FIX-6: loop-detector修正
+        REQ6_LoopDetector --> REQ6_CLAUDE: REQ-FIX-6: CLAUDE.md更新
+        REQ6_CLAUDE --> REQ6_OtherHooks: REQ-FIX-6: 他フック修正
+
+        REQ6_OtherHooks --> Phase2_UX: Phase 2: UX改善
+        Phase2_UX --> REQ1_Template: REQ-FIX-1: テンプレート修正
+        REQ1_Template --> REQ1_Propagation: REQ-FIX-1: 伝搬実装
+        REQ1_Propagation --> REQ2_Signature: REQ-FIX-2: シグネチャ変更
+        REQ2_Signature --> REQ2_Judgment: REQ-FIX-2: 判定ロジック実装
+        REQ2_Judgment --> REQ2_Integration: REQ-FIX-2: next.ts統合
+
+        REQ2_Integration --> Phase3_Performance: Phase 3: 性能改善(並列可能)
+
+        Phase3_Performance --> REQ5_Indexing: REQ-FIX-5: インデックス導入
+        Phase3_Performance --> REQ3_ASTCache: REQ-FIX-3: AST解析キャッシュ
+        Phase3_Performance --> REQ4_BFSAsync: REQ-FIX-4: BFS非同期化
+
+        REQ5_Indexing --> ValidationPhase: 検証フェーズ
+        REQ3_ASTCache --> ValidationPhase
+        REQ4_BFSAsync --> ValidationPhase
+
+        ValidationPhase --> TestREQ1: REQ-FIX-1テスト実施
+        ValidationPhase --> TestREQ2: REQ-FIX-2テスト実施
+        ValidationPhase --> TestREQ3: REQ-FIX-3テスト実施
+        ValidationPhase --> TestREQ4: REQ-FIX-4テスト実施
+        ValidationPhase --> TestREQ5: REQ-FIX-5テスト実施
+        ValidationPhase --> TestREQ6: REQ-FIX-6テスト実施
+
+        TestREQ1 --> AllPassed: 全テスト成功判定
+        TestREQ2 --> AllPassed
+        TestREQ3 --> AllPassed
+        TestREQ4 --> AllPassed
+        TestREQ5 --> AllPassed
+        TestREQ6 --> AllPassed
+
+        AllPassed --> PassedAll: 全修正完了
+        AllPassed --> NeedsFix: 未完了項目あり
+        NeedsFix --> REQ1_Template
+        PassedAll --> [*]
+    }
+
+    note right of ASTAnalysis
+        初回: 50分以上
+        2回目: 5秒以内
+        キャッシュヒット率: 90%以上
+    end note
+
+    note right of BFSAnalysis
+        初回: 200秒→30秒
+        2回目: 5秒以内
+        バッチサイズ: 10
+        並列処理: Promise.all()
+    end note
+
+    note right of TaskIndexing
+        初回: 2秒
+        2回目: 10ms以内
+        インデックス: task-index.json
+        フォールバック: 全スキャン
+    end note
+
+    note right of FailClosedValidation
+        エラー時: exit(2)ブロック
+        正常時: exit(0)許可
+        ログ: JSON Lines形式
+        対象: 全フック統一
+    end note
+
+    note right of UserIntentFlow
+        REQ-FIX-1: userIntent埋込
+        REQ-FIX-2: 優先順位
+        1. ユーザー明示指示
+        2. ユーザー指定スキップ
+        3. スコープベース判定
+    end note
+
+    note right of ImplementationFlow
+        Phase 1: 1-2時間(優先)
+        Phase 2: 2-3時間(重要)
+        Phase 3: 3-4時間(並列可能→2時間)
+
+        依存関係: Phase1 → Phase2 → Phase3
+        同一Phase内: 並列実装可能
+    end note

@@ -1,0 +1,63 @@
+phase: requirements
+taskName: docs-update-template-rewrite
+intent: "docs_updateフェーズテンプレートをworkflow-docs.mdのドキュメント構造(docs/spec/features/, docs/architecture/等)に基づいて改修し、永続的なコードドキュメント生成を可能にする"
+riskScore: 4
+
+functionalRequirements[6]{id,description,source,priority}:
+  REQ-FR-1, "defs-stage6.tsのdocs_update.subagentTemplateをworkflow-docs.md Section3 docs_updateの5項目(overview.md更新、operations/更新、CHANGELOG.md、README.md、workflow一時性注意)を具体的パス付きで列挙する詳細テンプレートに全面改修する", "R-1/R-7/AF-8", must
+  REQ-FR-2, "registry.tsのdocs_update.outputFileに'{docsDir}/docs-update.toon'を設定し、L1ファイル存在/L3 TOONパース/L4禁止語・必須キー検証のDoD検証パイプラインを自動有効化する", "R-2/AF-2", must
+  REQ-FR-3, "registry.tsのdocs_update.inputFilesに[{docsDir}/spec.toon, {docsDir}/requirements.toon, {docsDir}/code-review.toon]を設定し、先行フェーズ成果物を参照可能にする", "R-4/AF-4", must
+  REQ-FR-4, "definitions.tsのOUTPUT_FILE_TO_PHASEに'docs-update.toon': 'docs_update'マッピングを追加し、ACE TOON-firstセクションで後続フェーズからの参照を可能にする", "R-3/AF-3", should
+  REQ-FR-5, "registry.tsのdocs_update.modelをhaikuからsonnetに昇格し、workflow-docs.mdの複雑なディレクトリ構造を正確に適用できるようにする", "R-5/SD-4", must
+  REQ-FR-6, "registry.tsのdocs_update.bashCategoriesに'implementation'を追加し、永続ドキュメントディレクトリの初回作成(mkdir)を許可する", "R-6/AF-7/SD-5", should
+
+nonFunctionalRequirements[4]{id,description,category,priority}:
+  REQ-NFR-1, "改修後のdefs-stage6.tsが200行制限を超過しないこと。テンプレート文字列内の各改行が1行としてカウントされるため、テンプレートは簡潔に保つ", "maintainability", must
+  REQ-NFR-2, "registry.tsのrequiredSectionsに[decisions, artifacts, next]を設定し、minLinesを30に設定すること。他レポート系フェーズ(code_review=30, design_review=30)と同等水準の品質保証", "quality", must
+  REQ-NFR-3, "テンプレートはbuildSubagentPromptが自動除去するヘッダー(## タスク情報/## 入力/## 出力)を含めず、compact headerとの重複を回避すること", "compatibility", must
+  REQ-NFR-4, "allowedExtensions=[.toon,.md,.mdx]によるファイル種別制約が維持されること。bashCategories拡張(implementation追加)による意図しないファイル操作リスクを抑制", "security", should
+
+acceptanceCriteria[5]{id,description,verificationMethod}:
+  AC-1, "defs-stage6.tsのdocs_update.subagentTemplateがworkflow-docs.md Section3 docs_updateの5項目(docs/architecture/overview.md更新、docs/operations/更新、CHANGELOG.md更新、README.md更新、docs/workflows/一時性注意)を具体的パスで含んでいること", "コードレビューでテンプレート文字列内の5項目パスを目視確認"
+  AC-2, "registry.tsのdocs_updateにoutputFile/inputFiles/requiredSections/minLines/model/bashCategoriesが全て正しく設定され、DoD検証パイプライン(L1/L3/L4)がdocs_updateフェーズで有効化されること", "registry.tsの差分確認 + ユニットテストでDoD検証が実行されることを検証"
+  AC-3, "definitions.tsのOUTPUT_FILE_TO_PHASEに'docs-update.toon': 'docs_update'エントリが追加されていること", "コードレビューでマッピング追加を確認"
+  AC-4, "改修後のdefs-stage6.tsが200行以内に収まっていること", "wc -l src/phases/defs-stage6.ts で行数を計測"
+  AC-5, "テンプレート内に## タスク情報/## 入力/## 出力ヘッダーが含まれず、buildSubagentPromptの自動除去対象と重複しないこと", "grepでテンプレート文字列内の## タスク/## 入力/## 出力パターンが0件であることを確認"
+
+notInScope[5]{item,reason}:
+  "workflow-docs.mdのディレクトリ構造定義自体の変更", "本タスクはテンプレート側をドキュメント構造に合わせる改修であり、構造定義の変更ではない"
+  "他フェーズ(commit/push/deploy/ci_verification等)のテンプレート改修", "docs_updateフェーズのみが対象。他フェーズは別タスクで対応"
+  "DoD検証ロジック(dod-l1-l2.ts/dod-l3.ts/dod-l4-content.ts)の変更", "既存L1/L3/L4チェックはoutputFile設定により自動適用される。検証ロジック自体の修正は不要"
+  "workflow-phases.md/workflow-execution.md等のスキル文書の更新", "テンプレート改修後に別タスクで整合性を取る"
+  "docs_updateの実行結果として生成されるドキュメント(overview.md等)の内容定義", "本タスクはテンプレート改修のみ。生成されるドキュメントの内容はサブエージェント実行時にタスク固有情報から導出される"
+
+openQuestions[0]{id,question,impact}:
+
+resolvedQuestions[2]{id,answer}:
+  OQ-1, "他テンプレート(performance_test/e2e_test/commit/push/ci_verification/deploy/health_observation)を圧縮することで吸収可能。先行実験で200行→192行に収まることを確認済み"
+  OQ-2, "buildSubagentPromptはinputFilesをTOON入力ACEセクションの'read:'行として列挙するのみ。ファイル不在時はサブエージェントが読み飛ばすため、エラーにはならない"
+
+traceabilityMatrix[6]{reqId,acId,relationship}:
+  REQ-FR-1, AC-1, "テンプレート内容がworkflow-docs.md 5項目を含むことで検証"
+  REQ-FR-2, AC-2, "registry設定変更によるDoD有効化を検証"
+  REQ-FR-3, AC-2, "inputFiles設定がregistry差分確認に含まれる"
+  REQ-FR-4, AC-3, "OUTPUT_FILE_TO_PHASEマッピング追加を検証"
+  REQ-FR-5, AC-2, "model昇格がregistry差分確認に含まれる"
+  REQ-NFR-1, AC-4, "200行制限遵守をwc -lで検証"
+
+decisions[5]{id,statement,rationale}:
+  REQ-1, "機能要件をresearch.toonのR-1〜R-7決定事項から直接導出し、6件のFRとして構造化した", "リサーチフェーズで分析済みの改修方針を要件として形式化。新規の要件追加は行わず、分析結果の精緻化に集中した"
+  REQ-2, "受入基準を5件定義し、各ACに具体的な検証方法(コードレビュー/wc -l/grep)を明記した", "IA-2準拠の検証可能・測定可能な条件。自動検証可能な基準(AC-4のwc -l、AC-5のgrep)と手動レビュー基準(AC-1/AC-2/AC-3)を組み合わせた"
+  REQ-3, "非機能要件として200行制限(NFR-1)、品質水準(NFR-2)、互換性(NFR-3)、セキュリティ(NFR-4)の4カテゴリを定義した", "機能要件だけでは品質保証が不十分。特にNFR-1(200行制限)はresearch.toonのcriticalConstraintで識別済みのリスクであり、要件として明示が必要"
+  REQ-4, "スコープ外を5件明示し、テンプレート改修以外の変更(DoD検証ロジック、スキル文書、他フェーズ等)を除外した", "スコープクリープ防止。特にDoD検証ロジックの変更不要はAF-2分析結果(outputFile設定だけで自動有効化)に基づく"
+  REQ-5, "未解決の質問を2件残し、設計フェーズでの調査事項として明記した", "OQ-1(200行上限)とOQ-2(inputFileフォールバック)はリサーチで識別済みだが、実装判断には追加調査が必要"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-template-rewrite/requirements.toon, spec, "本要件定義成果物。FR6件/NFR4件/AC5件/スコープ外5件/未解決2件を構造化"
+  docs/workflows/docs-update-template-rewrite/research.toon, report, "リサーチ成果物。現状分析・テンプレート設計パターン・registry制約を記録(入力)"
+  docs/workflows/docs-update-template-rewrite/scope-definition.toon, report, "スコープ定義成果物。変更対象ファイル12件・スコープ外4件を定義(入力)"
+
+next:
+  criticalDecisions: "REQ-FR-1(テンプレート全面改修)とREQ-NFR-1(200行制限)の両立が設計フェーズの最重要課題。OQ-1の調査結果に基づきテンプレートの簡潔さと情報量のバランスを決定する"
+  readFiles: "src/phases/defs-stage6.ts, src/phases/registry.ts, src/phases/definitions.ts, src/phases/definitions-shared.ts"
+  warnings: "defs-stage6.tsの200行制限は厳格。設計フェーズで現行行数を正確に計測し、テンプレート拡充の余地を確認すること。余地がない場合はファイル分割またはテンプレート外部化の設計が必要"

@@ -1,0 +1,60 @@
+stateDiagram-v2
+    [*] --> DoDCheckResultGenerated
+
+    DoDCheckResultGenerated --> MapChecksTransform: level, fix, example\nfrom DoDCheckResult
+
+    MapChecksTransform --> PhaseErrorsRecorded: mapChecksForErrorToon()\n+ appendErrorToon()
+
+    PhaseErrorsRecorded --> BuildErrorAnalysis: Save to phase-errors.toon\nwith full check metadata
+
+    BuildErrorAnalysis --> PassedFilterCheck: Iterate entry.checks\nfrom toonErrors
+
+    PassedFilterCheck --> CountFailures: Filter: skip if\npassed===true
+
+    CountFailures --> RealizeLevel: Use check.level ??\ndefault L1
+
+    RealizeLevel --> BuildErrorHistory: Aggregate to PhaseErrorStats\nfor topFailure ranking
+
+    BuildErrorHistory --> ExpandAllChecks: Flatten all entries +\nall checks recursively
+
+    ExpandAllChecks --> ErrorHistoryArray: Create ErrorHistoryEntry[]\nwith phase, retry, check,\nlevel, passed, evidence
+
+    ErrorHistoryArray --> WriteAnalyticsToon
+
+    WriteAnalyticsToon --> TopFailureWrite: Parallel write:\ntopFailure[]
+    WriteAnalyticsToon --> ErrorHistoryWrite: Parallel write:\nerrorHistory[]
+
+    TopFailureWrite --> AnalyticsToonComplete
+    ErrorHistoryWrite --> AnalyticsToonComplete
+
+    AnalyticsToonComplete --> [*]
+
+
+%% DECISIONS
+%% --------
+%% D1: mapChecksForErrorToon function external placement
+%%     Location: error-toon.ts (not inline in lifecycle-next.ts)
+%%     Rationale: Reduces lifecycle-next.ts from 199→194 lines (200-line constraint)
+%%     Benefits: Type definition and mapping colocate in same module for cohesion
+%%
+%% D2: Worker execution order - sequential dependency chain
+%%     Chain: Worker-1 (error-toon.ts types) → Worker-2 (lifecycle-next.ts + phase-analytics.ts)
+%%     → Worker-3 (analytics-toon.ts output)
+%%     Rationale: Type definitions (Worker-1) must precede usage (Worker-2),
+%%     which must precede output generation (Worker-3)
+%%     Parallelization blocked by import dependencies
+%%
+%% D3: ErrorHistoryEntry type location - phase-analytics.ts
+%%     Alternative rejected: Define in error-toon.ts
+%%     Reason: AnalyticsResult and ErrorHistoryEntry are tightly coupled;
+%%     define together in phase-analytics.ts, import in analytics-toon.ts
+%%
+%% D4: buildErrorHistory function visibility - internal (non-export)
+%%     Rationale: Encapsulation; function only called from buildAnalytics()
+%%     within same module. No external callers require this function.
+%%     Public API surface minimization follows single responsibility principle.
+%%
+%% D5: errorHistory default behavior - empty array []
+%%     Implementation: analytics.errorHistory ?? [] in analytics-toon.ts
+%%     Handles case where phase-errors.toon is missing or empty
+%%     Safe fallback ensures robust TOON output even with zero error history

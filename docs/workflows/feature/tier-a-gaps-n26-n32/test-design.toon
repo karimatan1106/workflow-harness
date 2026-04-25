@@ -1,0 +1,47 @@
+taskName: tier-a-gaps-n26-n32
+phase: test_design
+createdAt: 2026-03-10
+userIntent: Tier A 7項目(N-26〜N-32)のテスト設計。3テストファイル・15テストケース。
+
+decisions[5]{id,statement,rationale}:
+  TD-001, テストファイルを3分割(plankton-routing/dod-extended/error-adr-map)とする, "関心の分離によりテスト失敗時の原因特定が容易になりN-26のモデル選択・N-29〜N-32のDoD拡張・N-28のADRマップをそれぞれ独立して検証できる"
+  TD-002, plankton-routing.test.tsではretryCountに依存しないcomplexity-basedモデル選択を5ケースで検証する, "trivial/moderate/criticalの3分類に加えretryCountとの独立性を2ケースで確認することでcomplexityがcountを上書きする仕様を網羅する"
+  TD-003, dod-extended.test.tsでは4つの関数(checkFileLineLimit/checkBrokenPointers/detectGhostFiles)とFEEDBACK_SPEED_LAYERS定数を7ケースで検証する, "境界値(200行/201行)と正常系/異常系の組合せでDoD拡張機能の信頼性を確保する"
+  TD-004, error-adr-map.test.tsではERROR_ADR_MAPのマッチ動作とフォールバック動作を3ケースで検証する, "パターンマッチ成功時のADR優先表示とマッチ失敗時のgenericフォールバックの両方を確認する"
+  TD-005, テストケースIDはTC-{prefix}-{NN}形式で統一しファイル別にR(routing)/D(dod)/E(error)のプレフィックスを付与する, "15ケースの一意性とファイルへのトレーサビリティを維持するため"
+
+testCases[15]{id,acRef,description,verification}:
+  TC-R01, AC-1, "trivial complexity → suggestedModel=haiku", "buildRetryPrompt({complexity:'trivial'})の戻り値にsuggestedModel='haiku'が含まれること"
+  TC-R02, AC-1, "moderate complexity → suggestedModel=sonnet", "buildRetryPrompt({complexity:'moderate'})の戻り値にsuggestedModel='sonnet'が含まれること"
+  TC-R03, AC-1, "critical complexity → suggestedModel=opus", "buildRetryPrompt({complexity:'critical'})の戻り値にsuggestedModel='opus'が含まれること"
+  TC-R04, AC-1, "retryCount=0 with trivial → still haiku (not escalated by count)", "buildRetryPrompt({complexity:'trivial', retryCount:0})でsuggestedModel='haiku'であること（countによるescalationが発生しない）"
+  TC-R05, AC-1, "retryCount=5 with trivial → haiku (complexity overrides count)", "buildRetryPrompt({complexity:'trivial', retryCount:5})でsuggestedModel='haiku'であること（高retryCountでもcomplexityが優先）"
+  TC-D01, AC-4, "checkFileLineLimit 200行以下 → exceeded:false", "checkFileLineLimit(200行のcontent).exceeded === false"
+  TC-D02, AC-4, "checkFileLineLimit 201行 → exceeded:true", "checkFileLineLimit(201行のcontent).exceeded === true && lineCount === 201"
+  TC-D03, AC-5, "checkBrokenPointers with valid paths → empty array", "checkBrokenPointers(有効パスのTOONコンテンツ, basePath)が空配列を返すこと"
+  TC-D04, AC-5, "checkBrokenPointers with invalid path → returns broken path", "checkBrokenPointers(存在しないパスのTOONコンテンツ, basePath)が壊れたパスを含む配列を返すこと"
+  TC-D05, AC-5, "detectGhostFiles with duplicate basename → returns match", "detectGhostFiles(['src/new/utils.ts'], ['src/old/utils.ts'])が['src/new/utils.ts']を返すこと"
+  TC-D06, AC-5, "detectGhostFiles with no duplicates → empty array", "detectGhostFiles(['src/new/unique.ts'], ['src/old/other.ts'])が空配列を返すこと"
+  TC-D07, AC-2, "FEEDBACK_SPEED_LAYERS has 4 keys (ms/s/min/h)", "Object.keys(FEEDBACK_SPEED_LAYERS).sort()が['h','min','ms','s']であること"
+  TC-E01, AC-3, "ERROR_ADR_MAP maps 'Forbidden patterns' to ADR ID", "ERROR_ADR_MAP['Forbidden patterns']が['ADR-FORBIDDEN']を含むこと"
+  TC-E02, AC-3, "buildRetryPrompt with matching error includes mapped ADR", "buildRetryPrompt({error:'Forbidden patterns detected'})の戻り値にADR-FORBIDDENへの参照が含まれること"
+  TC-E03, AC-3, "buildRetryPrompt with no matching error falls back to generic ADRs", "buildRetryPrompt({error:'Unknown error xyz'})の戻り値がgeneric ADRスライスを使用すること"
+
+traceabilityMatrix[7]{ac,testCases,coverage}:
+  AC-1, "TC-R01, TC-R02, TC-R03, TC-R04, TC-R05", trivial/moderate/critical + retryCount独立性2パターン
+  AC-2, TC-D07, 4キー存在確認
+  AC-3, "TC-E01, TC-E02, TC-E03", マップ定義+マッチ成功+フォールバック
+  AC-4, "TC-D01, TC-D02", 境界値(200行/201行)
+  AC-5, "TC-D03, TC-D04, TC-D05, TC-D06", 有効パス/無効パス+ゴースト検出/非検出
+  AC-6, シェルスクリプトgrepで検証(テストケース外), --deny no-explicit-any行の存在確認
+  AC-7, 全テスト実行で検証(テストケース外), vitest run --reporter=verbose
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n26-n32/test-design.toon, test_design, テスト設計（15ケース×3ファイル）
+  docs/workflows/tier-a-gaps-n26-n32/spec.toon, input, 技術仕様（前フェーズ成果物）
+  docs/workflows/tier-a-gaps-n26-n32/requirements.toon, input, 受入基準と要件定義
+
+next:
+  criticalDecisions[2]: TD-001, TD-002
+  readFiles[3]: docs/workflows/tier-a-gaps-n26-n32/spec.toon, workflow-harness/mcp-server/src/retry/retry.ts, workflow-harness/mcp-server/src/gates/dod-helpers.ts
+  warnings[1]: "TC-R04/TC-R05はcomplexityがretryCountを上書きする仕様の検証であり既存のretryCount-based escalationが無効化されることを確認する"

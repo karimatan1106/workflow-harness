@@ -1,0 +1,71 @@
+phase: test_design
+task: rtm-intent-gate
+status: complete
+sessionToken: 417a6dcabe1d0d77509987673ae36daae20d1374614cbdfbf5de33298cbeb6e3
+
+summary: "checkOpenQuestions内容検査強化・isOpenQuestion共通関数・checkAcChainContinuity追加・requirementsテンプレート更新・retry.ts修正の5実装を対象に、AC-1〜AC-6それぞれへのTC-{AC番号}-{連番}形式テストケースを設計する。新テストファイルsrc/__tests__/rtm-intent-gate.test.tsに全ケースを集約し、既存dod-l4-requirements.test.tsおよびdod-ia.test.tsとの競合を回避する。vitestによるUnit Testのみ使用し、TDD Red→Greenの実行順序を明示する。"
+
+testStrategy: "vitestを使用したUnit Test。新ファイルsrc/__tests__/rtm-intent-gate.test.tsに全AC対応テストを集約。既存テストファイルへの追記は行わず独立ファイルで管理。ファイルシステム依存部分はdod-test-helpersのcreateTempDir/removeTempDirを再利用。isOpenQuestion関数はエクスポート後に直接インポートしてテスト。checkAcChainContinuityはrunDoDChecks経由でdod-ia.test.tsと同一パターンで検証。retry.ts修正はbuildRetryPromptの戻り値promptを文字列検査で検証。"
+
+testFile: "src/__tests__/rtm-intent-gate.test.ts"
+
+testCases[18]{id,targetAC,title,inputs,expectedBehavior,targetFunction}:
+  TC-1-01, AC-1, "有効な文字列OQアイテムがある場合にpassed:falseを返す", "openQuestions=['OQ-1: 認証要件の優先度は？']を含むrequirements.toonを一時ディレクトリに書き込み、requirementsフェーズのstateでrunDoDChecks呼び出し", "checks配列中open_questions_sectionチェックのpassed===false。failedChecksまたはevidenceにopenQuestionsへの言及が含まれる", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-1-02, AC-1, "オブジェクト形式{id,question}の有効なOQアイテムがある場合にpassed:falseを返す", "openQuestions=[{id:'OQ-1',question:'パフォーマンス要件の数値は？'}]を含むrequirements.toonでrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===false。オブジェクト形式の有効項目が1件以上で失敗する", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-1-03, AC-1, "複数の有効OQアイテムが混在する場合にpassed:falseを返す", "openQuestions=['OQ-1: 質問A',{id:'OQ-2',question:'質問B'}]の混在配列を含むrequirements.toonでrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===false。有効項目2件を検出して失敗する", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-2-01, AC-2, "空配列のopenQuestionsでpassed:trueを返す", "openQuestions=[]（空配列）を含むrequirements.toonで requirementsフェーズのrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===true。有効項目0件のため成功する", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-2-02, AC-2, "openQuestionsが['なし']のみの場合にpassed:trueを返す", "openQuestions=['なし']を含むrequirements.toonでrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===true。'なし'は無効項目として除外され有効項目0件と判定される", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-2-03, AC-2, "openQuestionsがオブジェクト形式{id,question:'なし'}のみの場合にpassed:trueを返す", "openQuestions=[{id:'OQ-1',question:'なし'}]を含むrequirements.toonでrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===true。questionフィールドが'なし'のオブジェクトは無効項目として除外される", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-2-04, AC-2, "空文字列アイテムのみのopenQuestionsでpassed:trueを返す", "openQuestions=['']を含むrequirements.toonでrunDoDChecks呼び出し", "open_questions_sectionチェックのpassed===true。空文字列は無効項目として除外される", "checkOpenQuestions (dod-l4-requirements.ts)"
+  TC-3-01, AC-3, "isOpenQuestionが有効な文字列OQをtrueと判定する", "isOpenQuestion('OQ-1: 未解決の認証要件')を直接呼び出し", "戻り値===true。非空・非'なし'の文字列は有効なOQアイテムと判定される", "isOpenQuestion (dod-l4-requirements.ts)"
+  TC-3-02, AC-3, "isOpenQuestionが文字列'なし'をfalseと判定する", "isOpenQuestion('なし')を直接呼び出し", "戻り値===false。文字列'なし'は無効項目として除外される", "isOpenQuestion (dod-l4-requirements.ts)"
+  TC-3-03, AC-3, "isOpenQuestionが有効なオブジェクト{id,question}をtrueと判定する", "isOpenQuestion({id:'OQ-1',question:'パフォーマンス要件の数値は？'})を直接呼び出し", "戻り値===true。questionフィールドが'なし'でない有効なOQオブジェクトと判定される", "isOpenQuestion (dod-l4-requirements.ts)"
+  TC-3-04, AC-3, "isOpenQuestionがquestion:'なし'のオブジェクトをfalseと判定する", "isOpenQuestion({id:'OQ-1',question:'なし'})を直接呼び出し", "戻り値===false。questionフィールドが'なし'のオブジェクトは無効項目と判定される", "isOpenQuestion (dod-l4-requirements.ts)"
+  TC-3-05, AC-3, "isOpenQuestionが空文字列をfalseと判定する", "isOpenQuestion('')を直接呼び出し", "戻り値===false。空文字列は無効項目として除外される", "isOpenQuestion (dod-l4-requirements.ts)"
+  TC-4-01, AC-4, "checkAcChainContinuityがAC-IDのないacDesignMappingでpassed:falseを返す", "state.rtmEntries=[{id:'F-001',requirement:'AC-1',status:'pending'}]・state.acceptanceCriteria=[{id:'AC-1',description:'test',status:'open'}]でdesign_reviewフェーズ。acDesignMappingに'AC-1'が含まれないdesign-review.toonを書き込みrunDoDChecks呼び出し", "checks配列中ac_chain_continuityまたは同等チェックのpassed===false。AC-1が未追跡とのevidenceが含まれる", "checkAcChainContinuity (dod-l4-ia.ts)"
+  TC-4-02, AC-4, "checkAcChainContinuityがrtmEntriesが空の場合にpassed:trueを返す（後方互換性）", "state.rtmEntries=[]でdesign_reviewフェーズ。acDesignMappingが存在するdesign-review.toonを書き込みrunDoDChecks呼び出し", "ac_chain_continuityチェックのpassed===true。rtmEntriesが空の場合はスキップして成功する", "checkAcChainContinuity (dod-l4-ia.ts)"
+  TC-4-03, AC-4, "checkAcChainContinuityが全AC-IDがacDesignMappingに含まれる場合にpassed:trueを返す", "state.rtmEntries=[{id:'F-001',requirement:'AC-1',status:'pending'}]でdesign_reviewフェーズ。acDesignMapping内に'AC-1'を含むdesign-review.toonを書き込みrunDoDChecks呼び出し", "ac_chain_continuityチェックのpassed===true。全AC-IDが追跡されている", "checkAcChainContinuity (dod-l4-ia.ts)"
+  TC-5-01, AC-5, "requirementsテンプレート文字列にharness_add_rtmが含まれる", "defs-stage1.tsのREQUIREMENTS_TEMPLATE定数または関数をインポートし文字列を取得", "テンプレート文字列に'harness_add_rtm'が含まれる。'★必須'または同等の強制表現が含まれる", "requirementsテンプレート (phases/defs-stage1.ts)"
+  TC-5-02, AC-5, "requirementsテンプレートにDoDゲートブロック指示が含まれる", "defs-stage1.tsのrequirementsテンプレート文字列を取得", "テンプレート文字列に'DoDゲート'または'ブロック'またはopenQuestionsが非空の場合の処理指示が含まれる", "requirementsテンプレート (phases/defs-stage1.ts)"
+  TC-6-01, AC-6, "OPEN_QUESTIONSエラー時のretryPromptがtoon形式向け指示を含む", "buildRetryPrompt({phase:'requirements',taskName:'test',docsDir:'/tmp/docs',retryCount:1,errorMessage:'OPEN_QUESTIONS check failed',model:'sonnet'})を呼び出し", "戻り値promptに'openQuestions'または'toon'または'.toon'が含まれる。'requirements.md'への言及が含まれない（Markdown形式への言及の排除）", "buildRetryPrompt (tools/retry.ts)"
+
+acTcMapping[6]{acId,tcIds}:
+  AC-1, TC-1-01,TC-1-02,TC-1-03
+  AC-2, TC-2-01,TC-2-02,TC-2-03,TC-2-04
+  AC-3, TC-3-01,TC-3-02,TC-3-03,TC-3-04,TC-3-05
+  AC-4, TC-4-01,TC-4-02,TC-4-03
+  AC-5, TC-5-01,TC-5-02
+  AC-6, TC-6-01
+
+tddOrder[5]{step,tcIds,rationale}:
+  1, "TC-3-01,TC-3-02,TC-3-03,TC-3-04,TC-3-05", "isOpenQuestion共通関数のRed→Green。exportがなければimportエラーでRedになる。dod-l4-requirements.tsへの関数追加が先"
+  2, "TC-1-01,TC-1-02,TC-1-03,TC-2-01,TC-2-02,TC-2-03,TC-2-04", "checkOpenQuestions内容検査強化のRed→Green。isOpenQuestion実装後にcheckOpenQuestionsの有効項目フィルタを修正する"
+  3, "TC-4-01,TC-4-02,TC-4-03", "checkAcChainContinuityのRed→Green。dod-l4-ia.tsへの新関数追加とdod.tsへの組み込みが必要"
+  4, "TC-5-01,TC-5-02", "requirementsテンプレート静的検査のRed→Green。defs-stage1.tsの文字列修正が先"
+  5, "TC-6-01", "retry.tsメッセージ修正のRed→Green。OPEN_QUESTIONSパターンのimprovement文言変更が先"
+
+importConventions[4]{rule,detail}:
+  "テストヘルパー再利用", "createTempDir/removeTempDir/makeMinimalState/buildValidRequirementsToonをdod-test-helpers.tsからインポートする。独自実装禁止"
+  "isOpenQuestion直接インポート", "dod-l4-requirements.tsからisOpenQuestionをnamed exportしてrtm-intent-gate.test.tsでimport。関数がexportされていない場合はそのままRed（TDD意図通り）"
+  "checkAcChainContinuity経由テスト", "runDoDChecks経由でdesign_reviewフェーズにて呼び出す。dod-ia.test.tsと同一パターン。direct importは使わない"
+  "defs-stage1.ts静的解析", "fs.readFileSyncまたはimportでテンプレート文字列を取得しtoContainで検査する。MCPサーバー起動は不要"
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "新テストファイルsrc/__tests__/rtm-intent-gate.test.tsに全AC対応テストを集約する。既存dod-l4-requirements.test.ts・dod-ia.test.tsへの追記は行わない", "既存テストファイルへの追記はファイル境界を不明瞭にし、次フェーズでの変更競合リスクを高める。新ファイルによる独立管理で責務を明確化する（REQ-NF-05）"
+  TD-2, "isOpenQuestionのテスト（TC-3-01〜TC-3-05）はrunDoDChecks経由ではなく関数を直接インポートして検証する", "内部関数のユニットテストはblack-box経由より直接呼び出しが誤りを早期に検出できる。isOpenQuestionのエクスポート漏れをTDD Redとして明示的に検出する"
+  TD-3, "checkAcChainContinuityはrunDoDChecks経由でdesign_reviewフェーズとして呼び出す。dod-ia.test.tsのIA-3テストパターンを踏襲する", "dod.tsへの組み込みを含めた統合動作を検証するため経由テストが適切。直接importはdod.tsへの登録漏れを検出できない"
+  TD-4, "requirementsテンプレートの検証（TC-5-01・TC-5-02）はfsまたはimportによる静的文字列検査で行い、MCPサーバー起動を必要としない", "テンプレート文字列はファイルシステム上の定数であるため静的検査で十分。MCP起動はテスト実行コストを大幅に増加させる"
+  TD-5, "retry.tsのOPEN_QUESTIONSメッセージ検証（TC-6-01）はbuildRetryPromptの戻り値prompt文字列を検査する。'requirements.md'という文言が含まれないことも検証する", "既存retryプロンプトにMarkdown向け表現が残っていることをRed条件として明示する。toContain('requirements.md')がfalseになることで.toon形式への修正を強制する"
+  TD-6, "TC-4-02（rtmEntriesが空の場合のスキップ）はREQ-NF-03の後方互換性検証として必須ケースとして含める", "rtmEntriesが未登録のプロジェクトでDoD失敗が発生しない保証が運用上最重要。この条件が抜けると既存プロジェクトへのデグレードが発生する"
+  TD-7, "テストケース数の合計は18件。AC-1:3件、AC-2:4件、AC-3:5件、AC-4:3件、AC-5:2件、AC-6:1件の配分とする", "AC-3（isOpenQuestion関数）は境界値（文字列型・オブジェクト型・空文字・なし文字列）を全て網羅するため5件必要。AC-6は統合起動なしの単一経路のみ確認可能なため1件とする"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/rtm-intent-gate/requirements.toon, input, "AC-1〜AC-6の受入基準・REQ-F-01〜REQ-F-08の機能要件・RTMエントリ6件を定義する入力成果物"
+  workflow-harness/mcp-server/src/__tests__/rtm-intent-gate.test.ts, output, "AC-1〜AC-6に対応する18テストケースを実装する新テストファイル。TDD Red→Green順序に従い5ステップで実装する"
+  workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, target, "isOpenQuestion関数の追加先・checkOpenQuestionsの内容検査強化対象。TC-1-01〜TC-2-04とTC-3-01〜TC-3-05が検証する"
+  workflow-harness/mcp-server/src/gates/dod-l4-ia.ts, target, "checkAcChainContinuity関数の追加先。TC-4-01〜TC-4-03が検証する。追加後160行以内で180行制限を満たす"
+
+next:
+  criticalDecisions: TD-1,TD-2,TD-3
+  readFiles: workflow-harness/mcp-server/src/__tests__/dod-test-helpers.ts,workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts,workflow-harness/mcp-server/src/gates/dod-l4-ia.ts
+  warnings: "TC-4-01はcheckAcChainContinuityがdod-l4-ia.tsに存在しない状態でRed。dod.tsへのpush()登録も同時に必要。TC-5-01/TC-5-02はdefs-stage1.tsのテンプレート文字列取得方法をimpl前に確認すること"

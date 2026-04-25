@@ -1,0 +1,110 @@
+phase: state-machine
+task: harness-report-fb-fixes
+status: in-progress
+inputArtifact: docs/workflows/harness-report-fb-fixes/planning.md
+
+## State Diagram Architecture
+
+### FB-1+5: Readonly Phase Tool Filter
+
+State Transition Flow:
+  Initial State: AllowedToolsNotFixed
+  State 1: ReadonlyPhaseDetection - bashCategories.length === 1 AND bashCategories[0] === 'readonly'
+  State 2: FilterChainApply - (planOnly OR isReadonlyPhase) filter chain
+  Final State: AllowedToolsFixed - Write/Edit removed
+  
+Code location: delegate-coordinator.ts L120-125
+Diff magnitude: 1 line (isReadonlyPhase variable)
+
+
+### FB-2: Structural Line ID Pattern Recognition
+
+State Transition Flow:
+  Initial State: PatternNotRecognized
+  State 1: LineContentInspect - inspect structural markers
+  State 2: IDPatternDetect - regex test /^(?:[-*]\s+)?[A-Z]{1,5}-\d{1,4}[:：]/
+  State 3: RegexPatternInsert - at dod-helpers.ts L26
+  Final State: StructuralLinePatternAdded - isStructuralLine returns true
+  
+Code location: dod-helpers.ts L26 (before short label check)
+Pattern precedence: ID patterns tested BEFORE generic labels
+
+
+### FB-4: RTM Upsert Operation
+
+State Transition Flow:
+  Initial State: RTMNotUpdated
+  State 1: RTMEntryReceive - applyAddRTM(state, entry) called
+  State 2: IDSearchExecute - findIndex(e.id === entry.id)
+  State 3: ExistingIDCheck - branch on existingIdx >= 0
+    TRUE: SpliceReplace - splice(existingIdx, 1, entry)
+    FALSE: PushNewEntry - push(entry)
+  Final State: RTMUpdated - no duplicate IDs
+  
+Code location: manager-write.ts applyAddRTM() L126-129
+Design: Array interface maintained, no Map restructuring
+Performance: O(n) acceptable for small arrays (<50 elements)
+
+
+### FB-6: Artifact Hash Cache Clear on GoBack
+
+State Transition Flow:
+  Initial State: ArtifactHashesNotCleared
+  State 1: GoBackPhaseExec - goBack(state, targetPhase) called
+  State 2: RetryCountReset - state.retryCount = {}
+  State 3: ArtifactHashesClear - state.artifactHashes = {}
+  Final State: HashCacheClearedAndValid - clean known state
+  
+Code location: manager-lifecycle.ts L126 (after retryCount reset)
+Scope: ALL artifacts cleared (not selective)
+Rationale: No schema guarantees which keys map to targetPhase+
+
+
+## Design Decisions
+
+- D-SM-001: 4件修正は相互独立 - 単一implementationフェーズで一括実行可能
+- D-SM-002: FB-1+5はplanOnlyフィルタと同一パターン - allowedTools.filter()で実装
+- D-SM-003: FB-2正規表現 /^(?:[-*]\s+)?[A-Z]{1,5}-\d{1,4}[:：]/ は汎用IDパターン
+- D-SM-004: FB-4はfindIndex+splice方式でupsert実装 - Map構造変更は影響大きい
+- D-SM-005: FB-6はartifactHashes全クリア({})を安全側選択 - 部分削除はリスク高
+- D-SM-006: 全4修正の状態遷移は線形かつ単方向 - rollback時の不可逆性保証
+- D-SM-007: 4つの修正機能は完全に分離可能 - テスト実行順序はランダムでも安全
+
+
+
+## Mermaid State Diagram Template
+
+stateDiagram-v2
+  [*] --> FB1_Detect: phaseGuide received
+  FB1_Detect --> FB1_ReadonlyCheck: inspect bashCategories
+  FB1_ReadonlyCheck --> FB1_FilterApply: isReadonlyPhase=true
+  FB1_ReadonlyCheck --> FB1_PassThrough: isReadonlyPhase=false
+  FB1_FilterApply --> FB1_Done: allowedTools (W/E removed)
+  FB1_PassThrough --> FB1_Done: allowedTools (unchanged)
+  
+  [*] --> FB2_Input: line content
+  FB2_Input --> FB2_PatternTest: regex test
+  FB2_PatternTest --> FB2_Match: pattern matches
+  FB2_PatternTest --> FB2_NoMatch: pattern fails
+  FB2_Match --> FB2_Done: isStructuralLine=true
+  FB2_NoMatch --> FB2_Continue: check next pattern
+  
+  [*] --> FB4_Entry: RTM entry input
+  FB4_Entry --> FB4_SearchID: findIndex call
+  FB4_SearchID --> FB4_Found: existingIdx>=0
+  FB4_SearchID --> FB4_NotFound: existingIdx=-1
+  FB4_Found --> FB4_Splice: splice at idx
+  FB4_NotFound --> FB4_Push: push entry
+  FB4_Splice --> FB4_Done: rtmEntries updated
+  FB4_Push --> FB4_Done: rtmEntries updated
+  
+  [*] --> FB6_GoBack: goBack call
+  FB6_GoBack --> FB6_ClearRetry: retryCount={}
+  FB6_ClearRetry --> FB6_ClearHash: artifactHashes={}
+  FB6_ClearHash --> FB6_Done: cache cleared
+  
+  FB1_Done --> [*]
+  FB2_Done --> [*]
+  FB4_Done --> [*]
+  FB6_Done --> [*]
+

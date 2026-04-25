@@ -1,0 +1,96 @@
+task: harness-stale-task-cleanup-and-hmac-recovery
+phase: planning
+status: complete
+created: 2026-03-11
+
+PL-D-01_id: PL-D-01
+PL-D-01_title: completedフィルタをディレクトリ名パターンではなくreadFileSync後のphaseチェックで実装
+PL-D-01_rationale: ディレクトリ名にphase情報がないためreadFileSync+JSON.parseは不可避。ただしHMAC検証前にphaseだけ先読みし、completed判定後はHMAC検証をスキップすることでI/Oコストを削減
+PL-D-01_traces: F-001, F-002
+PL-D-01_resolves: OQ-3
+
+PL-D-02_id: PL-D-02
+PL-D-02_title: buildTaskIndexにincludeCompletedパラメータ追加
+PL-D-02_rationale: writeTaskIndexはtask-index.jsonにcompletedも含めて書き出す必要があるためincludeCompleted=trueで呼ぶ。listTasksFromDiskはincludeCompleted=falseで呼ぶ。単一関数で両方のユースケースをカバー
+PL-D-02_traces: F-002, F-003
+PL-D-02_signature: buildTaskIndex(stateDir: string, opts?: { includeCompleted?: boolean }): TaskIndexEntry[]
+
+PL-D-03_id: PL-D-03
+PL-D-03_title: FR-03キャッシュ活用は初期リリースでは実装せずフィルタのみ
+PL-D-03_rationale: REQ-D-06に従いキャッシュ不整合リスクを回避。buildTaskIndexのフィルタだけで92件→3件のactive絞り込み効果を先に確保。キャッシュはtask-index.jsonのstatus=completedフィルタで代替
+PL-D-03_traces: F-003
+
+PL-D-04_id: PL-D-04
+PL-D-04_title: loadTaskFromDiskの返却型をTaskState & { integrityWarning?: boolean }に拡張
+PL-D-04_rationale: 既存のTaskState | null型にintegrityWarningフラグを追加。HMAC検証失敗時にnullではなくデータ+警告を返却することで呼び出し元が状況を判断可能。TaskState interfaceにoptionalフィールドとして追加しv4互換を維持
+PL-D-04_traces: F-004
+PL-D-04_resolves: OQ-1
+
+PL-D-05_id: PL-D-05
+PL-D-05_title: integrityWarning付きタスクは読み取り専用に制限
+PL-D-05_rationale: OQ-1の解決。HMAC不一致はキー不整合または改竄の可能性を示す。書き込み操作(advancePhase/approveGate等)はStateManager各メソッドの先頭でintegrityWarningチェックを行いブロック。statusクエリのみ許可
+PL-D-05_traces: F-004, F-005
+PL-D-05_affected_methods[12]{name}:
+  advancePhase
+  approveGate
+  completeSubPhase
+  goBack
+  resetTask
+  addAcceptanceCriterion
+  addRTMEntry
+  recordFeedback
+  recordBaseline
+  recordTestResult
+  addProof
+  updateScope
+
+PL-D-06_id: PL-D-06
+PL-D-06_title: レガシー配列マイグレーションでpreviousキーを保持し即時上書き
+PL-D-06_rationale: 現行loadHmacKeysはレガシー配列の末尾要素のkeyのみcurrentに変換しpreviousを捨てている。末尾-1のkeyをpreviousとして保持することで古いキーで署名されたタスクの検証が可能になる。変換結果は即時writeFileSyncで上書き
+PL-D-06_traces: F-006, F-007
+PL-D-06_current_code: "loadHmacKeys L31-35: Array.isArray分岐で末尾のみ取得、previousなし"
+PL-D-06_new_logic: "末尾→current、length>=2なら末尾-1→previous、rotatedAt=末尾のcreatedAt、writeFileSync上書き"
+
+PL-D-07_id: PL-D-07
+PL-D-07_title: HMAC検証失敗時の構造化ログ出力
+PL-D-07_rationale: verifyStateWithRotation失敗時にconsole.errorで構造化情報を出力。デバッグ可能性を確保しつつ、既存の戻り値型を変更せずログレイヤーで対応
+PL-D-07_traces: F-005
+PL-D-07_log_fields[4]{name}:
+  taskId
+  "keysUsed (current | previous | both)"
+  "stateIntegrityPresent (boolean)"
+  "errorContext (key_mismatch | no_integrity_field | parse_error)"
+
+artifacts_spec[1]{path}:
+  docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/spec.toon
+
+change_files[6]{path}:
+  workflow-harness/mcp-server/src/state/manager-read.ts
+  workflow-harness/mcp-server/src/state/manager.ts
+  workflow-harness/mcp-server/src/state/manager-write.ts
+  workflow-harness/mcp-server/src/state/types.ts
+  workflow-harness/mcp-server/src/utils/hmac.ts
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts
+
+implementation_order[9]{id,description}:
+  step_1, "types.ts — TaskStateにintegrityWarning?: booleanを追加"
+  step_2, "hmac.ts — loadHmacKeysのレガシー配列マイグレーション修正（previous保持+上書き保存）"
+  step_3, "hmac.ts — verifyStateWithRotationに構造化ログ出力を追加"
+  step_4, "manager-read.ts — loadTaskFromDiskをHMAC失敗時integrityWarning付き返却に変更"
+  step_5, "manager-read.ts — buildTaskIndexにincludeCompletedオプション追加"
+  step_6, "manager-read.ts — listTasksFromDiskでcompletedフィルタ最適化（HMAC検証スキップ）"
+  step_7, "manager-write.ts — writeTaskIndexでbuildTaskIndex(dir, {includeCompleted:true})を呼出"
+  step_8, "manager.ts — StateManager各書き込みメソッドにintegrityWarningガード追加"
+  step_9, "lifecycle.ts — handleHarnessStatusでintegrityWarning表示対応"
+
+decisions[7]{id,statement,rationale}:
+  PL-D-01, "completedフィルタはreadFileSync後のphase判定で実装しHMAC検証をスキップ", "ディレクトリ名にphase情報がないためファイル読み込みは必須だがHMAC検証コストを回避できる"
+  PL-D-02, "buildTaskIndexにincludeCompletedオプション追加でwriteTaskIndexとlistTasksの両方をカバー", "単一関数の条件分岐で二つのユースケースを統合し重複コードを防止"
+  PL-D-03, "FR-03キャッシュ活用は初期リリースでスキップしフィルタのみ実装", "REQ-D-06に従いキャッシュ不整合リスクを回避しフィルタ効果を先行確保"
+  PL-D-04, "HMAC検証失敗時はnullではなくintegrityWarning付きTaskStateを返却", "タスクデータが正常な場合のTask not found誤報を防止しユーザー判断材料を提供"
+  PL-D-05, "integrityWarning付きタスクへの書き込み操作をStateManagerレベルでブロック", "HMAC不一致状態での状態変更は整合性をさらに悪化させるため読み取り専用に制限"
+  PL-D-06, "レガシー配列マイグレーションでpreviousキーを保持し即時上書き保存", "旧キーで署名されたタスクのフォールバック検証を可能にしデータロスを防止"
+  PL-D-07, "HMAC検証失敗時にconsole.errorで構造化ログを出力", "既存APIの戻り値型を変更せずデバッグ情報を提供しトラブルシュート時間を短縮"
+
+artifacts: spec.toon
+next: implementation

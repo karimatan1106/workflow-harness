@@ -1,0 +1,64 @@
+# 実装仕様書
+
+## サマリー
+
+前回のセキュリティスキャンで検出された3件の脆弱性を修正するための実装仕様を定義する。
+修正対象はworkflow-plugin/hooks/配下のbash-whitelist.jsとloop-detector.jsの2ファイルである。
+SEC-1はSECURITY_ENV_VARS配列への1要素追加、SEC-2はnextChar判定の正規表現化、SEC-3はfs.realpathSyncへの置換である。
+全修正は独立しており相互に影響しないため段階的な実装とテストが可能な構成となっている。
+修正後も既存の42件のユニットテストは全てパスすることが保証されパフォーマンスへの影響は無視できる範囲である。
+テストコードはsrc/backend/tests/unit/hooks/配下に配置されている既存テストファイルで検証する。
+
+## 概要
+
+本仕様書はワークフロープラグインのセキュリティスキャンで検出されたMedium1件、Low1件、Informational1件の計3件を修正する。
+SEC-1はSPEC_FIRST_TTL_MS環境変数が保護対象に含まれておらずexportコマンドでTTL制約を無効化できる問題である。
+SEC-2はUnicode空白文字がASCII空白と異なる文字として扱われホワイトリストの単語境界チェックを迂回できる問題である。
+SEC-3はpath.resolve関数がシンボリックリンクを解決しないため同一ファイルへの異なるパスでループ検出を回避できる問題である。
+いずれもエンタープライズ環境でのセキュリティ基準を満たすための予防的措置であり現実的な悪用事例は報告されていない。
+
+## 実装仕様
+
+SEC-1の実装はbash-whitelist.jsのL11-15に定義されているSECURITY_ENV_VARS配列に文字列SPEC_FIRST_TTL_MSを追加する。
+変更前は7要素（HMAC_STRICT、SCOPE_STRICT、SESSION_TOKEN_REQUIRED、HMAC_AUTO_RECOVER、SKIP_WORKFLOW、SKIP_LOOP_DETECTOR、VALIDATE_DESIGN_STRICT）である。
+変更後は上記7要素にSPEC_FIRST_TTL_MSを加えた8要素となり既存のexport/unset検出ロジックが自動的に保護を適用する。
+この変更によりL565-574のisCommandAllowed関数内でSPEC_FIRST_TTL_MSの変更試行がセキュリティ違反として拒否される。
+配列要素の追加のみであり既存コードの動作は一切変更されない。
+
+SEC-2の実装はbash-whitelist.jsのL627-628における単語境界判定ロジックを変更する。
+変更前の条件式はnextChar === ' ' || nextChar === '\t'でASCII空白とタブのみを空白として認識していた。
+変更後の条件式は/\s/.test(nextChar)でJavaScriptが認識する全ての空白類文字を包括的に検出する。
+\sメタ文字はASCII空白、タブ、改行、キャリッジリターンに加えてUnicode空白文字（U+00A0等）にマッチする。
+コマンド区切り文字の判定/[;&|<>]/.test(nextChar)は変更せずそのまま維持する。
+
+SEC-3の実装はloop-detector.jsのL130におけるpath.resolve呼び出しをfs.realpathSyncに置換する。
+fs.realpathSyncはシンボリックリンクチェーンを辿り最終的な実ファイルパスを返す関数である。
+catchブロック内ではフォールバック処理としてpath.resolveによる通常のパス正規化を実行する。
+これによりシンボリックリンクが壊れている場合やパーミッション不足の場合でもエラーが発生しない。
+fs.realpathSyncはNode.js標準APIでWindowsとLinuxの両プラットフォームで動作が保証されている。
+
+## 実装計画
+
+ステップ1としてSEC-1のSECURITY_ENV_VARS配列修正を実施しsrc/backend/tests/unit/hooks/配下のテストで環境変数保護を検証する。
+ステップ2としてSEC-2のnextChar判定ロジック修正を実施しASCII空白とUnicode空白の両方で境界判定が動作することを確認する。
+ステップ3としてSEC-3のnormalizeFilePath関数修正を実施し通常ファイルとシンボリックリンクの両方でパス正規化を検証する。
+ステップ4として3件全ての修正を適用した状態で既存42件のユニットテストを一括実行し回帰がないことを確認する。
+ステップ5としてセキュリティスキャンを再実行し3件の指摘が全て解消されていることを最終確認する。
+
+## 変更対象ファイル
+
+`workflow-plugin/hooks/bash-whitelist.js`はSEC-1とSEC-2の2件の修正を適用する対象ファイルである。
+SEC-1ではL11-15のSECURITY_ENV_VARS配列に1要素を追加し変更行数は1行のみの軽微な変更となる。
+SEC-2ではL627-628のnextChar条件式を正規表現に置換し変更行数は1行のみで既存ロジックの強化に留まる。
+`workflow-plugin/hooks/loop-detector.js`はSEC-3の1件の修正を適用する対象ファイルである。
+L130のpath.resolve呼び出しをfs.realpathSyncに変更しcatchブロック内にpath.resolveフォールバックを追加する。
+テスト検証にはsrc/backend/tests/unit/hooks/test-n4-enforce-workflow.test.ts等の既存テストファイルを使用する。
+
+## テスト方針
+
+SEC-1のテストではexport SPEC_FIRST_TTL_MSコマンドとunset SPEC_FIRST_TTL_MSコマンドがブロックされることを確認する。
+既存の7環境変数に対する保護が変更なく維持されていることも合わせて回帰確認する。
+SEC-2のテストではASCII空白とタブによる既存の境界判定が維持されることを確認した上でU+00A0やU+3000が空白として認識されることを検証する。
+SEC-3のテストでは通常ファイルのパス正規化結果が変更前と同一であることを確認しシンボリックリンクの実パス解決動作を検証する。
+統合テストとして既存42件のテストスイートを全数実行し回帰がないことを保証する。
+セキュリティスキャン再実行により3件の指摘が解消されていることを最終確認する。

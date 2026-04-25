@@ -1,0 +1,85 @@
+phase: test_design
+taskName: harness-10m-resilience
+timestamp: 2026-03-09
+riskScore: 6
+
+summary: "10M耐性6本柱(P1-P6)のテスト設計。AC-1〜AC-8に対応する22テストケースを設計。ユニットテスト中心(P1/P3/P5/P6)と統合テスト(P2/P4/AC-7/AC-8)の2層構成。テストファイル3本: dod-skipped-phases.test.ts(P1), lifecycle-prechecks.test.ts(P2+P4), definitions-10m.test.ts(P3+P5+P6)。既存テストヘルパー(dod-test-helpers.ts)を再利用し、handler-test-setup.tsの統合テストパターンを踏襲。"
+
+testStrategy:
+  approach: "ユニットテスト主体+統合テスト補完の2層構成"
+  framework: vitest
+  pattern: "既存のdod-*.test.tsとhandler-*.test.tsのパターンに準拠"
+  helperReuse: "dod-test-helpers.ts(createTempDir/removeTempDir/makeMinimalState/buildValidArtifact)を全テストファイルで再利用"
+
+testFiles[3]{path,scope,testCount}:
+  src/__tests__/dod-skipped-phases.test.ts, "AC-1: P1 skippedPhasesによるinputFiles除外", 5
+  src/__tests__/lifecycle-prechecks.test.ts, "AC-2+AC-4: P2成果物存在+P4サイズ先行検証", 8
+  src/__tests__/definitions-10m.test.ts, "AC-3+AC-5+AC-6: P3手順確定化+P5Read指示除去+P6外部カテゴリ", 9
+
+testCases[22]{id,ac,pillar,title,type,file,setup,action,expected}:
+  TC-AC1-01, AC-1, P1, "skippedPhasesにstate_machineを含むとstate-machine.mmdのinputFiles検証がスキップされる", unit, dod-skipped-phases.test.ts, "makeMinimalState('design_review')でstate生成。skippedPhases=['state_machine']を設定。docsDir配下にspec.toon/threat-model.toonを作成しstate-machine.mmd/flowchart.mmd/ui-design.toonは作成しない", "checkInputFilesExist('design_review',docsDir,workflowDir,['state_machine'],OUTPUT_FILE_TO_PHASE)を呼び出す", "passedがtrueとなる(state-machine.mmdのみスキップ)。ただしflowchart.mmdとui-design.toonは未作成のため別途スキップ対象に含める必要あり"
+  TC-AC1-02, AC-1, P1, "skippedPhasesが空配列のとき全inputFilesが検証対象となる", unit, dod-skipped-phases.test.ts, "makeMinimalState('design_review')でstate生成。skippedPhases=[]。inputFilesの一部を未作成", "checkInputFilesExist('design_review',docsDir,workflowDir,[],OUTPUT_FILE_TO_PHASE)を呼び出す", "passedがfalseとなり不在ファイルがevidenceに含まれる"
+  TC-AC1-03, AC-1, P1, "smallタスクのdesign_reviewでskippedPhasesに全Stage4フェーズが含まれるとinputFiles全スキップ", unit, dod-skipped-phases.test.ts, "makeMinimalState('design_review')でstate生成。skippedPhases=['state_machine','flowchart','ui_design']。docsDir配下にspec.toon/threat-model.toonのみ作成", "checkInputFilesExist呼び出し", "passedがtrue(Stage4出力の3ファイルがスキップされspec.toonとthreat-model.toonは存在確認成功)"
+  TC-AC1-04, AC-1, P1, "fileToPhaseMap未指定時(デフォルト空オブジェクト)はスキップなしで全ファイル検証", unit, dod-skipped-phases.test.ts, "makeMinimalState('design_review')。skippedPhases=['state_machine']。inputFiles一部未作成", "checkInputFilesExist('design_review',docsDir,workflowDir,['state_machine'])を呼び出す(fileToPhaseMap省略)", "passedがfalse(マッピングなしのためスキップが効かない)"
+  TC-AC1-05, AC-1, P1, "inputFilesが空のフェーズではskippedPhasesの値に関わらずpassedがtrue", unit, dod-skipped-phases.test.ts, "makeMinimalState('refactoring')。skippedPhases=['state_machine']", "checkInputFilesExist('refactoring',docsDir,workflowDir,['state_machine'],OUTPUT_FILE_TO_PHASE)を呼び出す", "passedがtrue。evidence='No input files required for this phase'"
+  TC-AC2-01, AC-2, P2, "outputFile不在時にDoDチェック前に成果物不在エラーが返却される", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileに対応するファイルを作成しない", "harness_next(taskId,sessionToken)を呼び出す", "error文字列に'成果物ファイルが存在しません'を含む。DoDチェック結果(dodChecks)は返却されない"
+  TC-AC2-02, AC-2, P2, "outputFileが存在する場合は先行チェックを通過しDoDチェックが実行される", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileに100バイト以上の有効な成果物を作成", "harness_next(taskId,sessionToken)を呼び出す", "errorが成果物不在エラーでない(DoDチェック結果が返却されるかphase遷移が成功する)"
+  TC-AC2-03, AC-2, P2, "outputFile定義がないフェーズ(test_impl等)では先行チェックがスキップされる", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。フェーズをtest_implに設定", "harness_next(taskId,sessionToken)を呼び出す", "成果物不在エラーが発生せずDoDチェックが実行される"
+  TC-AC2-04, AC-2, P2, "forceTransition=true時には先行チェックが実行されない", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileを作成しない", "harness_next(taskId,sessionToken,forceTransition=true)を呼び出す", "成果物不在エラーが発生せずphase遷移が成功する"
+  TC-AC4-01, AC-4, P4, "100バイト未満のファイルでharness_nextがサイズ不足エラーを返却する", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileに50バイトのファイルを作成", "harness_next(taskId,sessionToken)を呼び出す", "error文字列に'空または不完全です'を含む"
+  TC-AC4-02, AC-4, P4, "ちょうど100バイトのファイルでサイズチェックを通過する", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileにちょうど100バイトのファイルを作成", "harness_next(taskId,sessionToken)を呼び出す", "サイズ不足エラーが発生しない(DoDチェックが実行される)"
+  TC-AC4-03, AC-4, P4, "0バイト(空ファイル)でサイズ不足エラーが返却される", integration, lifecycle-prechecks.test.ts, "harness_startでタスク作成。outputFileに0バイトのファイルを作成", "harness_next(taskId,sessionToken)を呼び出す", "error文字列に'空または不完全です'と'0 bytes'を含む"
+  TC-AC3-01, AC-3, P3, "buildSubagentPrompt出力にPROCEDURE_ORDER_RULEの内容が含まれる", unit, definitions-10m.test.ts, "テンプレートに{PROCEDURE_ORDER}プレースホルダを含むフェーズでbuildSubagentPromptを呼び出す", "buildSubagentPrompt(phase,taskName,docsDir,workflowDir,userIntent)の戻り値を検査", "戻り値に'入力ファイルをRead'と'成果物をWrite'と'検証Read'の3キーワードが含まれる"
+  TC-AC3-02, AC-3, P3, "PROCEDURE_ORDER_RULEが5ステップ順序を含む定数として定義されている", unit, definitions-10m.test.ts, "definitions-shared.tsからPROCEDURE_ORDER_RULEをimport", "定数値を文字列検査", "Read→分析→Write→検証Read→報告の5ステップが順序通りに含まれる"
+  TC-AC3-03, AC-3, P3, "{PROCEDURE_ORDER}プレースホルダがない場合は展開されない", unit, definitions-10m.test.ts, "テンプレートに{PROCEDURE_ORDER}を含まないフェーズのbuildSubagentPrompt呼び出し", "出力を検査", "PROCEDURE_ORDER_RULEの内容が出力に含まれない(プレースホルダがなければ挿入されない)"
+  TC-AC5-01, AC-5, P5, "テンプレートのRead指示行がbuildSubagentPrompt出力から除去される", unit, definitions-10m.test.ts, "'以下の全設計成果物を読み込んでレビューしてください'を含むテンプレートでbuildSubagentPromptを呼び出す", "出力文字列を検査", "出力に'読み込んで'を含む行が存在しない"
+  TC-AC5-02, AC-5, P5, "'ファイルを読み'パターンもRead指示として除去される", unit, definitions-10m.test.ts, "'以下の設計成果物を全て読み込んでから実装してください'を含むテンプレートでbuildSubagentPromptを呼び出す", "出力文字列を検査", "出力に'ファイルを読み'を含む行が存在しない"
+  TC-AC5-03, AC-5, P5, "Read指示以外の通常テキストは除去されない", unit, definitions-10m.test.ts, "Read指示を含まない通常のテンプレートでbuildSubagentPromptを呼び出す", "出力文字列を検査", "テンプレートの通常テキスト部分が出力に保持されている"
+  TC-AC6-01, AC-6, P6, ".harness.json存在時にloadTraitCategoriesが外部定義のカテゴリを返却する", unit, definitions-10m.test.ts, ".harness.jsonに{traitCategories:{hasUI:['custom/ui/']}}を書き込む", "loadTraitCategories()を呼び出す", "戻り値のhasUIが['custom/ui/']となりDEFAULT_TRAIT_CATEGORIESと異なる"
+  TC-AC6-02, AC-6, P6, ".harness.json不在時にloadTraitCategoriesがDEFAULT_TRAIT_CATEGORIESを返却する", unit, definitions-10m.test.ts, ".harness.jsonが存在しない状態にする(cwdを一時ディレクトリに変更)", "loadTraitCategories()を呼び出す", "戻り値がDEFAULT_TRAIT_CATEGORIESと一致する"
+  TC-AC6-03, AC-6, P6, ".harness.jsonが不正JSONの場合にデフォルトにフォールバックする", unit, definitions-10m.test.ts, ".harness.jsonに'{invalid json'を書き込む", "loadTraitCategories()を呼び出す", "エラーが発生せずDEFAULT_TRAIT_CATEGORIESが返却される"
+  TC-AC7-01, AC-7, all, "変更対象6ファイルが全て200行以下を維持する", verification, manual, "実装完了後に変更対象6ファイルの行数を計測", "wc -lで各ファイルの行数を確認", "dod-l1-l2.ts<=200 / dod.ts<=200 / lifecycle.ts<=200 / definitions-shared.ts<=200 / definitions.ts<=200 / workflow-execution.md<=200"
+  TC-AC8-01, AC-8, all, "既存テスト全パス", verification, manual, "実装完了後にvitestを実行", "npx vitest run --reporter=verbose", "failure=0で全テストがpass"
+
+boundaryValues[6]{id,target,boundary,testCaseRef}:
+  BV-1, "P4サイズチェック閾値", "99バイト=NG / 100バイト=OK / 0バイト=NG", TC-AC4-01+TC-AC4-02+TC-AC4-03
+  BV-2, "P1 skippedPhases配列", "空配列=スキップなし / 1要素=部分スキップ / 全Stage4=全スキップ", TC-AC1-02+TC-AC1-01+TC-AC1-03
+  BV-3, "P6 .harness.json内容", "正常JSON=外部カテゴリ / 不正JSON=フォールバック / ファイル不在=フォールバック", TC-AC6-01+TC-AC6-03+TC-AC6-02
+  BV-4, "P5 Read指示regex", "読み込んでパターン=除去 / ファイルを読みパターン=除去 / 通常テキスト=保持", TC-AC5-01+TC-AC5-02+TC-AC5-03
+  BV-5, "P2 forceTransition", "false=先行チェック実行 / true=先行チェックスキップ", TC-AC2-01+TC-AC2-04
+  BV-6, "P2 outputFile定義", "outputFile定義あり=チェック実行 / outputFile定義なし=チェックスキップ", TC-AC2-01+TC-AC2-03
+
+edgeCases[4]{id,scenario,risk,mitigation}:
+  EC-1, "fileToPhaseMapにbasenameが存在しないinputFile", "low", "マッピング未登録のファイルはスキップ対象にならず通常通り存在チェックされる(TC-AC1-04で検証)"
+  EC-2, "outputFile内の{docsDir}プレースホルダ置換失敗", "low", "config.outputFileがnullの場合はearly-returnで先行チェック自体をスキップ(TC-AC2-03で検証)"
+  EC-3, ".harness.jsonのtraitCategoriesが空オブジェクト", "low", "空オブジェクトはvalidなJSONオブジェクトであり各フラグがundefinedとなるためDEFAULT_TRAIT_CATEGORIESにフォールバック"
+  EC-4, "テンプレート内に読み込んでを含むが成果物ルール説明の一部である行", "low", "OQ-2検証でdefs-stage3 L24とdefs-stage4 L52の2行のみが対象。成果物ルール説明に読み込んでは使用されていないことを確認済み"
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "テストファイルを3本に分割しそれぞれが単一の責務を持つ", "既存パターン(dod-basic/dod-ia/handler-lifecycle等)に準拠。ファイルあたり200行制限も考慮し責務分離を徹底する"
+  TD-2, "P1テストはcheckInputFilesExist関数を直接呼び出すユニットテストとする", "runDoDChecks経由の統合テストでは他のDoD検証項目の成否が混在する。関数単体テストで新規パラメータ(skippedPhases/fileToPhaseMap)の動作を確実に検証する"
+  TD-3, "P2+P4テストはhandler-test-setup.tsの統合テストパターンを使用する", "先行チェックはhandleHarnessNext関数内に挿入されるためhandler-lifecycle.test.tsと同じsetupHandlerTest/call方式で統合検証する"
+  TD-4, "P3+P5+P6テストはbuildSubagentPromptとloadTraitCategoriesの関数単体テストとする", "テンプレート展開とカテゴリ読込は純粋関数であり外部依存が小さいためユニットテストが適切"
+  TD-5, "境界値テストとしてP4の100バイト閾値(99/100/0)を明示的に検証する", "REQ-D-6で閾値を100バイトと定義しており境界値テストで閾値の正確性を保証する"
+  TD-6, "AC-7(200行制限)とAC-8(既存テスト全パス)はverificationタイプとし実装完了後に手動確認する", "行数カウントとテスト実行は自動テストケースとしてcodifyするよりCI/手動実行が適切"
+  TD-7, "既存テストヘルパー(dod-test-helpers.ts)のmakeMinimalStateとbuildValidArtifactを再利用する", "テスト用のTaskState生成とTOON成果物生成は既存ヘルパーが十分な機能を持ち新規作成は不要"
+
+acCoverage[8]{ac,testCaseIds,coverage}:
+  AC-1, "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC1-05", "正常スキップ+空配列+全スキップ+マッピング省略+inputFiles空の5パターン"
+  AC-2, "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-04", "不在エラー+存在通過+outputFile未定義フェーズ+forceTransitionの4パターン"
+  AC-3, "TC-AC3-01/TC-AC3-02/TC-AC3-03", "プロンプト含有+定数定義+プレースホルダ未使用の3パターン"
+  AC-4, "TC-AC4-01/TC-AC4-02/TC-AC4-03", "100バイト未満+ちょうど100バイト+0バイトの3境界値"
+  AC-5, "TC-AC5-01/TC-AC5-02/TC-AC5-03", "読み込んでパターン+ファイルを読みパターン+通常テキスト保持の3パターン"
+  AC-6, "TC-AC6-01/TC-AC6-02/TC-AC6-03", "外部カテゴリ+ファイル不在フォールバック+不正JSONフォールバックの3パターン"
+  AC-7, TC-AC7-01, "6ファイル全数の行数確認"
+  AC-8, TC-AC8-01, "vitest run全パス確認"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-10m-resilience/spec.toon, input, "6本柱の技術仕様(OQ検証済み)"
+  docs/workflows/harness-10m-resilience/requirements.toon, input, "機能要件9件+受入基準8件の要件定義書"
+  docs/workflows/harness-10m-resilience/test-design.toon, output, "AC-1〜AC-8に対応する22テストケースのテスト設計書"
+
+next:
+  criticalDecisions: "TD-2(P1ユニットテスト方針)とTD-3(P2+P4統合テスト方針)がtest_implフェーズのテストコード構造を決定する。TD-7(ヘルパー再利用)が新規ヘルパー不要を確定"
+  readFiles: "src/__tests__/dod-test-helpers.ts(ヘルパー関数), src/__tests__/handler-test-setup.ts(統合テストsetup), src/gates/dod-l1-l2.ts(P1テスト対象), src/tools/handlers/lifecycle.ts(P2+P4テスト対象), src/phases/definitions.ts(P3+P5+P6テスト対象), src/phases/definitions-shared.ts(PROCEDURE_ORDER_RULE定義先)"
+  warnings: "TC-AC1-01のsetupではdesign_reviewのinputFilesが5ファイル(state-machine.mmd/flowchart.mmd/ui-design.toon/spec.toon/threat-model.toon)あるため、smallタスクでスキップされるStage4の3フェーズ(state_machine/flowchart/ui_design)を全てskippedPhasesに含める必要がある"

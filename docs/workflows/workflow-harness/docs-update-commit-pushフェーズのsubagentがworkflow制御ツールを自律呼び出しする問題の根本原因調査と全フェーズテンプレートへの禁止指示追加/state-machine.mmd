@@ -1,0 +1,18 @@
+stateDiagram-v2
+    Start --> AnalyzingPhases: FR-15障害から禁止指示不在を検出
+    AnalyzingPhases --> ClassifyingByType: フェーズを4種別に分類\n（直線・並列・承認・git操作）
+    ClassifyingByType --> ConfirmingTemplates: 既存4フェーズの禁止指示を確認\n（変更不要のフェーズを特定）
+    ConfirmingTemplates --> TemplatesDefined: 4種別の禁止指示テキストを確定\n（FR-19-1から19-4）
+
+    TemplatesDefined --> AddingLinearPhases: 直線フェーズ6つへ追加実施\n（research・requirements・implementation・\nrefactoring・ci_verification・deploy）
+    AddingLinearPhases --> AddingReviewPhases: 承認フェーズ2つへ追加実施\n（design_review・test_design）
+    AddingReviewPhases --> AddingGitPhases: git操作フェーズ2つへ追加実施\n（commit・push）
+    AddingGitPhases --> AddingParallelPhases: 並列サブフェーズ11つへ追加実施\n（threat_modeling・planning・state_machine・\nflowchart・ui_design・build_check・code_review・\nmanual_test・security_scan・performance_test・e2e_test）
+
+    AddingParallelPhases --> BuildingTypeScript: npm run buildでビルド実行\n（definitions.tsのコンパイル）
+    BuildingTypeScript --> BuildSuccess: ビルド成功を確認
+    BuildSuccess --> RunningTests: テストスイート実行\n（945件以上のテスト実行期待）
+    RunningTests --> AllTestsPassed: 全テスト合格を確認\n（945件以上のパス）
+    AllTestsPassed --> VerifyingAllPhases: Grepで全25フェーズを確認\n（「## ★ワークフロー制御ツール禁止★」セクション）
+    VerifyingAllPhases --> ConfirmingExisting: 既存4フェーズの禁止指示が\n変更されていないことを確認
+    ConfirmingExisting --> End: 禁止指示追加完了\n全フェーズで自律フェーズ遷移を防止

@@ -1,0 +1,37 @@
+task: tier-b-gaps-n08-n15
+phase: test_selection
+intent: Tier B テスト選択。test-design.toonの17テストケースから実装対象を選定する。
+
+selectionCriteria:
+  strategy: 全テストケース実装。smallタスクのため選択的除外なし。
+  totalTests: 17
+  unitTests: 14 (linter-runner.test.ts 11件 + archgate-extended.test.ts 3件パス判定)
+  integrationTests: 2 (archgate-extended.test.ts checkType分岐検証)
+  manualTests: 3 (post-tool-lint.sh oxlint/biome + eslint.config.js security)
+
+selectedTests[2]{file,testCount,coverage}:
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, 11, "AC-3(jscpd) + AC-4(ast-grep) の入出力検証と境界値テスト"
+  workflow-harness/mcp-server/src/__tests__/archgate-extended.test.ts, 5, "AC-3(duplicate_code) + AC-4(ast_grep_pattern) のarchgate統合検証"
+
+deferredToManual[3]{target,reason}:
+  post-tool-lint.sh oxlintブロック, "シェルフック環境でのみ検証可能。vitestからの直接テスト不可"
+  post-tool-lint.sh biome formatブロック, "同上。フック実行環境依存"
+  eslint.config.js security plugin, "ESLint設定の有効性検証はnpx eslint --print-configで手動確認"
+
+decisions[5]{id,statement,rationale}:
+  TS-1, "全17テストケースを実装対象とし選択的除外は行わない", "smallタスクのためテスト数が少なくすべて実装しても工数に影響しない"
+  TS-2, "linter-runner.test.tsに境界値テスト2件を含める", "threshold比較演算子の正確性保証がjscpd/ast-grep統合の品質に直結する"
+  TS-3, "archgate-extended.test.tsはfsStoreモックを既存テストから踏襲する", "実証済みパターンの再利用でテストの信頼性を確保する"
+  TS-4, "シェルスクリプトテストはmanual_testフェーズに完全委譲する", "vitest環境からのフック実行は環境差異が大きく自動化の信頼性が低い"
+  TS-5, "AC-5(全テスト通過)はtestingフェーズのvitest run全体実行で検証する", "個別ケース列挙ではなくスイート全体のexit codeで網羅的リグレッション検出"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/test-design.toon, input, テスト設計(17ケース定義)
+  docs/workflows/tier-b-gaps-n08-n15/test-selection.toon, output, テスト選択結果(全件実装+手動3件)
+
+next:
+  criticalDecisions: "TS-1(全件実装)によりtest_implで16自動テスト+手動3件の構成が確定"
+  readFiles: "test-design.toon, archgate.ts, archgate.test.ts"
+  warnings: "linter-runner.test.tsとarchgate-extended.test.tsの合計行数が200行制限内に収まることを確認すること"
+
+result{phase,status,artifact,lines}: test_selection, complete, docs/workflows/tier-b-gaps-n08-n15/test-selection.toon, 40

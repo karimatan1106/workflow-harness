@@ -1,0 +1,23 @@
+taskName: inv-n-proof-tier
+phase: threat_modeling
+createdAt: 2026-03-07
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+
+decisions[5]{id,statement,rationale}:
+  TM-001, TaskState.invariants配列はoptionalフィールドとして追加し既存state.jsonとの後方互換性を維持する, "既存のstate.jsonにinvariantsキーが存在しないケースでZod parseがfailすると全タスクが復元不能になる。z.array(InvariantSchema).optional().default([])でデフォルト空配列を返すことで既存データの安全な読み込みを保証する"
+  TM-002, Checkpoint型へのinvariants追加はoptionalフィールドとしsha256ハッシュの後方互換性を維持する, "computeCheckpointHashはJSON.stringifyで全フィールドをソート順にハッシュ化する。invariantsが未定義のCheckpointでは従来と同一ハッシュが生成されるためoptionalフィールドとして追加し移行期の整合性を担保する"
+  TM-003, harness_add_invariantツールのidフィールドはINV-N形式のバリデーションを強制する, "自由形式のidを許容するとINV-1/INV-2等の命名規則が崩れDoDゲートのパターンマッチが失敗する。/^INV-\\d+$/の正規表現バリデーションをハンドラで実施し不正id登録を防止する"
+  TM-004, InvariantStatusのviolated状態はDoDゲートでブロック扱いとし警告のみにしない, "violated状態を警告に留めると不変条件違反のまま完了フェーズに到達可能になりINV-Nの存在意義が損なわれる。ACのnot_met状態と同等のブロック動作を適用する"
+  TM-005, ProofTier列挙型の値は文字列リテラルとし数値エンコードしない, "T1/T2/T3/T4を数値(1-4)で管理するとJSON上の可読性が低下しデバッグ困難になる。文字列リテラル型ユニオンとして定義しstate.jsonの人間可読性を維持する"
+
+threats[3]{id,description,impact,mitigation,residualRisk}:
+  T-001, 既存state.jsonにinvariantsキーが無い状態でのZod parse失敗, 全既存タスクのstate復元が不能になりデータロスが発生, Zodスキーマでoptional().default([])を使用し欠落時は空配列を返す, 低
+  T-002, Checkpoint sha256ハッシュの後方非互換によるセッション回復失敗, invariants追加後のCheckpointハッシュが旧形式と不一致になりintegrityチェックでブロック, invariantsフィールドをoptionalとしundefined時はJSON.stringifyで省略されハッシュ影響なし, 低
+  T-003, INV-N idの命名規則違反による DoDゲートのパターンマッチ失敗, 不正形式のINV-idがDoDゲートで検出されずviolated状態のまま完了可能になる, ハンドラ層で/^INV-\\d+$/の正規表現バリデーションを強制, 低
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/threat-model.toon, report, 脅威分析チェックポイント（最小構成）
+
+next:
+  criticalDecisions[2]: TM-001, TM-002
+  readFiles[2]: docs/workflows/inv-n-proof-tier/requirements.toon, docs/workflows/inv-n-proof-tier/research.toon

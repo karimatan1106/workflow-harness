@@ -1,0 +1,67 @@
+phase: research
+taskName: harness-10m-resilience
+timestamp: 2026-03-08
+riskScore: 6
+
+summary: "7ファイルの精査完了。P1-P6実装の行番号・シグネチャ・制約を確認。definitions.tsは173行で27行余裕があり、P5(regex追加)+P6(loadTraitCategories)は収まるがP3のフラグメント展開コードとの合計では余裕が限界。definitions-shared.tsは57行で143行余裕がありP3フラグメント追加に十分。lifecycle.tsは124行で76行余裕がありP2+P4先行チェックに十分。"
+
+fileAnalysis[7]{id,path,lines,headroom,targetFunctions,constraints}:
+  FA-1, src/gates/dod-l1-l2.ts, 80, 120, "checkInputFilesExist(L29-44): 引数(phase:string,docsDir:string,workflowDir:string)返り値DoDCheckResult。config.inputFilesをループしexistsSyncで検証。skippedPhases引数追加時はPhaseConfig逆引きが必要", "importにTaskState型なし。OUTPUT_FILE_TO_PHASEはdefinitions.tsにあり別モジュール依存が発生する。循環importを避けるためbasenameからフェーズ特定するマッピングをこのファイル内に配置するか引数で渡す必要あり"
+  FA-2, src/gates/dod.ts, 71, 129, "runDoDChecks(L24-58): checkInputFilesExist呼び出しはL35で引数(phase,docsDir,workflowDir)。state変数からskippedPhasesを取得可能(state.skippedPhases)", "checkInputFilesExistのimportはL8。引数追加時はimport型変更不要(string[]追加のみ)。runDoDChecksはstateを第1引数で受け取っておりstate.skippedPhasesに直接アクセス可能"
+  FA-3, src/tools/handlers/lifecycle.ts, 124, 76, "handleHarnessNext(L67-124): DoDチェックはL93-94。forceTransition判定はL85。dodResult変数宣言はL92。PHASE_REGISTRYはL9でimport済み。task.docsDirはL91で解決", "P2+P4先行チェック挿入位置はL91(docsDir解決)とL92(dodResult宣言)の間。existsSync+statSyncの追加importが必要。config.outputFileの{docsDir}置換が必要"
+  FA-4, src/phases/definitions-shared.ts, 57, 143, "ARTIFACT_QUALITY_RULES(L26-29)とSUMMARY_SECTION_RULE(L31-40)とEXIT_CODE_RULE(L43-46)がexportフラグメント。bashCategoryHelp関数(L48-57)。PhaseDefinition型(L10-19)", "新規フラグメントPROCEDURE_ORDER_RULEはEXIT_CODE_RULEの直後(L47)に追加。既存パターンはテンプレートリテラルでexport const形式。5行程度の追加で62行になり138行余裕"
+  FA-5, src/phases/definitions.ts, 173, 27, "buildSubagentPrompt(L114-173): フラグメント展開はL135-138で{SUMMARY_SECTION},{BASH_CATEGORIES},{ARTIFACT_QUALITY},{EXIT_CODE_RULE}の4種。OUTPUT_FILE_TO_PHASE(L43-62): 18エントリのRecord<string,string>。TRAIT_CATEGORIES(L79-86): 6トレイトのRecord。buildDocCategories(L96-110)", "P3: L138の後に{PROCEDURE_ORDER}展開を1行追加(1行消費)。P5: L138-139間にRead指示除去regexを追加(2-3行消費)。P6: TRAIT_CATEGORIES(L79-86)をloadTraitCategories関数に置換(8行→12行で+4行)。合計+7行で180行。200行制限内だが余裕は20行"
+  FA-6, src/phases/registry.ts, 170, 30, "PHASE_REGISTRY(L8-55): 30フェーズのPhaseConfig定義。inputFiles配列は各フェーズに定義済み。design_review(L23)はinputFilesに5ファイル指定あり(state-machine.mmd,flowchart.mmd,ui-design.toon,spec.toon,threat-model.toon)。smallサイズでstate_machine/flowchart/ui_designがskipされる", "P1の逆引き検証: design_reviewのinputFiles内のstate-machine.mmd/flowchart.mmd/ui-design.toonはsmall/mediumでスキップされるフェーズの出力。これがforceTransition必要の根本原因。SIZE_SKIP_MAP(L91-124)で確認済み"
+  FA-7, .claude/skills/harness/workflow-execution.md, 63, 137, "フェーズ別subagent設定テーブル(L9-25)とBash許可テーブル(L29-36)とエラー種別変換テーブル(L42-48)と編集可能ファイルテーブル(L52-62)", "P5ルール追記位置はL48(エラー種別変換テーブル)の後に新セクションとして追加。ファイルは親リポジトリ側(.claude/skills/harness/)にもコピーが存在するため両方の更新が必要"
+
+p1Analysis:
+  mechanism: "checkInputFilesExist(L29-44)はconfig.inputFilesをイテレートしexistsSyncで存在チェック。skippedPhasesの出力ファイルは物理的に存在しないためfailする"
+  rootCause: "design_review.inputFilesにstate-machine.mmd等が含まれるがsmallタスクでstate_machineがスキップされると出力ファイルが生成されない"
+  proposedFix: "checkInputFilesExistに第4引数skippedPhases:string[]を追加。各inputFileのbasenameでOUTPUT_FILE_TO_PHASEから生成元フェーズを逆引きしskippedPhasesに含まれれば検証をスキップ"
+  importConstraint: "OUTPUT_FILE_TO_PHASEはdefinitions.tsに定義。dod-l1-l2.tsからdefinitions.tsをimportすると循環依存リスク(registry.ts経由)。解決策はOUTPUT_FILE_TO_PHASEをdefinitions-shared.tsに移動するか引数でマッピングを渡す"
+  callerChange: "dod.ts L35のcheckInputFilesExist呼び出しに第4引数state.skippedPhasesを追加。TaskState型にskippedPhases:PhaseName[]は既に定義済み(types.ts L63)"
+
+p2p4Analysis:
+  insertionPoint: "lifecycle.ts L91-92間(docsDir解決後、dodResult宣言前)"
+  requiredImports: "existsSync(node:fsから。dod-l1-l2.tsで使用実績あり)、statSync(node:fsから追加)"
+  checkLogic: "PHASE_REGISTRY[task.phase].outputFileが存在する場合のみ実行。{docsDir}を置換しexistsSyncで存在確認、statSync(path).sizeが100未満でエラー返却"
+  errorFormat: "respondError形式で返却。DoDチェック実行前のearly-return"
+  lineEstimate: "8-10行追加で132-134行。200行制限内"
+
+p3Analysis:
+  fragmentPattern: "export const NAME = テンプレートリテラル 形式。ARTIFACT_QUALITY_RULES/SUMMARY_SECTION_RULE/EXIT_CODE_RULEと同パターン"
+  insertionPoint: "definitions-shared.ts L47(EXIT_CODE_RULEの直後)"
+  expansionPoint: "definitions.ts L138の後に prompt.replace(/\\{PROCEDURE_ORDER\\}/g, PROCEDURE_ORDER_RULE) を追加"
+  importChange: "definitions.ts L10のimportにPROCEDURE_ORDER_RULEを追加"
+  content: "作業順序を(1)入力Read→(2)分析→(3)Write→(4)検証Read→(5)結果報告 の5ステップで固定"
+
+p5Analysis:
+  regexTarget: "テンプレート内の「以下のファイルを読み込んでください」や「Read」指示行"
+  insertionPoint: "definitions.ts L138-139間(フラグメント展開後、変数置換前)"
+  existingStripPattern: "L131-133に既存のregexストリップ処理あり(verbose header blocks除去)。同パターンで追加可能"
+  regexDesign: "prompt.replace(/^.*(?:読み込んで|Read\\s*tool|ファイルを読み).*$/gm, '') で行単位除去"
+
+p6Analysis:
+  currentLocation: "definitions.ts L79-86のTRAIT_CATEGORIES定数"
+  proposedChange: "TRAIT_CATEGORIESをデフォルト値として保持しつつloadTraitCategories関数でCWDから.harness.jsonを探索し上書き"
+  jsonSchema: "{ traitCategories: Record<string, string[]> } 形式"
+  fallbackBehavior: "ファイル不在またはパースエラー時はデフォルトTRAIT_CATEGORIESを使用"
+  callerChange: "buildDocCategories呼び出し元(L146)は変更不要。TRAIT_CATEGORIES参照をloadTraitCategories()呼び出しに置換"
+
+decisions[7]{id,statement,rationale}:
+  R-1, "OUTPUT_FILE_TO_PHASEの移動はせず引数としてマッピングを渡す方式を採用する", "definitions-shared.tsへの移動はregistry.tsの循環依存を避けられるが既存のbuildToonFirstSection関数も影響を受ける。引数方式なら変更範囲がcheckInputFilesExistとrunDoDChecksの2関数に限定される"
+  R-2, "P2+P4先行チェックはforceTransition判定の後かつDoDチェック前のL91-92間に配置する", "forceTransition時はDoDチェック自体がスキップされるためP2+P4チェックも不要。L85のforceTransition判定ブロック内ではなくL92の直前に配置することでforceTransitionガードの恩恵を受ける"
+  R-3, "PROCEDURE_ORDER_RULEフラグメントは5行以内でRead→分析→Write→検証→報告の固定順序を規定する", "既存フラグメント(EXIT_CODE_RULE等)は3-5行。テンプレート内での展開後のトークン消費を最小化するため簡潔に保つ"
+  R-4, "P5のRead指示除去はフラグメント展開後かつ変数置換前の位置に挿入する", "フラグメント内にRead指示が含まれる可能性は低いが順序として安全。L131-133の既存ストリップ処理と同じ位置に集約する方がコード可読性が高い"
+  R-5, "P6のloadTraitCategoriesは同期関数(readFileSyncベース)で実装する", "buildSubagentPromptは同期関数であり非同期化は呼び出しチェーン全体に影響する。設定ファイル読込は起動時1回のみで性能影響なし"
+  R-6, "definitions.tsの行数制約(200行上限)に対し合計+7行で180行を見込む", "P3(+1行展開)、P5(+2行regex)、P6(+4行関数化)の合計。180行は20行余裕がありバッファとして十分"
+  R-7, "P2先行チェックのサイズ閾値100バイトはTOON最小有効成果物サイズに基づく", "最小のTOON成果物(phase+timestamp+summary)が約80バイト。100バイト閾値はほぼ空のファイルのみを検出し正当な小さい成果物を誤検出しない"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/harness-10m-resilience/scope-definition.toon, spec, "入力スコープ定義。6本柱の設計と7ファイルの変更計画"
+  docs/workflows/harness-10m-resilience/research.toon, report, "7ファイルの精査結果。行番号、シグネチャ、制約、挿入位置を網羅的に記録"
+
+next:
+  criticalDecisions: "R-1(マッピング引数方式)が循環依存回避の鍵。R-2(挿入位置)がP2+P4の正確な配置を決定。R-6(行数見込み)がdefinitions.tsの200行制限への適合を保証"
+  readFiles: "src/gates/dod-l1-l2.ts(L29-44), src/gates/dod.ts(L35), src/tools/handlers/lifecycle.ts(L91-92), src/phases/definitions-shared.ts(L47), src/phases/definitions.ts(L138,L79-86)"
+  warnings: "R-1でマッピング引数方式を選択したがdod.ts側でOUTPUT_FILE_TO_PHASEを構築する必要がありdefinitions.tsからのimportが発生する。dod.tsからdefinitions.tsへのimport経路に循環がないことをimpact_analysisで確認すること"

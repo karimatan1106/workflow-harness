@@ -1,0 +1,55 @@
+%% flowchart: fix-failing-quality-rule-tests
+%% taskId: 516baef8-f09e-45d9-a654-fb70c308f925
+
+%% decisions:
+%% - D-001: coordinator.md末尾に Phase Output Rules セクションを追記する（既存構造を壊さない）
+%% - D-002: worker.md末尾に Edit Completeness セクションを追記する（既存 Edit Modes と独立）
+%% - D-003: hearing-worker.md末尾に AskUserQuestion Quality Rules セクションを追記する
+%% - D-004: 各ファイル200行制限を遵守する（全ファイル追加後も100行未満）
+%% - D-005: テストの正規表現パターンに正確にマッチする文言を採用する
+%% - D-006: 既存セクション内容は変更しない（追記のみで既存テストに影響を与えない）
+%% - D-007: テストコード自体には変更を加えない（テストが正、実装を合わせる方針）
+
+%% artifacts:
+%% - .claude/agents/coordinator.md (Phase Output Rules セクション追加)
+%% - .claude/agents/worker.md (Edit Completeness セクション追加)
+%% - .claude/agents/hearing-worker.md (AskUserQuestion Quality Rules セクション追加)
+
+%% next: implementation
+
+flowchart TD
+    START([開始: 10件テスト失敗]) --> CHECK_TESTS[失敗テスト内容を確認]
+
+    CHECK_TESTS --> SPLIT_SUITES{テストスイート分類}
+
+    SPLIT_SUITES --> SUITE_A[first-pass-improvement.test.ts\n7件失敗]
+    SPLIT_SUITES --> SUITE_B[hearing-worker-rules.test.ts\n3件失敗]
+
+    SUITE_A --> COORD[coordinator.md\nTC-AC1-01~04: 4件]
+    SUITE_A --> WORKER[worker.md\nTC-AC2-01~03: 3件]
+
+    SUITE_B --> HEARING[hearing-worker.md\nTC-AC1/2/3-01: 3件]
+
+    COORD --> EDIT_COORD[coordinator.md末尾に\nPhase Output Rules追加\n- decisions 5件以上\n- artifacts 列挙\n- next 空欄禁止]
+
+    WORKER --> EDIT_WORKER[worker.md末尾に\nEdit Completeness追加\n- 部分適用禁止\n- 全件適用]
+
+    HEARING --> EDIT_HEARING[hearing-worker.md末尾に\nAskUserQuestion Quality Rules追加\n- 確認のみ禁止\n- 2つ以上アプローチ\n- メリット/デメリット]
+
+    EDIT_COORD --> LINE_CHECK{200行制限チェック\n38行+4行=42行}
+    EDIT_WORKER --> LINE_CHECK2{200行制限チェック\n57行+3行=60行}
+    EDIT_HEARING --> LINE_CHECK3{200行制限チェック\n27行+4行=31行}
+
+    LINE_CHECK --> |OK| RUN_TESTS
+    LINE_CHECK2 --> |OK| RUN_TESTS
+    LINE_CHECK3 --> |OK| RUN_TESTS
+
+    RUN_TESTS[vitest run\nfirst-pass-improvement.test.ts\nhearing-worker-rules.test.ts]
+
+    RUN_TESTS --> RESULT{全10件PASS?}
+
+    RESULT --> |Yes| VERIFY_EXISTING[既存テストも影響なし確認\ndefs-stage4.ts PASS\n200行制限テスト PASS]
+    RESULT --> |No| FIX_REGEX[正規表現マッチ確認\nテスト期待値と文言照合]
+    FIX_REGEX --> EDIT_COORD
+
+    VERIFY_EXISTING --> DONE([完了: 全テストPASS])

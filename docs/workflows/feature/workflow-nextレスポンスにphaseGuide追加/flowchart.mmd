@@ -1,0 +1,71 @@
+flowchart TD
+    Start(Orchestratorがworkflow_nextを呼び出す) --> GetNextPhase(次フェーズを特定)
+
+    GetNextPhase --> MCPCall(MCP server workflowNext関数)
+
+    MCPCall --> GetGuide(PHASE_GUIDESからphaseGuide取得)
+    GetGuide --> ResolveGuide(resolvePhaseGuide実行 docsDirプレースホルダーを置換)
+
+    ResolveGuide --> GuideContent(PhaseGuide構築)
+
+    GuideContent --> ReturnResponse(NextResultにphaseGuideを含めて返却)
+
+    ReturnResponse --> OrchestratorReceive(Orchestratorがレスポンス受信)
+
+    OrchestratorReceive --> BuildPrompt(phaseGuideからsubagent promptを構築)
+
+    BuildPrompt --> TaskTool(Task toolでsubagentに委譲)
+
+    TaskTool --> SubagentExecute(Subagent フェーズ実装実行)
+
+    SubagentExecute --> SubagentComplete(Subagent 成果物生成完了)
+
+    SubagentComplete --> Layer2(Layer2 事後検証 Orchestrator)
+
+    Layer2 --> CheckFile(成果物ファイル存在確認)
+
+    CheckFile --> CheckSections{必須セクション全て含まれているか}
+
+    CheckSections -->|Yes| CheckLines{最小行数要件クリアしているか}
+
+    CheckSections -->|No| MissingSections(不足セクションを記録)
+
+    CheckLines -->|Yes| CheckEditableTypes{編集可能ファイルタイプ違反していないか}
+
+    CheckLines -->|No| InsufficientLines(行数不足を記録)
+
+    CheckEditableTypes -->|Yes| Layer2OK(Layer2検証 OK)
+
+    CheckEditableTypes -->|No| FileTypeViolation(ファイルタイプ違反を記録)
+
+    MissingSections --> Layer3Decision{Layer3修正実施するか}
+    InsufficientLines --> Layer3Decision
+    FileTypeViolation --> Layer3Decision
+
+    Layer2OK --> Layer3None(Layer3 修正不要)
+
+    Layer3Decision -->|Yes| Layer3(Layer3 自動修正 Orchestrator)
+    Layer3Decision -->|No| FailReview(検証失敗 subagentに再実行指示)
+
+    Layer3 --> AddSections(不足セクションを追加)
+    AddSections --> ExpandContent(コンテンツ拡充 minLines達成)
+    ExpandContent --> RevalidateFile(修正ファイルを再検証)
+
+    RevalidateFile --> RevalidateOK{再検証合格}
+
+    RevalidateOK -->|Yes| Layer3OK(Layer3修正 完了)
+    RevalidateOK -->|No| FailModify(修正失敗 エラーログ出力)
+
+    Layer3OK --> NextPhaseTransition(workflow_nextで次フェーズへ遷移)
+    Layer3None --> NextPhaseTransition
+
+    FailReview --> RetrySubagent(Subagentに修正版promptで再実行)
+    RetrySubagent --> SubagentExecute
+
+    FailModify --> Escalate(管理者に通知 手動確認が必要)
+
+    NextPhaseTransition --> UpdateState(workflow-state.jsonを更新)
+    UpdateState --> NotifyNext(次フェーズの開始を通知)
+    NotifyNext --> Done(フェーズ遷移完了)
+
+    Escalate --> Done

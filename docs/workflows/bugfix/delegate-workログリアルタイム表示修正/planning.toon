@@ -1,0 +1,44 @@
+task-name: delegate-workログリアルタイム表示修正
+phase: planning
+target-file: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+target-line: 130
+prior-phases: "scope-definition.toon, research.toon, requirements.toon"
+
+decisions[6]{id, statement, rationale}:
+  D-P1, "130行目の1行stderrハンドラを複数行に展開", "stdoutハンドラ(122-128行目)と同一構造にすることで可読性と保守性を統一"
+  D-P2, "chunk.toString()結果をtext変数に格納してから再利用", "toString()二重呼び出し回避。stdoutハンドラと同一パターン"
+  D-P3, "process.stderr.write(chunk)でBuffer直接リレー", "stdoutハンドラのprocess.stderr.write(chunk)と同一。再エンコード不要"
+  D-P4, "if (options.logFile)ガードでappendFileSync呼び出し", "requirements D-3準拠。logFile未指定時のENOENTエラーを防止"
+  D-P5, "stderr += text の蓄積を先頭に配置", "requirements D-6準拠。reject時のエラーメッセージ完全性を保証。副作用のない蓄積を先に実行"
+  D-P6, "変更はold_string/new_stringの単一Edit操作で完結", "130行目の1行を7行に置換するだけ。前後のコードに触れない最小侵襲"
+
+artifacts[3]{id, type, path}:
+  A-1, source, workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+  A-2, log, .agent/delegate-work.log
+  A-3, dist, workflow-harness/mcp-server/dist/tools/handlers/delegate-work.js
+
+implementation-plan[4]{step, action, detail}:
+  S-1, edit, "delegate-work.ts 130行目を展開: child.stderr?.on('data', (chunk: Buffer) => { const text = chunk.toString(); stderr += text; process.stderr.write(chunk); if (options.logFile) { appendFileSync(options.logFile, text); } });"
+  S-2, build, "npm run build で dist/tools/handlers/delegate-work.js を再生成"
+  S-3, verify-static, "dist出力にappendFileSyncとprocess.stderr.writeがstderrハンドラ内に存在することを確認"
+  S-4, verify-runtime, "delegate_workツール実行中にtail -f .agent/delegate-work.logでstderr進捗が出力されることを確認"
+
+old-string: "    child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });"
+new-code-summary: stderrハンドラを展開しappendFileSyncでlogFileに追記
+change-line: 130
+change-type: 1行を6行に展開
+
+risk-assessment[2]{id, risk, mitigation}:
+  R-1, "appendFileSyncがstderrの高頻度出力でI/Oボトルネックになる可能性", "stdoutで既に同一パターンが問題なく動作中。claude CLIのstderr出力頻度は低い"
+  R-2, "stdout/stderrがlogFile内でインターリーブする", "requirements D-5/ns-2で意図的にプレフィックスなし設計。混在は許容"
+
+acceptance-criteria-map[4]{ac-id, step}:
+  AC-1, S-4
+  AC-2, S-3
+  AC-3, S-1
+  AC-4, S-1
+
+next: "implementationフェーズ。S-1のEdit操作を実行し、S-2でビルド、S-3/S-4で検証"
+files-changed: docs/workflows/delegate-workログリアルタイム表示修正/planning.toon
+success: true
+output: "計画完了。1ファイル1箇所の単一Edit操作。130行目を7行に展開。stdoutハンドラと完全対称のパターン"

@@ -1,0 +1,26 @@
+%% hook-utils getActivePhaseFromWorkflowState state machine (post-fix)
+
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> ReadTaskIndex: hook invoked
+    ReadTaskIndex --> PhaseResolved: active entry found
+    ReadTaskIndex --> ScanWorkflows: no entry in task-index
+    ScanWorkflows --> TryJson: workflow-state.json exists
+    ScanWorkflows --> TryToon: workflow-state.toon exists
+    ScanWorkflows --> NoActive: neither file present
+    TryJson --> PhaseResolved: phase key present and not completed
+    TryJson --> TryToon: json missing phase
+    TryToon --> PhaseResolved: phase line extracted (first 64KB)
+    TryToon --> NoActive: no phase line
+    PhaseResolved --> AllowWrite: phase is active
+    PhaseResolved --> NoActive: phase is completed or idle
+    NoActive --> BlockWrite
+    AllowWrite --> [*]
+    BlockWrite --> [*]
+
+%% ## decisions
+%% - D-001: TOON読み取りはJSON読み取りの後続フォールバックとして動作
+%% - D-002: phase値が completed または idle の場合は NoActive 扱い
+%% - D-003: TOON読み取りは先頭64KB制限でDoSリスクを低減
+%% - D-004: TaskIndex経路とWorkflowState経路の両方を保持し互換維持
+%% - D-005: 既存シグネチャ変更なし、内部分岐の追加のみ

@@ -1,0 +1,72 @@
+phase: planning
+task: orchestrator-direct-edit-block-hook
+intent: "PreToolUseフックで、Orchestratorがdocs/workflows/配下の成果物ファイルを直接Write/Editすることをブロックし、DoD失敗時のsubagent再起動強制を機械的に担保する"
+
+architecture:
+  pattern: "PreToolUseフックによるステートレスパスガード"
+  layer: "bashフック層（.claude/hooks/）。Node.js層のphase-edit-guardとは独立した第2ガードレイヤー"
+  dataFlow: "Claude Code → stdin JSON(file_path) → bashスクリプト → パス正規化 → case文パターンマッチ → exit 0/2"
+  stateModel: "完全ステートレス。ワークフローstate・フェーズ情報・外部ファイルへのアクセスなし。stdin JSONのfile_pathフィールドのみで判定"
+  errorHandling: "exit 2でブロック時、stderrにsubagent再起動手順を含む日本語メッセージを出力。Claude Codeがメッセージをそのままリクエスト元LLMに返却する"
+
+executionFlow[6]{step,action,detail}:
+  1, stdinRead, "cat でstdin全体を読み取りINPUT変数に格納する"
+  2, pathExtract, "grep -o + sed でINPUTからfile_pathの値を抽出する。grep -oで二重引用符内の値を取得しsedでキー名部分を除去する"
+  3, pathNormalize, "sed でWindowsバックスラッシュ(\\\\)をスラッシュ(/)に変換する。MSYS環境のパス変換挙動差を吸収する"
+  4, bypassCheck, "ORCHESTRATOR_GUARD_DISABLE=true の場合 exit 0 で即時許可。空パスも exit 0 で許可する"
+  5, exceptionCheck, "basename が claude-progress.txt に一致する場合 exit 0 で許可する。Orchestratorの進捗追跡用ファイルとして正当な編集対象"
+  6, pathMatch, "case文で *docs/workflows/* パターンに一致する場合 exit 2 でブロック。不一致は exit 0 で許可する"
+
+blockMessage:
+  format: "3行構成: 1行目=ガード名とブロック理由、2行目=代替手順（Task toolでsubagent再起動）、3行目=バイパス方法"
+  line1: "[ORCHESTRATOR-EDIT-GUARD] docs/workflows/配下の成果物ファイルへの直接編集はブロックされました。"
+  line2: "Task toolでsubagentを再起動し、subagent内でファイルを編集してください。"
+  line3: "意図的な変更の場合はORCHESTRATOR_GUARD_DISABLE=trueを設定してください。"
+
+settingsIntegration:
+  targetFile: ".claude/settings.json"
+  targetArray: "hooks.PreToolUse"
+  position: "config-guardエントリの直後（配列インデックス1）。Write|Editに対する2段階ガード: 設定ファイル保護(config-guard) → 成果物保護(orchestrator-edit-guard)"
+  entry: "matcher: Write|Edit, command: bash .claude/hooks/pre-tool-orchestrator-edit-guard.sh"
+
+decisions[7]{id,statement,rationale}:
+  PL-01, "case文で *docs/workflows/* ワイルドカードを使用し絶対パスと相対パスの両方を単一パターンで捕捉する", "Claude Codeが渡すfile_pathは実行環境により絶対パス(C:/ツール/Workflow/docs/workflows/...)または相対パス(docs/workflows/...)のいずれかになる。プレフィックス位置に依存しないワイルドカードで両方を捕捉することで、パス形式の差異による抜け漏れを防止する"
+  PL-02, "例外判定はbasenameベースでclaude-progress.txtのみを許可しパスマッチより先に評価する", "パスプレフィックス判定の前にbasename例外を評価することで、docs/workflows/{任意タスク}/claude-progress.txtを一括で許可できる。将来の例外追加もcase文のパターン追加で対応可能"
+  PL-03, "ブロックメッセージにTask tool経由のsubagent再起動手順を明示的に含める", "workflow-rules.md Rule21の機械的担保。Orchestratorがブロックされた際に曖昧な判断をせず即座にsubagent再起動という具体的行動を取れるようにする"
+  PL-04, "pre-tool-config-guard.shのfile_path抽出・Windows正規化パターンをそのまま再利用する", "既に本番稼働で実績のあるgrep+sedパターンを再利用することで、パス抽出の信頼性を担保しつつコードレビュー負荷を軽減する"
+  PL-05, "ORCHESTRATOR_GUARD_DISABLE環境変数でフック全体をバイパス可能にする", "settings.jsonのフックエントリ削除なしにガードを一時無効化できる運用柔軟性を確保する。config-guardのCONFIG_GUARD_DISABLEと同一パターン"
+  PL-06, "settings.jsonのPreToolUse配列でconfig-guardの直後に配置する", "Write|Editに対する保護の論理的順序を維持する。config-guard(設定ファイル)→orchestrator-edit-guard(成果物)→no-verify-block(Bash/別matcher)の順で評価される"
+  PL-07, "スクリプト全体を50行以内に収めlog_obs関数で観測ログを出力する", "NFR-02の保守性要件とNFR-03の可観測性要件を同時に満たす。既存フック群の構造パターン（shebang→stdin読取→正規化→バイパス→判定→ログ→exit）を踏襲する"
+
+rtmEntries[6]{id,requirement,designRef,codeRef,testRef}:
+  F-001, "docs/workflows/配下のファイルに対するWrite/Edit操作をexit 2でブロックする", "PL-01 R-02", ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "AC-1 AC-5"
+  F-002, "claude-progress.txtへの書き込みのみ例外として許可する（basename判定）", "PL-02 R-03", ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "AC-2"
+  F-003, "ブロック時のstderrメッセージにsubagent再起動手順を含める", "PL-03 R-04", ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "AC-3"
+  F-004, "stdin JSONからfile_pathを抽出しWindowsバックスラッシュをスラッシュに正規化する", "PL-04 R-01", ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "AC-5"
+  F-005, "ORCHESTRATOR_GUARD_DISABLE=trueでフック全体をバイパス可能にする", "PL-05 DC-04", ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "AC-4"
+  F-006, "settings.jsonのPreToolUse配列にmatcher Write|Editで新フックエントリを登録する", "PL-06 R-06", ".claude/settings.json", "AC-1"
+
+implementationOrder[3]{step,target,depends,description}:
+  1, ".claude/hooks/pre-tool-orchestrator-edit-guard.sh", "なし", "フックスクリプト本体を新規作成する。stdin JSON読取→file_path抽出→Windows正規化→バイパスチェック→basename例外→パスマッチ→ブロック/許可の全ロジックを実装する。F-001からF-005の全機能要件をカバーする"
+  2, ".claude/settings.json", "step1", "hooks.PreToolUse配列のconfig-guardエントリ直後にmatcher Write|Editの新エントリを追加する。F-006をカバーする。既存エントリの順序を維持しつつ挿入する"
+  3, "テスト検証", "step1 step2", "AC-1からAC-5の受入基準をbashコマンドで検証する。stdin JSONをパイプでフックスクリプトに渡しexit codeとstderr出力を確認する"
+
+changedFiles[2]{path,action,description}:
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, create, "PreToolUseフックスクリプト新規作成。docs/workflows/配下へのWrite/Edit操作をexit 2でブロックしclaude-progress.txtのみ例外許可する。50行以内のbashスクリプト"
+  .claude/settings.json, modify, "hooks.PreToolUse配列にconfig-guardの直後（インデックス1）に新エントリを挿入する。matcher: Write|Edit、command: bash .claude/hooks/pre-tool-orchestrator-edit-guard.sh"
+
+pseudocode:
+  overview: "フックスクリプトの処理フロー擬似コード"
+  flow: "INPUT=cat stdin / FILE_PATH=grep file_path from INPUT / FILE_PATH=normalize backslash to slash / if ORCHESTRATOR_GUARD_DISABLE=true then exit 0 / if FILE_PATH empty then exit 0 / BASENAME=basename FILE_PATH / if BASENAME=claude-progress.txt then log_obs ALLOWED and exit 0 / case FILE_PATH in *docs/workflows/*) log_obs BLOCKED and echo block-message and exit 2 / *) exit 0"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/spec.toon, spec, "本技術仕様書。アーキテクチャ設計・実行フロー・RTM・実装順序・変更対象ファイルを定義"
+  docs/workflows/orchestrator-direct-edit-block-hook/requirements.toon, input, "要件定義。FR-01からFR-06の機能要件・NFR-01からNFR-05の非機能要件・AC-1からAC-5の受入基準"
+  docs/workflows/orchestrator-direct-edit-block-hook/research.toon, input, "リサーチ成果物。既存フックアーキテクチャ分析・設計制約DC-01からDC-06・暗黙的制約IC-01からIC-04"
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, impl, "実装対象のPreToolUseフックスクリプト。50行以内のbashでdocs/workflows/配下のWrite/Edit操作をブロック"
+  .claude/settings.json, impl, "フック登録先。PreToolUse配列にconfig-guardの直後に新エントリを追加する"
+
+next:
+  criticalDecisions: "PL-01(ワイルドカードパスマッチ), PL-02(basename例外の評価順序), PL-06(settings.json配列内の挿入位置)"
+  readFiles: ".claude/hooks/pre-tool-config-guard.sh, .claude/settings.json, docs/workflows/orchestrator-direct-edit-block-hook/requirements.toon, docs/workflows/orchestrator-direct-edit-block-hook/research.toon"
+  warnings: "settings.jsonは現在modified状態のため、PreToolUse配列への挿入時に既存の未コミット変更との整合性を確認すること。MSYS環境でのパステストではバックスラッシュの二重エスケープに注意"

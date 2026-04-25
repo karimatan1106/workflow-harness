@@ -1,0 +1,113 @@
+phase: analytics
+task: hearing-askuserquestion-rule
+taskId: d113c137-c400-401c-9e3e-bb968f5e84e9
+generatedAt: "2026-03-28T23:04:03.418Z"
+totalElapsed: 17140s
+phaseTimings:
+  hearing:
+    duration: 590s
+    current: false
+  scope_definition:
+    duration: 79s
+    current: false
+  research:
+    duration: 124s
+    current: false
+  impact_analysis:
+    duration: 72s
+    current: false
+  requirements:
+    duration: 225s
+    current: false
+  threat_modeling:
+    duration: 136s
+    current: false
+  planning:
+    duration: 102s
+    current: false
+  state_machine:
+    duration: 61s
+    current: false
+  flowchart:
+    duration: 76s
+    current: false
+  ui_design:
+    duration: 88s
+    current: false
+  design_review:
+    duration: 99s
+    current: false
+  test_design:
+    duration: 136s
+    current: false
+  test_selection:
+    duration: 70s
+    current: false
+  test_impl:
+    duration: 30s
+    current: false
+  implementation:
+    duration: 87s
+    current: false
+  refactoring:
+    duration: 5s
+    current: false
+  build_check:
+    duration: 8s
+    current: false
+  code_review:
+    duration: 112s
+    current: false
+  testing:
+    duration: 14s
+    current: false
+  regression_test:
+    duration: 11s
+    current: false
+  acceptance_verification:
+    duration: 96s
+    current: false
+  manual_test:
+    duration: 105s
+    current: false
+  security_scan:
+    duration: 79s
+    current: false
+  performance_test:
+    duration: 232s
+    current: false
+  e2e_test:
+    duration: 294s
+    current: false
+  docs_update:
+    duration: 130s
+    current: false
+  commit:
+    duration: 44s
+    current: false
+  push:
+    duration: 43s
+    current: false
+  ci_verification:
+    duration: 10s
+    current: false
+  deploy:
+    duration: 12s
+    current: false
+  health_observation:
+    duration: 161s
+    current: false
+  completed:
+    duration: 13810s
+    current: true
+errorAnalysis[1]{phase,retries,topFailure}:
+  test_impl,0,tdd_red_evidence(L2) x1
+errorHistory[0]:
+bottlenecks:
+  slowestPhase: hearing (590s)
+  mostFailedCheck: tdd_red_evidence (1 failures)
+advice[1]: "タスクサイズの見直しを推奨 (総所要時間: 17140s)"
+outlierPhases[3]{phase,seconds,iqrScore}:
+  hearing,590,5.29
+  e2e_test,294,1.89
+  completed,13810,157.24

@@ -1,0 +1,35 @@
+task: tier-a-gaps-n01-n07
+phase: test_design
+intent: テスト対象選定と実行戦略
+
+testSelection:
+  strategy: targeted
+  rationale: N-07とN-02のみvitest単体テスト対象。他5件はシェルスクリプトで手動確認。
+
+selectedTests[2]{file,testCount,target}:
+  workflow-harness/mcp-server/src/__tests__/reflector-quality.test.ts, 7, reflector.tsのMIN_QUALITY_SCOREフィルタ
+  workflow-harness/mcp-server/src/__tests__/retry-adr.test.ts, 5, retry.tsのADRリンク付加
+
+existingTestImpact:
+  reflector-failure-loop.test.ts: N-07フィルタ追加でharmful優勢レッスンの動作が変わる可能性あり。既存テストのhelpful/harmful比率を確認。
+  既存テストは全て品質閾値以上のレッスンを使用しているため影響なし。
+
+coverageTarget:
+  N-07: getLessonsForPhase/formatLessonsForPrompt/MIN_QUALITY_SCORE定数の3箇所をカバー
+  N-02: buildRetryPrompt/ADR存在時/ADR非存在時/エラー時/最大件数の5パターンをカバー
+
+decisions[5]{id,statement,rationale}:
+  TS-1, reflector-quality.test.tsはfsモジュールをvi.mockする, 既存のreflector-failure-loop.test.tsと同じモック戦略を踏襲。
+  TS-2, retry-adr.test.tsはadr.tsモジュールをvi.mockする, getActiveADRsの戻り値を制御。
+  TS-3, 境界値テストは数学的に閾値を跨ぐhelpful/harmful組み合わせを使用する, score=helpful/(helpful+harmful+1)で0.3の上下を確実にテスト。
+  TS-4, ADR最大3件テストは5件のADRを用意し3件のみ出力されることを確認, buildRetryPromptのADR切り詰めロジックを検証。
+  TS-5, 既存テストの回帰確認はvitest --runで全テスト実行, N-07のフィルタ追加が既存テストに影響しないことを確認。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/test-selection.toon, test, テスト選定
+  docs/workflows/tier-a-gaps-n01-n07/test-design.toon, test, テスト設計
+
+next:
+  criticalDecisions: TS-1/TS-2のモック戦略がテスト実装の基盤
+  readFiles: workflow-execution.md
+  warnings: 既存reflector-failure-loop.test.tsのモック構造を必ず確認してから実装すること

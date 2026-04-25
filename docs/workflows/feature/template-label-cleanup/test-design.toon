@@ -1,0 +1,67 @@
+phase: test_design
+task: template-label-cleanup
+intent: テンプレート内の太字ラベル装飾を除去しプレーンテキストに統一する
+status: complete
+
+summary: AC-1〜AC-3に対応する9テストケースを設計。既存template-separator-cleanup.test.tsにBOLD_RE不在検査セクションを追加する方針。BOLD_RE=/^\*\*[^*]+\*\*/gmで全テンプレート出力を検査
+
+testStrategy: 既存テストファイルtemplate-separator-cleanup.test.tsに新describeブロックを追加。SEP_RE/HEADER_REと同列にBOLD_RE定数を定義し全テンプレート出力の太字不在を検証
+
+boldRegex: /^\*\*[^*]+\*\*/gm
+
+testCases[9]{id,ac,description,method,expected}:
+  TC-AC1-B01, AC-1, ARTIFACT_QUALITY_RULES共有定数に太字装飾がないこと, expect(ARTIFACT_QUALITY_RULES).not.toMatch(BOLD_RE), 太字パターン0マッチ
+  TC-AC1-B02, AC-1, SUMMARY_SECTION_RULE共有定数に太字装飾がないこと, expect(SUMMARY_SECTION_RULE).not.toMatch(BOLD_RE), 太字パターン0マッチ
+  TC-AC1-B03, AC-1, EXIT_CODE_RULE共有定数に太字装飾がないこと, expect(EXIT_CODE_RULE).not.toMatch(BOLD_RE), 太字パターン0マッチ
+  TC-AC1-B04, AC-1, PROCEDURE_ORDER_RULE共有定数に太字装飾がないこと, expect(PROCEDURE_ORDER_RULE).not.toMatch(BOLD_RE), 太字パターン0マッチ
+  TC-AC1-B05, AC-1, bashCategoryHelp出力に太字装飾がないこと, "expect(bashCategoryHelp(['readonly','testing'])).not.toMatch(BOLD_RE)", 太字パターン0マッチ
+  TC-AC1-B06, AC-1, 全フェーズbuildSubagentPrompt出力に太字装飾がないこと, 全PHASE_DEFINITIONSキーでbuildSubagentPrompt実行しBOLD_RE検査, 全フェーズで太字パターン0マッチ
+  TC-AC2-B01, AC-2, workflow-rules.md Section5にテンプレート装飾禁止ルールが存在すること, readFileSyncでworkflow-rules.md読込み装飾禁止文言を検索, テンプレート装飾禁止ルール文言が存在
+  TC-AC3-B01, AC-3, 既存テスト414件が全てパスすること, vitest実行で全件パス確認, 0 failures
+  TC-AC3-B02, AC-3, 各フェーズsubagentTemplate個別に太字装飾がないこと, representativePhases配列でdef.subagentTemplateをBOLD_RE検査, 全フェーズで太字パターン0マッチ
+
+acMapping[3]{ac,testIds,coverage}:
+  AC-1, TC-AC1-B01 TC-AC1-B02 TC-AC1-B03 TC-AC1-B04 TC-AC1-B05 TC-AC1-B06 TC-AC3-B02, 共有定数5箇所+全フェーズ出力+個別テンプレート
+  AC-2, TC-AC2-B01, workflow-rules.mdルール存在確認
+  AC-3, TC-AC3-B01 TC-AC3-B02 TC-AC1-B06, 既存テスト全件パス+BOLD_RE検査追加
+
+implementationPlan[3]{step,action,detail}:
+  1, BOLD_RE定数追加, SEP_RE/HEADER_REの直後にconst BOLD_RE = /^\*\*[^*]+\*\*/gmを追加
+  2, AC-1太字不在describeブロック追加, 共有定数5件+buildSubagentPrompt全フェーズ検査+個別テンプレート検査
+  3, AC-2ルール存在describeブロック追加, readFileSyncでworkflow-rules.md読込み装飾禁止文言検査
+
+codeSketch: |
+  const BOLD_RE = /^\*\*[^*]+\*\*/gm;
+  describe('Bold label removal: shared constants have no bold markers', () => {
+    it('TC-AC1-B01〜B05: each shared constant not.toMatch(BOLD_RE)')
+    it('TC-AC1-B06: all buildSubagentPrompt outputs not.toMatch(BOLD_RE)')
+  });
+  describe('Bold label removal: templates have no bold markers', () => {
+    for (const phase of representativePhases) {
+      it('TC-AC3-B02: ${phase} template not.toMatch(BOLD_RE)')
+    }
+  });
+  describe('Bold label removal: workflow-rules.md has decoration ban', () => {
+    it('TC-AC2-B01: rules file contains decoration ban text')
+  });
+
+decisions[5]{id,statement,rationale}:
+  TD-1, BOLD_RE=/^\*\*[^*]+\*\*/gmを行頭アンカー付きで定義する, テンプレートラベルは行頭に出現するパターンのみ。行中の正当な強調を誤検出しない
+  TD-2, 既存テストファイルに追加しテストファイル新規作成しない, template-separator-cleanup.test.tsが同種のテンプレート品質検査を集約しておりBOLD_REも同列
+  TD-3, 共有定数とbuildSubagentPrompt出力の両方を検査する, 共有定数のみでは展開後の最終出力に太字が残る経路を見落とす可能性がある
+  TD-4, workflow-rules.mdの装飾禁止ルール存在をファイル読込みで検査する, ACインポートでは検査できないためreadFileSyncで直接ファイル内容を検証
+  TD-5, representativePhases配列で個別テンプレートも検査する, buildSubagentPrompt全フェーズ検査(TC-AC1-B06)と個別テンプレート検査(TC-AC3-B02)で二重カバレッジ
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/template-label-cleanup/scope-definition.toon, spec, スコープ定義(9ファイル117箇所+ルール1件)
+  docs/workflows/template-label-cleanup/research.toon, research, 太字ラベル120箇所の7分類調査と置換戦略
+  docs/workflows/template-label-cleanup/requirements.toon, requirements, 機能要件4件+非機能要件3件+AC3件
+  docs/workflows/template-label-cleanup/spec.toon, planning, 実装計画10ステップ+検証計画3件
+  docs/workflows/template-label-cleanup/test-design.toon, test_design, AC-1〜AC-3対応9テストケース設計
+
+next:
+  criticalDecisions: TD-1(行頭アンカー付きBOLD_RE) TD-2(既存テストに統合) TD-3(定数+出力二重検査)
+  testFile: src/__tests__/template-separator-cleanup.test.ts
+  addConstants: BOLD_RE定数1件
+  addDescribeBlocks: 3ブロック(共有定数太字/テンプレート太字/ルール存在)
+  totalNewTests: 9件

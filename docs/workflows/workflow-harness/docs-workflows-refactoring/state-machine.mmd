@@ -1,0 +1,65 @@
+%% State Machine: docs-workflows-refactoring
+%% taskId: 0963bf20-4201-494c-ad1b-32e6b476e97e
+%% phase: planning / state_machine
+%%
+%% ## decisions
+%% - D-1: PL-01, PL-02, PL-03 are parallel-safe; no shared write targets exist between them.
+%% - D-2: DiffVerify uses diff -rq (not cmp) to detect content-level divergence across directory trees.
+%% - D-3: cp-verify-rm pattern (AD-2) replaces atomic mv to preserve rollback opportunity.
+%% - D-4: CategoryMove blocks on all three parallel streams to avoid moving not-yet-renamed directories.
+%% - D-5: WrapLooseMd targets investigation/ only; loose .md in other categories is out of scope.
+%% - D-6: Each terminal state produces a git commit for per-step rollback (planning.md AD-1).
+%% - D-7: Verify (PL-06) checks AC-1 through AC-7 as a single gate; partial pass is not accepted.
+
+stateDiagram-v2
+    [*] --> DuplicateCheck: PL-01 Start
+    [*] --> HalfWidthRename: PL-02 Start (parallel)
+    [*] --> OldProjectDelete: PL-03 Start (parallel)
+
+    state "PL-01: Duplicate 24 pairs" as DuplicateCheck
+    state "diff -rq each pair" as DiffVerify
+    state "rm -rf half-width copy" as DeleteHalfWidth
+    state "merge then rm -rf" as MergeThenDelete
+    state "PL-01 complete" as DuplicateDone
+
+    DuplicateCheck --> DiffVerify: diff each pair
+    DiffVerify --> DeleteHalfWidth: identical
+    DiffVerify --> MergeThenDelete: different
+    MergeThenDelete --> DeleteHalfWidth: merged
+    DeleteHalfWidth --> DuplicateDone: all 24 done
+
+    state "PL-02: Rename 45 dirs" as HalfWidthRename
+    state "PL-02 complete" as RenameDone
+
+    HalfWidthRename --> RenameDone: cp + diff + rm x45
+
+    state "PL-03: Delete 33 dirs" as OldProjectDelete
+    state "PL-03 complete" as DeleteDone
+
+    OldProjectDelete --> DeleteDone: rm -rf x33
+
+    state join_barrier <<join>>
+    DuplicateDone --> join_barrier
+    RenameDone --> join_barrier
+    DeleteDone --> join_barrier
+
+    state "PL-04: Category Move" as CategoryMove
+    state "mkdir bugfix/ feature/ workflow-harness/ investigation/" as CreateCategories
+    state "mv each dir to category" as MoveDirectories
+    state "PL-04 complete" as CategoryDone
+
+    join_barrier --> CategoryMove
+    CategoryMove --> CreateCategories: create 4 category dirs
+    CreateCategories --> MoveDirectories: ~194 dirs to sort
+    MoveDirectories --> CategoryDone: all moved + git commit
+
+    state "PL-05: Wrap Loose .md" as WrapLooseMd
+    state "PL-05 complete" as WrapDone
+
+    CategoryDone --> WrapLooseMd: 14 files in investigation/
+    WrapLooseMd --> WrapDone: mkdir + mv x14
+
+    state "PL-06: Final Verify" as Verify
+
+    WrapDone --> Verify: AC-1 to AC-7 gate
+    Verify --> [*]: all AC passed

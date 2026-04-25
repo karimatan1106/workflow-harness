@@ -1,0 +1,58 @@
+phase: scope_definition
+task: tier-c-gaps-n41-n52
+intent: "Tier C N-41〜N-52(12項目)のスキャフォールド・設定テンプレート・MVHロードマップ・LLM品質ゲートを実装する"
+riskScore: 2
+riskRationale: "大半がスキャフォールド(実行不要)。N-50/N-51のみ実装可能でありテスト付き。既存コードへの影響なし"
+
+items[12]{id,title,type,rationale}:
+  N-41,CLS/Animation,scaffold,"ブラウザ環境が必要。Playwright+PerformanceObserver APIのパターンのみ提供"
+  N-42,Visual regression,scaffold,"Chromatic/Percy/Argos CI連携が必要。設定テンプレートのみ提供"
+  N-43,Accessibility tree,scaffold,"Playwright a11y APIのパターンのみ提供"
+  N-44,Codex hybrid,scaffold,"AGENTS.md互換設定。既存ファイル確認のみ"
+  N-45,Testcontainers,scaffold,"Docker環境が必要。コンテナ設定テンプレートのみ提供"
+  N-46,OPA/Conftest,scaffold,"Regoポリシーのサンプルのみ提供"
+  N-47,container-structure-test,scaffold,"YAML設定テンプレートのみ提供"
+  N-48,Mobile E2E,scaffold,"Maestro/Detox設定テンプレートのみ提供"
+  N-49,Desktop E2E,scaffold,"Playwright Electron/Tauri設定テンプレートのみ提供"
+  N-50,MVH Roadmap,implementable,"MVH成熟度トラッカーをTypeScript+vitestで実装"
+  N-51,LLM-as-Judge,implementable,"品質ゲート閾値をTypeScript+vitestで実装"
+  N-52,EU AI Act,scaffold,"コンプライアンスチェックリストをJSON構造化データで提供"
+
+scopeFiles[14]{path,action,rationale}:
+  workflow-harness/mcp-server/tests/e2e/cls-animation.patterns.ts,create,N-41 CLS/Animationパターンスキャフォールド
+  workflow-harness/mcp-server/tests/e2e/visual-regression.config.ts,create,N-42 Visual regression設定スキャフォールド
+  workflow-harness/mcp-server/tests/e2e/a11y-patterns.ts,create,N-43 Accessibilityテストパターンスキャフォールド
+  workflow-harness/mcp-server/tests/infra/testcontainers.config.ts,create,N-45 Testcontainers設定スキャフォールド
+  workflow-harness/mcp-server/tests/infra/policies/no-public-s3.rego,create,N-46 OPA/Conftestサンプルポリシー
+  workflow-harness/mcp-server/tests/infra/container-structure.yaml,create,N-47 container-structure-test設定スキャフォールド
+  workflow-harness/mcp-server/tests/e2e/mobile.config.ts,create,N-48 Mobile E2E設定スキャフォールド
+  workflow-harness/mcp-server/tests/e2e/desktop.config.ts,create,N-49 Desktop E2E設定スキャフォールド
+  workflow-harness/mcp-server/src/tools/mvh-roadmap.ts,create,N-50 MVHロードマップトラッカー(実装)
+  workflow-harness/mcp-server/src/tools/llm-quality-gates.ts,create,N-51 LLM品質ゲート閾値(実装)
+  workflow-harness/mcp-server/tests/safety/eu-ai-act-checklist.json,create,N-52 EU AI Actチェックリスト
+  workflow-harness/mcp-server/src/__tests__/mvh-roadmap.test.ts,create,N-50テスト
+  workflow-harness/mcp-server/src/__tests__/llm-quality-gates.test.ts,create,N-51テスト
+  docs/workflows/tier-c-gaps-n41-n52/,create,TOON成果物3件(scope/research/requirements)
+
+outOfScope[4]{item,reason}:
+  N-41〜N-43のブラウザ実行テスト,Playwright+ブラウザ環境が未整備
+  N-45のDocker実行テスト,Docker環境が未整備
+  N-44のAGENTS.md新規作成,既存ファイルの確認のみ
+  N-46〜N-49の実行環境構築,外部ツール(OPA/Docker/Maestro/Detox)が未整備
+
+decisions[5]{id,statement,rationale}:
+  SD-01,"スキャフォールド系(N-41〜N-49)はexport constで型安全な設定オブジェクトを提供する","TypeScript型チェックにより設定値の整合性を保証。将来の実装時にIDEサポートが得られる"
+  SD-02,"N-50/N-51は実装可能としvitest単体テストを付与する","外部依存なしで動作検証可能。ハーネスの品質管理に直結する機能"
+  SD-03,"N-52はJSONファイルとして構造化し条文番号・根拠・状態を記録する","機械可読かつ人間可読。将来のコンプライアンス自動チェックの基盤"
+  SD-04,"N-46はRegoファイルとしOPA/Conftestの標準フォーマットに準拠する","インフラポリシーのデファクト標準。terraform plan出力との連携を想定"
+  SD-05,"N-47はYAMLファイルとしcontainer-structure-testの公式スキーマに準拠する","Google提供ツールの公式フォーマット。CI/CDパイプラインへの統合を想定"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n41-n52/scope-definition.toon,spec,スコープ定義。12項目の分類と14ファイルの変更対象
+  docs/workflows/tier-c-gaps-n41-n52/research.toon,spec,リサーチ結果
+  docs/workflows/tier-c-gaps-n41-n52/requirements.toon,spec,要件定義(AC-1〜AC-5)
+
+next:
+  criticalDecisions: SD-01(型安全設定) SD-02(N-50/N-51テスト付き)
+  readFiles: workflow-harness/mcp-server/src/tools/ workflow-harness/mcp-server/src/__tests__/
+  warnings: スキャフォールド系は実行不可。実行環境構築は別タスクとして管理

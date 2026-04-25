@@ -1,0 +1,43 @@
+taskName: inv-n-proof-tier
+phase: requirements
+createdAt: 2026-03-07
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+
+decisions[8]{id,statement,rationale}:
+  REQ-001, "Invariant型はid/description/status/proofTier?/verifiedAt?/evidence?の6フィールドでtypes-invariant.tsに定義する", "types-core.tsは189行で200行制限に対し余裕が11行しかなく、Invariant型(8行)+ProofTier(2行)+InvariantStatus(2行)+Zodスキーマ(5行)=約17行の追加で超過する。AcceptanceCriterionと並列構造にすることで学習コストを最小化し、types-invariant.tsとして独立させてtypes.tsのre-export経路に追加する"
+  REQ-002, "ProofTier列挙型はT1(ExampleTest)/T2(PropertyTest)/T3(TypeProof)/T4(FormalProof)の4段階としtypes-core.tsに定義しAcceptanceCriterionにproofTier?フィールドを追加する", "証明レベルはInvariantとACの両方に付与可能な独立概念であり、types-core.tsに2行で定義可能（余裕11行内）。AC型へのoptionalフィールド追加は後方互換性を維持し、既存ACはproofTier=undefinedで従来どおり動作する"
+  REQ-003, "manager.tsは200行上限到達済みのためaddInvariant/updateInvariantStatus/getInvariantsの3関数をmanager-invariant.tsに分離しmanager.tsから委譲する", "AC関連のadd/update/getパターンを踏襲し一貫したAPI設計を維持する。manager-invariant.tsに約55行で定義し、StateManagerからthis経由で委譲呼出しする構成で200行制限を遵守する"
+  REQ-004, "harness_add_invariantツール定義をdefs-a.ts(163行)に追加し、harness_update_invariant_statusをdefs-b.ts(158行)に追加する", "defs-a.tsは37行の余裕があり約20行のツール定義を収容可能。defs-b.tsも42行の余裕がありハンドラ定義を収容可能。defs-c.ts新設は不要と判断する"
+  REQ-005, "DoDゲートにcheckInvariantCompletenessをdod-l3.tsに追加しacceptance_verification/completedフェーズで全INV-Nのstatus=heldを検証する", "checkACCompletenessパターンと対称な検証ロジック。dod-l3.tsは155行で約20行追加しても175行で200行制限内。requirementsフェーズではcheckInvariantFormatでINV-N最低1件を検証する"
+  REQ-006, "Checkpoint型にinvariants?: Invariant[]をoptionalフィールドとして追加しrefreshCheckpointTraceabilityを拡張する", "既存checkpointのsha256ハッシュとの後方互換性を維持するためoptionalとする。undefinedの場合はJSON.stringifyで省略されハッシュに影響しない。manager-write.tsは120行で余裕80行あり1行追加で済む"
+  REQ-007, "dogfooding不変条件INV-1からINV-4はregistry.tsのPHASE_ORDER/SIZE_SKIP_MAP/getNextPhaseの実ロジックから導出する", "INV-1(test_before_impl順序制約)、INV-2(completed終端性)、INV-3(skip上位集合性)、INV-4(next_phase前進性)の4条件をvitest property-based testでT2レベル証明とする"
+  REQ-008, "InvariantStatusはopen/held/violatedの3状態遷移としviolatedはDoDゲートでブロック扱いとする", "ACのnot_met状態と同等に扱いacceptance_verification/completedフェーズでタスク完了を阻止する設計。不変条件は常に成立すべき制約であるため、violated状態は警告ではなくブロックが適切"
+
+acceptanceCriteria[6]{id,description,verifiable}:
+  AC-1, "Invariant型（id/description/status/proofTier?/verifiedAt?/evidence?）がtypes-invariant.tsに定義されInvariantStatus型とZodスキーマを含みtsc --noEmitが通ること", true
+  AC-2, "ProofTier型（T1|T2|T3|T4）がtypes-core.tsに定義されAcceptanceCriterionにproofTier?フィールドが追加されtsc --noEmitが通ること", true
+  AC-3, "harness_add_invariant MCPツールでINV-N形式の不変条件を登録できTaskState.invariants配列に保存されharness_statusで表示されること", true
+  AC-4, "harness_update_invariant_status MCPツールでINV-Nのstatusをopen/held/violatedに更新できevidence文字列が記録されること", true
+  AC-5, "acceptance_verificationフェーズのDoDゲートで全INV-Nがheld状態であることがチェックされviolatedが存在する場合はブロックされること", true
+  AC-6, "ハーネス自身のフェーズ遷移不変条件INV-1からINV-4がvitest property-based testとして実装され全て通過すること", true
+
+notInScope[6]{item,reason}:
+  既存AC-NやRTM F-NNNの動作変更, 後方互換性を維持する追加のみに限定し既存フローの回帰リスクを回避する
+  ProofTierに基づく自動テスト生成, T1-T4は分類ラベルとしてのみ機能しテスト自動生成は別タスクとして独立計画する
+  CI/CDパイプラインへのINV-N検証統合, ハーネス内部のDoDゲートで検証を完結させ外部CI/CD統合は運用フェーズの別タスクとする
+  形式的証明ツール（Lean/Coq等）との連携, T4レベルの形式的証明は現時点では手動文書を想定し証明補助系統合は将来の拡張タスクとする
+  CLAUDE.mdのセクション11ツール一覧更新, docs_updateフェーズで実施する内容であり実装フェーズのスコープ外とする
+  workflow-pluginサブモジュールの変更, pluginは独立リリースサイクルを持ちharness側のみを本タスクで変更する
+
+openQuestions[0]{id,question,status}:
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/requirements.toon, spec, 本要件定義成果物
+  docs/workflows/inv-n-proof-tier/research.toon, spec, 調査成果物（決定事項R-001からR-008の根拠）
+  docs/workflows/inv-n-proof-tier/scope-definition.toon, spec, スコープ定義成果物（14ファイル/450行推定）
+  workflow-harness/mcp-server/src/state/types-core.ts, source, ProofTier型追加先（189行/余裕11行）
+
+next:
+  criticalDecisions[3]: REQ-001, REQ-002, REQ-003
+  readFiles[5]: workflow-harness/mcp-server/src/state/types-core.ts, workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/state/manager-write.ts, workflow-harness/mcp-server/src/tools/defs-a.ts, workflow-harness/mcp-server/src/gates/dod-l3.ts
+  warnings[3]: "types-core.tsは189行で余裕11行のみ、ProofTier型2行+AC型proofTierフィールド1行=3行追加で192行に収まるが超過に注意", "manager.tsは200行上限到達済みのためmanager-invariant.ts新設が必須", "Checkpoint型へのinvariants追加はoptionalフィールドとしてsha256ハッシュの後方互換性を維持すること"

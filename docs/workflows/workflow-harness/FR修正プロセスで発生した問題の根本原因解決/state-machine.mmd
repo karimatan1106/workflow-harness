@@ -1,0 +1,91 @@
+stateDiagram-v2
+    Start --> CodeReviewSectionFix: FR-A開始\ncode_reviewの必須セクション追加
+    CodeReviewSectionFix --> ForbiddenPatternRefactor: FR-A完了\nFR-B開始\nループ処理を間接参照に置換
+    ForbiddenPatternRefactor --> ManualTestGuidance: FR-B完了\nFR-C開始\nmanual_test注意事項追記
+    ManualTestGuidance --> CommitSubmoduleCheck: FR-C完了\nFR-D開始\ncommitサブモジュール確認手順追記
+    CommitSubmoduleCheck --> TestingConstraintDoc: FR-D完了\nFR-E-1開始\ntestingのworkflow_record_test_result制約文書化
+    TestingConstraintDoc --> RegressionTestConstraintDoc: FR-E-1完了\nFR-E-2開始\nregression_testの制約と例外規定追記
+    RegressionTestConstraintDoc --> TypeScriptCompile: FR-E-2完了\nTypeScriptトランスパイル実行
+    TypeScriptCompile --> CompilationSuccess: npm run buildが完了
+    CompilationSuccess --> ServerRestart: ビルド検証完了\nMCPサーバー再起動開始
+    ServerRestart --> ServerRunning: MCPサーバープロセス再起動完了
+    ServerRunning --> PhaseVerification: サーバー起動確認\nworkflow_statusでフェーズ確認
+    PhaseVerification --> DefinitionsConsistency: 現在フェーズ確認完了\nsubagentプロンプトの整合性検証
+    DefinitionsConsistency --> PromptsValidated: プロンプト生成ロジック検証完了\nartifact-validatorとの定義整合確認
+    PromptsValidated --> End: 全修正実装完了\nprocess_complete
+
+    note right of Start
+        修正開始状態
+        対象ファイル: definitions.ts
+        修正箇所: 6箇所
+    end note
+
+    note right of CodeReviewSectionFix
+        821行目: requiredSections配列
+        要素追加: パフォーマンス
+    end note
+
+    note right of ForbiddenPatternRefactor
+        1093〜1098行目: buildPrompt関数内
+        ループ削除⇒グループ参照3行へ置換
+    end note
+
+    note right of ManualTestGuidance
+        890行目: manual_testテンプレート
+        重複行回避ガイダンス追記
+    end note
+
+    note right of CommitSubmoduleCheck
+        945行目: commitテンプレート
+        サブモジュール確認手順追記
+    end note
+
+    note right of TestingConstraintDoc
+        862行目: testingテンプレート
+        制約注意事項追記
+    end note
+
+    note right of RegressionTestConstraintDoc
+        871行目: regression_testテンプレート
+        制約と例外規定追記
+    end note
+
+    note right of TypeScriptCompile
+        npm run buildで実行
+        definitions.tsトランスパイル
+    end note
+
+    note right of CompilationSuccess
+        ビルド成功確認
+        dist/ファイル生成完了
+    end note
+
+    note right of ServerRestart
+        Claude Desktopで再起動
+        モジュールキャッシュ無効化
+    end note
+
+    note right of ServerRunning
+        MCPサーバープロセス再起動
+        新dist/ファイルをロード
+    end note
+
+    note right of PhaseVerification
+        workflow_statusコマンド実行
+        フェーズ状態確認
+    end note
+
+    note right of DefinitionsConsistency
+        subagentプロンプト検証
+        定義整合性確認
+    end note
+
+    note right of PromptsValidated
+        artifact-validator.ts整合確認
+        code_review必須セクション確認
+        buildPrompt禁止語グループ確認
+    end note
+
+    note right of End
+        全修正完了・次フェーズ移行可能
+    end note

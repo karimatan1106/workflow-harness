@@ -1,0 +1,8 @@
+success: true
+task: VS Code extension path and shell fix
+output: openLogPane modified to convert Windows paths for both WSL and Git Bash
+files-changed: workflow-harness/vscode-ext/src/extension.ts
+build: tsc compiled successfully
+package: harness-log-pane-0.1.0.vsix created
+install: extension installed to VS Code
+change-summary: "Added wslPath (/mnt/c/...) and gitBashPath (/c/...) conversion before tail -f, applied to both split and createTerminal branches"

@@ -1,0 +1,37 @@
+flowchart TD
+    A["開始<br/>レビュー指摘10件と大規模対応欠陥5件を修正"] --> B["Step 1<br/>definitions.ts修正<br/>- REVIEW_PHASES配列にcode_review追加<br/>- L165コメント修正: planning依存関係を明確化"]
+
+    B --> C["Step 2<br/>artifact-validator.ts修正<br/>- PHASE_TO_ARTIFACTにtest_implエントリ追加<br/>- validateTestFileQuality関数実装<br/>- 拡張子・アサーション・テストケース数チェック"]
+
+    C --> D["Step 3<br/>design-validator.ts修正<br/>- findStubsInContent関数をAST解析強化<br/>- ast-analyzer.tsから関数シグネチャ取得<br/>- メソッドbodyのstatement数評価"]
+
+    D --> E["Step 4<br/>CLAUDE.md修正<br/>- small/medium廃止宣言を撤回<br/>- タスクサイズ選択ガイダンス追加<br/>- subagent起動テンプレート拡張<br/>- 完了表現ルール技術制約明記<br/>- リグレッションテストフィルタリング指針<br/>- スコープ設定ガイダンス追加<br/>- 並列フェーズ依存関係を技術的強制化"]
+
+    E --> F["Step 5<br/>mcp-serverテスト実行<br/>732テストケース実行<br/>- 既存機能リグレッション検出<br/>- 新規機能テスト実行"]
+
+    F --> G["Step 6<br/>workflow-pluginルートテスト実行<br/>統合テスト実行"]
+
+    G --> H{"全テスト合格判定<br/>732テスト + 統合テスト"}
+
+    H -->|No: テスト失敗| I["失敗原因分析<br/>- エラーログ確認<br/>- 修正内容見直し"]
+
+    I --> J{"修正内容の<br/>見直しが必要か?"}
+
+    J -->|Yes: コード修正必要| K["該当ファイルを修正"]
+    K --> F
+
+    J -->|No: ドキュメント修正| L["CLAUDE.md調整"]
+    L --> G
+
+    H -->|Yes: 全テスト合格| M["検証完了<br/>- リグレッション確認済み<br/>- 新規機能カバレッジ80%以上達成<br/>- 承認ゲート一元管理実装完了<br/>- テスト品質検証機能追加完了<br/>- AST解析強化完了<br/>- タスクサイズ復活完了"]
+
+    M --> N["品質確認<br/>- ワークフロー中核部分動作確認<br/>- 既存機能への影響最小化確認"]
+
+    N --> O["最終承認<br/>修正プロジェクト完了"]
+
+    style A fill:#90EE90
+    style M fill:#87CEEB
+    style O fill:#FFD700
+    style H fill:#FFB6C1
+    style F fill:#DDA0DD
+    style G fill:#DDA0DD

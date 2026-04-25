@@ -1,0 +1,25 @@
+flowchart TD
+    A[フェーズ開始] --> B{委譲が必要?}
+    B -->|No: approve/commit等| C[オーケストレーター直接実行]
+    B -->|Yes| D[パラメータ表参照]
+    D --> E{テンプレート種別}
+    E -->|分析・分解| F[coordinator型テンプレート]
+    E -->|成果物作成| G[worker-write型テンプレート]
+    E -->|検証・実行| H[worker-verify型テンプレート]
+    F --> I[4層埋め込み: Why/What/How/Constraints]
+    G --> I
+    H --> I
+    I --> J[Agent委譲実行]
+    J --> K{DoD通過?}
+    K -->|Yes| L[次フェーズへ]
+    K -->|No| M[Prior failuresに理由追加]
+    M --> I
+    C --> L
+
+%% ## decisions
+%%
+%% 1. 委譲判定を最初の分岐に配置: approve/commitなど委譲不要フェーズを早期に除外
+%% 2. 3種テンプレートへの分岐: パラメータ表のTemplate列で決定
+%% 3. 4層埋め込みを単一ノードに集約: Why/What/How/Constraintsの順序は固定で分岐不要
+%% 4. リトライループはConstraints再構築から: Prior failuresの更新が鍵
+%% 5. 直接実行パスと委譲パスの合流: どちらも最終的に次フェーズへ進む同じ出口

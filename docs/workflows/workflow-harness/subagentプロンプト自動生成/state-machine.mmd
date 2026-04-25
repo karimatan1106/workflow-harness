@@ -1,0 +1,91 @@
+stateDiagram-v2
+    Start --> LoadGlobalRules: PhaseGuide入力受付
+    note right of Start
+        PhaseGuideオブジェクト
+        taskName, userIntent, docsDir
+        を受け取る
+    end note
+
+    LoadGlobalRules --> LoadBashWhitelist: GLOBAL_RULES_CACHEから\nartifact-validator定数を読み込み
+    note right of LoadGlobalRules
+        forbiddenPatterns
+        bracketPlaceholderRegex
+        duplicateLineThreshold
+        minSectionDensity等
+        の16フィールド抽出
+    end note
+
+    LoadBashWhitelist --> ValidateInputs: BASH_WHITELIST_CACHEから\nカテゴリ別コマンドを読み込み
+    note right of LoadBashWhitelist
+        categories展開
+        expandCategories()実行
+        permitted commands一覧取得
+    end note
+
+    ValidateInputs --> BuildSections: 必須フィールド検証\nguide.phaseName, description,\ndocsDirの空チェック
+    ValidateInputs --> End: バリデーション失敗\nErrorをスロー
+
+    BuildSections --> Section1: セクション1: フェーズ情報ヘッダー\n（フェーズ名・タスク名・\nユーザーの意図・出力先）
+
+    Section1 --> Section2: セクション2: 入力ファイル\n（inputFileMetadata or\ninputFiles or 新規作成）
+
+    Section2 --> Section3: セクション3: 出力ファイル\n（outputFile or 指定なし）
+
+    Section3 --> Section4: セクション4: 必須セクションリスト\n（requiredSectionsが空なら省略）
+
+    Section4 --> Section5: セクション5: 成果物品質要件\n（GLOBAL_RULESから動的展開）
+
+    Section5 --> Section6: セクション6: Bashコマンド制限\n（BASH_WHITELIST展開+\nホワイトリスト表示）
+
+    Section6 --> Section7: セクション7: ファイル編集制限\n（editableFileTypes表示）
+
+    Section7 --> Section8: セクション8: フェーズ固有チェックリスト\n（guide.checklist存在時のみ）
+
+    Section8 --> Section9: セクション9: 重要事項\n（出力先・サマリー・\nバリデーション対応）
+
+    Section9 --> AssemblePrompt: 9セクションの文字列結合\n＆プロンプト生成
+
+    AssemblePrompt --> ValidateLength: プロンプト長検証\n（5000～8000文字を想定）
+
+    ValidateLength --> PromptReady: プロンプト生成完了\nsubagentTemplateに代入
+
+    PromptReady --> End: buildPrompt関数返却\n（完成したプロンプト）
+
+    note right of PromptReady
+        resolvePhaseGuide()から
+        呼び出されたbuildPromptが
+        最終的なプロンプト文字列を返す
+    end note
+
+    End --> RetryMode: バリデーション失敗時\nbuildRetryPrompt()呼び出し
+
+    RetryMode --> AnalyzeError: errorMessageの文字列解析\n（11種類のエラー種別判定）
+
+    AnalyzeError --> GenerateFixInstructions: エラー種別に基づき\n修正指示を生成\n（禁止パターン、密度不足、\n重複行、必須セクション等）
+
+    GenerateFixInstructions --> RetrySection1: リトライセクション1:\nリトライヘッダー\n（フェーズ名・リトライ回数）
+
+    RetrySection1 --> RetrySection2: リトライセクション2:\n前回のバリデーション失敗理由\n（errorMessage全文引用）
+
+    RetrySection2 --> RetrySection3: リトライセクション3:\n改善要求\n（エラー種別対応の修正指示）
+
+    RetrySection3 --> RetrySection4: リトライセクション4:\n元のプロンプト全文\n（buildPrompt()再呼び出し）
+
+    RetrySection4 --> RetryPromptReady: リトライプロンプト生成完了\nOrchestratorへ返却
+
+    RetryPromptReady --> Retry: リトライサイクル開始\n（subagent再起動）
+
+    note right of RetryMode
+        バリデーション失敗から
+        改善指示を含むリトライプロンプト
+        へのパイプライン
+    end note
+
+    note right of AnalyzeError
+        「禁止パターン」「密度」「同一行」
+        「必須セクション」「行数」
+        「短い行」「ヘッダーのみ」
+        「Mermaid」「テストファイル」
+        「pathReference」「汎用」
+        11種類を判定
+    end note

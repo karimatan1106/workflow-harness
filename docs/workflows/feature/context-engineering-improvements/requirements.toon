@@ -1,0 +1,57 @@
+phase: requirements
+task: context-engineering-improvements
+status: complete
+summary: "PhaseConfigへのinputFileModes追加とuserIntentの段階的精錬(refinedIntent)実装に関する機能・非機能要件を定義。AC-1〜AC-4で検証可能な受入基準を確定し、スコープ外と未解決質問を明示。"
+
+functional_requirements[8]{id,description,source}:
+  FR-1, "PhaseConfigインターフェースにinputFileModes?: Record<string, InputFileMode>をオプショナルで追加する。未指定ファイルはデフォルト'full'として扱い既存動作を維持する", "SD-1/AC-1"
+  FR-2, "InputFileMode型('full'|'summary'|'reference')をtypes-core.tsにexport typeとして追加し、types.tsのre-exportリストにも追加する", "SD-1/R-1"
+  FR-3, "buildSubagentPromptのheader構築部(164-166行)でinputFilesの各ファイルにモードラベルを付与する。形式: in: {file}[full|summary|reference]", "SD-3/R-7/AC-1"
+  FR-4, "TaskState.refinedIntent?: stringをtypes.tsのuserIntentフィールドの直後に追加する。Checkpoint.refinedIntent?: stringをtypes-core.tsのCheckpointインターフェースに追加する", "SD-2/R-8/AC-2"
+  FR-5, "buildSubagentPromptのuserIntent変数を`refinedIntent ?? userIntent`に変更し、refinedIntentが存在する後半フェーズで精錬済み意図を使用する", "SD-3/R-2/AC-2"
+  FR-6, "harness_approveでrequirementsフェーズを承認する際にAC-N群のdescriptionを集約してrefinedIntentを生成し、state.refinedIntentに格納する。生成タイミングはIA-2チェック(AC≥3)通過後", "R-5/AC-2"
+  FR-7, "refreshCheckpointTraceabilityにrefinedIntent伝播ロジックを追加する。state.refinedIntentが存在する場合にcheckpoint.refinedIntentへコピーする(AC追加・RTM追加・ACステータス更新の全3経路をカバー)", "SD-5/R-4"
+  FR-8, "PHASE_REGISTRYのdesign_review/acceptance_verification/docs_updateにinputFileModes設定を追加する。design_review(5ファイル)が最優先。summaryモードでコンテキスト圧縮、referenceモードで参照のみとする", "SD-4/R-3/AC-3"
+
+nonfunctional_requirements[6]{id,category,description}:
+  NFR-1, "パフォーマンス", "types-core.tsの200行制限を維持すること。3行追加(InputFileMode+inputFileModes?+refinedIntent?)に対して既存コメント行1行を削除することで200行を厳守する"
+  NFR-2, "後方互換性", "inputFileModes/refinedIntentはすべてオプショナル定義とし、既存タスク状態・既存PHASE_REGISTRYエントリは変更なしで動作継続すること"
+  NFR-3, "テスト安定性", "既存テスト723件が全パスすること。TaskStateSchemaはpassthrough()設定済みのためZodスキーマ変更は不要とし、移行リスクをゼロにする"
+  NFR-4, "保守性", "buildSubagentPromptシグネチャ変更はオプショナルパラメータ末尾追加のみとし、全呼び出し元(推定3-5箇所)はundefined渡しで後方互換を維持すること"
+  NFR-5, "セキュリティ", "refinedIntentはAC-N群のdescription文字列の結合のみ。ユーザー入力の直接渡しではなくハーネス内部で生成された値をsubagentプロンプトへ注入する"
+  NFR-6, "コンテキスト効率", "summaryモード使用フェーズではsubagentへのコンテキスト量が削減されること。特にdesign_review(inputFiles 5件)で効果が最大になるよう設計する"
+
+受入基準:
+  AC-1: PhaseConfigにinputFileModes?: Record<string, InputFileMode>を追加し、buildSubagentPromptがモード別ヘッダー(in-full/in-summary/in-ref)を生成する
+  AC-2: TaskStateにrefinedIntent?: stringを追加し、buildSubagentPromptがrefinedIntent ?? userIntentを使用する
+  AC-3: design_reviewなどinputFilesが多いフェーズにsummary/referenceモードが設定されている
+  AC-4: types-core.tsが200行以下を維持し、既存テスト723件が全パスする
+
+NOT_IN_SCOPE:
+  - refinedIntentの自動更新(requirementsフェーズ以外でのrefinedIntent再生成)
+  - inputFileModeの'stream'や'chunk'などfull/summary/reference以外のモード追加
+  - 既存フェーズ定義のinputFilesリスト自体の変更(追加・削除)
+  - PHASE_REGISTRYのrequirements/planningより前の前半フェーズへのinputFileModes設定
+  - refinedIntentのユーザー直接編集インターフェース
+  - subagentがsummaryモードのファイルを実際に要約する処理(プロンプト指示のみ)
+  - definitions-shared.ts以外のSUMMARY_SECTION_RULE変更
+
+OPEN_QUESTIONS:
+  なし
+
+decisions[5]{id,statement,rationale}:
+  REQ-1, "InputFileMode型はtypes-core.tsで定義しtypes.tsでre-exportする一元管理方式を採用する", "200行制限のあるtypes-core.tsで型定義を行い、外部利用はtypes.tsの集中re-exportポイント経由とすることで依存関係を単純化。全モジュールで一貫したimportパスを使用可能"
+  REQ-2, "refinedIntentの生成はharness_approveのrequirements承認時に行う。それより後のフェーズでは生成済みのrefinedIntentをそのまま使用する", "approval.tsのIA-2チェック(AC≥3)通過後がrefinedIntent生成の保証可能な最早タイミング。requirementsフェーズ完了後の全後半フェーズに自動適用されることで意図精度の一貫性を確保"
+  REQ-3, "buildSubagentPromptのシグネチャ変更はオプショナルパラメータ末尾追加のみとし既存呼び出し元を一切変更しない", "既存5-7呼び出し元のundefined渡しで後方互換を維持。全呼び出し元を一括変更するリスクを回避しつつ新機能を導入"
+  REQ-4, "inputFileModesのキーはpath.basename(f)で取得した末尾ファイル名とする(フルパス不使用)", "PHASE_REGISTRYの定義でフルパスを書くと可搬性が低下する。spec.toon/requirements.toonのようなベース名キーで一致させることでdocsDir変更時の設定変更が不要"
+  REQ-5, "Checkpoint.refinedIntentへの伝播はrefreshCheckpointTraceabilityに集約する。approval.ts等での直接書き込みは行わない", "refreshCheckpointTraceabilityはAC/RTM変更の全経路でコールされるため、この関数一箇所への追加で漏れなく伝播が保証される。コードの変更箇所を最小化"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/context-engineering-improvements/scope-definition.toon, spec, "スコープ定義フェーズの出力。SD-1〜SD-8の設計決定と対象ファイル6件を確定"
+  docs/workflows/context-engineering-improvements/research.toon, spec, "調査フェーズの出力。types-core.ts行数・buildSubagentPrompt構造・高inputFilesフェーズ・refinedIntentタイミングを確認"
+  docs/workflows/context-engineering-improvements/requirements.toon, spec, "本ファイル。機能要件8件・非機能要件6件・AC-1〜AC-4・スコープ外7件を定義"
+
+next:
+  criticalDecisions: "buildSubagentPromptのrefinedIntentパラメータ追加位置(projectTraitsの後が安全か検証)。approval.tsのrefinedIntent生成でAC-N群のどのフィールドを使うか(descriptionのみかid+descriptionか)。inputFileModesキーのbasename一致でdesign_reviewの5ファイル全て正確に一致するか確認"
+  readFiles: "workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/tools/handler.ts, workflow-harness/mcp-server/src/tools/handlers/approval.ts"
+  warnings: "types-core.tsの200行制限は厳格。実装時に削除する空行(156行目前後)が本当に1行で足りるか要確認。PHASE_REGISTRYのdesign_review行(約230文字)にinputFileModes追加で行長が問題になる場合は複数行形式に展開が必要"

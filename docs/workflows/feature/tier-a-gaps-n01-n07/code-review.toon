@@ -1,0 +1,64 @@
+task: tier-a-gaps-n01-n07
+phase: code_review
+intent: 設計成果物と実装コードの整合性検証（外部レビュアー視点）
+
+reviewSummary: 7項目中5項目は設計通り実装済み。2項目に軽微な乖離あり（N-04 .husky glob不一致、N-02 ADR切り詰め未実装）。設計外の追加機能なし。セキュリティ脅威緩和策は概ね実装済みだがTM-3の200文字制限が未反映。AGENTS.mdのツール数表記に1件の不整合あり。
+
+acStatus[7]{id,status,finding}:
+  AC-1, met, "post-tool-lint.shがbiome check --no-errors-on-unmatchedを実行。exit 127でサイレントスキップ。タイムアウト3秒。設計通り。"
+  AC-2, met, "buildRetryPromptがgetActiveADRsを呼び最大3件のstatement/rationaleを付加。try-catchでADR読み込み失敗時は従来動作。テスト5件で網羅。ただしTM-3の200文字切り詰めが未実装（軽微）。"
+  AC-3, met-with-note, "AGENTS.mdがプロジェクトルートに存在。ツール一覧と構造を記述。ただしヘッダーが(23)だが実テーブルは22行。handler.tsと照合すると22ツール。数値不整合あり。"
+  AC-4, met-with-note, "Config Guardにbiome系/テスト設定系/環境設定系/Git Hook設定系/package-lock.jsonの5グループ追加済み。ただし.husky/*パターンはbasename比較のため実際にはマッチしない。basenameがpre-commitになるため.husky/*globは無効。"
+  AC-5, met, "stop-test-enforcer.shがgit diff --name-only HEADで変更ファイル検出しvitest --related実行（30秒タイムアウト）。通過後フルテスト（60秒タイムアウト）。変更ファイル無しはフルテストにフォールバック。設計通り。"
+  AC-6, met, "getLessonsForPhaseがqualityScore >= MIN_QUALITY_SCORE(0.3)でフィルタ。formatLessonsForPromptも同じ関数経由でフィルタ済み。テスト6件で境界値含め網羅。設計通り。"
+  AC-7, met, "handoff-reader.shが4ステップ起動チェック実行: git status/branch、node_modules存在確認、vitest config検索、claude-progress.json読み込み。各ステップ独立実行。設計通り。"
+
+specComplianceCheck[7]{gap,specItem,implemented,deviation}:
+  N-01, "tsc後にbiome check実行。exit 127スキップ。3秒タイムアウト", yes, なし
+  N-02, "buildRetryPrompt内でgetActiveADRs呼び出し。最大3件。try-catch囲み", yes, "TM-3記載の200文字切り詰め未実装。ADR statement+rationaleが長文の場合プロンプトが肥大する可能性"
+  N-03, "AGENTS.md新規作成。OpenAI標準形式。MCPツール一覧。hookリスト", yes, "ツール数ヘッダー(23)と実テーブル(22行)の不整合"
+  N-04, "caseブロックに5グループ追加。15パターン以上", yes, ".husky/*パターンがbasename比較で無効。実質14パターン（.husky除外）"
+  N-05, "4ステップ起動チェック: git/依存/テスト/進捗", yes, "spec記載のnpm ls --depth=0ではなくnode_modules存在確認で代替。簡易版だが機能は満たす"
+  N-06, "git diff→vitest --related→フルvitest", yes, "--related タイムアウト時のフォールバックパスではフルvitestにtimeoutなし（38行目）。60秒タイムアウトは正常パスのみ"
+  N-07, "MIN_QUALITY_SCORE=0.3定数。getLessonsForPhaseでフィルタ", yes, なし
+
+unauthorizedAdditions: なし。全実装は設計書の範囲内。既存コードへの副作用なし。
+
+securityCheck[4]{threatId,mitigationStatus,finding}:
+  TM-1, implemented, "Config GuardにCONFIG_GUARD_DISABLE環境変数のバイパスパスあり（設計通り）。フック自体のWrite/Editは保護対象外（TM-D1の通り）"
+  TM-2, implemented, "MIN_QUALITY_SCORE=0.3がコード内定数として定義。テストで検証済み。TM-D4準拠"
+  TM-3, partial, "ADRはstatement/rationaleのみ抽出（設計通り）。ただし200文字切り詰めが未実装。HMAC保護はadr.tsの既存機能で担保"
+  TM-4, implemented, "git diff空時にフォールバックでフルvitest実行（38-48行目）。設計通り"
+
+testCoverage[2]{file,cases,coverage}:
+  reflector-quality.test.ts, 6, "MIN_QUALITY_SCORE値検証/閾値以下除外/閾値以上保持/新規レッスン保持/境界値テスト/formatLessonsForPrompt除外"
+  retry-adr.test.ts, 5, "ADR存在時含有/ADR無し時正常/最大3件制限/エラー時graceful/statement+rationaleのみ出力"
+
+findings[5]{id,severity,file,description,recommendation}:
+  CR-1, minor, AGENTS.md, "ヘッダーにMCP Tools (23)と記載されているが実際のテーブルは22行。handler.tsのツール登録も22個", "ヘッダーを(22)に修正するかテーブルに不足ツールを追加"
+  CR-2, minor, .claude/hooks/pre-tool-config-guard.sh, ".husky/*パターンはbasename比較のためマッチしない。basename(.husky/pre-commit)=pre-commitとなり.husky/*にマッチしない", "FILE_PATHのディレクトリパス部分で.husky/を検出するcase文を追加"
+  CR-3, low, workflow-harness/mcp-server/src/tools/retry.ts, "TM-3で規定された200文字切り詰めが未実装。ADR statement+rationaleが長文の場合にプロンプトが肥大する可能性", "adrLines生成時にsubstring(0,200)を適用"
+  CR-4, low, .claude/hooks/stop-test-enforcer.sh, "--relatedタイムアウト時のフォールバック（38行目）ではフルvitestにtimeout指定なし。正常パスの60秒タイムアウトと不整合", "フォールバックパスにもtimeout 60を追加"
+  CR-5, info, .claude/hooks/handoff-reader.sh, "specではnpm ls --depth=0で依存整合性チェックだがnode_modules存在確認で代替。機能は満たすがバージョン不整合は検出不可", "現状維持で可。将来的にnpm ls追加を検討"
+
+decisions[6]{id,statement,rationale}:
+  CR-D1, CR-1とCR-2は軽微な不整合であり差し戻し不要, AGENTS.mdのツール数表記と.husky globはいずれも機能全体の動作を阻害しない。次フェーズで修正可能。
+  CR-D2, CR-3のADR切り詰め未実装は許容範囲, ADR storeのstatement/rationaleは通常短文。実運用で問題が顕在化する可能性は低い。
+  CR-D3, CR-4のtimeout不整合はフォールバックパスのみで影響限定的, --relatedタイムアウト時のみ発生するレアケース。テストスイートが長時間かかる場合のみ影響。
+  CR-D4, テストカバレッジは十分と判断, reflector-quality.test.ts(6件)とretry-adr.test.ts(5件)で主要パスと境界値を網羅。シェルスクリプトはREQ-3の通り統合テストで検証。
+  CR-D5, 設計外の追加機能はゼロであることを確認, 全9ファイルが設計書の範囲内に収まっている。勝手な機能追加なし。
+  CR-D6, セキュリティ要件は概ね充足, TM-1からTM-6の緩和策が実装済み。TM-3の200文字制限のみ部分的。
+
+verdict: pass-with-notes
+verdictRationale: 全7項目のACが充足されている。5件の指摘のうちseverity=minor 2件、low 2件、info 1件。差し戻しが必要なblocking級の問題なし。CR-1とCR-2はacceptanceフェーズまでに修正推奨。
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/code-review.toon, report, コードレビュー結果
+  docs/workflows/tier-a-gaps-n01-n07/spec.toon, spec, 技術仕様（レビュー対象）
+  docs/workflows/tier-a-gaps-n01-n07/requirements.toon, spec, 要件定義（レビュー対象）
+  docs/workflows/tier-a-gaps-n01-n07/threat-model.toon, report, 脅威モデル（レビュー対象）
+
+next:
+  criticalDecisions: CR-D1(差し戻し不要判断)が最重要。CR-1/CR-2の修正をacceptanceフェーズで実施すること。
+  readFiles: code-review.toon, spec.toon, requirements.toon
+  warnings: CR-2の.husky globは現時点でセキュリティ影響なし（lefthook.ymlは正しく保護済み）だが将来huskyに移行時に穴になる。

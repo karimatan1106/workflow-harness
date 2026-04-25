@@ -1,0 +1,28 @@
+phase: test_design
+taskId: 0ea4294a-cc38-4718-b9e9-112b8ca7d93b
+ts: "2026-03-02T06:00:00+09:00"
+strategy: manual_confirmation_primary
+rationale: 変更対象がSKILL.mdのMarkdown手順記述のみであり、自動ユニットテストは適用不可
+automatable[1]{ac,method}: AC-4,diffコマンドによるファイル内容の機械的比較
+testCases[12]{id,ac,type,input,expected}:
+  TC-AC1-01,AC-1,boundary,9文字入力「機能を追加する」,UI-1先行ブロックでAskUserQuestion非発動
+  TC-AC1-02,AC-1,main,20文字以上の曖昧入力,AskUserQuestion発動（目的/成功条件/影響範囲の不明軸を質問）
+  TC-AC1-03,AC-1,partial,影響範囲のみ不明な入力,AskUserQuestion1問のみ発動
+  TC-AC1-04,AC-1,boundary,3軸すべて不明な22文字入力,AskUserQuestion最大3問発動
+  TC-AC2-01,AC-2,main,AskUserQuestion回答後,harness_start呼び出しでscope_definition開始
+  TC-AC2-02,AC-2,integration,最短回答選択後,統合userIntent20文字以上維持してharness_start呼び出し
+  TC-AC3-01,AC-3,main,3軸すべて明確な詳細入力,AskUserQuestionスキップしてharness_start直接呼び出し
+  TC-AC3-02,AC-3,edge,目的・成功条件明確・影響範囲広範指定入力,AskUserQuestionスキップ確認
+  TC-AC4-01,AC-4,automated,Readツール/diffコマンドによる両ファイル比較,差分ゼロ行で完全一致
+  TC-AC5-01,AC-5,boundary,19文字入力（境界値-1）,UI-1ブロック発動・AskUserQuestion非発動
+  TC-AC5-02,AC-5,boundary,20文字入力（境界値通過最小値）,UI-1通過・3軸分析へ進行
+  TC-AC5-03,AC-5,edge,空文字列入力,UI-1ブロック発動・AskUserQuestion非発動
+acMapping[5]{ac,tcIds}:
+  AC-1,[TC-AC1-01,TC-AC1-02,TC-AC1-03,TC-AC1-04]
+  AC-2,[TC-AC2-01,TC-AC2-02]
+  AC-3,[TC-AC3-01,TC-AC3-02]
+  AC-4,[TC-AC4-01]
+  AC-5,[TC-AC5-01,TC-AC5-02,TC-AC5-03]
+artifacts[2]{path,role}:
+  docs/workflows/userIntent不明点深掘りシステム/test-design.md,test_design
+  docs/workflows/userIntent不明点深掘りシステム/test_design.toon,toon

@@ -1,0 +1,32 @@
+flowchart TD
+    A[workflow_start実行] --> B[git diff --name-only HEAD実行]
+    B --> C{git diff成功?}
+    C -->|成功| D[変更ファイルリスト取得]
+    C -->|失敗| E[警告ログ出力]
+    D --> F[preExistingChangesに保存]
+    E --> G[空配列をpreExistingChangesに保存]
+    F --> H[workflow-state.jsonに永続化]
+    G --> H
+    H --> I[ワークフロー実行開始]
+    I --> J[research through implementation各フェーズ実行]
+    J --> K[docs_updateフェーズ完了]
+    K --> L[workflow_nextでcommitへ遷移]
+    L --> M[validateScopePostExecution呼び出し]
+    M --> N[preExistingChangesを引数で渡す]
+    N --> O[git diff --name-only HEADで全変更取得]
+    O --> P[changedFilesループ開始]
+    P --> Q{preExistingChangesに含まれる?}
+    Q -->|はい| R[スキップして次のファイルへ]
+    Q -->|いいえ| S{EXCLUDE_PATTERNSに一致?}
+    S -->|はい| R
+    S -->|いいえ| T{スコープ内?}
+    T -->|はい| R
+    T -->|いいえ| U[outOfScopeFilesに追加]
+    R --> V{全ファイル処理完了?}
+    U --> V
+    V -->|いいえ| P
+    V -->|はい| W{スコープ外ファイルあり?}
+    W -->|はい| X[エラー返却/遷移ブロック]
+    W -->|いいえ| Y[スコープ検証合格]
+    Y --> Z[commitフェーズ続行]
+    Z --> AA[push/ci/deploy/completed]

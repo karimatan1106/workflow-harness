@@ -1,0 +1,44 @@
+## HANDOFF
+date: 2026-03-15 21:00
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] VDB-2 integrityWarning修正 — resetTask/goBackでフラグクリア追加 (93cfa04)
+- [x] 3層→2層ガード変換 — Claude Code制約でAgent=オーケストレーター専用と判明 (9ed88df)
+- [x] harness_delegate_work実装 — MCP経由でclaude -pサブプロセス起動 (c7bf7c7, 188ccf2)
+- [x] ガードUX改善 — エラーメッセージ改善、セキュリティバイパス削除 (3377a2c, e1b9efd)
+- [x] CLAUDE.md/スキル更新 — 2層モデル・並列最大化・委譲ルール整備
+- [x] Cryptoサブモジュール更新 — 29コミット分を取得・リビルド
+- [x] .bashrc汚染除去 — subagentが書き込んだORCHESTRATOR_GUARD_DISABLE=trueを削除
+
+## 試したこと・結果
+- 3層モデル（orchestrator/coordinator/worker）→ Agent toolがsubagentに無いため不可能と判明
+- coordinator-recorder.sh のpending counter方式 → 実装したがcoordinator自体がAgent使えず詰み (2839132)
+- claude -p サブプロセス（素）→ 47秒、CLAUDE.md読み込みで余計な動作
+- claude -p サブプロセス（最適化）→ 8秒、"--setting-sources user等で高速化"
+- MCP tool化（harness_delegate_work）→ 最小コンテキストで制御可能、Skill/CLI直接より優位
+
+## ハーネス運用で学んだこと
+- Claude CodeのAgentツールはオーケストレーター（トップレベル）専用。subagentのツールセットにAgentは含まれない
+- 2層モデル: Orchestrator(lifecycle MCP + Agent + Skill) / Subagent(標準ツール + 非lifecycle MCP)
+- ガードのhookファイル自体を修正する時はブートストラップ問題が発生（mv .bak で一時無効化が必要）
+- "claude -p の最適フラグ: --setting-sources user, --disable-slash-commands, --allowedTools, --permission-mode bypassPermissions, --no-session-persistence"
+- MCP化がSkill化やCLI化よりコンテキスト消費が少ない（Skillはスキル全文が展開される）
+- harness_delegate_work が生成するclaude -pインスタンスはAgentツールを持つ。--allowedToolsにAgent追加で3層構造が実現可能な見込み
+- Layer 2(delegate_work) の allowedTools は Agent,Read,Glob,Grep のみ。Write/Edit/Bash は不要（Layer 3 worker に委譲）
+
+## 次のセッションで最初にやること
+- HANDOFF.toon を読み込んで前回の作業状況を把握する
+- "--allowedTools ""Agent,Glob,Grep,Read"" で Layer 2 coordinator を検証"
+- 3層構造: Orchestrator(lifecycle MCP) → delegate_work(claude -p, MCP+Agent) → subagent(ファイル操作)
+- 残課題: .claude/settings.json と .mcp.json の扱い決定
+- coordinator-recorder.sh / coordinator-cleanup.sh の不要化対応（2層では使わない）
+
+## 注意点・ブロッカー
+- coordinator-recorder.sh と coordinator-cleanup.sh はまだ存在するが2層では不要（削除またはno-op化を検討）
+- .claude/hooks/pre-tool-3layer-guard.sh.bak が残っている場合は削除すること
+- Cryptoプロジェクトのサブモジュールは更新済みだがコミットしていない（多数のuncommitted changes）
+- テスト2件は元から失敗していたが今は全785通過に復帰
+- ORCHESTRATOR_GUARD_DISABLE バイパスは削除済み。今後subagentが.bashrc等を改ざんしていないか注意

@@ -1,0 +1,38 @@
+graph TD
+    Start([Start]) --> PhaseA["<b>Phase-A: Parallel Initialization</b>"]
+
+    PhaseA --> W1["W1: P6-source<br/>(dod-l4-requirements.ts<br/>approval.ts)<br/>166→167 lines, 119→120 lines"]
+    PhaseA --> W3["W3: P3-ai-slop + P7-dup-filter<br/>(dod-helpers.ts<br/>dod-l4-content.ts)<br/>123→168 lines, 86→89 lines"]
+
+    W1 --> W1_Out["Output: MIN_ACCEPTANCE_CRITERIA=5<br/>+ 7 source updates<br/>+ 6 guidance updates"]
+    W3 --> W3_Out["Output: checkAiSlopPatterns()<br/>+ isStructuralLine()<br/>+ 25-45 lines<br/>+ 3 line integration"]
+
+    W1_Out --> W2["W2: P6-test<br/>(4 test files)<br/>Dependency: W1 complete"]
+    W3_Out --> W4["W4: P4-code-fence<br/>(types-core.ts<br/>defs-stage2.ts<br/>dod-l4-content.ts)<br/>198→199 lines, 175→176 lines"]
+
+    W2 --> W2_Out["Output: 13 acCount updates<br/>4 test files modified<br/>AC-18, AC-19 verified"]
+    W4 --> W4_Out["Output: noCodeFences flag<br/>+ CODE_FENCE_REGEX<br/>+ 10 line validation"]
+
+    W2_Out --> PhaseB["<b>Phase-B: P3+P4 Parallel Validation</b>"]
+    W4_Out --> PhaseB
+
+    PhaseB --> W5["W5: P5-pivot<br/>(pivot-advisor.ts NEW<br/>lifecycle-next.ts)<br/>0→60-80 lines, 198→200 lines"]
+
+    W5 --> W5_Out["Output: detectRepeatedPattern()<br/>+ generatePivotSuggestion()<br/>+ buildPivotResponse()"]
+
+    W5_Out --> PhaseC["<b>Phase-C: Final Pivot Implementation</b>"]
+    PhaseC --> Verify["Verification: wc -l check<br/>all files ≤ 200 lines"]
+    Verify --> End([Complete])
+
+    classDef critical fill:#ff6b6b,stroke:#cc0000,stroke-width:3px,color:#fff
+    classDef caution fill:#ffa940,stroke:#ff7722,stroke-width:2px,color:#000
+    classDef phase fill:#4096ff,stroke:#1677ff,stroke-width:2px,color:#fff
+    classDef ok fill:#52c41a,stroke:#389e0d,stroke-width:2px,color:#fff
+    classDef verify fill:#13c2c2,stroke:#006666,stroke-width:2px,color:#fff
+
+    class W1,W2 critical
+    class W3 ok
+    class W4 critical
+    class W5 caution
+    class PhaseA,PhaseB,PhaseC phase
+    class Verify verify

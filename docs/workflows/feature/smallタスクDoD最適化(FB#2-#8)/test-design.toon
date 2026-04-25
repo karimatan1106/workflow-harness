@@ -1,0 +1,56 @@
+taskName: smallタスクDoD最適化(FB#2-#8)
+phase: test_design
+date: 2026-03-22
+size: medium
+
+testCases[12]{id,acRef,description,input,expectedOutput,category}:
+  TC-AC1-01, AC-1, "getActivePhases(small)がresearchを含まない", "getActivePhases('small')", "返り値にresearchが含まれない", unit
+  TC-AC1-02, AC-1, "getActivePhases(small)がplanningを含まない", "getActivePhases('small')", "返り値にplanningが含まれない", unit
+  TC-AC1-03, AC-1, "getActivePhases(small)が10フェーズを返す", "getActivePhases('small')", "返り値の長さが10", unit
+  TC-AC1-04, AC-1, "getActivePhases(medium)はresearch/planningを含む(非影響確認)", "getActivePhases('medium')", "返り値にresearchとplanningが含まれる", unit
+  TC-AC2-01, AC-2, "checkDeltaEntryFormatがsmallでdecisions3件でpass", "phase='scope_definition' / size='small' / decisions[3]のTOONファイル", "passed: true", unit
+  TC-AC2-02, AC-2, "checkDeltaEntryFormatがsmallでdecisions2件でfail", "phase='scope_definition' / size='small' / decisions[2]のTOONファイル", "passed: false", unit
+  TC-AC2-03, AC-2, "checkDeltaEntryFormatがmediumでdecisions4件でfail", "phase='scope_definition' / size='medium' / decisions[4]のTOONファイル", "passed: false (5件必要)", unit
+  TC-AC3-01, AC-3, "checkTDDRedEvidenceがdodExemptions含む場合にpass", "state.phase='test_impl' / PHASE_REGISTRY[test_impl].dodExemptions=['exit_code_zero','tdd_red_evidence']", "passed: true", unit
+  TC-AC3-02, AC-3, "checkTDDRedEvidenceがdodExemptions未設定で従来動作維持", "state.phase='test_impl' / dodExemptions=['exit_code_zero']のみ / proofLogにred evidenceなし", "passed: false", unit
+  TC-AC4-01, AC-4, "shouldRequireApprovalがsmall+requirementsでAC>=3/openQuestions空でfalse", "phase='requirements' / size='small' / acceptanceCriteria.length=3 / openQuestions=[]", "false(自動承認)", unit
+  TC-AC5-01, AC-5, "getPhaseConfig(research, small).minLinesが30を返す", "getPhaseConfig('research', 'small')", "minLines=30 (50*0.6=30)", unit
+  TC-AC6-01, AC-6, "SUMMARY_SECTION_RULEに禁止記法4種が含まれる", "SUMMARY_SECTION_RULE文字列を検査", "##と###と**と```の4種が禁止として記載されている", unit
+
+boundaryTests[5]{id,acRef,description,input,expectedOutput}:
+  TC-AC1-B1, AC-1, "SIZE_SKIP_MAP.largeは空配列のまま", "SIZE_SKIP_MAP.large", "空配列(length=0)"
+  TC-AC2-B1, AC-2, "checkDeltaEntryFormatにsize未指定時はmediumデフォルト", "checkDeltaEntryFormat(phase, docsDir, workflowDir) / decisions[4]", "passed: false (medium=5件必要)"
+  TC-AC4-B1, AC-4, "shouldRequireApprovalがsmall+requirementsでAC<3の場合はtrue", "phase='requirements' / size='small' / acceptanceCriteria.length=2", "true(承認必要)"
+  TC-AC4-B2, AC-4, "shouldRequireApprovalがsmall+requirementsでopenQuestions非空はtrue", "phase='requirements' / size='small' / AC=3 / openQuestions=[{id:'OQ-1'}]", "true(承認必要)"
+  TC-AC5-B1, AC-5, "getPhaseConfig(scope_definition, small).minLinesが最低20を保証", "getPhaseConfig('scope_definition', 'small') / base minLines=30", "minLines=20 (30*0.6=18だが最低20適用)"
+
+acTcMapping[6]{acId,testCaseIds,coverageStatus}:
+  AC-1, "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC1-B1", covered
+  AC-2, "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-B1", covered
+  AC-3, "TC-AC3-01/TC-AC3-02", covered
+  AC-4, "TC-AC4-01/TC-AC4-B1/TC-AC4-B2", covered
+  AC-5, "TC-AC5-01/TC-AC5-B1", covered
+  AC-6, "TC-AC6-01", covered
+
+testFileLocations[4]{file,testIds,reason}:
+  "workflow-harness/mcp-server/src/__tests__/registry.test.ts", "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC1-B1/TC-AC5-01/TC-AC5-B1", "registry.tsの関数テスト(getActivePhases/getPhaseConfig)"
+  "workflow-harness/mcp-server/src/__tests__/dod-l4-delta.test.ts", "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-B1", "checkDeltaEntryFormatのsize依存テスト"
+  "workflow-harness/mcp-server/src/__tests__/dod-l1-l2.test.ts", "TC-AC3-01/TC-AC3-02", "checkTDDRedEvidenceのdodExemptionsテスト"
+  "workflow-harness/mcp-server/src/__tests__/handler-shared.test.ts", "TC-AC4-01/TC-AC4-B1/TC-AC4-B2/TC-AC6-01", "shouldRequireApprovalとSUMMARY_SECTION_RULEテスト"
+
+decisions[5]{id,statement,rationale}:
+  TD-1, "全テストケースをユニットテストとして設計しE2Eテストは不要", "変更対象が全て関数シグネチャと定数であり外部依存がないためユニットテストで十分にカバーできる"
+  TD-2, "AC-1はgetActivePhasesの戻り値検証で4ケース設計(含有/非含有/件数/medium非影響)", "skipリスト変更の正確性と非影響範囲の両方を検証する必要がある"
+  TD-3, "AC-2は境界値テスト含め4ケース設計(pass/fail/medium-fail/デフォルト)", "size依存の閾値変更では境界値とデフォルト動作の検証が重要"
+  TD-4, "AC-4は条件分岐3パターン(自動承認/AC不足/openQuestions残存)を網羅", "自動承認の条件が複合的(size+phase+AC数+openQuestions)のため各条件の独立検証が必要"
+  TD-5, "AC-5はminLines計算の最低値保証(floor 20)を境界テストで検証", "0.6倍適用時にbase=30以下で最低値20が正しく機能するか確認が必要"
+
+artifacts[5]{id,path,format}:
+  A-1, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/scope-definition.toon", toon
+  A-2, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/research.toon", toon
+  A-3, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/requirements.toon", toon
+  A-4, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/planning.toon", toon
+  A-5, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/test-design.toon", toon
+
+next: test_impl
+nextAction: test-design.toonの17テストケースに基づきユニットテストを実装する。registry.test.ts/dod-l4-delta.test.ts/dod-l1-l2.test.ts/handler-shared.test.tsの4ファイルにテストを追加する

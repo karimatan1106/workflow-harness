@@ -1,0 +1,56 @@
+flowchart TD
+    Start([セキュリティスキャン指摘修正開始]) --> SEC1{SEC-1修正}
+
+    SEC1 -->|SECURITY_ENV_VARS配列拡張| SEC1A["bash-whitelist.jsのL11-15"]
+    SEC1A --> SEC1B["SECURITY_ENV_VARS配列に<br/>SPEC_FIRST_TTL_MSを追加"]
+    SEC1B --> SEC1C{"isCommandAllowed関数<br/>L565-574で実行"}
+    SEC1C -->|コマンド解析| SEC1D{"SECURITY_ENV_VARS<br/>配列チェック"}
+    SEC1D -->|SPEC_FIRST_TTL_MS<br/>が対象か？| SEC1E{"export/unset<br/>コマンドか？"}
+    SEC1E -->|YES| SEC1F["セキュリティ違反として<br/>コマンドをブロック"]
+    SEC1E -->|NO| SEC1G["コマンド実行許可"]
+    SEC1F --> SEC1H{修正成功}
+    SEC1G --> SEC1H
+
+    SEC1H -->|次へ| SEC2{SEC-2修正}
+
+    SEC2 -->|nextChar判定ロジック強化| SEC2A["bash-whitelist.jsのL627-628"]
+    SEC2A --> SEC2B["条件式を正規表現に変更"]
+    SEC2B --> SEC2C["変更前: nextChar === ' '<br/>|| nextChar === '\\t'"]
+    SEC2C --> SEC2D["変更後: /\\s/.test(nextChar)"]
+    SEC2D --> SEC2E{"単語境界判定処理"}
+    SEC2E -->|nextCharをテスト| SEC2F{"/\\s/に<br/>マッチするか？"}
+    SEC2F -->|ASCII空白| SEC2G["空白として認識<br/>単語境界とみなす"]
+    SEC2F -->|タブ| SEC2G
+    SEC2F -->|改行| SEC2G
+    SEC2F -->|キャリッジリターン| SEC2G
+    SEC2F -->|Unicode空白<br/>U+00A0等| SEC2G
+    SEC2F -->|その他| SEC2H["非空白として処理<br/>コマンド区切り判定へ"]
+    SEC2G --> SEC2I{修正成功}
+    SEC2H --> SEC2I
+
+    SEC2I -->|次へ| SEC3{SEC-3修正}
+
+    SEC3 -->|パス正規化関数強化| SEC3A["loop-detector.jsのL130"]
+    SEC3A --> SEC3B["path.resolveを<br/>fs.realpathSyncに置換"]
+    SEC3B --> SEC3C{"normalizeFilePath関数<br/>実行"}
+    SEC3C -->|ファイルパス入力| SEC3D{"fs.realpathSync<br/>処理"}
+    SEC3D -->|シンボリックリンク<br/>チェーン開始| SEC3E["リンク先を逐次解決"]
+    SEC3E -->|チェーン継続| SEC3F{最終実パスに<br/>到達}
+    SEC3F -->|成功| SEC3G["実ファイルパスを返す<br/>正規化完了"]
+    SEC3D -->|エラー発生| SEC3H["catchブロック実行"]
+    SEC3H --> SEC3I["フォールバック:<br/>path.resolveで通常正規化"]
+    SEC3I --> SEC3J["パス正規化結果を返す"]
+    SEC3G --> SEC3K{修正成功}
+    SEC3J --> SEC3K
+
+    SEC3K -->|次へ| TEST1["ステップ1~3の修正確認"]
+    TEST1 --> TEST2["ステップ4: 既存42件テスト実行"]
+    TEST2 --> TEST3{回帰テスト<br/>全パス}
+    TEST3 -->|成功| TEST4["ステップ5: セキュリティスキャン再実行"]
+    TEST3 -->|失敗| DEBUG["デバッグ・修正"]
+    DEBUG --> TEST2
+
+    TEST4 --> VERIFY{3件の指摘<br/>全て解消}
+    VERIFY -->|確認済み| Complete([修正完了])
+    VERIFY -->|指摘残存| Review["詳細確認・追加修正"]
+    Review --> TEST4

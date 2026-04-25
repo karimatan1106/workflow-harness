@@ -1,0 +1,103 @@
+task: tier-b-gaps-n08-n15
+phase: test_design
+intent: Tier B 5項目(N-08 Oxlint, N-09 Biome, N-10 jscpd, N-11 eslint-plugin-security, N-12 ast-grep)のテスト戦略とテストケース設計
+
+summary:
+  purpose: AC-1〜AC-5に対応するテストケースを体系的に設計し、ユニットテスト・統合テスト・手動テストの三層で品質を保証する
+  keyDecisions: linter-runner.tsはexecSync/napiのモックによるユニットテスト中心、archgate拡張は既存テストと分離した新規テストファイルで検証、shellスクリプトはmanual_testフェーズで実施
+  nextPhaseInfo: TC-AC1-01〜TC-AC5-03の全17テストケースをtest_implフェーズでvitest実装する。linter-runner.test.tsとarchgate-extended.test.tsの2ファイルに分割配置する。
+
+testStrategy:
+  approach: ユニットテスト主体のTDD方式。外部CLI呼出し(execSync)とnapi呼出しはvi.mockで制御し決定的テストを実現する。archgate拡張テストはlinter-runner.tsをvi.mockしarchgate.tsの分岐ロジックのみを検証する。
+  layers: "L1(ファイル存在・型検証) + L2(exit code検証) + L3(閾値比較) の3層で全ACをカバー"
+  frameworkAndRunner: "vitest 3.x (既存プロジェクト設定準拠、globals有効、--reporter verbose)"
+  mockStrategy: "vi.mock('child_process')でexecSyncを制御、vi.mock('@ast-grep/napi')でparse/findAllを制御、vi.mock('./linter-runner.js')でarchgate拡張テストの依存を分離"
+
+testFileLayout[2]{path,role,testCount}:
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, "runJscpdとrunAstGrepPatternの入出力検証(正常系+異常系)", 9
+  workflow-harness/mcp-server/src/__tests__/archgate-extended.test.ts, "duplicate_codeとast_grep_pattern checkType分岐のarchgate統合検証", 5
+
+testMatrix[17]{ac,tcId,description}:
+  AC-1, TC-AC1-01, "package.jsonのdevDependenciesにoxlintパッケージが存在することをL1検証する"
+  AC-1, TC-AC1-02, "post-tool-lint.shにoxlint --deny-onlyコマンド文字列が含まれることをL4検証する"
+  AC-1, TC-AC1-03, "post-tool-lint.shでoxlint未インストール時(exit 127)にサイレントスキップし全体exit 0を返すことを検証する"
+  AC-2, TC-AC2-01, "package.jsonのdevDependenciesに@biomejs/biomeパッケージが存在することをL1検証する"
+  AC-2, TC-AC2-02, "post-tool-lint.shにbiome format --checkコマンド文字列が含まれることをL4検証する"
+  AC-2, TC-AC2-03, "post-tool-lint.shでbiome checkとbiome format --checkが同一ブロック内で順次実行されることをL4検証する"
+  AC-3, TC-AC3-01, "package.jsonのdevDependenciesにjscpdパッケージが存在することをL1検証する"
+  AC-3, TC-AC3-02, "runJscpdが正常JSON出力を受けてJscpdResult型(percentage/duplicates/passed)を返すことを検証する"
+  AC-3, TC-AC3-03, "runJscpdがthreshold超過時にpassed:falseを返しpercentage値が正確であることを検証する"
+  AC-3, TC-AC3-04, "runJscpdがexecSyncタイムアウト時にpassed:trueのgraceful degradation結果を返すことを検証する"
+  AC-4, TC-AC4-01, "package.jsonのdevDependenciesに@ast-grep/napiパッケージが存在することをL1検証する"
+  AC-4, TC-AC4-02, "runAstGrepPatternがマッチ0件時にpassed:trueとcount:0を返すことを検証する"
+  AC-4, TC-AC4-03, "runAstGrepPatternがthreshold超過マッチ時にpassed:falseとマッチ詳細(filePath/line/text)を返すことを検証する"
+  AC-4, TC-AC4-04, "runAstGrepPatternがnapi未インストール時にpassed:trueのgraceful degradation結果を返すことを検証する"
+  AC-5, TC-AC5-01, "既存vitest全509件がpassed状態であることをnpx vitest runのexit code 0で検証する"
+  AC-5, TC-AC5-02, "linter-runner.test.tsの全テストケースがpassedであることをexit code 0で検証する"
+  AC-5, TC-AC5-03, "archgate-extended.test.tsの全テストケースがpassedであることをexit code 0で検証する"
+
+archgateExtensionTests[5]{tcId,setupDescription,assertion,mockConfig}:
+  TC-AGE-01, "duplicate_codeルール登録後にrunJscpdがpassed:trueを返すモック設定", "runArchGateChecksのresult.passedがtrueであること", "vi.mock linter-runner: runJscpd returns {percentage:2,duplicates:1,passed:true}"
+  TC-AGE-02, "duplicate_codeルール登録後にrunJscpdがpassed:falseを返すモック設定", "checksに1件のfailed checkが含まれevidenceにpercentage値が記載されること", "vi.mock linter-runner: runJscpd returns {percentage:8,duplicates:5,passed:false}"
+  TC-AGE-03, "ast_grep_patternルール登録後にrunAstGrepPatternがマッチ0件を返すモック設定", "runArchGateChecksのresult.passedがtrueであること", "vi.mock linter-runner: runAstGrepPattern returns {matches:[],count:0,passed:true}"
+  TC-AGE-04, "ast_grep_patternルール登録後にrunAstGrepPatternがthreshold超過マッチを返すモック設定", "checksに1件のfailed checkが含まれevidenceにマッチ数とファイルパスが記載されること", "vi.mock linter-runner: runAstGrepPattern returns {matches:[{filePath:'x.ts',line:10,text:'bad'}],count:1,passed:false}"
+  TC-AGE-05, "deprecated ADRに紐づくduplicate_codeルールの場合", "ルールがスキップされresult.passedがtrueであること", "vi.mock linter-runner: runJscpd should not be called"
+
+linterRunnerTests[9]{tcId,function,scenario,inputMock,expectedOutput}:
+  TC-LR-01, runJscpd, "正常実行: 重複率が閾値以下", "execSync returns JSON with statistics.total.percentage=3.2", "{percentage:3.2,duplicates:N,passed:true}"
+  TC-LR-02, runJscpd, "正常実行: 重複率が閾値超過", "execSync returns JSON with statistics.total.percentage=8.5", "{percentage:8.5,duplicates:N,passed:false}"
+  TC-LR-03, runJscpd, "タイムアウト: execSync throws ETIMEDOUT", "execSync throws Error with code ETIMEDOUT", "{percentage:0,duplicates:0,passed:true} (graceful degradation)"
+  TC-LR-04, runJscpd, "未インストール: execSync throws ENOENT", "execSync throws Error with code ENOENT", "{percentage:0,duplicates:0,passed:true} (graceful degradation)"
+  TC-LR-05, runJscpd, "不正JSON: execSync returns malformed output", "execSync returns 'not-json-string'", "{percentage:0,duplicates:0,passed:true} (graceful degradation)"
+  TC-LR-06, runAstGrepPattern, "正常実行: マッチなし", "napi parse returns root with findAll returning empty array", "{matches:[],count:0,passed:true}"
+  TC-LR-07, runAstGrepPattern, "正常実行: マッチあり(threshold以下)", "napi parse returns root with findAll returning 2 matches; threshold=5", "{matches:[...],count:2,passed:true}"
+  TC-LR-08, runAstGrepPattern, "正常実行: マッチあり(threshold超過=0禁止)", "napi parse returns root with findAll returning 1 match; threshold=0", "{matches:[...],count:1,passed:false}"
+  TC-LR-09, runAstGrepPattern, "未インストール: napi import throws MODULE_NOT_FOUND", "vi.mock @ast-grep/napi throws import error", "{matches:[],count:0,passed:true} (graceful degradation)"
+
+boundaryValueTests[6]{tcId,target,boundary,inputValue,expectedResult}:
+  TC-BV-01, runJscpd, "threshold境界: 閾値と一致する重複率", "percentage=5.0 with threshold=5", "passed:true(閾値以下は合格)"
+  TC-BV-02, runJscpd, "threshold境界: 閾値を0.1超過する重複率", "percentage=5.1 with threshold=5", "passed:false(閾値超過は不合格)"
+  TC-BV-03, runJscpd, "重複率ゼロ: 完全にクリーンなコードベース", "percentage=0.0 with threshold=5", "passed:true"
+  TC-BV-04, runAstGrepPattern, "threshold=0の禁止パターン: マッチ1件", "count=1 with threshold=0", "passed:false(0件のみ合格)"
+  TC-BV-05, runAstGrepPattern, "threshold=0の禁止パターン: マッチ0件", "count=0 with threshold=0", "passed:true"
+  TC-BV-06, runAstGrepPattern, "大量マッチ: 100件マッチでthreshold=50", "count=100 with threshold=50", "passed:false(threshold超過)"
+
+edgeCaseTests[5]{tcId,target,scenario,expectedBehavior}:
+  TC-EC-01, runJscpd, "空のglob: 対象ファイルが0件の場合", "jscpdがpercentage:0を返しpassed:trueとなる"
+  TC-EC-02, runAstGrepPattern, "空文字パターン: pattern=''の場合", "findAllが0件を返しpassed:trueとなる"
+  TC-EC-03, runAstGrepPattern, "バイナリファイル含有glob: .pngファイルが混在する場合", "パースエラーがcatchされgraceful degradationでpassed:trueを返す"
+  TC-EC-04, archgate, "duplicate_codeとast_grep_patternが同時登録された場合", "両方のルールが独立して評価され各checkが個別にreportされる"
+  TC-EC-05, archgate, "同一ADRに複数checkTypeのルールが紐づく場合", "各ルールが個別に評価されADR非アクティブ時は全てスキップされる"
+
+testDataStrategy:
+  jscpdMockOutput: "jscpd --format jsonの出力をテスト内にJSON文字列リテラルとして埋込む。statistics.total.percentage/duplicates/filesのみ使用し他フィールドは省略可能。実際のjscpd出力を取得しスナップショットとして保存する手法は採用しない(CI環境依存を排除)。"
+  astGrepMockSetup: "@ast-grep/napiのparse関数をvi.mockで置換する。戻り値のrootオブジェクトはfindAll(pattern)メソッドを持つスタブとし、テストケースごとにマッチ配列を制御する。各マッチはfilePath/line/textの3属性を持つオブジェクトで構成する。"
+  archgateMockSetup: "archgate-extended.test.tsではvi.mock('./linter-runner.js')で依存を完全分離する。各テストケースのbeforeEachでrunJscpd/runAstGrepPatternの戻り値をvi.fn().mockReturnValueで設定する。ADR/ArchRuleの登録は既存archgate.test.tsと同じfsStoreモックパターンを踏襲する。"
+  shellTestData: "post-tool-lint.shのテストはmanual_testフェーズで実施する。テスト用TypeScriptファイルを一時作成しhookを直接実行して出力文字列を検証する。oxlint/biomeの存在有無はPATH操作で制御する。"
+
+manualTestScope[3]{target,verificationMethod,criteria}:
+  post-tool-lint.sh oxlintブロック, "テスト用.tsファイルに対しhookを直接実行しstdout/stderrを確認する", "oxlint --deny-only実行の出力が含まれるまたはoxlint未インストール時にサイレントスキップされること"
+  post-tool-lint.sh biome formatブロック, "biome checkに加えてbiome format --checkの出力が含まれることを確認する", "format違反がある場合に警告メッセージが出力されexit 0で継続すること"
+  eslint.config.js security plugin, "npx eslint --print-config src/tools/archgate.tsでsecurity/ルールが有効であることを確認する", "detect-eval-with-expression等の13ルールがwarnレベルで出力されること"
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "linter-runner.test.tsとarchgate-extended.test.tsを分離ファイルとして作成する", "既存archgate.test.ts(147行)に追加すると200行制限を超過するリスクがある。また依存モック(child_process/napi vs linter-runner)が異なるため分離することでテストの独立性と保守性が向上する。"
+  TD-2, "execSyncモックはvi.mock('child_process')のモジュールレベルモックを使用する", "vi.spyOnではESMのnamed exportを置換できない場合がある。vi.mockによるモジュール全体のモックが確実であり、既存テスト(archgate.test.ts)のfsモックパターンと一貫性がある。"
+  TD-3, "jscpd出力のモックはJSON文字列リテラルを使用しスナップショットファイルは使用しない", "外部ファイル依存を排除しテストの自己完結性を確保する。jscpdのJSON出力スキーマはstatistics.total.percentageのみ使用するため埋込みリテラルで十分簡潔に記述できる。"
+  TD-4, "境界値テストはrunJscpdのthreshold一致とrunAstGrepPatternのthreshold=0を重点的にカバーする", "閾値比較の不等号方向(<=と<)の実装ミスが最も発生しやすい欠陥パターンである。threshold境界のテストにより比較演算子の正確性を保証する。"
+  TD-5, "shellスクリプトテストは自動テストではなくmanual_testフェーズの手動検証で実施する", "post-tool-lint.shはClaude Codeフック環境(MSYS_NT-10.0 bash)で実行されるためvitestからの直接テストが困難である。手動実行で入力JSON構築とstdout確認を行う方が検証の信頼性が高い。"
+  TD-6, "AC-5(全509件テスト通過)はtestingフェーズでnpx vitest runのexit code 0で検証する", "個別テストケースの列挙ではなくテストスイート全体のexit codeを使用することで、既存テストのリグレッション検出を網羅的に行える。test_designフェーズでは検証方法を定義しtestingフェーズで実行する。"
+  TD-7, "archgate-extended.test.tsはfsStoreモックパターンを既存archgate.test.tsから踏襲する", "ADR登録/ArchRule登録の前提条件セットアップが既存テストで実証済みのパターンであり再利用することでテストの信頼性と一貫性を確保する。新規モック設計のリスクを回避する。"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/spec.toon, input, "実装計画・型設計・フック設計・archgate拡張設計を含む技術仕様(92行)"
+  docs/workflows/tier-b-gaps-n08-n15/test-design.toon, output, "17テストケース・9ユニットテスト・5archgate統合テスト・6境界値テストの包括的テスト設計"
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, planned, "runJscpdとrunAstGrepPatternの入出力検証テスト(9ケース)を実装予定"
+  workflow-harness/mcp-server/src/__tests__/archgate-extended.test.ts, planned, "duplicate_codeとast_grep_pattern checkType分岐の統合テスト(5ケース)を実装予定"
+
+next:
+  criticalDecisions: "TD-1(テストファイル分離)がtest_implでの作業構造を規定する。TD-2(vi.mockパターン)がlinter-runner.test.tsのモック実装方式を確定する。TD-4(境界値重点)がthreshold比較ロジックの正確性保証の鍵となる。TD-7(fsStoreパターン踏襲)がarchgate-extended.test.tsのセットアップ方式を決定する。"
+  readFiles: "spec.toon(全文/実装仕様参照), archgate.ts(157行/拡張対象の現在実装), archgate.test.ts(147行/モックパターン参照), linter-runner.ts(新規作成対象/test_implで先にテスト作成)"
+  warnings: "jscpdのJSON出力スキーマはバージョン4.0.8時点のものを使用する。将来のバージョンアップでstatisticsオブジェクトの構造が変更された場合はモックデータの更新が必要。@ast-grep/napiのparse APIのシグネチャ変更にも注意が必要。archgate-extended.test.tsのfsStoreモックは既存archgate.test.tsと同一プロセスで実行されるためテスト間の状態汚染をbeforeEachのclearStoreで確実に防止すること。"
+
+result{phase,status,artifact,lines}: test_design, complete, docs/workflows/tier-b-gaps-n08-n15/test-design.toon, 103

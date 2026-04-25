@@ -1,0 +1,99 @@
+flowchart TD
+    Start([ワークフロープロセス阻害要因修正開始]) --> TestImpl["<b>test_impl フェーズ</b><br/>fix-all-n.jsスクリプト作成"]
+    TestImpl --> VerifyFixScript{"fix-all-n.js<br/>生成確認"}
+    VerifyFixScript -->|成功| CreateTestFile["verify-fixes-n.test.ts作成<br/>修正検証テストケース実装"]
+    VerifyFixScript -->|失敗| TestImplError["test_impl エラー終了"]
+    CreateTestFile --> TestExecution{"テストケース<br/>実行確認"}
+    TestExecution -->|失敗| TestImplError
+    TestExecution -->|成功| ImplStart["<b>implementation フェーズ</b><br/>TypeScript修正開始"]
+
+    ImplStart --> N1Fix["N-1: scope-validator.ts修正<br/>行453にcore.quotePath=false追加<br/>日本語パス対応"]
+    N1Fix --> N1Verify{"N-1修正<br/>確認"}
+    N1Verify -->|失敗| RollbackN1["N-1 ロールバック"]
+    RollbackN1 --> ImplError["implementation エラー"]
+    N1Verify -->|成功| N3Fix["N-3: test-authenticity.ts修正<br/>MIN_OUTPUT_LENGTH削減<br/>パターン配列拡張"]
+
+    N3Fix --> N3Verify{"N-3修正<br/>確認"}
+    N3Verify -->|失敗| RollbackN3["N-3 ロールバック"]
+    RollbackN3 --> ImplError
+    N3Verify -->|成功| N5Fix["N-5: set-scope.ts修正<br/>ALLOWED_PHASESに2フェーズ追加<br/>docs_updateとregression_test対応"]
+
+    N5Fix --> N5Verify{"N-5修正<br/>確認"}
+    N5Verify -->|失敗| RollbackN5["N-5 ロールバック"]
+    RollbackN5 --> ImplError
+    N5Verify -->|成功| CompileTS["TypeScript コンパイル<br/>tsc 実行"]
+
+    CompileTS --> CompileCheck{"コンパイル<br/>成功判定"}
+    CompileCheck -->|エラー| CompileError["コンパイルエラー修正"]
+    CompileError --> CompileTS
+    CompileCheck -->|成功| JSFixes["JavaScriptファイル修正実行"]
+
+    JSFixes --> ExecuteFix["fix-all-n.js実行<br/>N-2: phase-edit-guard.js修正<br/>stderr出力4箇所追加"]
+    ExecuteFix --> CheckN2{"N-2修正<br/>実行確認"}
+    CheckN2 -->|失敗| N2Error["N-2 修正失敗"]
+    CheckN2 -->|成功| N4Fix["N-4: enforce-workflow.js修正<br/>PHASE_EXTENSIONSに<br/>JavaScript系テスト拡張子追加"]
+
+    N4Fix --> CheckN4{"N-4修正<br/>実行確認"}
+    CheckN4 -->|失敗| N4Error["N-4 修正失敗"]
+    CheckN4 -->|成功| BuildCheck["<b>parallel_quality フェーズ</b><br/>build_check: 最終コンパイル"]
+
+    BuildCheck --> BuildResult{"最終ビルド<br/>成功"}
+    BuildResult -->|失敗| BuildError["ビルドエラー診断"]
+    BuildError --> ImplError
+    BuildResult -->|成功| TestingPhase["<b>testing フェーズ</b><br/>verify-fixes-n.test.ts実行"]
+
+    TestingPhase --> RunTests{"テスト実行<br/>成功判定"}
+    RunTests -->|失敗| AnalyzeFailure["失敗原因分析"]
+    AnalyzeFailure --> ImplError
+    RunTests -->|成功| VerifyPhase["<b>parallel_verification フェーズ</b><br/>修正内容検証"]
+
+    VerifyPhase --> CheckStderr["stderr出力検証<br/>N-2対応確認"]
+    CheckStderr --> StderrOK{"stderr出力<br/>完全性判定"}
+    StderrOK -->|不完全| VerifyError["検証失敗"]
+    StderrOK -->|完全| CheckJPPath["日本語パス処理確認<br/>N-1対応検証"]
+
+    CheckJPPath --> JPPathOK{"パス処理<br/>正常動作"}
+    JPPathOK -->|異常| VerifyError
+    JPPathOK -->|正常| CheckScope["スコープ変更権限確認<br/>N-5対応検証"]
+
+    CheckScope --> ScopeOK{"後続フェーズ<br/>スコープ設定可能"}
+    ScopeOK -->|不可| VerifyError
+    ScopeOK -->|可能| CheckExtensions["テスト拡張子サポート確認<br/>N-4対応検証"]
+
+    CheckExtensions --> ExtOK{"JavaScript系<br/>拡張子認識"}
+    ExtOK -->|未対応| VerifyError
+    ExtOK -->|対応| CheckMinLen["最小文字数要件確認<br/>N-3対応検証"]
+
+    CheckMinLen --> MinLenOK{"カスタムランナー<br/>パターン対応"}
+    MinLenOK -->|未対応| VerifyError
+    MinLenOK -->|対応| CompleteSuccess["<b>修正完全成功</b><br/>全5件の阻害要因解消確認"]
+    VerifyError --> RollbackAll["全修正ロールバック<br/>原因特定"]
+
+    N2Error --> RollbackAll
+    N4Error --> RollbackAll
+    ImplError --> RollbackAll
+    TestImplError --> RollbackAll
+
+    RollbackAll --> ReanalyzeIssue["問題再分析<br/>修正内容検討"]
+    ReanalyzeIssue --> ImplStart
+
+    CompleteSuccess --> End([ワークフロープロセス阻害要因完全解消完了])
+
+    style Start fill:#e1f5e1
+    style End fill:#e1f5e1
+    style TestImpl fill:#ffe1e1
+    style ImplStart fill:#ffe1e1
+    style BuildCheck fill:#ffe1e1
+    style TestingPhase fill:#ffe1e1
+    style VerifyPhase fill:#ffe1e1
+    style CompleteSuccess fill:#e1ffe1
+    style N1Fix fill:#fff4e1
+    style N3Fix fill:#fff4e1
+    style N5Fix fill:#fff4e1
+    style ExecuteFix fill:#e1f0ff
+    style N4Fix fill:#e1f0ff
+    style TestImplError fill:#ffe1e1
+    style ImplError fill:#ffe1e1
+    style BuildError fill:#ffe1e1
+    style VerifyError fill:#ffe1e1
+    style RollbackAll fill:#ffcccc

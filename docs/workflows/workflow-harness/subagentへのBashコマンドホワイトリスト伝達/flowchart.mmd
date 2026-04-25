@@ -1,0 +1,46 @@
+flowchart TD
+    Start("Orchestratorがフェーズ開始") --> GetPhase("workflow_statusでフェーズ名を取得")
+
+    GetPhase --> LookupMapping("CLAUDE.mdのマッピング表を参照<br/>フェーズ名 → 許可カテゴリ一覧")
+
+    LookupMapping --> IsRetry{"リトライか?"}
+
+    IsRetry -->|初回| BuildInitial("初回テンプレートを構築<br/>品質要件 + Bashコマンド制限セクション")
+    IsRetry -->|リトライ| BuildRetry("リトライテンプレートを構築<br/>エラー情報 + Bashコマンド制限再確認")
+
+    BuildInitial --> ReplacePlaceholder("プレースホルダー置換<br/>許可カテゴリ一覧を埋め込み")
+    BuildRetry --> ReplacePlaceholder
+
+    ReplacePlaceholder --> LaunchSubagent("Taskツールでsubagent起動<br/>テンプレートをpromptに設定")
+
+    LaunchSubagent --> SubagentReads("subagentがテンプレートを読解<br/>Bashコマンド制限セクション確認")
+
+    SubagentReads --> NeedsBash{"Bashコマンドが必要?"}
+
+    NeedsBash -->|いいえ| UseTools("Read/Write/Editツールを使用<br/>ファイル操作は専用ツール優先")
+    NeedsBash -->|はい| CheckWhitelist("許可カテゴリを確認<br/>テンプレート記載の一覧を参照")
+
+    CheckWhitelist --> IsAllowed{"許可カテゴリに<br/>含まれるか?"}
+
+    IsAllowed -->|はい| ExecuteBash("Bashコマンドを実行")
+    IsAllowed -->|いいえ| UseTools
+
+    ExecuteBash --> HookValidation("フックがbash-whitelist.jsで検証")
+
+    HookValidation --> HookResult{"検証結果"}
+
+    HookResult -->|許可| CommandSuccess("コマンド実行成功<br/>出力を取得")
+    HookResult -->|ブロック| CommandBlocked("コマンドチェーン違反<br/>エラーメッセージ表示")
+
+    CommandBlocked --> SubagentReads
+
+    CommandSuccess --> CreateArtifact("成果物作成完了")
+    UseTools --> CreateArtifact
+
+    CreateArtifact --> End("Orchestratorに結果を返却")
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style HookValidation fill:#87CEEB
+    style CheckWhitelist fill:#FFD700
+    style CommandBlocked fill:#FF6347

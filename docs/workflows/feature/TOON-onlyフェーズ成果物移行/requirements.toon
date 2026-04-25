@@ -1,0 +1,59 @@
+phase: requirements
+taskId: toon-only-migration-2026-03-02
+ts: "2026-03-02T10:30:00+09:00"
+decisions[22]{id,statement,rationale}:
+  REQ-001,dod-l1-l2.tsのcheckL1FileExistsは変更不要であり、registry.tsのoutputFile拡張子を.toonに変更することでTOON対応が完結する,checkL1FileExistsはoutputFileの文字列パスをexistsSyncに渡すだけであり形式に依存しない
+  REQ-002,dod-l3.tsのanalyzeArtifact関数はMarkdown専用ロジックを全廃しtoonDecodeベースの新実装に置き換える,TOON形式には##見出し・コードフェンス・isStructuralLine対象行が存在しないため既存ロジックが全無効になる
+  REQ-003,新しいanalyzeArtifact実装ではtoonDecodeの戻り値オブジェクトから全フィールドの文字数合計をcontentLine相当の指標として使用する,デコード結果はパース済みの構造であり行ベース誤判定リスクがない最も堅牢なアプローチである
+  REQ-004,checkL3QualityのsectionDensity30%下限はTOON形式でも維持しdecisions・artifacts・next等の各フィールド値の文字密度で計算する,既存の30%閾値はTOON構造でも等価に適用可能であり要件変更は不要である
+  REQ-005,dod-l4-content.tsのcheckRequiredSectionsはMarkdown見出し文字列比較からTOONトップレベルキー名の存在確認に変更する,TOON形式の必須フィールドはキー名で識別されMarkdown見出し比較ロジックは不要になる
+  REQ-006,dod-l4-delta.tsのcheckDeltaEntryFormatはdecisions[]配列のlength検証に全面置き換えする,DELTA_ENTRY_REGEX・セクション区間検出・カテゴリセット検証の全ロジックをTOONデコード後の配列長チェックで代替できる
+  REQ-007,DELTA_ENTRY_MIN_COUNTの5件要件はTOONのdecisions[]配列に最低5エントリが必要という制約として維持する,件数要件は形式に依存しない品質基準であり引き続き有効である
+  REQ-008,registry.tsの17フェーズ分のoutputFileをすべて.md拡張子から.toon拡張子に変更する,L1チェックの起点となるoutputFileが.toon参照に変わることで全バリデーター経路が自動的にTOON対象になる
+  REQ-009,registry.tsのrequiredSectionsの値をMarkdown見出し形式（## サマリー等）からTOONキー名形式（decisions・artifacts・next等）に変更する,L4コンテンツチェックはrequiredSectionsの値をTOONキー名として比較する設計に変更されるため
+  REQ-010,inputFilesのパス文字列も.md拡張子から.toon拡張子に変更しcheckInputFilesExistが.toonファイルを要求するようにする,L1のinputFilesチェックもoutputFileと同様にパス文字列依存であり拡張子変更だけで対応できる
+  REQ-011,defs-stage1.tsからdefs-stage6.tsの全subagentテンプレート内の出力指示をTOON形式の成果物を生成するよう変更する,subagentが生成する成果物形式はテンプレート指示に従うためMD生成指示を残すとバリデーターと不整合になる
+  REQ-012,definitions.tsのOUTPUT_FILE_TO_PHASEマッピングを全17エントリで.md→.toon拡張子に変更する,buildToonFirstSection関数がこのマッピングを参照しておりTOON-only化後も正しいフェーズ名解決が必要である
+  REQ-013,definitions.tsのbuildToonFirstSectionにある.mdフォールバック指示を削除する,TOON-onlyへの移行後はinputFilesが全て.toonになるためMDへのフォールバック案内は不要かつ誤指示になる
+  REQ-014,dod-l4-requirements.tsのcheckACFormat・checkNotInScope・checkOpenQuestionsをrequirements.toonから値を読む実装に変更する,これらの関数はrequirements.mdをハードコードパスで参照しておりTOON移行時に個別対応が必要である
+  REQ-015,CLAUDE.md Section 13の成果物品質要件をMarkdown前提の記述からTOON-only前提に全面更新する,Section 13はL3/L4チェックのルールを説明しておりTOON-only化後も整合する内容に更新が必要である
+  REQ-016,checkToonCheckpointをL1チェックに統合しdod-l4-toon.tsの独立チェックとしては廃止する,L1でTOONファイルの存在確認が完結するためcheckToonCheckpointの別途実行は役割重複になる
+  REQ-017,フォールバック実装（.toon不在時に.mdを試みる分岐）は実装しない,現在進行中タスクが存在しないため後方互換性コストより一括切り替えのシンプルさを優先する
+  REQ-018,進行中タスクがゼロであることをresearch.toonのR-006決定に基づき移行前提条件として確認済みとして扱う,R-006はフォールバック不要の一括切り替えが最適と判断しており要件に組み込む
+  REQ-019,各dod-*.tsファイルの200行以下制限を維持するためanalyzeArtifact置き換えはファイル内改修で収める,CLAUDE.md Section 1の200行ルールはハーネスのコア原則であり改修でも厳守が必要である
+  REQ-020,allowedExtensionsに.toonを追加しrequiredSectionsがTOONキー名を参照するフェーズは.toon拡張子を許可する,バリデーターがTOON形式を正しく受け付けるためにはallowedExtensionsの更新も必要である
+  REQ-021,変更対象ファイルはdod-l3.ts・dod-l4-content.ts・dod-l4-delta.ts・dod-l4-requirements.ts・dod-l4-toon.ts・registry.ts・definitions.ts・defs-stage1〜6.tsおよびCLAUDE.mdの合計15ファイルである,影響範囲はscope_definition.toonのSD-001決定で定義した4箇所に対応する具体的ファイル列挙である
+  REQ-022,npm run buildとnpm testをworkflow-harness/mcp-server配下で実行しゼロエラー・ゼロ失敗を完了条件とする,TypeScript変更を伴うためビルドとテスト通過が客観的な完了証拠となる
+notInScope[6]{item}:
+  state_machine.mmdとflowchart.mmdのMermaid形式成果物の移行
+  既存完了済みタスクの.md→.toon変換バッチ処理
+  @toon-format/toonライブラリ自体の変更またはバージョンアップ
+  CI/CDパイプラインや外部ドキュメントビューワーの対応
+  outputFileを持たない11フェーズ（testing・implementation等）の変更
+  state.tsやtypes.tsなどの型定義ファイルの大規模リファクタリング
+openQuestions[0]{id,question}:
+acceptanceCriteria[5]{id,criterion}:
+  AC-1,harness_nextでDoDチェックを実行した際に.toonファイルのみが存在し.mdファイルが存在しないフェーズでもL1・L3・L4が全てpassとなること
+  AC-2,npm run buildがworkflow-harness/mcp-server配下で終了コード0で完了すること（型エラーゼロ・コンパイルエラーゼロ）
+  AC-3,npm testが全テスト通過（既存テストのリグレッションなし）で終了コード0であること
+  AC-4,CLAUDE.md Section 13がTOON-only形式の成果物品質要件として更新され、Markdown前提の記述が残っていないこと
+  AC-5,defs-stage1.tsからdefs-stage6.tsの全subagentテンプレートに.md成果物を生成する指示が残っていないこと
+functionalRequirements[7]{id,description}:
+  FR-1,TOON形式専用のL1存在確認チェック（dod-l1-l2.tsのoutputFile依存の変更）
+  FR-2,TOON形式解析に基づくL3品質チェック（dod-l3.tsのanalyzeArtifact全面改修）
+  FR-3,TOON値に対するL4パターン検証（dod-l4-content.tsのcheckRequiredSections変更）
+  FR-4,TOON decisions[]テーブルに基づくDelta Entry検証（dod-l4-delta.tsの変更）
+  FR-5,outputFileを.toon拡張子に変更（registry.tsの17フェーズ分更新）
+  FR-6,subagentテンプレート内の出力指示をTOON形式に変更（defs-stage1〜6.tsの変更）
+  FR-7,CLAUDE.md Section 13の成果物品質要件をTOON-only前提に更新
+nonFunctionalRequirements[4]{id,description}:
+  NFR-1,進行中タスクに対する後方互換性（フォールバックなし・一括切り替えを採用）
+  NFR-2,ビルドが通過すること（npm run build終了コード0）
+  NFR-3,既存テストが通過すること（npm test全件通過）
+  NFR-4,各dod-*.tsファイルが200行以下を維持すること
+artifacts[1]{path,role,summary}:
+  docs/workflows/TOON-onlyフェーズ成果物移行/requirements.md,spec,機能要件・非機能要件・AC-5件・NOT_IN_SCOPE・OPEN_QUESTIONSを含む要件定義書
+next:
+  criticalDecisions[4]: REQ-002,REQ-006,REQ-014,REQ-016
+  readFiles[5]: workflow-harness/mcp-server/src/gates/dod-l3.ts,workflow-harness/mcp-server/src/gates/dod-l4-delta.ts,workflow-harness/mcp-server/src/phases/registry.ts,workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts,workflow-harness/mcp-server/src/phases/definitions.ts
+  warnings[3]: analyzeArtifact関数の全面再実装が最大の改修コストでありthreat_modelingフェーズで詳細実装計画を立案すること,dod-l4-requirements.tsのハードコードパス問題は4関数の個別改修が必要でありplanningで変更対象を明確化すること,TOON_APPLICABLE_PHASESセットとoutputFileを持つ17フェーズの一致をregistry変更前に確認すること

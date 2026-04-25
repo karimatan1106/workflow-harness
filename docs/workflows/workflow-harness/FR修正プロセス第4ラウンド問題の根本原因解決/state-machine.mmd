@@ -1,0 +1,43 @@
+stateDiagram-v2
+    Start --> Ready: ワークフロー開始
+    Ready --> ModifyBashWhitelist: bash-whitelist.js修正開始
+
+    ModifyBashWhitelist --> BashWhitelistComplete: verificationPhases配列に'parallel_verification'を追加
+    BashWhitelistComplete --> VerifyBashChange: 変更がディスクに反映されたことを確認
+
+    VerifyBashChange --> ModifyDefinitions: definitions.ts修正開始
+    ModifyDefinitions --> AddPerformanceGuidance: performance_testサブフェーズテンプレート修正\n（パフォーマンス計測結果セクション向けガイダンス追加）
+
+    AddPerformanceGuidance --> AddBottleneckGuidance: ボトルネック分析セクション向けガイダンス追加\n（5項目必須記載: 名称・原因分析・影響範囲・改善提案・優先度）
+    AddBottleneckGuidance --> DefinitionsComplete: TypeScript修正完了
+
+    DefinitionsComplete --> BuildProject: npm run buildでトランスパイル実行
+    BuildProject --> BuildSuccess{ビルド成功?}
+
+    BuildSuccess -->|成功| VerifyDistUpdate: dist/*.jsファイル更新を確認
+    BuildSuccess -->|失敗| BuildError: ビルドエラーが発生
+    BuildError --> ResolveBuildError: エラーログを確認して修正
+
+    ResolveBuildError --> BuildProject: ビルド再実行
+    VerifyDistUpdate --> RestartMCPServer: MCPサーバープロセスを再起動
+
+    RestartMCPServer --> VerifyWorkflowStatus: workflow_statusで正常起動を確認
+    VerifyWorkflowStatus --> StatusCheck{MCPサーバー\n正常起動?}
+
+    StatusCheck -->|成功| VerifyFunctionality: 両修正の機能を検証
+    StatusCheck -->|失敗| ServerRestartError: サーバー再起動失敗
+    ServerRestartError --> ResolveServerError: MCPサーバーログを確認
+
+    ResolveServerError --> RestartMCPServer: サーバー再起動再試行
+    VerifyFunctionality --> FunctionalityCheck{parallel_verificationで\ntestingコマンド実行可?}
+
+    FunctionalityCheck -->|可| VerifyPerformanceTest: performance_testガイダンスが適用されたか確認
+    FunctionalityCheck -->|不可| DiagnoseIssue: 機能テスト失敗を診断
+
+    DiagnoseIssue --> BuildProject: ビルドまたはサーバー再起動を再実行
+    VerifyPerformanceTest --> FinalCheck{すべての修正が\n正常に反映?}
+
+    FinalCheck -->|成功| End: FR修正プロセス完了\n（両修正が効力発生状態に到達）
+    FinalCheck -->|失敗| DebugModifications: 修正内容をデバッグ
+
+    DebugModifications --> BuildProject: ビルドプロセスを再実行

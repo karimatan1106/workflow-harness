@@ -1,0 +1,39 @@
+task: tier-a-gaps-n01-n07
+phase: planning
+intent: Tier A 7項目の技術仕様と実装計画
+
+implementationSpec[7]{gap,module,changes,testStrategy}:
+  N-01, .claude/hooks/post-tool-lint.sh, "tsc実行後にnpx biome check --no-errors-on-unmatched実行。exit 127(未インストール)はサイレントスキップ。タイムアウト3秒。", シェル実行確認
+  N-02, workflow-harness/mcp-server/src/tools/retry.ts, "buildRetryPrompt内でgetActiveADRsを呼びエラーパターンに関連するADR最大3件のstatement/rationaleを付加。try-catchで囲みADR読み込み失敗時は従来動作。", retry-adr.test.tsで単体テスト
+  N-03, AGENTS.md, "プロジェクトルートに新規作成。OpenAI標準形式でハーネス構造・MCPツール23個・エントリポイント・hookリストを記載。", ファイル存在確認
+  N-04, .claude/hooks/pre-tool-config-guard.sh, "caseブロックに5グループ追加: biome系/テスト設定系/環境設定系/Git Hook設定系/package-lock.json。合計15パターン以上。", シェル実行確認
+  N-05, .claude/hooks/handoff-reader.sh, "既存HANDOFF.md注入の後に4ステップ起動チェック追加: (1)git status --porcelain (2)npm ls --depth=0 2>&1 (3)vitest設定存在確認 (4)claude-progress.json読み込み。各3秒タイムアウト。", シェル実行確認
+  N-06, .claude/hooks/stop-test-enforcer.sh, "git diff --name-only HEADで変更ファイル検出。TS/JS/TSX/JSXファイルが存在する場合vitest --related実行(30秒タイムアウト)。通過後フルテスト(60秒タイムアウト)。変更ファイル無しはフルテストにフォールバック。", シェル実行確認
+  N-07, workflow-harness/mcp-server/src/tools/reflector.ts, "export const MIN_QUALITY_SCORE = 0.3追加。getLessonsForPhaseでqualityScore < MIN_QUALITY_SCOREのレッスンをfilter除外。formatLessonsForPromptも同様。", reflector-quality.test.tsで単体テスト
+
+fileChangeSummary:
+  modified: 5ファイル（post-tool-lint.sh, pre-tool-config-guard.sh, stop-test-enforcer.sh, handoff-reader.sh, reflector.ts, retry.ts）
+  new: 3ファイル（AGENTS.md, reflector-quality.test.ts, retry-adr.test.ts）
+  deleted: 0ファイル
+
+taskSizing:
+  totalFiles: 8
+  totalEstimatedLines: 約250行の追加・変更
+  complexity: medium（既存パターンの拡張が主体）
+
+decisions[5]{id,statement,rationale}:
+  SP-1, N-02のADR検索はerrorMessageのキーワードとADR statementの部分一致で行う, 完全一致では関連ADRを見逃す。部分一致でリコール率を高める。
+  SP-2, N-05の各ステップはechoで結果を出力する, ユーザーがセッション開始時に環境状態を一目で確認可能。
+  SP-3, N-07のフィルタはsort後filter前に適用する, ソートで品質順に並べた後に閾値以下を除外。上位5件の品質が保証される。
+  SP-4, N-03のAGENTS.mdはhandler.tsのツール登録と同期する, ツール追加時にAGENTS.mdも更新が必要。この依存関係をコメントで明記。
+  SP-5, シェルスクリプト変更は全てexit 0をデフォルトとする, フック失敗でワークフロー全体がブロックされることを防止。警告のみ出力。
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/spec.toon, design, 技術仕様
+  docs/workflows/tier-a-gaps-n01-n07/planning.toon, report, 実装計画
+  docs/workflows/tier-a-gaps-n01-n07/requirements.toon, spec, 要件定義
+
+next:
+  criticalDecisions: SP-1(ADR部分一致検索)が精度に影響。SP-3(フィルタ順序)がレッスン品質に影響。
+  readFiles: workflow-phases.md, workflow-execution.md, workflow-gates.md
+  warnings: N-02のADR部分一致検索は偽陽性リスクあり。最大3件制限で緩和。

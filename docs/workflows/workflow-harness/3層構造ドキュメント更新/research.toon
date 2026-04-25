@@ -1,0 +1,31 @@
+phase: research
+taskName: 3層構造ドキュメント更新
+timestamp: 2026-03-18
+
+summary: "4対象ファイルを調査。主要発見: 3層名称の不一致(ManagerをCoordinatorへ統一)、幽霊ツール2件(create_subtask/link_tasks)の削除要、DCI 4ツールとdelegate_coordinatorの追記要、overviewのphasesヘッダー件数不一致。"
+
+findings[4]{ac,file,status,detail}:
+  AC-1, "workflow-harness/docs/architecture/overview.md", needs-update, "phasesセクションヘッダーが8ファイルと記載だが表には10ファイルが列挙。合計46と表合計47の不一致あり"
+  AC-2, ".claude/skills/harness/workflow-orchestrator.md", needs-update, "3層モデル中間層がManagerと記載だがHARNESS_LAYER実装値はcoordinator。Coordinatorへ統一が必要"
+  AC-3, "workflow-harness/docs/architecture/modules/state-management.md", ok, "stateモジュール7ファイルの記載は実装と一致"
+  AC-4, ".claude/skills/harness/workflow-orchestrator.md", needs-update, "幽霊ツール2件(harness_create_subtask/harness_link_tasks)が記載されているがhandler.ts 21-switchに存在しない。DCI 4ツールとdelegate_coordinatorが未記載"
+
+ghostTools[2]{name,evidence}:
+  harness_create_subtask, "handler.ts 21-switchに分岐なし。available-deferred-toolsにも不在"
+  harness_link_tasks, "handler.ts 21-switchに分岐なし。available-deferred-toolsにも不在"
+
+undocumentedTools[5]{name,status,source}:
+  dci_build_index, implemented, "available-deferred-toolsに存在"
+  dci_query_docs, implemented, "available-deferred-toolsに存在"
+  dci_query_files, implemented, "available-deferred-toolsに存在"
+  dci_validate, implemented, "available-deferred-toolsに存在"
+  delegate_coordinator, requires-verification, "CLAUDE.md lifecycle MCPとして記載だがavailable-deferred-toolsに不在"
+
+layerNameMismatch{layer,documentedAs,actual}:
+  middle, Manager, coordinator
+
+overviewFileCount{item,documented,actual-from-tables}:
+  total, 46, 47
+  phases-header, 8, 10
+
+next: docs_update

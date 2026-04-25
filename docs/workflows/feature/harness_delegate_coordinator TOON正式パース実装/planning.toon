@@ -1,0 +1,33 @@
+task: harness_delegate_coordinator TOON正式パース実装
+phase: planning
+
+implementation-steps[6]{id,description,file,ac-ref}:
+  S-1, toon-helpers.tsにparseToonKv関数を追加（key:value行をRecord<string string>に変換）, toon-helpers.ts, AC-1/AC-2
+  S-2, delegate-coordinator.tsでinstruction受信時にparseToonKvを呼びパース結果をfullInstructionに構造化注入, delegate-coordinator.ts, AC-1
+  S-3, delegate-coordinator.tsでextractResult後にparseToonKvでcoordinator出力を構造化しTOON戻り値を生成, delegate-coordinator.ts, AC-2
+  S-4, parseToonKvが空オブジェクトを返した場合は生文字列フォールバック, delegate-coordinator.ts, AC-3
+  S-5, L.269のバックスラッシュ使用をesc()に置換, delegate-coordinator.ts, AC-2
+  S-6, MCPサーバーの全ツール呼び出しにリクエスト/レスポンスログを追加し.agent/mcp-debug.logに出力, index.ts, AC-5
+
+execution-order: S-1 → S-2/S-3/S-5（並列可） → S-4 → S-6 → テスト
+
+risks[2]{id,description,mitigation}:
+  R-1, parseToonKvがcoordinator出力を正しくパースできない場合, フォールバックで生文字列を使用（S-4）
+  R-2, MCPログが大量になりディスクを圧迫, ログローテーションまたはサイズ上限を設ける
+
+decisions[5]{id,statement,rationale}:
+  PD-1, parseToonKvはtoon-helpers.tsに追加, 既存ヘルパーと同じモジュールに配置し一貫性を保つ
+  PD-2, 実装ステップS-2/S-3/S-5は並列実行可能, 互いに依存しないため
+  PD-3, MCPログはappendFileSyncで書き込み, 非同期書き込みだとプロセス終了時にログが欠落する可能性
+  PD-4, ログにはタイムスタンプとツール名とin/outサイズを含める, 切り分けに必要な最小情報
+  PD-5, ログファイルは.agent/mcp-debug.logに固定, .agentはgitignore対象で安全
+
+mcp-common-entry: index.ts - CallToolRequestSchema handler calls handleToolCall for all tools
+backslash-issue: delegate-coordinator.ts L.269 uses backslash escapes in TOON output
+
+artifacts[3]{id,path,description}:
+  A-1, workflow-harness/mcp-server/src/tools/handlers/delegate-coordinator.ts, TOON入出力パース実装
+  A-2, workflow-harness/mcp-server/src/state/toon-helpers.ts, parseToonKv追加
+  A-3, workflow-harness/mcp-server/src/index.ts, MCPデバッグログ追加
+
+next: implementation

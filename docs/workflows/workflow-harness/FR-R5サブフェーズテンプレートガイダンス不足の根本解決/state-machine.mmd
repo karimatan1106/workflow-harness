@@ -1,0 +1,22 @@
+stateDiagram-v2
+    Start --> InitialState: タスク開始\n（ガイダンス不足状態）
+
+    InitialState --> FR_R5A: FR-R5A修正開始\n（security_scan）
+    FR_R5A --> FR_R5A_Complete: サマリー・スキャン結果・\n検出問題の3ブロック追加
+
+    FR_R5A_Complete --> FR_R5B: FR-R5B修正開始\n（code_review）
+    FR_R5B --> FR_R5B_Complete: サマリー・設計整合性・品質・\nセキュリティ・パフォーマンスの\n5ブロック追加
+
+    FR_R5B_Complete --> FR_R5C: FR-R5C修正開始\n（e2e_test）
+    FR_R5C --> FR_R5C_Complete: サマリー・シナリオ・結果・\n重複回避の4ブロック追加
+
+    FR_R5C_Complete --> FR_R5D: FR-R5D修正開始\n（manual_test）
+    FR_R5D --> FR_R5D_Complete: シナリオ・結果の2ブロック追加\n（既存ガイダンス維持）
+
+    FR_R5D_Complete --> Build: ビルドフェーズ開始\nnpm run build実行
+    Build --> BuildSuccess: TypeScript→JavaScript\nトランスパイル完了
+
+    BuildSuccess --> ServerRestart: MCPサーバー再起動
+    ServerRestart --> ValidationCheck: ガイダンス有効化確認\n（workflow_status実行）
+
+    ValidationCheck --> End: タスク完了\nガイダンス有効・初回通過率向上

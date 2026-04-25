@@ -1,0 +1,105 @@
+---
+phase: flowchart
+task: harness-report-fb-fixes
+status: complete
+inputArtifact: docs/workflows/harness-report-fb-fixes/state-machine.mmd
+outputArtifact: docs/workflows/harness-report-fb-fixes/flowchart.mmd
+---
+
+## Implementation Flowchart
+
+4件のFB修正（FB-1+5、FB-2、FB-4、FB-6）の実装フロー。各修正は順序的に実行され、コード修正→テスト追加→検証のステップを含む。
+
+### Flowchart (Mermaid TD)
+
+```mermaid
+flowchart TD
+  START([開始: 4件FB修正実装]) --> FC_PRE["準備: リポジトリクローン + 環境構築"]
+
+  FC_PRE --> FC_FB1_START["FB-1+5修正: readonly Phase ツール フィルタ"]
+  FC_FB1_START --> FC_FB1_CODE["delegate-coordinator.ts L120-125 を修正<br/>isReadonlyPhase変数を追加<br/>Write/Edit ツール除外ロジック実装"]
+  FC_FB1_CODE --> FC_FB1_TEST["テスト追加: delegate-coordinator-readonly.test.ts<br/>readonly フェーズ時のallowedTools検証"]
+  FC_FB1_TEST --> FC_FB1_VERIFY["検証: readonly フェーズでWrit/Edit がallowedTools から削除"]
+
+  FC_FB1_VERIFY --> FC_FB2_START["FB-2修正: structural Line ID パターン認識"]
+  FC_FB2_START --> FC_FB2_CODE["dod-helpers.ts L26 を修正<br/>汎用ID パターン正規表現を実装<br/>/^(?:[-*]\s+)?[A-Z]{1,5}-\d{1,4}[:：]/ をテスト"]
+  FC_FB2_CODE --> FC_FB2_TEST["テスト追加: dod-extended.test.ts<br/>複数フォーマット対応を検証"]
+  FC_FB2_TEST --> FC_FB2_VERIFY["検証: isStructuralLine が ID パターンを認識"]
+
+  FC_FB2_VERIFY --> FC_FB4_START["FB-4修正: RTM Upsert操作"]
+  FC_FB4_START --> FC_FB4_SEARCH["manager-write.ts L126-129 を修正<br/>findIndex で既存ID を検索"]
+  FC_FB4_SEARCH --> FC_FB4_BRANCH{既存ID が存在するか}
+  FC_FB4_BRANCH -->|存在する| FC_FB4_SPLICE["splice で既存エントリを置換"]
+  FC_FB4_BRANCH -->|存在しない| FC_FB4_PUSH["push で新規エントリを追加"]
+  FC_FB4_SPLICE --> FC_FB4_TEST["テスト追加: manager-write-rtm.test.ts<br/>Upsert 操作の両パターン検証"]
+  FC_FB4_PUSH --> FC_FB4_TEST
+  FC_FB4_TEST --> FC_FB4_VERIFY["検証: rtmEntries が重複なく更新"]
+
+  FC_FB4_VERIFY --> FC_FB6_START["FB-6修正: Artifact Hash キャッシュクリア"]
+  FC_FB6_START --> FC_FB6_RESET["manager-lifecycle.ts L126 を修正<br/>goBack 実行時にretryCount を {} にリセット"]
+  FC_FB6_RESET --> FC_FB6_CLEAR["artifactHashes を {} で完全クリア<br/>全アーティファクトハッシュ削除"]
+  FC_FB6_CLEAR --> FC_FB6_TEST["テスト追加: manager-lifecycle-reset.test.ts<br/>キャッシュクリア動作を検証"]
+  FC_FB6_TEST --> FC_FB6_VERIFY["検証: goBack 時にキャッシュが完全に初期化"]
+
+  FC_FB6_VERIFY --> FC_INTEGRATION["統合テスト実行<br/>4件修正の相互作用を確認"]
+  FC_INTEGRATION --> FC_LINT["リント & 型チェック実行<br/>eslint + TypeScript compiler"]
+  FC_LINT --> FC_COVERAGE["カバレッジ確認<br/>新規テストのカバレッジ率を検証"]
+  FC_COVERAGE --> FC_REVIEW["コード レビュー準備<br/>変更内容ドキュメント作成"]
+  FC_REVIEW --> FC_COMMIT["Git コミット & プッシュ<br/>全修正を含むコミットメッセージ作成"]
+  FC_COMMIT --> FC_PR["プル リクエスト作成<br/>review チェックリスト確認"]
+  FC_PR --> FC_MERGE["マージ & デプロイ準備<br/>main ブランチへマージ"]
+  FC_MERGE --> END(["終了: 4件修正完了"])
+
+  style START fill:#e1f5e1
+  style END fill:#e1f5e1
+  style FC_FB1_VERIFY fill:#fff3cd
+  style FC_FB2_VERIFY fill:#fff3cd
+  style FC_FB4_VERIFY fill:#fff3cd
+  style FC_FB6_VERIFY fill:#fff3cd
+  style FC_COVERAGE fill:#cfe2ff
+```
+
+## decisions セクション
+
+実装フローの主要判断点と根拠。
+
+- FC-001: 4件修正は相互独立の機能 - 単一実装フェーズで順序的に実行可能
+- FC-002: FB-1+5 → FB-2 → FB-4 → FB-6の実行順序 - 依存関係なく安全
+- FC-003: 各修正はコード修正→テスト追加の2ステップ - TDD 準拠
+- FC-004: FB-4 の分岐判定(upsert) - 既存ID有無で異なるpath を実装
+- FC-005: リント & 型チェックは統合テスト後に実行 - ビルド整合性を保証
+- FC-006: カバレッジ確認で新規テストの効果を測定 - 品質基準達成確認
+- FC-007: すべての修正を単一コミットで管理 - atomic な変更セット確保
+- FC-008: プル リクエスト作成時にレビューチェックリスト記載 - manual verify 実施
+
+## Artifacts
+
+成果物一覧。
+
+- docs/workflows/harness-report-fb-fixes/flowchart.mmd (this file)
+- docs/workflows/harness-report-fb-fixes/state-machine.mmd (input: 状態遷移図)
+- docs/workflows/harness-report-fb-fixes/planning.md (input: 計画ドキュメント)
+
+## Implementation Files Mapped
+
+修正対象ファイルと関連テストファイルのマッピング。
+
+| FB修正 | コード修正ファイル | テストファイル | フロー ID |
+|--------|-------------------|-----------------|-----------|
+| FB-1+5 | delegate-coordinator.ts L120-125 | delegate-coordinator-readonly.test.ts | FC_FB1_CODE → FC_FB1_TEST |
+| FB-2 | dod-helpers.ts L26 | dod-extended.test.ts | FC_FB2_CODE → FC_FB2_TEST |
+| FB-4 | manager-write.ts L126-129 | manager-write-rtm.test.ts | FC_FB4_SEARCH → FC_FB4_TEST |
+| FB-6 | manager-lifecycle.ts L126 | manager-lifecycle-reset.test.ts | FC_FB6_RESET → FC_FB6_TEST |
+
+## Flowchart Design Notes
+
+フローチャート設計の詳細。
+
+- **START → 準備**: リポジトリと環境をセットアップ
+- **4つの修正フロー**: 各々がコード修正→テスト追加→検証の3ステップ
+- **FB-4分岐**: findIndex の結果に基づいて upsert の2パターンを実装
+- **統合テスト**: 全4修正が相互作用なく動作することを確認
+- **品質ゲート**: リント、型チェック、カバレッジで品質保証
+- **変更管理**: コミット・プッシュ・PR・マージまでの フロー完備
+- **END**: すべての修正と検証が完了
+

@@ -1,0 +1,170 @@
+%% 3件のバグ修正フロー
+%% BUG-1: bash-whitelist.jsのホワイトリストマッチング処理の修正
+%% BUG-2: loop-detector.jsのnormalizeFilePath関数のデッドコード除去
+%% BUG-3: record-test-result.tsの大文字キーワード検出ロジックの改善
+%%
+%% 本フローチャートでは、3件のバグの原因と修正手順を処理フロー図で表現します。
+%% BUG-1は末尾スペースの削除による修正、
+%% BUG-2はデッドコードの除去による簡潔化、
+%% BUG-3は否定語チェックとハイフン除外ロジックの追加です。
+
+flowchart TD
+    %% ========== BUG-1: bash-whitelist.js修正フロー ==========
+    START_BUG1["【BUG-1開始】bash-whitelist.js修正"]
+    EXPLAIN_BUG1["根本原因: ホワイトリストに'node '<br/>末尾スペース付き5文字登録"]
+    CHECK_MATCH["'node src/backend/...'に対して<br/>startsWith判定実行"]
+    COMPARE_CHAR["ホワイトリスト5文字目: スペース<br/>入力の5文字目: 's'<br/>→ 不一致でfalse"]
+    PROBLEM_BUG1["問題: nodeコマンドが<br/>ホワイトリストで拒否される"]
+    FIX_BUG1["修正: 'node 'を'node'に変更<br/>行64と行75で末尾スペース削除"]
+    VERIFY_REQ_R6["REQ-R6境界チェック実行<br/>次の文字が境界文字か確認"]
+    BOUNDARY_CHECK{"次の文字の判定"}
+    UNDEFINED_CHAR["undefined/スペース/<br/>セミコロン/パイプ"]
+    NOT_UNDEFINED_CHAR["'j'など他の文字"]
+    ALLOW_NODE["許可: 'node'単体<br/>または'node [args]'"]
+    REJECT_DERIVED["拒否: 'nodejs'など<br/>派生コマンド"]
+    RESULT_BUG1["結果: セキュリティ維持<br/>nodeコマンド正常動作"]
+
+    START_BUG1 --> EXPLAIN_BUG1
+    EXPLAIN_BUG1 --> CHECK_MATCH
+    CHECK_MATCH --> COMPARE_CHAR
+    COMPARE_CHAR --> PROBLEM_BUG1
+    PROBLEM_BUG1 --> FIX_BUG1
+    FIX_BUG1 --> VERIFY_REQ_R6
+    VERIFY_REQ_R6 --> BOUNDARY_CHECK
+    BOUNDARY_CHECK -->|該当| UNDEFINED_CHAR
+    BOUNDARY_CHECK -->|非該当| NOT_UNDEFINED_CHAR
+    UNDEFINED_CHAR --> ALLOW_NODE
+    NOT_UNDEFINED_CHAR --> REJECT_DERIVED
+    ALLOW_NODE --> RESULT_BUG1
+    REJECT_DERIVED --> RESULT_BUG1
+
+    %% ========== BUG-2: loop-detector.js修正フロー ==========
+    START_BUG2["【BUG-2開始】loop-detector.js修正"]
+    EXPLAIN_BUG2["根本原因: path.resolve周りに<br/>不要なtry-catchブロック"]
+    CHECK_FLOW["normalizeFilePath関数の処理フロー"]
+    REALPATHSYNC["fs.realpathSync実行"]
+    TRY_OUTER["外側try-catchで保護"]
+    SUCCESS_REALPATH["成功: 正規化パス返却"]
+    FAIL_REALPATH["失敗: console.warn"]
+    INNER_TRY["内側try-catch実行<br/>path.resolve呼び出し"]
+    PROBLEM_BUG2["問題: path.resolveは<br/>文字列処理のみ<br/>例外をスローしない<br/>→ catchが到達不能"]
+    DEADCODE["デッドコード検出<br/>行136-143: 不要なtry-catch"]
+    FIX_BUG2["修正: 内側try-catchを除去<br/>path.resolveを直接呼び出し"]
+    AFTER_FIX["修正後の処理フロー"]
+    OUTER_PROTECT["外側try-catchは維持<br/>fs.realpathSync失敗対応"]
+    PATH_RESOLVE_DIRECT["path.resolve直接呼び出し<br/>文字列処理実行"]
+    NORMALIZE_PATH["パス正規化<br/>replace/toLowerCase"]
+    RESULT_BUG2["結果: コード簡潔化<br/>入出力は変更なし"]
+
+    START_BUG2 --> EXPLAIN_BUG2
+    EXPLAIN_BUG2 --> CHECK_FLOW
+    CHECK_FLOW --> REALPATHSYNC
+    REALPATHSYNC --> TRY_OUTER
+    TRY_OUTER -->|成功| SUCCESS_REALPATH
+    TRY_OUTER -->|失敗| FAIL_REALPATH
+    SUCCESS_REALPATH --> RESULT_BUG2
+    FAIL_REALPATH --> INNER_TRY
+    INNER_TRY --> PROBLEM_BUG2
+    PROBLEM_BUG2 --> DEADCODE
+    DEADCODE --> FIX_BUG2
+    FIX_BUG2 --> AFTER_FIX
+    AFTER_FIX --> OUTER_PROTECT
+    OUTER_PROTECT --> PATH_RESOLVE_DIRECT
+    PATH_RESOLVE_DIRECT --> NORMALIZE_PATH
+    NORMALIZE_PATH --> RESULT_BUG2
+
+    %% ========== BUG-3: record-test-result.ts修正フロー ==========
+    START_BUG3["【BUG-3開始】record-test-result.ts修正"]
+    EXPLAIN_BUG3["根本原因: 大文字キーワード検出で<br/>2つの問題が発生"]
+    PROBLEM_3A["問題3a: isKeywordNegated未適用<br/>'0 Failed'が誤検出"]
+    PROBLEM_3B["問題3b: ハイフン結合語未除外<br/>'Fail-Closed'が誤検出"]
+
+    CHECK_EXITCODE{"exitCode確認"}
+    EXITCODE_NONZERO["exitCode ≠ 0"]
+    EXITCODE_ZERO["exitCode = 0"]
+
+    FAIL_LIKELY["実行失敗の可能性"]
+    KEYWORD_CHECK["キーワード検出ロジック"]
+
+    OUTPUT_CHECK["出力テキスト分析"]
+    DETECT_LOWERCASE["小文字キーワード検出<br/>failing/failures/errored"]
+    DETECT_UPPERCASE["大文字キーワード検出<br/>FAIL/FAILED等"]
+
+    LOWERCASE_NEGATION["小文字: isKeywordNegated<br/>チェック済み"]
+    UPPERCASE_PROBLEM["大文字: isKeywordNegated<br/>未チェック（問題3a）"]
+
+    FIX_3A["修正3a: isKeywordNegated適用<br/>'0 Failed'→除外<br/>'no Error'→除外"]
+
+    PATTERN_MATCH["正規表現マッチング<br/>\\bFail\\b等"]
+    MATCH_RESULT["マッチ結果"]
+    HYPHEN_CHECK{"マッチ位置の次が<br/>ハイフンか確認"}
+    IS_HYPHEN["'-'である<br/>（ハイフン結合語）"]
+    NOT_HYPHEN["'-'でない<br/>（単独キーワード）"]
+
+    FIX_3B["修正3b: ハイフン除外チェック<br/>'Fail-Closed'→除外<br/>コンテキスト確認"]
+
+    INCONSISTENCY_CHECK{"矛盾判定<br/>exitCode vs<br/>キーワード"}
+    NO_INCONSIST["矛盾なし"]
+    YES_INCONSIST["矛盾あり"]
+
+    ACCEPT_OUTPUT["テスト出力受理"]
+    REJECT_OUTPUT["テスト出力拒否<br/>真正性違反"]
+
+    RESULT_BUG3["結果: キーワード検出精度向上<br/>誤検出を排除"]
+
+    START_BUG3 --> EXPLAIN_BUG3
+    EXPLAIN_BUG3 --> PROBLEM_3A
+    PROBLEM_3A --> PROBLEM_3B
+    PROBLEM_3B --> CHECK_EXITCODE
+
+    CHECK_EXITCODE -->|=0| EXITCODE_ZERO
+    CHECK_EXITCODE -->|≠0| EXITCODE_NONZERO
+
+    EXITCODE_NONZERO --> FAIL_LIKELY
+    FAIL_LIKELY --> ACCEPT_OUTPUT
+
+    EXITCODE_ZERO --> KEYWORD_CHECK
+    KEYWORD_CHECK --> OUTPUT_CHECK
+    OUTPUT_CHECK --> DETECT_LOWERCASE
+    OUTPUT_CHECK --> DETECT_UPPERCASE
+
+    DETECT_LOWERCASE --> LOWERCASE_NEGATION
+    DETECT_UPPERCASE --> UPPERCASE_PROBLEM
+
+    LOWERCASE_NEGATION --> PATTERN_MATCH
+    UPPERCASE_PROBLEM --> FIX_3A
+    FIX_3A --> PATTERN_MATCH
+
+    PATTERN_MATCH --> MATCH_RESULT
+    MATCH_RESULT --> HYPHEN_CHECK
+
+    HYPHEN_CHECK -->|Yes| IS_HYPHEN
+    HYPHEN_CHECK -->|No| NOT_HYPHEN
+
+    IS_HYPHEN --> FIX_3B
+    NOT_HYPHEN --> INCONSISTENCY_CHECK
+    FIX_3B --> INCONSISTENCY_CHECK
+
+    INCONSISTENCY_CHECK -->|なし| NO_INCONSIST
+    INCONSISTENCY_CHECK -->|あり| YES_INCONSIST
+
+    NO_INCONSIST --> ACCEPT_OUTPUT
+    YES_INCONSIST --> REJECT_OUTPUT
+
+    ACCEPT_OUTPUT --> RESULT_BUG3
+    REJECT_OUTPUT --> RESULT_BUG3
+
+    %% ========== スタイル設定 ==========
+    classDef bugStart fill:#ff6b6b,stroke:#c92a2a,color:#fff,font-weight:bold
+    classDef bugProblem fill:#ffa94d,stroke:#e67700,color:#000,font-weight:bold
+    classDef bugFix fill:#51cf66,stroke:#2b8a3e,color:#fff,font-weight:bold
+    classDef bugResult fill:#4c6ef5,stroke:#1c4995,color:#fff,font-weight:bold
+    classDef process fill:#e7f5ff,stroke:#339af0,color:#000
+    classDef decision fill:#fff3bf,stroke:#f59f00,color:#000,font-weight:bold
+
+    class START_BUG1,START_BUG2,START_BUG3 bugStart
+    class PROBLEM_BUG1,PROBLEM_BUG2,PROBLEM_3A,PROBLEM_3B bugProblem
+    class FIX_BUG1,FIX_BUG2,FIX_3A,FIX_3B bugFix
+    class RESULT_BUG1,RESULT_BUG2,RESULT_BUG3 bugResult
+    class CHECK_MATCH,COMPARE_CHAR,CHECK_FLOW,REALPATHSYNC,TRY_OUTER,FAIL_REALPATH,INNER_TRY,AFTER_FIX,OUTPUT_CHECK,DETECT_LOWERCASE,DETECT_UPPERCASE,PATTERN_MATCH process
+    class BOUNDARY_CHECK,CHECK_EXITCODE,HYPHEN_CHECK,INCONSISTENCY_CHECK decision

@@ -1,0 +1,48 @@
+task: tier-a-gaps-n01-n07
+phase: research
+intent: Tier A 7項目の実装に必要な技術調査と設計制約の特定
+
+environment:
+  node: v22.15.0
+  tsc: 5.9.3
+  npm: 10.9.2
+  platform: MSYS_NT-10.0-26200 (Windows + Git Bash)
+
+codeAnalysis[7]{gap,currentImpl,changeNeeded}:
+  N-01, post-tool-lint.shはtsc --noEmitのみ実行, biome check --no-errors-on-unmatched を追加。command -v npxで存在確認しgraceful degradation。タイムアウト3秒。
+  N-02, retry.tsのbuildRetryPromptはerrorToImprovementでパターンマッチ修正指示を生成, adr.tsのgetActiveADRsを呼びエラーパターンに関連するADRのstatement/rationaleをリトライプロンプトに付加。
+  N-03, AGENTS.mdは存在しない, プロジェクトルートにOpenAI標準のAGENTS.md形式でハーネスの構造・エントリポイント・ツール一覧を記述。
+  N-04, pre-tool-config-guard.shは6パターンのみ保護, biome.json/vitest.config/vite.config/jest.config/playwright.config/.prettierrc/.editorconfig/.npmrc/.nvmrc/.node-version/lefthook.yml/package-lock.jsonを追加。
+  N-05, handoff-reader.shはHANDOFF.md注入のみ, 4ステップ起動ルーチン追加: git status確認/依存整合性チェック/テスト実行可否/進捗復元。
+  N-06, stop-test-enforcer.shはnpx vitest --runでフルテスト, git diff --name-only HEADで変更ファイル検出しvitest --related で関連テストのみ先行実行。フォールバックでフルテスト。
+  N-07, getLessonsForPhaseはqualityScoreでソートするがフィルタなし, qualityScore < 0.3のレッスンを除外。harmful率が高いレッスンがプロンプトに注入されることを防止。
+
+magicNumbers[6]{value,usage,rationale}:
+  3秒, N-01 biomeタイムアウト, tsc(5秒)より短く。biomeはRust製で高速なため3秒で十分。
+  0.3, N-07 品質スコア閾値, helpful/(helpful+harmful+1)の分母特性上0.3未満はharmful率が高い。新規レッスン(helpful=0 harmful=0)はスコア0.5で通過。
+  30秒, N-06 --relatedタイムアウト, 関連テストは少数ファイルのため30秒で十分。フルテストは60秒。
+  20文字, userIntent最小長, 既存制約。変更なし。
+  5, getLessonsForPhaseの最大返却数, 既存制約。N-07フィルタ後もこの上限を維持。
+  50, MAX_LESSONSのレッスン上限, 既存制約。品質スコアevictionで管理。
+
+constraints[4]{id,description,impact}:
+  C-1, biomeがnpm installされていない環境が多い, N-01はcommand存在チェック+exit code 127判定で完全にgraceful
+  C-2, Windows環境(MSYS)でのgit diffパス形式, N-06でgit diff出力のパスはMSYS形式だがvitestは対応済み
+  C-3, reflector.tsのloadStoreは毎回ファイルI/O, N-07のフィルタはloadStore内ではなくgetLessonsForPhase内で行うため性能影響なし
+  C-4, ADR storeが空の場合N-02は何も付加しない, getActiveADRsが空配列を返すだけでエラーにならない設計
+
+decisions[5]{id,statement,rationale}:
+  R-1, N-01のbiomeはnpx biome check形式で呼ぶ, グローバルインストール不要。npx経由でプロジェクトローカルのbiomeを使用。
+  R-2, N-02のADRリンクはbuildRetryPrompt内で条件付き付加, ADRが存在しない場合は従来通りのプロンプトを返す。既存テストへの影響最小。
+  R-3, N-03のAGENTS.mdはプロジェクトルートに配置, OpenAI標準に従い他ツールからの発見性を最大化。
+  R-4, N-05の起動ルーチンはhandoff-reader.sh内に統合, 新規フック追加せず既存フックの拡張で実現。トリガーはuser-prompt-submit。
+  R-5, N-07のフィルタはgetLessonsForPhaseとformatLessonsForPromptの両方に適用, 品質の低いレッスンがどの経路でも注入されないことを保証。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/research.toon, report, 技術調査結果
+  docs/workflows/tier-a-gaps-n01-n07/scope-definition.toon, report, 前フェーズ成果物
+
+next:
+  criticalDecisions: R-2(ADRリンク条件付き付加)が最も影響範囲が広い。retry.tsの変更はテスト必須。
+  readFiles: workflow-phases.md, workflow-gates.md
+  warnings: N-02のADRリンクでimportが増えるためcircular dependency注意。adr.tsはreflector.tsと独立しているので問題なし。

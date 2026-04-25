@@ -1,0 +1,45 @@
+flowchart TD
+    Start([開始]) --> ChangeF["変更F: record-test-result.ts<br/>コード修正<br/>summaryフォールバック追加"]
+
+    ChangeF --> BuildTest["ビルド実行"]
+    BuildTest --> RunTests["テスト実行<br/>5ケース"]
+
+    RunTests --> TestCase1["TC1: summaryフォールバック成功<br/>日本語形式<br/>totalTests=12, passedTests=12"]
+    TestCase1 --> TestCase2["TC2: summaryフォールバック成功<br/>英語形式<br/>totalTests=8, passedTests=8"]
+    TestCase2 --> TestCase3["TC3: summaryフォールバック失敗<br/>output短すぎ<br/>2文字 &lt; 50文字"]
+    TestCase3 --> TestCase4["TC4: summaryフォールバック失敗<br/>summary未提供<br/>構造パターンマッチ失敗"]
+    TestCase4 --> TestCase5["TC5: 既存フロー維持<br/>vitest形式テスト<br/>従来通り動作確認"]
+
+    TestCase5 --> TestCheck{全テスト成功?}
+    TestCheck -->|No| FixF["変更Fコード修正"]
+    FixF --> BuildTest
+
+    TestCheck -->|Yes| ChangeA["変更A: CLAUDE.md<br/>subagent起動テンプレート<br/>docsDirパス埋め込み<br/>パス使用ルール追加"]
+
+    ChangeA --> ChangeB["変更B: CLAUDE.md<br/>Bashコマンド制限明記<br/>readonly/testing/implementation<br/>禁止コマンド代替手段"]
+
+    ChangeB --> ChangeC["変更C: CLAUDE.md<br/>parallel_verification必須セクション<br/>manual_test, security_scan<br/>performance_test, e2e_test"]
+
+    ChangeC --> ChangeD["変更D: CLAUDE.md<br/>AIへの厳命ルール20番<br/>ベースライン記録義務<br/>research/testingフェーズ記録"]
+
+    ChangeD --> ChangeE["変更E: CLAUDE.md<br/>MCPサーバーキャッシュセクション<br/>Node.jsモジュールキャッシュ説明<br/>サーバー再起動手順"]
+
+    ChangeE --> ChangeG["変更G: ゴミディレクトリ削除<br/>docs/workflows/<br/>artifact-validatorテーブル行除外/"]
+
+    ChangeG --> Integration["統合確認<br/>git status確認<br/>全変更のコミット前検証"]
+
+    Integration --> Complete([完了<br/>7件の問題根本解決<br/>ワークフロー安定性向上])
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style ChangeF fill:#87CEEB
+    style RunTests fill:#87CEEB
+    style TestCheck fill:#FFD700
+    style FixF fill:#FFB6C1
+    style ChangeA fill:#DDA0DD
+    style ChangeB fill:#DDA0DD
+    style ChangeC fill:#DDA0DD
+    style ChangeD fill:#DDA0DD
+    style ChangeE fill:#DDA0DD
+    style ChangeG fill:#F0E68C
+    style Integration fill:#FFA500

@@ -1,0 +1,43 @@
+stateDiagram-v2
+    direction LR
+
+    state "Orchestrator" as orch {
+        state "フェーズ取得" as getPhase
+        state "マッピング表参照" as lookupMapping
+        state "テンプレート構築" as buildTemplate
+        state "プレースホルダー置換" as replacePlaceholder
+        state "subagent起動" as launchSubagent
+
+        getPhase --> lookupMapping: workflow_statusからフェーズ名取得
+        lookupMapping --> buildTemplate: 許可カテゴリ一覧を取得
+        buildTemplate --> replacePlaceholder: 初回/リトライテンプレート選択
+        replacePlaceholder --> launchSubagent: 許可カテゴリ一覧をプレースホルダーに埋め込み
+    }
+
+    state "Subagent" as sub {
+        state "テンプレート読解" as readTemplate
+        state "Bashコマンド判断" as judgeCommand
+        state "許可コマンド実行" as execAllowed
+        state "ツール代替使用" as useTools
+        state "成果物作成" as createArtifact
+
+        readTemplate --> judgeCommand: Bashコマンド制限セクション確認
+        judgeCommand --> execAllowed: 許可カテゴリに含まれるコマンド
+        judgeCommand --> useTools: 非許可またはファイル操作
+        execAllowed --> createArtifact: コマンド実行成功
+        useTools --> createArtifact: Read/Write/Edit使用
+    }
+
+    state "フック検証" as hook {
+        state "bash-whitelist.js照合" as validate
+        state "実行許可" as allow
+        state "ブロック" as block
+
+        validate --> allow: ホワイトリスト一致
+        validate --> block: ホワイトリスト不一致
+    }
+
+    launchSubagent --> readTemplate: Taskツールでsubagent起動
+    execAllowed --> validate: Bashコマンド実行要求
+    allow --> createArtifact: コマンド出力を取得
+    block --> judgeCommand: エラーメッセージを受け取り再判断

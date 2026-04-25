@@ -1,0 +1,99 @@
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> AnalyzeProblem: タスク初期化
+    AnalyzeProblem --> Start: 問題分析完了
+
+    Start --> FileDeletePhase: 削除フェーズ開始
+    FileDeletePhase --> DeleteFile1: verify-templates.js 削除
+    DeleteFile1 --> DeleteFile1Success: 削除成功
+    DeleteFile1 --> DeleteFile1Error: 削除失敗
+    DeleteFile1Error --> DeleteFile1Alternative: 代替手段実施
+    DeleteFile1Alternative --> DeleteFile1Success
+
+    DeleteFile1Success --> DeleteFile2: full-template-verify.js 削除
+    DeleteFile2 --> DeleteFile2Success: 削除成功
+    DeleteFile2 --> DeleteFile2Error: 削除失敗
+    DeleteFile2Error --> DeleteFile2Alternative: 代替手段実施
+    DeleteFile2Alternative --> DeleteFile2Success
+
+    DeleteFile2Success --> DeleteFile3: detailed-verify.js 削除
+    DeleteFile3 --> DeleteFile3Success: 削除成功
+    DeleteFile3 --> DeleteFile3Error: 削除失敗
+    DeleteFile3Error --> DeleteFile3Alternative: 代替手段実施
+    DeleteFile3Alternative --> DeleteFile3Success
+
+    DeleteFile3Success --> VerifyDeleteCompletion: git status で確認
+    VerifyDeleteCompletion --> DeletePhaseComplete: 削除フェーズ完了
+
+    DeletePhaseComplete --> FileMovePhase: 移動フェーズ開始
+    FileMovePhase --> CheckMoveSource: ソースファイル確認
+    CheckMoveSource --> MoveSourceNotFound: ファイル不在
+    MoveSourceNotFound --> SkipMovement: 移動スキップ
+    CheckMoveSource --> MoveSourceFound: ファイル存在
+
+    MoveSourceFound --> CheckMoveTarget: ターゲット確認
+    CheckMoveTarget --> TargetAlreadyExists: 既に存在
+    TargetAlreadyExists --> SkipMovement: 既存ファイル使用
+    CheckMoveTarget --> TargetNotExists: ターゲット未配置
+
+    TargetNotExists --> ExecuteMove: 移動実行
+    ExecuteMove --> MoveSuccess: 移動完了
+    ExecuteMove --> MoveFailed: 移動失敗
+    MoveFailed --> MoveRetry: リトライ
+    MoveRetry --> MoveSuccess
+
+    MoveSuccess --> VerifyMoveWithGit: git ls-files で確認
+    VerifyMoveWithGit --> MovePhaseComplete: 移動フェーズ完了
+
+    SkipMovement --> MovePhaseComplete
+
+    MovePhaseComplete --> TemplateUpdatePhase: テンプレート修正フェーズ開始
+    TemplateUpdatePhase --> UpdateRefactoringTemplate: refactoring テンプレート修正
+    UpdateRefactoringTemplate --> RefactoringAddRules: 一時ファイル配置ルール追加
+    RefactoringAddRules --> RefactoringComplete: refactoring テンプレート完了
+
+    RefactoringComplete --> UpdateUIDesignTemplate: ui_design テンプレート修正
+    UpdateUIDesignTemplate --> UIDesignAddPersistence: アーティファクト永続化ガイダンス追加
+    UIDesignAddPersistence --> UIDesignComplete: ui_design テンプレート完了
+
+    UIDesignComplete --> UpdateDocsUpdateTemplate: docs_update テンプレート修正
+    UpdateDocsUpdateTemplate --> DocsUpdateAddMovement: ワークフロー成果物永続化責任追加
+    DocsUpdateAddMovement --> DocsUpdateComplete: docs_update テンプレート完了
+
+    DocsUpdateComplete --> CompileTemplate: npm run build 実行
+    CompileTemplate --> CompileSuccess: コンパイル成功
+    CompileTemplate --> CompileFailed: コンパイル失敗
+    CompileFailed --> FixCompileError: エラー修正
+    FixCompileError --> CompileTemplate
+
+    CompileSuccess --> RestartMCPServer: MCP サーバー再起動
+    RestartMCPServer --> ServerRestartComplete: サーバー再起動完了
+
+    ServerRestartComplete --> ValidationPhase: 検証フェーズ開始
+    ValidationPhase --> VerifyDeletedFiles: 削除ファイル確認
+    VerifyDeletedFiles --> DeleteVerifyPass: 削除確認成功
+    VerifyDeletedFiles --> DeleteVerifyFail: 削除確認失敗
+    DeleteVerifyFail --> RerunDelete: 削除再実行
+    RerunDelete --> DeleteVerifyPass
+
+    DeleteVerifyPass --> VerifyMovedFiles: 移動ファイル確認
+    VerifyMovedFiles --> MoveVerifyPass: 移動確認成功
+    VerifyMovedFiles --> MoveVerifyFail: 移動確認失敗
+    MoveVerifyFail --> RerunMove: 移動再実行
+    RerunMove --> MoveVerifyPass
+
+    MoveVerifyPass --> VerifyTemplateContent: テンプレート内容確認
+    VerifyTemplateContent --> TemplateContentPass: テンプレート確認成功
+    VerifyTemplateContent --> TemplateContentFail: テンプレート確認失敗
+    TemplateContentFail --> FixTemplate: テンプレート修正
+    FixTemplate --> CompileTemplate
+
+    TemplateContentPass --> RunExistingTests: 既存テスト実行
+    RunExistingTests --> TestsPass: テスト成功
+    RunExistingTests --> TestsFail: テスト失敗
+    TestsFail --> FixRegressionIssue: リグレッション対応
+    FixRegressionIssue --> RunExistingTests
+
+    TestsPass --> AllVerificationsComplete: 全検証完了
+    AllVerificationsComplete --> End

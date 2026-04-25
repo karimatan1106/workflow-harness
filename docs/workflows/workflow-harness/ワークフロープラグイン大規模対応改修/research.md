@@ -1,0 +1,66 @@
+# 調査結果: ワークフロープラグイン大規模対応改修
+
+## サマリー
+
+本調査はworkflow-pluginを1000万ステップ規模のAI駆動開発に適合させるための改修対象を特定するものである。
+レビューで指摘されたB-1からD-3までの11件の問題について、関連ソースコードを調査し修正方針を明確化した。
+MCP serverは15個のツールを公開し、19フェーズ固定のワークフローをHMAC署名付きファイルベース状態管理で運用している。
+バリデーション層は成果物の構造チェックに限定されており、意味的整合性やユーザー指示のトレーサビリティが不足している。
+フック層は多層防御を実現しているが、bashホワイトリストの回避可能性やテスト真正性の偽造容易性が残存している。
+改修の中核は承認ゲート追加、フェーズ間整合性チェック、動的フェーズ選択、段階的リカバリの4点である。
+
+## 調査結果
+
+### MCPサーバーツール構造
+
+server.tsは424行でMCPプロトコルのツールディスパッチを実装している。
+15個の公開ツールはすべてネイティブバリデーション（Zodなし手動型チェック）を採用し、server.ts 87-139行で必須パラメータとenum値を検証している。
+workflow_startはタスクID生成とセッショントークン発行を行い、workflow_nextはフェーズ遷移時に成果物品質チェック・スコープ検証・テスト結果検証を多段階で実施する。
+workflow_approveは現在design_reviewフェーズのdesign承認のみ対応しており、requirementsフェーズの承認ゲートが存在しない（B-1問題の根本原因）。
+workflow_backは指定フェーズへの差し戻しが可能だが、差し戻し先の成果物保持・再実行ガイダンスが不足している（C-4問題の根本原因）。
+
+### フェーズ定義体系
+
+definitions.tsで19フェーズをPHASES_LARGEとして固定定義している。
+4つの並列フェーズグループ（parallel_analysis, parallel_design, parallel_quality, parallel_verification）が定義され、SUB_PHASE_DEPENDENCIESでサブフェーズ間の依存関係を管理している。
+parallel_design内ではstate_machine→flowchart→ui_designの線形依存があるが、parallel_analysis内のthreat_modelingとplanningは独立実行可能として定義されている。
+実際にはthreat_modelingの結果がplanningの設計判断に影響すべきであり、この依存関係の不足がB-3問題の原因である。
+タスクサイズによるフェーズ選択機構は廃止済み（small/medium撤廃）で、全タスクが同一の19フェーズを通過する（C-3問題の原因）。
+
+### バリデーター実装
+
+artifact-validator.tsはPHASE_ARTIFACT_REQUIREMENTSでファイルごとにminLinesとrequiredSectionsを定義している。
+品質検証項目はファイル存在・空ファイル検出・最小行数・必須セクション・禁止パターン検出・重複行検出・ヘッダーのみ検出・Mermaid図キーワード検証の8項目である。
+validateTraceability関数はrequirements.md内のREQ-IDがtest-design.mdで参照されているかを確認するが、個別テストケースと要件の内容面での対応確認は行わない。
+checkSectionDensity関数は各セクションの本文5行以上をチェックするが、テーブルデータ行やコードブロック内の行が構造行として除外されず誤検知が発生する（D-2問題の原因）。
+isStructuralLine関数は水平線・コードフェンス・テーブルセパレータ・太字ラベルを構造行として判定するが、テーブルデータ行やリスト項目の判定が不足している。
+
+### フック実装
+
+phase-edit-guard.jsは600行以上で、ファイル編集制限・Bashコマンド分析・スコープ検証を統合的に実施している。
+enforce-workflow.jsは300行以上で、タスク未開始状態でのファイル編集をブロックし、フェーズ別許可拡張子をTEST_EXTENSIONS定数で管理している。
+bash-whitelist.jsはreadonly/testing/implementation/git/deployの5カテゴリでコマンドホワイトリストを定義するが、base64エンコードや変数展開による間接実行を検出できない（C-1問題の原因）。
+hmac-verify.jsはworkflow-state.jsonのHMAC-SHA256署名を検証するが、MCP server側のhmac.tsが複数鍵世代管理を実装しているのに対し、hooks側は単一鍵ファイル参照の可能性がある（D-1問題の原因）。
+
+### 状態管理
+
+manager.tsは1500行以上でタスク状態のCRUD・ファイルロック・HMAC署名・タスク発見を実装している。
+types.tsの432行でTaskState・PhaseName・SubPhases等の型を定義し、approvals属性にrequirements/design/test_designの3種類の承認フラグを保持している。
+hmac.tsの214行でHMACキー生成・ローテーション・署名・検証を実装し、hmac-keys.jsonに複数世代のキーを保持する。
+状態ファイルはworkflow-state.jsonとして各タスクのworkflowDirに配置され、stateIntegrity属性にHMAC-SHA256署名を格納している。
+
+## 既存実装の分析
+
+### 修正対象ファイルの特定
+
+B-1（ユーザー指示フィードバック）はapprove.tsとnext.tsが修正対象で、requirements承認ゲートの追加とフェーズ遷移時のユーザー確認ポイント拡充が必要である。
+B-2（意味的整合性）はartifact-validator.tsが修正対象で、フェーズ間の要件トレーサビリティ強化とセクション内容の整合性チェック導入が必要である。
+B-3（並列依存関係）はdefinitions.tsが修正対象で、parallel_analysisのサブフェーズ間に推奨順序の定義追加が必要である。
+B-4（コンテキスト断絶）はCLAUDE.mdのサブエージェント起動テンプレートが修正対象で、フェーズ重要度に応じた入力ファイル戦略の追加が必要である。
+C-1（bashバイパス）はbash-whitelist.jsが修正対象で、エンコードされたコマンドのデコード検出やpipe経由のシェル実行検出の追加が必要である。
+C-2（テスト真正性）はtest-authenticity.tsが修正対象で、テスト実行時間の妥当性チェックと出力全文のハッシュ記録追加が必要である。
+C-3（フェーズ硬直性）はdefinitions.tsとnext.tsが修正対象で、タスク影響度に基づく動的フェーズスキップ機構の導入が必要である。
+C-4（リカバリ限定）はback.tsとreset.tsが修正対象で、差し戻し先フェーズの成果物状態リセットとガイダンス表示の追加が必要である。
+D-1（HMACキー不一致）はhmac-verify.jsが修正対象で、MCP server側のhmac-keys.json形式への統一が必要である。
+D-2（重複行誤検知）はartifact-validator.tsのisStructuralLine関数が修正対象で、テーブルデータ行とコードブロック内行のスキップ追加が必要である。
+D-3（パス正規化）はmanager.tsとscope-validator.tsが修正対象で、Windows環境でのパス区切り文字統一と日本語パスのエンコーディング対応追加が必要である。

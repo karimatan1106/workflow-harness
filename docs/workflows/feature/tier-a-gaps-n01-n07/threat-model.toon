@@ -1,0 +1,41 @@
+task: tier-a-gaps-n01-n07
+phase: threat_modeling
+intent: Tier A 7項目の脅威分析と緩和策
+
+threatSummary: 7項目全てが既存システムへの追加・拡張であり、新規攻撃面は限定的。主な脅威はConfig Guard迂回とReflector品質フィルタの閾値操作。
+
+threats[6]{id,description,likelihood,impact,mitigation}:
+  TM-1, Config Guard迂回: エージェントがCONFIG_GUARD_DISABLE=trueを設定して保護を無効化する, 中, 高, "環境変数の設定はPreToolUseフックでブロック不可だが、CLAUDE.mdで禁止指示を明記。フック自体のWrite/Editは保護対象に含める。"
+  TM-2, Reflector品質閾値の不適切な値: 0.3が厳しすぎると有用なレッスンも除外される, 低, 中, "新規レッスン(helpful=0,harmful=0)のスコアは0.5で閾値を超える。0.3未満は明確にharmful優勢なレッスンのみ。"
+  TM-3, ADRリンクのプロンプト汚染: 不正なADR内容がリトライプロンプトに注入される, 低, 低, "ADRはstatement/rationaleのみ抽出。最大200文字に切り詰め。ADR storeはHMAC保護済み。"
+  TM-4, Stop Hookのgit diff依存: git diffが空の場合フルテストスキップ, 低, 中, "git diff空時はフォールバックでフルvitest --run実行。--related は差分ファイル存在時のみ。"
+  TM-5, AGENTS.mdの情報漏洩: 内部構造の詳細公開, 低, 低, "AGENTS.mdはツール名と概要のみ記載。実装詳細・認証情報・内部パスは含めない。"
+  TM-6, 起動ルーチンの遅延: 4ステップチェックがセッション開始を遅延させる, 中, 低, "各ステップにタイムアウト(3秒)設定。全体で最大12秒。非ブロッキング設計で失敗しても起動は継続。"
+
+riskMatrix:
+  totalThreats: 6
+  highRisk: 0
+  mediumRisk: 2
+  lowRisk: 4
+  overallRisk: low
+
+mitigationPlan[3]{threatId,action,implementedIn}:
+  TM-1, lefthook.ymlとフックファイル自体をConfig Guard保護対象に追加, pre-tool-config-guard.sh
+  TM-2, 閾値0.3をMIN_QUALITY_SCORE定数として定義しテストで検証, reflector.ts
+  TM-4, git diff空時のフォールバックパスをテストで検証, stop-test-enforcer.sh
+
+decisions[5]{id,statement,rationale}:
+  TM-D1, Config Guardの保護対象にフックファイル自体は含めない, フックファイルはユーザーが編集する必要がある場合があるため。.claude/hooks/へのWrite/Editは許可。
+  TM-D2, ADRリンクは最大3件に制限する, プロンプトのコンテキスト消費を抑制。最も関連性の高いADRのみ。
+  TM-D3, 起動ルーチンの各ステップは独立実行する, 1ステップの失敗が他ステップをブロックしない設計。
+  TM-D4, Reflector品質閾値は設定ファイルでなくコード内定数とする, 閾値の動的変更はセキュリティリスク。コード変更+テスト通過が必要。
+  TM-D5, AGENTS.mdにはセッショントークンやHMAC鍵情報を含めない, 発見性ファイルは公開情報のみ。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/threat-model.toon, report, 脅威モデル
+  docs/workflows/tier-a-gaps-n01-n07/requirements.toon, spec, 前フェーズ成果物
+
+next:
+  criticalDecisions: TM-D2(ADR最大3件)とTM-D4(閾値コード内定数)が実装制約を追加
+  readFiles: workflow-phases.md, workflow-execution.md
+  warnings: TM-1のConfig Guard迂回は完全防止不可。CLAUDE.md指示による抑止が最終防衛線。

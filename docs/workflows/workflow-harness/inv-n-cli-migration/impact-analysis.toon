@@ -1,0 +1,36 @@
+phase: impact_analysis
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+taskName: inv-n-cli-migration
+summary: 削除中心の変更で影響範囲が限定的。MCPツール定義2つとハンドラ2つを削除しCLIエントリポイント1つを新設する。既存StateManager APIは変更なし。
+
+impactedFiles[7]{file,changeType,risk}:
+  defs-a.ts, 削除(配列要素), 低
+  defs-b.ts, 削除(配列要素), 低
+  handler.ts, 削除(import+case), 低
+  recording.ts, 削除(関数+import), 中(他ハンドラのimportに影響)
+  handler-misc.test.ts, 修正(数値変更), 低
+  package.json, 追加(binフィールド), 低
+  cli.ts, 新規作成, 中(sessionToken検証の正確性)
+
+unaffectedModules[4]{module,reason}:
+  manager.ts, StateManager APIは変更なし
+  manager-invariant.ts, applyAddInvariant等はCLIから直接呼ばれる
+  types-invariant.ts, 型定義は変更なし
+  dod-l3.ts, checkInvariantCompletenessはTaskState読取のみでMCP依存なし
+
+breakingChanges: MCPクライアントがharness_add_invariantまたはharness_update_invariant_statusを直接呼んでいた場合は動作しなくなる。現時点で外部MCPクライアントは存在しないため影響なし。
+
+decisions[5]{id,statement,rationale}:
+  IA-1, 影響範囲は7ファイルに限定される, 削除中心でありStateManager層に変更がないため波及が小さい
+  IA-2, recording.tsのimport編集が最もリスクの高い変更箇所, 他ハンドラが使うPhaseName等の型を誤って削除するとビルドエラーになる
+  IA-3, CLIのsessionToken検証がセキュリティ上の唯一の注意点, handler-shared.tsのvalidateSessionを再利用することで検証ロジックの重複を防ぐ
+  IA-4, 外部MCPクライアントは存在しないため後方互換性の問題はない, ハーネスは自己使用のみでありCLI移行による外部影響はゼロ
+  IA-5, テストファイルの変更はhandler-misc.test.tsのツール数カウントのみ, invariant-manager.test.tsとinvariant-dogfooding.test.tsはStateManager API経由のテストであり影響なし
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/impact-analysis.toon, report, 影響範囲分析結果
+
+next:
+  criticalDecisions[2]: IA-2, IA-3
+  readFiles[2]: docs/workflows/inv-n-cli-migration/research.toon, docs/workflows/inv-n-cli-migration/impact-analysis.toon
+  warnings[1]: recording.tsのimport行編集時にProofTierとInvariantStatusのみを削除しPhaseName等は残すこと

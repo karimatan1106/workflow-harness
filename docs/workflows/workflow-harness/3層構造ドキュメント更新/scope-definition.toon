@@ -1,0 +1,27 @@
+phase: scope_definition
+taskName: 3層構造ドキュメント更新
+timestamp: 2026-03-18
+riskScore: 3
+
+summary: ハーネスの3層構造関連ドキュメントを現在のコード実装に合わせて更新する。overview.mdのファイル数・ツール数修正、3層名称統一、幽霊ツール記述削除、DCI等の新ツール追記。
+
+acceptanceCriteria[4]{id,description,status}:
+  AC-1, overview.mdのファイル数とツール数が実装と一致, open
+  AC-2, workflow-orchestrator.mdの3層モデル記述が実装と一致, open
+  AC-3, state-management.mdのstateファイル一覧が実装と一致, open
+  AC-4, 幽霊ツール記述が削除されDCI等の新ツールが追記されている, open
+
+decisions[5]{id,statement,rationale}:
+  SD-1, overview.mdのファイル数を実コード走査で更新, 手動カウントは不正確になるため
+  SD-2, 3層名称をOrchestrator/Coordinator/Workerに統一, HARNESS_LAYER値と一致させるため
+  SD-3, 未実装ツールの記述を削除, 存在しないツールへの参照はエラーの元
+  SD-4, DCI関連4ツールとdelegate_coordinatorを追記, 実装済みだがドキュメント未反映
+  SD-5, HARNESS_LAYER=workerパターンとMCPデバッグログを文書化, 新機能の運用情報が必要
+
+artifacts[4]{path,description}:
+  workflow-harness/docs/architecture/overview.md, 概要
+  .claude/skills/harness/workflow-orchestrator.md, 操作ガイド
+  workflow-harness/docs/architecture/modules/state-management.md, state管理
+  workflow-harness/CLAUDE.md, 設定
+
+next: docs_update

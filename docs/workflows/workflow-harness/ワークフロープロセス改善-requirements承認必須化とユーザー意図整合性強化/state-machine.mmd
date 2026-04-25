@@ -1,0 +1,55 @@
+---
+config:
+  theme: base
+  look: handDrawn
+---
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> CodeReviewPhase: コードレビュー開始
+
+    CodeReviewPhase --> QualityCheckState: コード品質チェック中
+
+    QualityCheckState --> SecurityCheckState: セキュリティチェック中
+
+    SecurityCheckState --> PerformanceCheckState: パフォーマンスチェック中
+
+    PerformanceCheckState --> UserIntentCheckState: ユーザー意図整合性チェック中
+
+    UserIntentCheckState --> DesignConsistencyCheckState: 設計-実装整合性確認中
+
+    DesignConsistencyCheckState --> ThreatModelCrossCheckState: 脅威モデルクロスチェック中
+
+    ThreatModelCrossCheckState --> AcceptanceEvaluationState: 受け入れ判定評価中
+
+    AcceptanceEvaluationState --> ConformanceOKState: 全チェック合格
+
+    AcceptanceEvaluationState --> ConformanceNGState: 整合性不一致検出
+
+    ConformanceOKState --> ReviewCompleteState: レビュー完了
+
+    ConformanceNGState --> RollbackToImplementationState: implementationフェーズへ差し戻し
+
+    ReviewCompleteState --> End: state_machine フェーズ完了
+
+    RollbackToImplementationState --> End: ロールバック手順完了
+
+    note right of CodeReviewPhase
+        code_review フェーズの
+        開始地点
+    end note
+
+    note right of UserIntentCheckState
+        FR-2: ユーザー意図との
+        整合性チェック（新規追加）
+    end note
+
+    note right of ThreatModelCrossCheckState
+        FR-3: 脅威モデル
+        クロスチェック（新規追加）
+    end note
+
+    note right of ConformanceNGState
+        乖離・未対処脅威が
+        検出された状態
+    end note

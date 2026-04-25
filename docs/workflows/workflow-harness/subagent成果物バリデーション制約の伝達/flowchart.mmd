@@ -1,0 +1,50 @@
+flowchart TD
+    Start(("タスク開始")) --> CheckFix{"修正対象を判定"}
+
+    CheckFix -->|FIX-A| ReadClaude("CLAUDE.mdファイルを読み込む")
+    CheckFix -->|FIX-B| ReadBash("bash-whitelist.jsを読み込む")
+
+    ReadClaude --> SearchTemplate("subagent起動テンプレートセクションを検索")
+    SearchTemplate --> FindREQ4("REQ-4セクションの終了位置を特定")
+    FindREQ4 --> RefWorkflow("workflow-plugin CLAUDE.mdの259-293行を参照")
+    RefWorkflow --> ExtractContent("成果物品質要件セクションの内容を抽出")
+    ExtractContent --> InsertSection("REQ-4の直後に成果物品質要件セクションを挿入")
+    InsertSection --> SaveClaude("CLAUDE.mdファイルを保存")
+    SaveClaude --> EndA(("FIX-A完了"))
+
+    ReadBash --> LocateFunc("validateMkdirTarget関数を特定")
+    LocateFunc --> Line621("621行目の正規化コードを特定")
+    Line621 --> InsertNorm("正規化処理コードを621行直後に挿入")
+    InsertNorm --> GetCwd("process.cwdでカレントディレクトリを取得")
+    GetCwd --> NormalizeCwd("バックスラッシュをスラッシュに統一")
+    NormalizeCwd --> AddSlash("末尾にスラッシュを追加してcwdPrefixを作成")
+    AddSlash --> CheckAbsPath{"normalizedがcwdPrefixで始まるか"}
+    CheckAbsPath -->|Yes| RemovePrefix("プレフィックスを除去して相対パスを取得")
+    CheckAbsPath -->|No| KeepPath("normalizedのまま使用")
+    RemovePrefix --> CheckLeadSlash{"先頭がスラッシュか"}
+    KeepPath --> CheckLeadSlash
+    CheckLeadSlash -->|Yes| StripSlash("先頭スラッシュを除去")
+    CheckLeadSlash -->|No| CreateCheckPath("checkPath変数を確定")
+    StripSlash --> CreateCheckPath
+    CreateCheckPath --> ReplaceVar("コード内のnormalizedをcheckPathに置換")
+    ReplaceVar --> Line625("623-635行目をcheckPathを使用するように修正")
+    Line625 --> SaveBash("bash-whitelist.jsファイルを保存")
+    SaveBash --> EndB(("FIX-B完了"))
+
+    EndA --> Verify{"MCPサーバー再起動"}
+    EndB --> Verify
+    Verify -->|再起動完了| TestMSYS("MSYS環境で絶対パスmkdirをテスト")
+    TestMSYS --> TestAbsPath("mkdir -p 絶対パス形式のワークフローディレクトリを実行")
+    TestAbsPath --> CheckResult{"コマンド実行結果"}
+    CheckResult -->|許可される| TestRel("相対パス形式もテスト")
+    CheckResult -->|拒否される| Error("エラー: パス正規化が失敗")
+    TestRel --> TestRelPath("mkdir -p docs/workflows/test を実行")
+    TestRelPath --> CheckRel{"結果が期待値か"}
+    CheckRel -->|成功| TestDeny("不正なパステスト")
+    CheckRel -->|失敗| Error
+    TestDeny --> TestDenyPath("mkdir -p 許可外ディレクトリを実行")
+    TestDenyPath --> CheckDeny{"拒否されるか"}
+    CheckDeny -->|拒否| Success(("全テスト成功"))
+    CheckDeny -->|許可| Error
+    Error --> ReCheck("修正内容を再確認")
+    ReCheck --> ReadBash

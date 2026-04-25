@@ -1,0 +1,30 @@
+---
+phase: flowchart
+task: hearing-worker-real-choices
+taskId: 47bc7d35-75db-4c52-a5a8-1b42edf9f83e
+---
+
+flowchart TD
+    A[実装開始] --> B[hearing-worker.md読込]
+    B --> C[AskUserQuestion Quality Rulesセクション追加]
+    C --> D{hearing-worker.md 200行以下?}
+    D -->|Yes| E[defs-stage0.ts読込]
+    D -->|No| F[追加内容を圧縮]
+    F --> C
+    E --> G[24行目の抽象的指示を具体例付きルールに置換]
+    G --> H{defs-stage0.ts 200行以下?}
+    H -->|Yes| I[hearing-template.test.ts実行]
+    H -->|No| J[テンプレート文言を圧縮]
+    J --> G
+    I --> K{全テストPASS?}
+    K -->|Yes| L[実装完了]
+    K -->|No| M[テストアサーション更新]
+    M --> I
+
+## decisions
+
+- FC-001: 実装順序はhearing-worker.md→defs-stage0.ts→テスト確認の3ステップ。エージェント定義を先に変更することで、テンプレート変更時に整合性を確認しやすい。
+- FC-002: 各ファイル編集後に200行チェックを実施。超過時は追加内容を圧縮して再編集。hearing-worker.mdは現在27行、defs-stage0.tsは44行なので超過リスクは極めて低い。
+- FC-003: テスト実行は最後に1回のみ。PL-005で既存アサーションが新テキストでも一致することを確認済みだが、念のため実行して検証。
+- FC-004: テスト失敗時はアサーション更新で対応。新テキストに「必須」「選択肢」「2」が含まれていれば既存テストはPASSする設計。
+- FC-005: フローチャートはシンプルな直線フローにガード条件(200行チェック、テスト確認)を追加した構造。分岐は2箇所のみ。

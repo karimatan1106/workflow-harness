@@ -1,0 +1,48 @@
+phase: scope_definition
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内の===セパレーターを全て除去する
+status: complete
+
+scope: サブエージェントテンプレート文字列内の===セパレーターを除去し、太字ラベル行に置換する
+risk: 2
+size: small
+
+affectedFiles[4]{path,role,changeType}:
+  src/phases/definitions-shared.ts, shared-fragments, edit
+  src/phases/definitions.ts, prompt-builder, edit
+  src/phases/defs-stage6.ts, stage6-templates, edit
+  src/phases/registry.ts, phase-registry, none
+
+findings[7]{id,location,content,replacement}:
+  SD-F1, definitions-shared.ts:26, ARTIFACT_QUALITY_RULES冒頭 `=== 品質要件 ===`, **品質要件**
+  SD-F2, definitions-shared.ts:31, SUMMARY_SECTION_RULE冒頭 `=== TOON成果物 ===`, **TOON成果物**
+  SD-F3, definitions-shared.ts:43, EXIT_CODE_RULE冒頭 `=== ★完了時の戻り値(AGT-1) ===`, **完了時の戻り値(AGT-1)**
+  SD-F4, definitions-shared.ts:48, PROCEDURE_ORDER_RULE冒頭 `=== 作業順序(必須) ===`, **作業順序(必須)**
+  SD-F5, definitions-shared.ts:59, bashCategoryHelp関数内 `=== Bash制限 ===`, **Bash制限**
+  SD-F6, definitions.ts:77, buildToonFirstSection内 `=== TOON入力(ACE) ===`, **TOON入力(ACE)**
+  SD-F7, defs-stage6.ts:84, docs_updateテンプレート内 `=== ドキュメント配置ルール ===`, **ドキュメント配置ルール**
+
+conversionLogic[2]{id,location,description}:
+  SD-C1, definitions.ts:184, ##/###を===に変換するreplace行を削除する。===汚染の根本原因
+  SD-C2, definitions.ts:182-184, コメント2行+replace行の3行を完全除去。##ヘッダーはテンプレート内に存在しないため変換不要
+
+decisions[6]{id,statement,rationale}:
+  SD-D1, ===セパレーターを**太字ラベル**行に統一置換する, LLMはMarkdown太字を視覚的セクション区切りとして認識でき且つTOON出力に混入しない
+  SD-D2, 置換後の形式は`**ラベル名**`とする(前後の===を除去), 余分な装飾文字を排除しトークン効率を維持する
+  SD-D3, definitions.ts:184の##→===変換ロジックを完全削除する, ===を生成する根本原因を断つ。テンプレート内に##ヘッダーは存在せず変換対象がない
+  SD-D4, registry.tsの===は厳密等価演算子であり変更対象外, JavaScriptの===演算子はセパレーターではなくコード構文である
+  SD-D5, defs-stage1〜5には===が存在せず変更不要, Grepで確認済み。stage6のdocs_updateのみ該当
+  SD-D6, 置換は全7箇所+削除1箇所の計8箇所の変更で完了する, 全箇所をGrepで網羅的に特定済み
+
+notInScope[3]{item,reason}:
+  テンプレートの内容・ロジック自体の変更, 本タスクはセパレーター記号の置換のみを対象とする
+  TOON形式パーサーの修正, パーサーは===を正しく拒否しており修正不要
+  他のフォーマット記号(---や***)の変更, ===のみがTOON汚染の原因であり他の記号は問題なし
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/template-separator-cleanup/scope-definition.toon, spec, ===セパレーター除去のスコープ定義
+
+next:
+  criticalDecisions: SD-D1(太字置換方針), SD-D3(根本原因の##→===変換削除)
+  readFiles: src/phases/definitions-shared.ts, src/phases/definitions.ts, src/phases/defs-stage6.ts
+  warnings: registry.tsの===は演算子であり変更禁止

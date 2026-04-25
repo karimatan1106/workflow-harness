@@ -1,0 +1,51 @@
+phase: test_design
+taskName: inv-n-proof-tier
+ts: "2026-03-07T12:00:00+09:00"
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+decisions[12]{id,statement,rationale}:
+  TD-001, 型定義テスト(AC-1/AC-2)はtsc --noEmitとgrepベースの静的検証とする, 型の存在と構造はコンパイラとパターンマッチで確定的に検証でき実行時テスト不要のため
+  TD-002, MCPツールテスト(AC-3/AC-4)はStateManager単体テストとMCPツール統合テストの2層で検証する, 単体テストで関数ロジックを検証しMCPツール経由の統合テストでエンドツーエンドの動作を確認する2層構成が回帰リスクを最小化するため
+  TD-003, DoDゲートテスト(AC-5)はcheckInvariantCompleteness関数の単体テストとする, 入力パターン(全held/open混在/violated混在/空配列)の4条件を直接関数呼出しで検証するのが最も確定的なため
+  TD-004, dogfoodingテスト(AC-6)はfc.property()によるproperty-based testとする, 全サイズ×全フェーズの組合せを網羅的に検証するにはプロパティベーステストが最適でありT2(PropertyTest)レベルの証明を兼ねるため
+  TD-005, 各ACに対して最低2件のテストケースを割り当てる, 正常系と異常系の両面を検証することで受入基準の網羅性を担保するため
+  TD-006, InvariantStatusの3値(open/held/violated)は型レベルで制限されるためランタイムバリデーションテストは省略する, Zodスキーマによるバリデーションが型安全性を保証しランタイムテストは冗長となるため
+  TD-007, 重複ID登録テスト(TC-AC3-02)はエラーメッセージの文言ではなくthrowの有無で判定する, エラーメッセージは実装詳細であり変更耐性が低いため
+  TD-008, TC-AC5-04で空配列時passedを返す仕様はACスキップ動作と同一ポリシーとする, INV-N未登録タスクの後方互換性を維持するためcheckACCompletenessの空配列パターンと一貫させる
+  TD-009, INV-1からINV-4のテストはregistry.tsの実データに対して検証する, モックではなく実際のPHASE_ORDER/SIZE_SKIP_MAP/getNextPhaseを使用することでdogfoodingとしての信頼性を確保するため
+  TD-010, TC-AC6-03のskip上位集合性テストはsmall/medium/largeの3サイズ間の包含関係を検証する, SIZE_SKIP_MAPの全サイズペアに対して下位サイズのスキップ集合が上位に含まれることを確認するため
+  TD-011, TC-AC1-01のフィールド検証はTypeScript型レベルとZodスキーマの両面で行う, 型定義とランタイムスキーマの乖離を防止するため
+  TD-012, テストケースIDはTC-AC{N}-{NN}形式で統一しACへのトレーサビリティを維持する, RTMチェーンでのAC→テストケース追跡を容易にするため
+testCases[18]{id,acRef,description,verification}:
+  TC-AC1-01, AC-1, "Invariant型がid/description/status/proofTier?/verifiedAt?/evidence?の6フィールドを持つこと", "grep -c 'id:' src/state/types-invariant.ts && grep -c 'description:' src/state/types-invariant.ts && grep -c 'status:' src/state/types-invariant.ts && grep -c 'proofTier' src/state/types-invariant.ts && grep -c 'verifiedAt' src/state/types-invariant.ts && grep -c 'evidence' src/state/types-invariant.ts で各1以上"
+  TC-AC1-02, AC-1, "InvariantStatusがopen|held|violatedの3値のみ受け付けること", "grep 'InvariantStatus' src/state/types-invariant.ts で 'open' | 'held' | 'violated' の3値定義を確認し tsc --noEmit が通ること"
+  TC-AC2-01, AC-2, "ProofTier型がT1|T2|T3|T4の4値であること", "grep 'ProofTier' src/state/types-core.ts で 'T1' | 'T2' | 'T3' | 'T4' の4値定義を確認し tsc --noEmit が通ること"
+  TC-AC2-02, AC-2, "AcceptanceCriterionにproofTier?フィールドが存在すること", "grep 'proofTier' src/state/types-core.ts でAcceptanceCriterion内にoptionalフィールドが存在し tsc --noEmit が通ること"
+  TC-AC3-01, AC-3, "addInvariantでINV-1を登録してTaskState.invariantsに追加されること", "addInvariant(state, 'INV-1', 'test invariant')呼出し後にstate.invariants.length === 1 && state.invariants[0].id === 'INV-1' && state.invariants[0].status === 'open'"
+  TC-AC3-02, AC-3, "同一IDの重複登録がエラーになること", "addInvariant(state, 'INV-1', 'dup')を2回呼出しで2回目がthrowすること"
+  TC-AC3-03, AC-3, "harness_add_invariant MCPツール経由で正常に登録できること", "MCPツールharness_add_invariant呼出し後にstate.jsonのinvariants配列にエントリが追加されていること"
+  TC-AC4-01, AC-4, "updateInvariantStatusでopen→heldに遷移できること", "addInvariant後にupdateInvariantStatus(state, 'INV-1', 'held', 'evidence text')呼出しでstatus === 'held' && evidence === 'evidence text'"
+  TC-AC4-02, AC-4, "updateInvariantStatusでopen→violatedに遷移できること", "addInvariant後にupdateInvariantStatus(state, 'INV-1', 'violated', 'violation reason')呼出しでstatus === 'violated'"
+  TC-AC4-03, AC-4, "存在しないINV-Nの更新がエラーになること", "updateInvariantStatus(state, 'INV-999', 'held')呼出しがthrowすること"
+  TC-AC5-01, AC-5, "全INV-Nがheldの場合checkInvariantCompletenessがpassedを返すこと", "invariants=[{status:'held'},{status:'held'}]でcheckInvariantCompleteness呼出しがpassed判定"
+  TC-AC5-02, AC-5, "INV-Nにopenがある場合failedを返すこと", "invariants=[{status:'held'},{status:'open'}]でcheckInvariantCompleteness呼出しがfailed判定"
+  TC-AC5-03, AC-5, "INV-Nにviolatedがある場合failedを返すこと", "invariants=[{status:'violated'}]でcheckInvariantCompleteness呼出しがfailed判定"
+  TC-AC5-04, AC-5, "INV-Nが未登録（空配列）の場合passedを返すこと", "invariants=[]でcheckInvariantCompleteness呼出しがpassed判定（ACスキップ動作と同一ポリシー）"
+  TC-AC6-01, AC-6, "PHASE_ORDERでtest_implのインデックスがimplementationより小さいこと（INV-1: test_before_impl順序）", "PHASE_ORDER.indexOf('test_impl') < PHASE_ORDER.indexOf('implementation') が true"
+  TC-AC6-02, AC-6, "getNextPhase('completed', size)が全サイズでnullを返すこと（INV-2: completed終端性）", "fc.property(fc.constantFrom('small','medium','large'), size => getNextPhase('completed', size) === null)"
+  TC-AC6-03, AC-6, "SIZE_SKIP_MAP.smallの全要素がmediumにも含まれること（INV-3: skip上位集合性）", "fc.property: SIZE_SKIP_MAP.small.every(p => SIZE_SKIP_MAP.medium.includes(p)) === true（medium⊇small）"
+  TC-AC6-04, AC-6, "getNextPhaseの戻り値が常に現在より後方のインデックスであること（INV-4: next_phase前進性）", "fc.property(fc.constantFrom(...phases), fc.constantFrom(...sizes), (phase,size) => { const next = getNextPhase(phase,size); return next === null || PHASE_ORDER.indexOf(next) > PHASE_ORDER.indexOf(phase) })"
+traceabilityMatrix[6]{ac,testCases,coverage}:
+  AC-1, "TC-AC1-01, TC-AC1-02", 型フィールド存在+3値制約
+  AC-2, "TC-AC2-01, TC-AC2-02", ProofTier4値+ACフィールド存在
+  AC-3, "TC-AC3-01, TC-AC3-02, TC-AC3-03", 正常登録+重複エラー+MCP統合
+  AC-4, "TC-AC4-01, TC-AC4-02, TC-AC4-03", held遷移+violated遷移+不在エラー
+  AC-5, "TC-AC5-01, TC-AC5-02, TC-AC5-03, TC-AC5-04", 全held/open混在/violated/空配列
+  AC-6, "TC-AC6-01, TC-AC6-02, TC-AC6-03, TC-AC6-04", INV-1順序/INV-2終端/INV-3上位集合/INV-4前進性
+artifacts[3]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/test-design.toon, test_design, テスト設計TOON成果物（18テストケース×6AC）
+  docs/workflows/inv-n-proof-tier/spec.toon, input, 実装仕様（先行成果物）
+  docs/workflows/inv-n-proof-tier/requirements.toon, input, 要件定義（AC-1からAC-6）
+next:
+  criticalDecisions[3]: TD-002, TD-004, TD-009
+  readFiles[5]: workflow-harness/mcp-server/src/state/types-core.ts, workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/gates/dod-l3.ts, workflow-harness/mcp-server/src/state/registry.ts, workflow-harness/mcp-server/src/__tests__/invariant-dogfooding.test.ts
+  warnings[2]: "AC-6のproperty-based testはfast-checkライブラリ(fc)が依存関係に含まれていることが前提", "TC-AC3-03のMCP統合テストはハーネスサーバー起動状態での実行が必要"

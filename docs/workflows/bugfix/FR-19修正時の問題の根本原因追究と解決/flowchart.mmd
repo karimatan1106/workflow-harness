@@ -1,0 +1,114 @@
+flowchart TD
+    Start("タスク開始: FR-19修正時の問題解決")
+
+    Start --> Check1{"3つの検証スクリプト<br/>存在確認"}
+
+    Check1 -->|存在| DeleteStart("ファイル削除フェーズ開始")
+    Check1 -->|不在| Skip1("削除スキップ")
+
+    DeleteStart --> Delete1("verify-templates.js を削除")
+    Delete1 --> DelCheck1{"削除成功?"}
+    DelCheck1 -->|成功| Delete2("full-template-verify.js を削除")
+    DelCheck1 -->|失敗: rm ブロック| AltDel1("代替手段実施<br/>Read/Write 或いは git rm")
+
+    AltDel1 --> Delete2
+    Delete2 --> DelCheck2{"削除成功?"}
+    DelCheck2 -->|成功| Delete3("detailed-verify.js を削除")
+    DelCheck2 -->|失敗: rm ブロック| AltDel2("代替手段実施<br/>個別削除に分割")
+
+    AltDel2 --> Delete3
+    Delete3 --> DelCheck3{"削除成功?"}
+    DelCheck3 -->|成功| GitStatus1("git status 実行")
+    DelCheck3 -->|失敗: rm ブロック| AltDel3("代替手段実施<br/>最後の手段を適用")
+
+    AltDel3 --> GitStatus1
+    GitStatus1 --> Verify1{"3ファイル全削除確認<br/>clean?"}
+
+    Skip1 --> MoveStart
+    Verify1 -->|確認| MoveStart("ファイル移動フェーズ開始")
+    Verify1 -->|未削除| Retry1("削除再試行<br/>又は手動干渉")
+
+    Retry1 --> MoveStart
+    MoveStart --> CheckDir("docs/spec/diagrams/<br/>ディレクトリ存在確認")
+
+    CheckDir -->|存在| CheckMmdFile{"修正プロセス.<br/>flowchart.mmd<br/>存在確認"}
+    CheckDir -->|不在| CreateDir("docs/spec/diagrams/<br/>ディレクトリ作成")
+
+    CreateDir --> CheckMmdFile
+    CheckMmdFile -->|ワークフロー内に存在| ReadMmd("Read ツールで<br/>ワークフロー側MMMを読み込む")
+    CheckMmdFile -->|既に永続配置| ValidateContent("既存ファイルの<br/>内容妥当性確認")
+    CheckMmdFile -->|どこにも不在| MoveSkip("移動スキップ")
+
+    ReadMmd --> WriteMmd("Write ツールで<br/>docs/spec/diagrams/に書き込む")
+    WriteMmd --> GitAdd1("git add で追跡対象化")
+
+    ValidateContent --> ValidCheck{"Mermaid<br/>文法妥当<br/>flowchart TD開始?"}
+    ValidCheck -->|妥当| GitAdd1
+    ValidCheck -->|不適切| UpdateMmd("ファイル内容を修正")
+
+    UpdateMmd --> GitAdd1
+    GitAdd1 --> CheckGitLs{"git ls-files で<br/>確認成功?"}
+    CheckGitLs -->|確認| TemplateStart("テンプレート修正フェーズ開始")
+    CheckGitLs -->|失敗| RetryMove("ファイル移動再試行")
+
+    RetryMove --> TemplateStart
+    MoveSkip --> TemplateStart
+
+    TemplateStart --> EditDef("definitions.ts を開く")
+    EditDef --> ModifyRef("refactoring フェーズに<br/>『一時ファイル配置ルール』<br/>セクションを追加")
+
+    ModifyRef --> ModifyUI("ui_design フェーズに<br/>『成果物の永続化』<br/>セクションを追加")
+
+    ModifyUI --> ModifyDocs("docs_update フェーズに<br/>『ワークフロー成果物の<br/>永続化』セクションを追加")
+
+    ModifyDocs --> BuildCheck("npm run build を実行")
+    BuildCheck --> BuildResult{"ビルド成功<br/>exit code 0?"}
+
+    BuildResult -->|成功| VerifyDef("修正内容を検証<br/>3つのセクション<br/>全て追加されたか確認")
+    BuildResult -->|失敗| FixBuild("ビルドエラーを修正<br/>TypeScript 文法確認")
+
+    FixBuild --> BuildCheck
+    VerifyDef --> DefCheck{"3セクション全て<br/>追加確認?"}
+
+    DefCheck -->|確認| ServerRestart("MCP サーバー<br/>再起動実施")
+    DefCheck -->|不完全| EditDef
+
+    ServerRestart --> TestReady("既存テスト実行準備")
+    TestReady --> RunTests("npm test または<br/>既存テストスイート実行")
+
+    RunTests --> TestResult{"テスト全て<br/>パス?<br/>終了コード0?"}
+    TestResult -->|パス| FinalVerify("最終検証フェーズ")
+    TestResult -->|失敗| AnalyzeTest("テスト失敗を分析<br/>修正による副作用確認")
+
+    AnalyzeTest --> IsRegressionOK{"テンプレート修正が<br/>原因の回帰?"}
+    IsRegressionOK -->|修正が原因| FixTemplate("テンプレートを修正")
+    IsRegressionOK -->|修正が原因でない| AllowFail("既存不具合扱い")
+
+    FixTemplate --> BuildCheck
+    AllowFail --> FinalVerify
+
+    FinalVerify --> FinalGitStatus("git status 実行<br/>最終確認")
+    FinalVerify --> FinalGitLs("git ls-files で<br/>変更ファイル確認")
+
+    FinalGitStatus --> StatusCheck{"git status<br/>clean 状態?"}
+    StatusCheck -->|clean| FinalCheck2{"docs/spec/diagrams/の<br/>MMMファイル<br/>追跡対象?"}
+    StatusCheck -->|dirty| Cleanup("未コミット変更<br/>を確認・修正")
+
+    Cleanup --> FinalGitStatus
+    FinalGitLs --> FinalCheck2
+    FinalCheck2 -->|追跡済み| AllDone("全てのタスク完了")
+    FinalCheck2 -->|未追跡| GitFix("git add を再実行")
+
+    GitFix --> FinalVerify
+    AllDone --> End("フローチャート作成完了")
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C1
+    style AllDone fill:#87CEEB
+    style DeleteStart fill:#FFE4B5
+    style MoveStart fill:#FFE4B5
+    style TemplateStart fill:#FFE4B5
+    style FinalVerify fill:#DDA0DD
+    style Error fill:#FF6B6B
+    style BuildCheck fill:#F0E68C
+    style RunTests fill:#F0E68C

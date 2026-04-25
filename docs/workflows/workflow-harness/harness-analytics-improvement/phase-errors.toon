@@ -1,0 +1,281 @@
+entries[8]:
+  - timestamp: "2026-03-25T16:44:51.101Z"
+    phase: hearing
+    retryCount: 1
+    errors[4]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L2] userResponse: key missing from hearing artifact"
+    checks[30]{name,passed,message}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\hearing.md"
+      input_files_exist,true,No input files required for this phase
+      spec_paths_exist,true,"@spec path check not required for phase: hearing"
+      exit_code_zero,true,No L2 proof required for this phase
+      artifact_quality,false,"Missing required sections: decisions, artifacts, next. Add ## headings for each."
+      toon_safety,true,TOON pre-parse safety OK
+      content_validation,false,"Missing required Markdown sections: decisions, artifacts, next"
+      rtm_completeness,true,"RTM completeness check not required for phase: hearing"
+      rtm_required,true,"RTM required check not applicable for phase: hearing"
+      ac_completeness,true,"AC completeness check not required for phase: hearing"
+      invariant_completeness,true,"Invariant completeness check not required for phase: hearing"
+      ac_format,true,"AC format check not required for phase: hearing"
+      not_in_scope_section,true,"NOT_IN_SCOPE check not required for phase: hearing"
+      open_questions_section,true,"OPEN_QUESTIONS check not required for phase: hearing"
+      intent_consistency,true,"Intent consistency check not required for phase: hearing"
+      baseline_required,true,"Baseline check not required for phase: hearing"
+      artifact_freshness,true,No input files to check freshness for this phase
+      delta_entry_format,false,"Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+      ac_design_mapping,true,"AC→design mapping check not required for phase: hearing"
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: hearing"
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: hearing"
+      tc_coverage,true,"TC coverage check not required for phase: hearing"
+      artifact_drift,true,"Artifact drift check not applicable for phase: hearing"
+      package_lock_sync,true,Package lock sync check only applicable for commit phase
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: hearing"
+      test_results_exist,true,"Test results check not required for phase: hearing"
+      test_regression_gate,true,"Regression gate not required for phase: hearing"
+      hearing_user_response,false,"userResponse: key missing from hearing artifact"
+      dead_references,true,"Dead reference check not required for phase: hearing"
+      dci_validation,true,"skip: not a DCI phase"
+  - timestamp: "2026-03-25T17:28:18.478Z"
+    phase: requirements
+    retryCount: 1
+    errors[3]: "[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1, AC-2, AC-3, AC-4, AC-5","[L4] openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。","[L4] 意図整合性警告: 9語が requirements.md に未反映: toonの分析結果を改善する, 現状の問題:, (1), tdd_red_evidenceが17回失敗しており, テンプレートかDoD判定に問題がある\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\requirements.md",L1,null,null
+      input_files_exist,true,All 2 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: requirements",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: requirements",L3,null,null
+      rtm_required,false,"RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1, AC-2, AC-3, AC-4, AC-5",L3,RTMエントリの requirement フィールドに対応する AC-N ID を含めてください。,"harness_add_rtm({ id: \"F-001\", requirement: \"AC-1: ユーザーがログインできる\", ... })"
+      ac_completeness,true,"AC completeness check not required for phase: requirements",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: requirements",L3,null,null
+      ac_format,true,requirements.md contains 5 acceptanceCriteria entries (minimum 3 met),L4,null,null
+      not_in_scope_section,true,notInScope section found in requirements.md,L4,null,null
+      open_questions_section,false,openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。,L4,openQuestionsの未解決質問を解決してください。,null
+      intent_consistency,false,"意図整合性警告: 9語が requirements.md に未反映: toonの分析結果を改善する, 現状の問題:, (1), tdd_red_evidenceが17回失敗しており, テンプレートかDoD判定に問題がある\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。",L4,requirements.mdにユーザー意図の主要キーワードを反映してください。,null
+      baseline_required,true,"Baseline check not required for phase: requirements",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 8 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: requirements",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: requirements",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: requirements",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: requirements",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: requirements",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: requirements",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: requirements",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: requirements",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: requirements",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: requirements",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T17:30:05.912Z"
+    phase: requirements
+    retryCount: 1
+    errors[1]: "[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1, AC-2, AC-3, AC-4, AC-5"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\requirements.md",L1,null,null
+      input_files_exist,true,All 2 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: requirements",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: requirements",L3,null,null
+      rtm_required,false,"RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1, AC-2, AC-3, AC-4, AC-5",L3,RTMエントリの requirement フィールドに対応する AC-N ID を含めてください。,"harness_add_rtm({ id: \"F-001\", requirement: \"AC-1: ユーザーがログインできる\", ... })"
+      ac_completeness,true,"AC completeness check not required for phase: requirements",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: requirements",L3,null,null
+      ac_format,true,requirements.md contains 5 acceptanceCriteria entries (minimum 3 met),L4,null,null
+      not_in_scope_section,true,notInScope section found in requirements.md,L4,null,null
+      open_questions_section,true,openQuestions section found in requirements.md with no open items,L4,null,null
+      intent_consistency,true,"Intent consistency OK: 8/10 keywords found, 172 lines (min 42)",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: requirements",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 8 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: requirements",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: requirements",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: requirements",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: requirements",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: requirements",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: requirements",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: requirements",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: requirements",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: requirements",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: requirements",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T17:50:42.531Z"
+    phase: test_design
+    retryCount: 1
+    errors[3]: "[L4] Duplicate lines (3+ times): \"- 対象関数: detectOutliers()...\" (3x); \"- 対象関数: classifyErrors()...\" (4x)","[L4] test-design.md is missing acTcMapping section (IA-4)\n修正方法: test-design.md に ## acTcMapping セクションを追加し、AC-N → TC-{AC#}-{連番} の対応を列挙してください。","[L4] Approved artifacts modified since approval: requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\test-design.md",L1,null,null
+      input_files_exist,true,All 3 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: test_design",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,false,"Duplicate lines (3+ times): \"- 対象関数: detectOutliers()...\" (3x); \"- 対象関数: classifyErrors()...\" (4x)",L4,繰り返されている行をそれぞれ異なる内容に書き換えてください。,null
+      rtm_completeness,true,"RTM completeness check not required for phase: test_design",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: test_design",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: test_design",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: test_design",L3,null,null
+      ac_format,true,"AC format check not required for phase: test_design",L4,null,null
+      not_in_scope_section,true,"NOT_IN_SCOPE check not required for phase: test_design",L4,null,null
+      open_questions_section,true,"OPEN_QUESTIONS check not required for phase: test_design",L4,null,null
+      intent_consistency,true,"Intent consistency check not required for phase: test_design",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: test_design",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 6 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: test_design",L4,null,null
+      ac_tc_mapping,false,"test-design.md is missing acTcMapping section (IA-4)\n修正方法: test-design.md に ## acTcMapping セクションを追加し、AC-N → TC-{AC#}-{連番} の対応を列挙してください。",L4,"test-design.mdに## acTcMappingセクションを追加し、AC-N→TC-{AC#}-{連番}の対応を列挙してください。","## acTcMapping\n- AC-1: TC-AC1-01"
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: test_design",L4,null,null
+      tc_coverage,true,"TC coverage OK: 13 unique TC entries for 10 ACs (CRV-1)",L3,null,null
+      artifact_drift,false,"Approved artifacts modified since approval: requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。",L4,承認済み成果物が変更されています。変更を元に戻すかharness_approveで再承認してください。,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: test_design",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: test_design",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: test_design",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: test_design",L2,null,null
+      dead_references,true,No dead references detected in artifact (DRV-1),L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T17:52:34.320Z"
+    phase: test_design
+    retryCount: 2
+    errors[1]: "[L4] Approved artifacts modified since approval: requirements.md, test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\test-design.md",L1,null,null
+      input_files_exist,true,All 3 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: test_design",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: test_design",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: test_design",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: test_design",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: test_design",L3,null,null
+      ac_format,true,"AC format check not required for phase: test_design",L4,null,null
+      not_in_scope_section,true,"NOT_IN_SCOPE check not required for phase: test_design",L4,null,null
+      open_questions_section,true,"OPEN_QUESTIONS check not required for phase: test_design",L4,null,null
+      intent_consistency,true,"Intent consistency check not required for phase: test_design",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: test_design",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 6 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: test_design",L4,null,null
+      ac_tc_mapping,true,AC→TC traceability section present in test-design.md (IA-4),L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: test_design",L4,null,null
+      tc_coverage,true,"TC coverage OK: 13 unique TC entries for 10 ACs (CRV-1)",L3,null,null
+      artifact_drift,false,"Approved artifacts modified since approval: requirements.md, test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。",L4,承認済み成果物が変更されています。変更を元に戻すかharness_approveで再承認してください。,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: test_design",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: test_design",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: test_design",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: test_design",L2,null,null
+      dead_references,true,No dead references detected in artifact (DRV-1),L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T17:55:21.397Z"
+    phase: test_selection
+    retryCount: 1
+    errors[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\test-selection.md",L1,null,null
+      input_files_exist,true,All 2 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: test_selection",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: test_selection",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: test_selection",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: test_selection",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: test_selection",L3,null,null
+      ac_format,true,"AC format check not required for phase: test_selection",L4,null,null
+      not_in_scope_section,true,"NOT_IN_SCOPE check not required for phase: test_selection",L4,null,null
+      open_questions_section,true,"OPEN_QUESTIONS check not required for phase: test_selection",L4,null,null
+      intent_consistency,true,"Intent consistency check not required for phase: test_selection",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: test_selection",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,false,"Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。",L4,## decisions セクションにリスト項目を追加してください。,"## decisions\n- D-001: 要件を明確化する (ユーザー意図との整合性確保のため)"
+      ac_design_mapping,true,"AC→design mapping check not required for phase: test_selection",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: test_selection",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: test_selection",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: test_selection",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: test_selection",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: test_selection",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: test_selection",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: test_selection",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: test_selection",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: test_selection",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T18:02:44.008Z"
+    phase: requirements
+    retryCount: 1
+    errors[1]: "[L4] 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_evidenceアドバイスルール\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\requirements.md",L1,null,null
+      input_files_exist,true,All 2 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: requirements",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: requirements",L3,null,null
+      rtm_required,true,6 RTM entries with AC-N references present,L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: requirements",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: requirements",L3,null,null
+      ac_format,true,requirements.md contains 5 acceptanceCriteria entries (minimum 3 met),L4,null,null
+      not_in_scope_section,true,notInScope section found in requirements.md,L4,null,null
+      open_questions_section,true,openQuestions section found in requirements.md with no open items,L4,null,null
+      intent_consistency,false,"意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_evidenceアドバイスルール\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。",L4,requirements.mdにユーザー意図の主要キーワードを反映してください。,null
+      baseline_required,true,"Baseline check not required for phase: requirements",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 8 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: requirements",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: requirements",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: requirements",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: requirements",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: requirements",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: requirements",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: requirements",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: requirements",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: requirements",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: requirements",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-03-25T18:03:41.628Z"
+    phase: test_design
+    retryCount: 1
+    errors[1]: "[L4] Approved artifacts modified since approval: requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\harness-analytics-improvement\\test-design.md",L1,null,null
+      input_files_exist,true,All 3 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: test_design",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: test_design",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: test_design",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: test_design",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: test_design",L3,null,null
+      ac_format,true,"AC format check not required for phase: test_design",L4,null,null
+      not_in_scope_section,true,"NOT_IN_SCOPE check not required for phase: test_design",L4,null,null
+      open_questions_section,true,"OPEN_QUESTIONS check not required for phase: test_design",L4,null,null
+      intent_consistency,true,"Intent consistency check not required for phase: test_design",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: test_design",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 6 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: test_design",L4,null,null
+      ac_tc_mapping,true,AC→TC traceability section present in test-design.md (IA-4),L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: test_design",L4,null,null
+      tc_coverage,true,"TC coverage OK: 13 unique TC entries for 5 ACs (CRV-1)",L3,null,null
+      artifact_drift,false,"Approved artifacts modified since approval: requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。",L4,承認済み成果物が変更されています。変更を元に戻すかharness_approveで再承認してください。,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: test_design",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: test_design",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: test_design",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: test_design",L2,null,null
+      dead_references,true,No dead references detected in artifact (DRV-1),L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null

@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> TemplateSelection: orchestrator starts phase
+    TemplateSelection --> ParameterFill: template type determined\n(coordinator / worker-write / worker-verify)
+    ParameterFill --> WhyContextSet: phase info fetched from parameter table
+    WhyContextSet --> WhatSpecSet: Why + Context embedded
+    WhatSpecSet --> HowStepsSet: Output spec + required sections embedded
+    HowStepsSet --> ConstraintsSet: steps + tool directives embedded
+    ConstraintsSet --> AgentDelegation: constraints + quality rules\n+ prior failures embedded
+    AgentDelegation --> AgentExecution: delegated to Agent\n(coordinator / worker)
+    AgentExecution --> DoDCheck: artifacts produced
+    DoDCheck --> Success: all DoD checks passed
+    DoDCheck --> RetryWithFailure: DoD check failed
+    RetryWithFailure --> ConstraintsSet: append failure reason\nto prior failures
+    Success --> [*]
+
+## decisions
+
+- TemplateSelection state is independent: makes the branch point explicit where one of three template types (coordinator / worker-write / worker-verify) is selected based on the phase's nature
+- RetryWithFailure transitions back to ConstraintsSet: by updating prior failures before re-delegation, the worker recognizes the previous failure and avoids repeating the same mistake
+- ParameterFill references the parameter table: phase-specific information (required sections, common failures, output format) is fetched dynamically rather than hard-coded into each template
+- AgentExecution is a single state: internal details of what the worker or coordinator does are encapsulated by the template itself and are outside this diagram's concern
+- DoDCheck branches into exactly two paths: success or failure; partial success is not modeled because the harness treats DoD as all-or-nothing (L1-L4 deterministic gates)
+- WhyContextSet precedes WhatSpecSet: Why context must be established first so the agent understands the reasoning before receiving output specifications, following the Why-What-How layering principle

@@ -1,0 +1,108 @@
+## サマリー
+
+本ドキュメントは、BUG-1〜BUG-4の4件の残存バグ修正処理フローを可視化するMermaid フローチャートである。
+各バグは相互に独立した修正対象ファイルに存在し、推奨優先度（BUG-2 → BUG-4 → BUG-3 → BUG-1）に従う。
+本フローチャートでは、各バグの検出判定から修正実施、ビルド検証に至るまでの処理ステップを段階的に設計している。
+フローの核となるのは「3つの対象ファイル（definitions.ts、set-scope.ts、semantic-checker.ts）の分析と修正」および「npm run buildによるビルド検証」である。
+修正の実施順序は、実装フェーズにおける依存関係と影響範囲の大きさを考慮して決定される。
+
+---
+
+## 処理フロー図
+
+以下のフローチャートは、4つのバグ検出から最終的なビルド検証までの全体処理フローを表現している。
+各バグの検出判定ロジック、修正内容、検証判断を含む構造になっている。
+フロー図内のダイヤモンド記号は条件分岐を示し、矩形記号は実行処理を示す。
+最終的には全バグが修正され、TypeScriptコンパイルが成功することが確認される。
+
+```mermaid
+flowchart TD
+    A["【開始】バグ修正タスク\n3つの対象ファイルを分析"]
+    B{"BUG-2 検出\n(set-scope.ts\n返却値欠落)"}
+    C["BUG-2 修正\nscope object に\nmoduleNameを追加\nline 342-345"]
+    D["BUG-2 修正完了\nset-scope.ts"]
+    E{"BUG-4 検出\n(definitions.ts\nスキップ理由\nメッセージ未設定)"}
+    F["BUG-4 修正\ncalculatePhaseSkips\n関数の早期リターンに\nスキップ理由を追加\nline 518-521"]
+    G["BUG-4 修正完了\ndefinitions.ts"]
+    H{"BUG-3 検出\n(semantic-checker.ts\n関数名と\nJSDoc乖離)"}
+    I["BUG-3 修正\n関数名を\nvalidateKeywordSemanticTraceability\nに変更\nline 190, 212"]
+    J["BUG-3 修正完了\nsemantic-checker.ts"]
+    K{"BUG-1 検出\n(definitions.ts\nreplace\nグローバル化)"}
+    L["BUG-1 修正\nresolvePhaseGuide\n関数内の8箇所を\n.replaceAll()に変更\nline 1435-1476"]
+    M["BUG-1 修正完了\ndefinitions.ts"]
+    N["全バグ修正完了"]
+    O["npm run build\n実行"]
+    P{"コンパイル\n成功？"}
+    Q["ビルド成功\nタスク完了"]
+    R["エラーログを確認\n修正内容を見直す"]
+    S["再度 npm run build\n実行"]
+
+    A --> B
+    B -->|Yes| C
+    C --> D
+    D --> E
+    E -->|Yes| F
+    F --> G
+    G --> H
+    H -->|Yes| I
+    I --> J
+    J --> K
+    K -->|Yes| L
+    L --> M
+    M --> N
+    N --> O
+    O --> P
+    P -->|Success| Q
+    P -->|Error| R
+    R --> S
+    S --> P
+```
+
+フローチャートの説明：タスク開始時には3つの対象ファイル（definitions.ts、set-scope.ts、semantic-checker.ts）を対象に分析が実施される。
+BUG-2（set-scope.ts の返却値欠落）が最優先で修正され、その後 BUG-4（definitions.ts のスキップ理由メッセージ）が修正される。
+次に BUG-3（semantic-checker.ts の関数名・JSDoc）が修正され、最後に BUG-1（definitions.ts の replaceAll 化）が修正される。
+全バグが修正完了した後、npm run build でビルド検証を実施し、コンパイルエラーの有無を判定する。
+コンパイルが成功すればタスク完了となり、エラーが発生した場合はエラーログを確認して修正内容を見直し、再度ビルドを実施する。
+
+---
+
+## 処理ステップの説明
+
+**ステップ1: バグ修正タスク開始**
+3つの対象ファイル（definitions.ts、set-scope.ts、semantic-checker.ts）を初期分析対象として定める。
+各ファイルの行番号範囲と修正内容を spec.md から確認する。
+
+**ステップ2: BUG-2 検出と修正**
+set-scope.ts（行339〜348）の返却値オブジェクトに moduleName フィールドが欠落していることを検出。
+scope オブジェクトリテラルに `moduleName: inferredModuleName` を追加し、message フィールドにモジュール名情報を条件付きで追記。
+
+**ステップ3: BUG-4 検出と修正**
+definitions.ts（行518〜521）の calculatePhaseSkips 関数の早期リターンブロックでスキップ理由メッセージが未設定であることを検出。
+phaseSkipReasons オブジェクトに test_impl、implementation、refactoring キーのスキップ理由メッセージを設定し、userIntent オーバーライド処理を追加。
+
+**ステップ4: BUG-3 検出と修正**
+semantic-checker.ts（行190〜212）の関数名と JSDoc が実装実態（キーワードマッチング）と乖離していることを検出。
+行190 のインターフェース名を KeywordSemanticTraceabilityResult に変更、行199〜210 の JSDoc を書き直し、行212 の関数名を validateKeywordSemanticTraceability に変更。
+
+**ステップ5: BUG-1 検出と修正**
+definitions.ts（行1431〜1481）の resolvePhaseGuide 関数内で .replace が使用されており、複数マッチ時に置換漏れが発生する可能性を検出。
+メインフィールド処理エリア（行1434〜1449）とサブフェーズ処理エリア（行1461〜1476）の全8箇所の .replace を .replaceAll に変更。
+
+**ステップ6: 全バグ修正完了**
+4つのバグが全て修正され、対象ファイルの更新が確認された状態。
+次のステップでビルド検証を実施する。
+
+**ステップ7: npm run build 実行**
+workflow-plugin/mcp-server ディレクトリで npm run build コマンドを実行。
+TypeScript コンパイラが全ファイルを処理し、エラーまたは成功を判定。
+
+**ステップ8: コンパイル成功判定**
+npm run build の終了コードが0（成功）であるかエラーコード（失敗）であるかを確認。
+成功の場合は修正完了、失敗の場合はエラーログを確認して原因を特定。
+
+**ステップ9: ビルド成功時の完了**
+コンパイルエラーが発生せず、全ての修正が正確に実施されたことが確認されたため、タスク完了。
+
+**ステップ10: ビルド失敗時の再修正**
+npm run build でエラーが発生した場合、エラーログから問題箇所を特定。
+修正内容の見直しを行い、該当する行番号の修正を確認してから再度ビルドを実施。

@@ -1,0 +1,39 @@
+taskName: tier-a-gaps-n26-n32
+phase: test_selection
+createdAt: 2026-03-10
+userIntent: Tier A 7項目(N-26〜N-32)のテスト選択。15ケース全件を実装対象とする。
+
+decisions[5]{id,statement,rationale}:
+  TS-001, 15テストケース全件を実装対象とする, "小規模タスク(7項目)であり除外すべき高コスト・低価値テストが存在しないため全件実装が最適"
+  TS-002, テストファイルを3分割(plankton-routing/dod-extended/error-adr-map)とする, "test-designのTD-001決定を踏襲し関心の分離を維持する"
+  TS-003, plankton-routing.test.tsに5ケース(TC-R01〜TC-R05)を配置しAC-1を検証する, "complexity-basedモデル選択の3パターン+retryCount独立性2パターンを1ファイルに集約"
+  TS-004, dod-extended.test.tsに7ケース(TC-D01〜TC-D07)を配置しAC-2/AC-4/AC-5を検証する, "DoD拡張関数群(checkFileLineLimit/checkBrokenPointers/detectGhostFiles)とFEEDBACK_SPEED_LAYERS定数を1ファイルで網羅"
+  TS-005, error-adr-map.test.tsに3ケース(TC-E01〜TC-E03)を配置しAC-3を検証する, "ERROR_ADR_MAPのマップ定義・マッチ成功・フォールバックの3パターンを1ファイルに集約"
+
+selectedTests[15]{id,file,reason}:
+  TC-R01, plankton-routing.test.ts, AC-1基本パターン(trivial→haiku)
+  TC-R02, plankton-routing.test.ts, AC-1基本パターン(moderate→sonnet)
+  TC-R03, plankton-routing.test.ts, AC-1基本パターン(critical→opus)
+  TC-R04, plankton-routing.test.ts, AC-1 retryCount独立性(count=0)
+  TC-R05, plankton-routing.test.ts, AC-1 retryCount独立性(count=5)
+  TC-D01, dod-extended.test.ts, AC-4境界値(200行以下)
+  TC-D02, dod-extended.test.ts, AC-4境界値(201行)
+  TC-D03, dod-extended.test.ts, AC-5正常系(有効パス)
+  TC-D04, dod-extended.test.ts, AC-5異常系(無効パス)
+  TC-D05, dod-extended.test.ts, AC-5ゴースト検出(重複basename)
+  TC-D06, dod-extended.test.ts, AC-5ゴースト非検出(一意basename)
+  TC-D07, dod-extended.test.ts, AC-2定数構造検証(4キー)
+  TC-E01, error-adr-map.test.ts, AC-3マップ定義検証
+  TC-E02, error-adr-map.test.ts, AC-3マッチ成功時ADR優先表示
+  TC-E03, error-adr-map.test.ts, AC-3フォールバック動作
+
+excludedTests[0]{id,reason}:
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n26-n32/test-selection.toon, test_selection, テスト選択（15ケース全件選択）
+  docs/workflows/tier-a-gaps-n26-n32/test-design.toon, input, テスト設計（前フェーズ成果物）
+
+next:
+  criticalDecisions[2]: TS-001, TS-002
+  readFiles[3]: docs/workflows/tier-a-gaps-n26-n32/test-design.toon, docs/workflows/tier-a-gaps-n26-n32/spec.toon, workflow-harness/mcp-server/src/retry/retry.ts
+  warnings[1]: "全15ケースがTDD Redとなることを実装前に確認すること"

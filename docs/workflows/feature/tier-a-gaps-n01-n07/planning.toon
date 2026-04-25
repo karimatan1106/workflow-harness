@@ -1,0 +1,49 @@
+task: tier-a-gaps-n01-n07
+phase: planning
+intent: Tier A 7項目の実装計画と作業順序
+
+implementationOrder[7]{priority,gap,files,estimatedChanges}:
+  1, N-04 Config Guard拡張, .claude/hooks/pre-tool-config-guard.sh, 既存caseブロック拡張。15パターン追加。
+  2, N-01 Biome PostToolUse, .claude/hooks/post-tool-lint.sh, biome checkブロック追加。graceful degradation。
+  3, N-06 Stop Hook最適化, .claude/hooks/stop-test-enforcer.sh, git diff検出+vitest --related先行実行。フォールバック維持。
+  4, N-05 起動ルーチン標準化, .claude/hooks/handoff-reader.sh, 4ステップチェック関数追加。既存フロー末尾に統合。
+  5, N-07 Reflector品質フィルタ, workflow-harness/mcp-server/src/tools/reflector.ts, MIN_QUALITY_SCORE定数追加。getLessonsForPhase/formatLessonsForPromptにフィルタ追加。
+  6, N-02 ADRリンク, workflow-harness/mcp-server/src/tools/retry.ts, getActiveADRsインポート。buildRetryPromptにADRセクション追加。最大3件。
+  7, N-03 AGENTS.md, AGENTS.md, 新規ファイル作成。MCPツール23個のリスト。エントリポイント・構造記述。
+
+testPlan[4]{type,target,description}:
+  unit, reflector-quality.test.ts, N-07品質フィルタの閾値テスト。harmful優勢レッスン除外確認。
+  unit, retry-adr.test.ts, N-02 ADRリンク付加テスト。ADR存在時/非存在時の両方。
+  integration, hooks/shell-test, N-01/N-04/N-05/N-06のシェルスクリプト動作確認。
+  manual, AGENTS.md, N-03ファイル存在と内容の目視確認。
+
+dependencyGraph:
+  N-04は独立（他に依存なし）
+  N-01は独立（biomeインストール有無で動作分岐）
+  N-06は独立（git diffとvitestのみ使用）
+  N-05は独立（handoff-reader.shの拡張）
+  N-07は独立（reflector.ts内部変更）
+  N-02はN-07に軽度依存（reflectorの品質概念を参照するが直接importなし）
+  N-03は独立（新規ファイル作成のみ）
+
+parallelizationStrategy:
+  group1: N-04 + N-01 + N-06（シェルスクリプト3件は並行実装可能）
+  group2: N-05（handoff-reader.sh拡張は独立）
+  group3: N-07 + N-02（MCP側TypeScript変更。N-07先行）
+  group4: N-03（新規ファイル。いつでも実行可能）
+
+decisions[5]{id,statement,rationale}:
+  PL-1, シェルスクリプト変更(N-01/N-04/N-05/N-06)を先に実施する, MCP側変更よりリスクが低く独立性が高い。問題発生時の切り戻しも容易。
+  PL-2, N-07のMIN_QUALITY_SCOREはexport constで定義する, テストから直接参照可能にする。型安全性も確保。
+  PL-3, N-02のADR参照はtry-catchで囲む, ADR storeの読み込み失敗時もリトライプロンプト生成を継続。
+  PL-4, テストファイルは2件新規作成する, reflector-quality.test.ts(N-07)とretry-adr.test.ts(N-02)。既存テストへの影響なし。
+  PL-5, N-03のAGENTS.mdはMarkdown形式で作成する, OpenAI標準に従いMarkdown。TOON形式は不適切（外部ツール非対応）。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/planning.toon, report, 実装計画
+  docs/workflows/tier-a-gaps-n01-n07/threat-model.toon, report, 前フェーズ成果物
+
+next:
+  criticalDecisions: PL-1(シェル先行)が作業順序を決定。PL-2(export const)がテスト設計に影響。
+  readFiles: workflow-phases.md, workflow-execution.md, workflow-gates.md
+  warnings: シェルスクリプト4件の同時変更はフック競合リスク。各フックは異なるトリガーなので実際には競合しない。

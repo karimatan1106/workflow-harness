@@ -1,0 +1,72 @@
+stateDiagram-v2
+    [*] --> ReadFile
+    ReadFile --> InsertSection
+    InsertSection --> ValidateLineCount
+    ValidateLineCount --> ValidateFormat
+    ValidateFormat --> ValidateExistingSections
+    ValidateExistingSections --> Done
+    Done --> [*]
+
+    state ReadFile {
+        [*] --> OpenWorkflowPhases
+        OpenWorkflowPhases --> ConfirmL11Content
+        ConfirmL11Content --> ConfirmTotalLines
+        ConfirmTotalLines --> [*]
+        note right of OpenWorkflowPhases
+            Read .claude/skills/workflow-harness/workflow-phases.md
+        end note
+    }
+
+    state InsertSection {
+        [*] --> InsertAtL11
+        InsertAtL11 --> VerifyInsertion
+        VerifyInsertion --> [*]
+        note right of InsertAtL11
+            Insert 3 lines: heading + description + blank
+            before scope_definition
+        end note
+    }
+
+    state ValidateLineCount {
+        [*] --> CountLines
+        CountLines --> CheckUnder200
+        CheckUnder200 --> [*]
+        note right of CountLines
+            Expected: 81 lines (78 + 3)
+            Upper limit: 200 lines
+        end note
+    }
+
+    state ValidateFormat {
+        [*] --> CheckHeadingPattern
+        CheckHeadingPattern --> CheckOutputField
+        CheckOutputField --> CheckDoDField
+        CheckDoDField --> CheckAgentMention
+        CheckAgentMention --> CheckToolMention
+        CheckToolMention --> [*]
+        note right of CheckHeadingPattern
+            Pattern: ### Stage N: phase_name
+            Must include Output: and DoD:
+        end note
+    }
+
+    state ValidateExistingSections {
+        [*] --> CheckScopeDefShift
+        CheckScopeDefShift --> CheckStageNumbers
+        CheckStageNumbers --> CheckPhaseSetsDef
+        CheckPhaseSetsDef --> [*]
+        note right of CheckScopeDefShift
+            scope_definition moves to L14
+            All subsequent sections shift by 3
+        end note
+    }
+
+## decisions
+
+- D-001: ReadFile state verifies L11 content before any edit to prevent insertion at wrong position, ensuring section structure integrity.
+- D-002: InsertSection is a single atomic operation (3 lines at L11) to minimize edit errors per planning D-006.
+- D-003: ValidateLineCount is a separate state from ValidateFormat because line count is a hard constraint (200 max) while format is a pattern-match check.
+- D-004: ValidateFormat checks 5 sub-aspects (heading, Output, DoD, agent mention, tool mention) to cover AC-1 through AC-3 in one pass.
+- D-005: ValidateExistingSections is the final gate to confirm no collateral damage to existing phase definitions after insertion.
+- D-006: The linear state flow (no branching) reflects the single-file single-edit nature of this task; no conditional paths are needed.
+- D-007: Each validation state produces a pass/fail result; failure at any state blocks progression to Done.

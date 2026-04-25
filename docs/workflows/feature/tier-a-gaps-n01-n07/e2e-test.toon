@@ -1,0 +1,63 @@
+task: tier-a-gaps-n01-n07
+phase: e2e_test
+intent: Tier A 7項目のE2Eテスト実行と全テストスイート通過確認
+
+e2eScenario1:
+  name: reflector.ts + retry.ts 統合フロー
+  flow: stashFailure → promoteStashedFailure → buildRetryPrompt
+  verification: reflector-failure-loop.test.tsで2回以上の同一エラーパターン蓄積→preventionRule生成を確認
+  testFile: src/__tests__/reflector-failure-loop.test.ts
+  result: pass (9 tests)
+
+e2eScenario2:
+  name: ADR store → retry prompt 統合フロー
+  flow: ADR作成 → getActiveADRs → buildRetryPromptでADRリンク表示
+  verification: retry-adr.test.tsでADR存在時のpromptにADR-001が含まれること、最大3件制限、エラー時の安全な動作を確認
+  testFile: src/__tests__/retry-adr.test.ts
+  result: pass (5 tests)
+
+e2eScenario3:
+  name: 全テストスイート実行
+  command: npx vitest --run
+  workingDir: workflow-harness/mcp-server
+  result: 56 test files passed, 509 tests passed, 0 failures
+
+testExecution:
+  runner: vitest 1.6.1
+  totalFiles: 56
+  totalTests: 509
+  passed: 509
+  failed: 0
+  duration: 5.11s
+  exitCode: 0
+
+keyTestFiles[7]{file,tests,status}:
+  reflector-failure-loop.test.ts, 9, pass
+  reflector-quality.test.ts, 7, pass
+  retry.test.ts, 12, pass
+  retry-adr.test.ts, 5, pass
+  ace-reflector.test.ts, 9, pass
+  ace-reflector-curator.test.ts, 7, pass
+  adr.test.ts, 8, pass
+
+regressionCheck:
+  scope: 全56テストファイル509テストケース
+  strategy: npx vitest --run による全テスト一括実行
+  result: 既存テストへの回帰影響なし。N-01からN-07の変更がどのテストも壊していないことを確認。
+  note: 10m-resilience系テスト(P1/P2P4/P3P5P6)も全て通過しており耐障害性への影響なし
+
+decisions[5]{id,statement,rationale}:
+  E2E-1, vitest --runで全テスト一括実行する, 個別実行では統合問題を見逃す可能性があるため全スイート通す
+  E2E-2, reflector→retry統合はreflector-failure-loop.test.tsで検証する, stashFailure→promoteStashedFailure→preventionRule生成の一連フローが含まれている
+  E2E-3, ADR→retry統合はretry-adr.test.tsで検証する, getActiveADRs→buildRetryPromptのADRリンク付加フローが5パターン網羅されている
+  E2E-4, 10m-resilience系テストの通過を回帰確認に含める, 耐障害性設計への影響がないことを証明するため
+  E2E-5, 全509テスト通過をもってE2Eフェーズ完了とする, 単体テストとモック統合テストの両方が通過し機能的正当性が確認された
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/e2e-test.toon, e2e, E2Eテスト実行結果
+  workflow-harness/mcp-server/src/__tests__/, tests, テストスイート一式(56ファイル509テスト)
+
+next:
+  criticalDecisions: E2E-5の全テスト通過を前提に次フェーズへ進行可能
+  readFiles: workflow-phases.md
+  warnings: submodule dirty状態が続いているため最終コミット時に注意

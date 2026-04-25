@@ -1,0 +1,89 @@
+%% ## サマリー
+%%
+%% FR-16、FR-17、FR-18の3件の修正実装フロー。各修正は独立した原因を持ち、異なるファイルに対して実施される。
+%% - FR-16: e2e_testテンプレートのサマリーガイダンス改善（definitions.ts）
+%% - FR-17: testingテンプレートへのworkflow_record_test_result必須警告追加（definitions.ts）
+%% - FR-18: workflow_statusレスポンスへのsessionToken追加（status.ts）
+%%
+%% 実装後は全変更ファイルをコンパイル・再起動してバリデーション確認を行う。
+
+flowchart TD
+    Start(("修正実装開始"))
+
+    Start --> CheckFR16("FR-16確認: e2e_testテンプレートのサマリーガイダンス不足")
+
+    CheckFR16 --> AddFR16Guide("definitions.tsのe2e_testテンプレートに5つのOK例を追記")
+    AddFR16Guide --> FR16_1("例1: シナリオ総数 - 12件に含まれるフロー説明を追加")
+    FR16_1 --> FR16_2("例2: 実行環境 - Chromium版数と実行OS情報を追加")
+    FR16_2 --> FR16_3("例3: 成功・失敗件数 - 詳細参照先をセクション指示で追加")
+    FR16_3 --> FR16_4("例4: 発見事項 - 性能問題の具体的記述を追加")
+    FR16_4 --> FR16_5("例5: 総合合否 - 合格理由と軽微な失敗の評価を追加")
+    FR16_5 --> FR16_Done("FR-16追記完了")
+
+    FR16_Done --> CheckFR17("FR-17確認: testingテンプレートのworkflow_record_test_result警告不足")
+
+    CheckFR17 --> AddFR17Warning("definitions.tsのtestingテンプレート冒頭に警告ブロック追加")
+    AddFR17Warning --> FR17_1("⚠️警告: workflow_record_test_resultを省略した場合")
+    FR17_1 --> FR17_2("説明: workflow_nextが『テスト結果が記録されていません』エラーを返す")
+    FR17_2 --> FR17_3("帰結: フェーズ遷移がブロックされ、Orchestratorが停止する")
+    FR17_3 --> FR17_Done("FR-17警告追加完了")
+
+    FR17_Done --> CheckFR18("FR-18確認: sessionToken喪失によるworkflow_next失敗")
+
+    CheckFR18 --> ModifyStatus("status.tsのworkflow_statusハンドラーを修正")
+    ModifyStatus --> FR18_1("レスポンスオブジェクトにsessionTokenフィールドを追加")
+    FR18_1 --> FR18_2("taskState.sessionTokenの値をそのまま返すように実装")
+    FR18_2 --> FR18_3("sessionTokenが存在しない場合は省略またはnull返却")
+    FR18_3 --> FR18_Done("FR-18フィールド追加完了")
+
+    FR18_Done --> BuildTS("TypeScriptコンパイル実行")
+    BuildTS --> NpmBuild("workflow-plugin/mcp-server で npm run build 実行")
+    NpmBuild --> BuildCheck{{"コンパイルエラーは発生したか"}}
+
+    BuildCheck -->|Yes| BuildFail("コンパイルエラー内容を確認")
+    BuildFail --> FixError("エラー原因となったテンプレート文字列またはコード文法を修正")
+    FixError --> NpmBuild
+
+    BuildCheck -->|No| RestartMCP("MCPサーバー再起動")
+    RestartMCP --> RestartCmd("Claude DesktopのMCPサーバー再起動ボタンを実行")
+    RestartCmd --> StatusCheck("workflow_statusでフェーズ確認")
+
+    StatusCheck --> ValidateFR16("FR-16バリデーション確認")
+    ValidateFR16 --> CheckE2E{{"e2e-test.mdのサマリー実質行数が5行以上か"}}
+    CheckE2E -->|No| ValidateFail16("バリデーション失敗: 実質行不足")
+    ValidateFail16 --> FixFR16("FR-16のOK例説明文を詳細化し、実質行を増やす")
+    FixFR16 --> NpmBuild
+    CheckE2E -->|Yes| FR16Pass("FR-16パス")
+
+    FR16Pass --> ValidateFR17("FR-17バリデーション確認")
+    ValidateFR17 --> CheckWarning{{"testingテンプレートが警告を含んでいるか"}}
+    CheckWarning -->|No| ValidateFail17("バリデーション失敗: 警告ブロック未追加")
+    ValidateFail17 --> FixFR17("FR-17の警告ブロックが正しく挿入されたことを確認")
+    FixFR17 --> NpmBuild
+    CheckWarning -->|Yes| FR17Pass("FR-17パス")
+
+    FR17Pass --> ValidateFR18("FR-18実行確認")
+    ValidateFR18 --> CallStatus("workflow_statusを呼び出す")
+    CallStatus --> CheckResponse{{"レスポンスにsessionTokenフィールドが含まれるか"}}
+    CheckResponse -->|No| ValidateFail18("バリデーション失敗: フィールド欠落")
+    ValidateFail18 --> FixFR18("status.tsのレスポンス構築箇所を再確認し、フィールド追加を実施")
+    FixFR18 --> NpmBuild
+    CheckResponse -->|Yes| FR18Pass("FR-18パス")
+
+    FR18Pass --> UnitTestCheck("ユニットテスト実行")
+    UnitTestCheck --> RunTest("npm test を実行してstatus.tsのテストが通るか確認")
+    RunTest --> TestResult{{"全テストが通ったか"}}
+    TestResult -->|No| TestFail("テスト失敗: アサーション修正が必要")
+    TestFail --> FixTest("既存テストにsessionTokenフィールドの確認を追加")
+    FixTest --> RunTest
+    TestResult -->|Yes| TestPass("ユニットテストパス")
+
+    TestPass --> Complete(("3件の修正実装完了"))
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style BuildFail fill:#FFB6C6
+    style ValidateFail16 fill:#FFB6C6
+    style ValidateFail17 fill:#FFB6C6
+    style ValidateFail18 fill:#FFB6C6
+    style TestFail fill:#FFB6C6

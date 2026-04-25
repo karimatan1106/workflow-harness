@@ -1,0 +1,36 @@
+task-name: delegate-workログリアルタイム表示修正
+phase: requirements
+target-file: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+target-function: spawnAsync (108-140行目)
+change-summary: "spawnAsyncのchild.stderrハンドラにappendFileSync追記とprocess.stderr.writeリレーを追加し, stderrもlogFileにリアルタイム出力する"
+
+decisions[7]{id, statement, rationale}:
+  D-1, "stderrハンドラにappendFileSync(options.logFile, text)を追加", "stdoutと同一パターンで安全かつ最小変更。research RD-1準拠"
+  D-2, "stderrハンドラにprocess.stderr.write(chunk)を追加", "親プロセスへのリアルタイム進捗伝搬。research RD-2準拠"
+  D-3, "if (options.logFile)ガード条件をstderrにも適用", "既存stdoutパターンと統一。logFile未指定時は追記しない"
+  D-4, "Buffer.toString()のエンコーディング指定なし(デフォルトUTF-8)", "claude CLIはUTF-8出力のみ。research RD-4準拠"
+  D-5, "stdout/stderr混在ログにプレフィックスタグを付与しない", "scope-definition SD-4準拠。リアルタイム性とシンプルさ優先"
+  D-6, "stderr変数への蓄積(stderr += d.toString())は維持", "エラー時のreject(new Error)で完全なstderrメッセージが必要"
+  D-7, "変更箇所は130行目のstderrハンドラ1箇所のみ", "scope-definition SD-5準拠。影響範囲を最小限に抑える"
+
+acceptanceCriteria[4]{id, description, verification}:
+  AC-1, "stderrがlogFileにリアルタイム追記される", "delegate_work実行中にtail -fで.agent/delegate-work.logにstderr進捗出力が確認できる"
+  AC-2, "stdoutのlogFile追記が既存通り動作する", "delegate_work完了後にlogFileにstdout最終結果が含まれることを確認"
+  AC-3, "stderrが親プロセスのstderrにリレーされる", "delegate_work実行中に親プロセスのstderrにclaude CLI進捗メッセージが表示される"
+  AC-4, "エラー時にstderr全文がrejectメッセージに含まれる", "claude CLIが非ゼロ終了した場合にstderr変数の内容がError.messageに含まれる"
+
+notInScope:
+  ns-1: "stdoutハンドラの変更 — 既存ロジックは変更しない"
+  ns-2: "logFileフォーマットの変更 — stdout/stderr区別タグの追加はしない"
+  ns-3: "appendFileSyncからストリーム書き込みへの変更 — 既存パターンを維持"
+  ns-4: "handleDelegateWork関数本体の変更 — spawnAsync内のみ"
+  ns-5: "VS Code extension側の変更 — log-pane.signal連携は既存のまま"
+
+openQuestions:
+  none: なし
+
+prior-phases: "scope-definition.toon, research.toon"
+files-changed: docs/workflows/delegate-workログリアルタイム表示修正/requirements.toon
+success: true
+output: "要件定義完了。7件のdecisions, 4件のacceptanceCriteria, 5件のnotInScopeを定義"
+next: "implementationフェーズ。delegate-work.ts 130行目のstderrハンドラを修正"

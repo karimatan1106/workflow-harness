@@ -1,0 +1,43 @@
+stateDiagram-v2
+    Start --> ParseCommand: mkdirコマンド入力
+
+    ParseCommand --> ExtractArgs: 引数を抽出
+    ExtractArgs --> TrimAndUnquote: トリムと引用符除去
+
+    TrimAndUnquote --> NormalizePath: バックスラッシュをスラッシュに統一
+
+    NormalizePath --> GetCWD: カレントディレクトリを取得
+    GetCWD --> CreatePrefix: 末尾スラッシュを保証
+    CreatePrefix --> ToLowerCase: 大文字小文字を小文字化
+
+    ToLowerCase --> ResolveAbsPath: 絶対パスから相対パスに正規化
+
+    ResolveAbsPath --> IsAbsolutePath{絶対パスか?}
+    IsAbsolutePath -->|Yes| RemovePrefix: cwdプレフィックスを除去
+    IsAbsolutePath -->|No| UseAsIs: そのまま使用
+
+    RemovePrefix --> RemoveLeadingSlash{先頭スラッシュ\nがあるか?}
+    RemoveLeadingSlash -->|Yes| TrimSlash: 先頭スラッシュを除去
+    RemoveLeadingSlash -->|No| CheckPath: 相対パスを確定
+    TrimSlash --> CheckPath
+
+    UseAsIs --> CheckPath
+
+    CheckPath --> DetectTraversal: パス中に「..」がないかチェック
+
+    DetectTraversal --> HasTraversal{「..」が\n含まれるか?}
+    HasTraversal -->|Yes| Rejected_Traversal: パストラバーサル\n攻撃と判定
+    HasTraversal -->|No| CheckPrefix: パスの先頭チェック
+
+    CheckPrefix --> MatchPrefix{allowedPrefixes\nと一致するか?}
+    MatchPrefix -->|Yes: docs/workflows/| Allowed
+    MatchPrefix -->|Yes: docs/security/| Allowed
+    MatchPrefix -->|Yes: .claude/state/| Allowed
+    MatchPrefix -->|No| Rejected_Prefix: 許可対象外の\nディレクトリ
+
+    Allowed --> ReturnTrue: allowed: trueを返す
+    Rejected_Traversal --> ReturnFalse: エラーメッセージと\nともに拒否を返す
+    Rejected_Prefix --> ReturnFalse
+
+    ReturnTrue --> End: 処理完了（許可）
+    ReturnFalse --> End: 処理完了（拒否）

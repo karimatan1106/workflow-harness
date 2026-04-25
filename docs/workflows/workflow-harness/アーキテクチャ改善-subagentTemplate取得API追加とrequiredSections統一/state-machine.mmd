@@ -1,0 +1,64 @@
+stateDiagram-v2
+    Start --> ValidatingSubPhaseName
+
+    ValidatingSubPhaseName --> SubPhaseInvalid: サブフェーズ名が\nVALID_SUB_PHASE_NAMESに\n存在しない
+    SubPhaseInvalid --> Error
+
+    ValidatingSubPhaseName --> ResolveTask: 有効なサブフェーズ名
+
+    ResolveTask --> TaskSearching: taskIdが省略された場合
+    ResolveTask --> RetrievingTemplate: taskIdが指定された場合
+
+    TaskSearching --> TaskNotFound: アクティブなタスクが\n見つからない
+    TaskNotFound --> Error
+
+    TaskSearching --> TaskFound: アクティブなタスク発見
+    TaskFound --> RetrievingTemplate
+
+    RetrievingTemplate --> ResolvingPhaseGuide: SUB_PHASE_TO_PARENT_PHASEで\n親フェーズ名を解決
+
+    ResolvingPhaseGuide --> GettingSubPhaseGuide: resolvePhaseGuide()で\n親フェーズガイド取得
+
+    GettingSubPhaseGuide --> SubPhaseGuideFound: phaseGuide.subPhases\nから対応ガイド取得
+
+    SubPhaseGuideFound --> ExpandingTemplate: subagentTemplate内の\nプレースホルダーを展開
+
+    ExpandingTemplate --> PlaceholderExpansion: ${taskName}、${taskId}、\n${docsDir}を実際の値で置換
+
+    PlaceholderExpansion --> ReturnTemplate: slimSubPhaseGuideを\n適用しない
+
+    ReturnTemplate --> Success: fullTemplateを返却
+
+    GettingSubPhaseGuide --> NoSubPhaseGuide: 対応するサブフェーズ\nガイドが存在しない
+    NoSubPhaseGuide --> Error
+
+    Success --> End
+    Error --> End
+
+    note right of ValidatingSubPhaseName
+        11種類の有効なサブフェーズ:
+        threat_modeling, planning,
+        state_machine, flowchart,
+        ui_design, build_check,
+        code_review, manual_test,
+        security_scan, performance_test,
+        e2e_test
+    end note
+
+    note right of RetrievingTemplate
+        引数のtaskIdが省略された場合は
+        getTaskByIdOrError(undefined)で
+        アクティブなタスクを検索
+    end note
+
+    note right of ExpandingTemplate
+        プレースホルダー置換により
+        タスク固有の情報をテンプレートに
+        埋め込む
+    end note
+
+    note right of ReturnTemplate
+        forkflow_nextとは異なり
+        slimSubPhaseGuideを適用して
+        フルテンプレートを返す点が重要
+    end note

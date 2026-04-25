@@ -1,0 +1,49 @@
+→purpose: 既存プロジェクトドキュメント棚卸し機能の要件定義
+→task: doc-inventory-on-scope
+
+## 機能要件
+
+→functional_requirements[3]{id,requirement}:
+  FR-1,scope_definitionテンプレートにStep 3.7(ドキュメント探索)を追加し、find/globでプロジェクト内の*.md/*.toon/*.rst等のドキュメントファイルを探索するよう指示する
+  FR-2,harness_set_scopeのprojectTraitsスキーマにdocPaths(string配列)を追加し、発見したドキュメントパスをMCPツール経由で保存可能にする
+  FR-3,buildDocCategories関数がprojectTraits.docPathsを第3層として出力し、docs_updateサブエージェントが既存ドキュメントを更新対象として認識できるようにする
+
+## 非機能要件
+
+→non_functional_requirements[2]{id,requirement}:
+  NFR-1,docPathsが未設定または空配列の場合、既存のbuildDocCategories動作に一切影響しないこと
+  NFR-2,全変更対象ファイルが200行以内を維持すること
+
+## 受入基準
+
+AC-1: scope_definitionテンプレートにドキュメント探索ステップがあり、既存ドキュメントパスを収集するよう指示している
+AC-2: harness_set_scopeのprojectTraitsにdocPaths(string[])を渡せる
+AC-3: buildDocCategoriesがdocPathsを含む場合、既存ドキュメントパスがカテゴリリストに追加される
+AC-4: docPathsが未設定の場合、既存動作（FALLBACK_ITEMS + trait categories）に影響しない
+
+## NOT_IN_SCOPE
+
+→not_in_scope[3]{item}:
+  ドキュメントの自動生成（探索と登録のみ）
+  コード変更とドキュメントの自動紐付け（将来課題）
+  既存ドキュメントの品質検証
+
+## OPEN_QUESTIONS
+
+→open_questions: なし
+
+## decisions
+
+→decisions[3]{id,decision,rationale}:
+  D-1,docPathsはProjectTraitsインターフェースではなくTaskState直接に配置,ProjectTraitsは6つのbooleanフラグ専用。docPathsは性質が異なる(string配列)ためTaskStateレベルに配置
+  D-2,buildDocCategoriesの引数にdocPaths?を追加,既存のtraits引数と分離して後方互換性を維持
+  D-3,scope_definitionのStep 3.7でfind . -name *.md等を使用,LLMによる推測ではなく実際のファイルシステム探索で確実に発見
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/doc-inventory-on-scope/requirements.toon,created
+
+## next
+
+→next: planning

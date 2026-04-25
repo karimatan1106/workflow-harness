@@ -1,0 +1,78 @@
+stateDiagram-v2
+    Start --> CacheWriteInitiation
+
+    state "==== P0-3: アトミック書き込み処理 ====" as P03Group {
+        CacheWriteInitiation --> ExistingFileCheck: キャッシュ存在確認
+        ExistingFileCheck --> TimeoutEvaluation: 更新時刻を確認<br/>（1秒以内チェック）
+        TimeoutEvaluation --> SkipEarlyReturn: 1秒以内の場合<br/>スキップして終了
+        TimeoutEvaluation --> TempFileCreation: 1秒以上経過<br/>一時ファイル作成へ
+        SkipEarlyReturn --> End
+
+        TempFileCreation --> WriteToTemp: 一時ファイルへ<br/>JSON文字列を書き込み
+        WriteToTemp --> RenameAtomically: task-index.jsonに<br/>アトミックにrename
+        RenameAtomically --> WriteSuccess: 書き込み成功
+        WriteSuccess --> CleanupSuccess: 一時ファイル<br/>クリーンアップ完了
+
+        WriteToTemp --> WriteError: 書き込み失敗
+        RenameAtomically --> RenameError: rename失敗
+        WriteError --> ErrorCleanup: 一時ファイルを<br/>削除試行
+        RenameError --> ErrorCleanup
+        ErrorCleanup --> OrphanedFileCheck: 孤立ファイルを<br/>検査（60秒以上経過）
+        OrphanedFileCheck --> RemoveOrphanedFiles: 孤立ファイルを削除
+        RemoveOrphanedFiles --> WriteFailure
+        ErrorCleanup --> WriteFailure: エラーハンドリング<br/>完了
+    }
+
+    state "==== P0-2: 成果物バリデーション ====" as P02Group {
+        CacheWriteInitiation --> PhaseTransitionRequest: フェーズ遷移要求<br/>（workflow_next呼び出し）
+        PhaseTransitionRequest --> CurrentPhaseCheck: 現在フェーズを確認<br/>（research/requirements/etc）
+
+        CurrentPhaseCheck --> ResearchPhaseRoute: research→requirements
+        CurrentPhaseCheck --> ParallelAnalysisRoute: parallel_analysis→next
+        CurrentPhaseCheck --> OtherPhaseRoute: その他のフェーズ遷移
+
+        ResearchPhaseRoute --> ResearchArtifactCheck: research.mdの<br/>品質チェック
+        ResearchArtifactCheck --> ParallelAnalysisRoute
+
+        ParallelAnalysisRoute --> SpecFileValidation: spec.mdの<br/>品質検証
+        SpecFileValidation --> ThreatModelValidation: threat-model.mdの<br/>品質検証
+        ThreatModelValidation --> BothValidationPass: 両ファイルが<br/>要件満たす
+        ThreatModelValidation --> ArtifactValidationFail: いずれかが<br/>要件不足
+
+        BothValidationPass --> SemanticCheck: セマンティック<br/>チェック実行
+        SemanticCheck --> SemanticPass: 意味的一貫性OK
+        SemanticPass --> ValidationSuccess: バリデーション<br/>成功
+
+        SemanticCheck --> SemanticFail: 意味的矛盾検出
+        ArtifactValidationFail --> ArtifactValidationFail
+        SemanticFail --> ArtifactValidationFail
+
+        OtherPhaseRoute --> OtherValidationLogic: フェーズ別の<br/>チェック処理
+        OtherValidationLogic --> ValidationSuccess
+    }
+
+    state "==== P0-1: スコープ設定処理 ====" as P01Group {
+        CurrentPhaseCheck --> ResearchPhaseExecution: research開始
+        ResearchPhaseExecution --> UserIntentExtraction: userIntentから<br/>キーワード抽出
+        UserIntentExtraction --> FileMatching: Glob/Grepで<br/>関連ファイル特定
+        FileMatching --> DirectoryAggregation: 影響ディレクトリを<br/>集約
+        DirectoryAggregation --> ScopeSettingCall: workflow_set_scopeで<br/>affectedFiles/Dirsを設定
+        ScopeSettingCall --> ResearchToRequirementsTransition: research→requirements<br/>遷移時
+
+        ResearchToRequirementsTransition --> ScopeEmptyCheck: スコープが空<br/>（affectedFiles/Dirs共に0）か？
+        ScopeEmptyCheck --> ScopeEmpty: 空の場合
+        ScopeEmptyCheck --> ScopeNotEmpty: 設定済みの場合
+
+        ScopeEmpty --> WarningGeneration: 警告メッセージ<br/>を生成
+        WarningGeneration --> AllowTransition: フェーズ遷移を<br/>許可（警告付き）
+        ScopeNotEmpty --> AllowTransition
+    }
+
+    AllowTransition --> TransitionSuccess: 遷移成功
+    CleanupSuccess --> TransitionSuccess
+    WriteSuccess --> TransitionSuccess
+    ValidationSuccess --> TransitionSuccess
+
+    TransitionSuccess --> End
+    WriteFailure --> End
+    ArtifactValidationFail --> End

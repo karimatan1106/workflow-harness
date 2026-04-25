@@ -1,0 +1,89 @@
+flowchart TD
+    %% Start
+    START("タスク開始") --> WS("workflow_start実行")
+
+    %% FIX-1: preExistingChanges記録
+    WS --> FIX1a("preExistingChanges記録<br/>開始前の変更をtaskStateに記録")
+    FIX1a --> FIX1b("スコープオブジェクト作成")
+
+    %% workflow_set_scope
+    FIX1b --> SS("workflow_set_scope実行")
+    SS --> FIX1c{"preExistingChanges<br/>フィールド存在?"}
+    FIX1c -->|Yes| FIX1d("既存値を保持")
+    FIX1c -->|No| FIX1e("空配列をデフォルト")
+    FIX1d --> FIX1f("スコープ更新時に<br/>preExistingChanges保持<br/>FIX-1適用")
+    FIX1e --> FIX1f
+
+    %% FIX-2: ディレクトリ存在確認
+    FIX1f --> VALSCOPE("validateScopeExists実行<br/>スコープのディレクトリを検証")
+    VALSCOPE --> FIX2a{"fs.existsSync<br/>確認"}
+
+    %% ディスク上に存在する場合
+    FIX2a -->|true| FIX2b("isDirectory検証")
+    FIX2b --> FIX2c("通常のディレクトリ確認")
+
+    %% ディスク上に存在しない場合のフォールバック
+    FIX2a -->|false| FIX2d("checkGitTracked関数実行<br/>FIX-2フォールバック")
+    FIX2d --> FIX2e("パス正規化")
+    FIX2e --> FIX2f("プロジェクトルート検証")
+    FIX2f --> FIX2g{"パストラバーサル<br/>チェック"}
+    FIX2g -->|不正| FIX2h("ディレクトリ拒否")
+    FIX2g -->|正常| FIX2i("git ls-filesで<br/>追跡状態確認<br/>spawnSync実行")
+    FIX2i --> FIX2j{"コマンド実行<br/>成功?"}
+    FIX2j -->|Error| FIX2h
+    FIX2j -->|Success| FIX2k{"標準出力<br/>空?"}
+    FIX2k -->|空| FIX2h2("git追跡なし<br/>ディレクトリ拒否")
+    FIX2k -->|非空| FIX2l("ディレクトリ許可<br/>git追跡済み")
+
+    %% フロー統合
+    FIX2c --> SCOPE_OK("スコープ検証OK")
+    FIX2l --> SCOPE_OK
+    FIX2h --> SCOPE_FAIL("スコープ検証NG<br/>nonExistentDirs登録")
+    FIX2h2 --> SCOPE_FAIL
+
+    %% workflow_next → docs_update
+    SCOPE_OK --> NEXT("workflow_next実行")
+    SCOPE_FAIL --> NEXT
+    NEXT --> DOCUPD("docs_update→commit遷移")
+
+    %% FIX-1検証: docs_update→commit遷移時のSCOPE_STRICT
+    DOCUPD --> FIX1g("SCOPE_STRICT検証")
+    FIX1g --> FIX1h{"preExistingChanges<br/>保持されている?"}
+    FIX1h -->|Yes| FIX1i("ワークフロー開始前の変更<br/>をスコープ外として<br/>スキップ")
+    FIX1h -->|No| FIX1j("開始前変更が<br/>スコープ外として<br/>誤検出しブロック")
+
+    FIX1i --> COMMIT("commitフェーズへ")
+    FIX1j --> ERROR1("エラー: 遷移ブロック")
+
+    %% FIX-3: commitフェーズでのrm許可
+    COMMIT --> FIX3a("bash-whitelist.js検証")
+    FIX3a --> FIX3b("git カテゴリ確認<br/>FIX-3: rmを許可")
+    FIX3b --> FIX3c("一時ファイル削除許可<br/>scope-placeholder.md等")
+
+    %% phase-edit-guard検証
+    FIX3c --> PHASE_GUARD("phase-edit-guard検証<br/>重要ファイル保護")
+    PHASE_GUARD --> FIX3d{"削除対象が<br/>許可範囲?"}
+    FIX3d -->|Yes 一時ファイル| FIX3e("削除実行許可")
+    FIX3d -->|No ソースコード等| FIX3f("削除ブロック<br/>保護対象ファイル")
+
+    %% Bash実行と完了
+    FIX3e --> BASH("Bashコマンド実行<br/>rm -f placeholder.md")
+    BASH --> GIT_COMMIT("git commit実行")
+    GIT_COMMIT --> COMPLETE("commitフェーズ完了")
+    FIX3f --> ERROR2("エラー: 削除ブロック")
+
+    %% 完了フロー
+    COMPLETE --> VERIFY("regression_test実行")
+    VERIFY --> SUCCESS("タスク完了")
+
+    %% エラー処理
+    ERROR1 -.->|修正後再実行| NEXT
+    ERROR2 -.->|修正後再実行| COMMIT
+
+    style START fill:#90EE90
+    style SUCCESS fill:#90EE90
+    style FIX1f fill:#FFD700
+    style FIX2d fill:#FFB6C1
+    style FIX3b fill:#87CEEB
+    style ERROR1 fill:#FFB6B6
+    style ERROR2 fill:#FFB6B6

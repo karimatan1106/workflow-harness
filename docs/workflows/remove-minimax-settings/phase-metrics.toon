@@ -1,0 +1,136 @@
+phase: metrics
+taskName: remove-minimax-settings
+startedAt: "2026-04-10T23:49:45.132Z"
+completedAt: "2026-04-11T01:19:10.623Z"
+totalRetries: 0
+totalDoDFailures: 0
+phases:
+  hearing:
+    durationSec: 1234
+    retries: 0
+    dodFailures: 0
+  scope_definition:
+    durationSec: 188
+    retries: 0
+    dodFailures: 0
+  research:
+    durationSec: 216
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 141
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 349
+    retries: 0
+    dodFailures: 0
+  threat_modeling:
+    durationSec: 104
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 83
+    retries: 0
+    dodFailures: 0
+  state_machine:
+    durationSec: 62
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 49
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 75
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 488
+    retries: 0
+    dodFailures: 0
+  test_design:
+    durationSec: 250
+    retries: 0
+    dodFailures: 0
+  test_selection:
+    durationSec: 90
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 133
+    retries: 0
+    dodFailures: 0
+  implementation:
+    durationSec: 146
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 67
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 53
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 295
+    retries: 0
+    dodFailures: 0
+  testing:
+    durationSec: 148
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 115
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 160
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 272
+    retries: 0
+    dodFailures: 0
+  security_scan:
+    durationSec: 114
+    retries: 0
+    dodFailures: 0
+  performance_test:
+    durationSec: 124
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 74
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 71
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 115
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 6
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 6
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 129
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:

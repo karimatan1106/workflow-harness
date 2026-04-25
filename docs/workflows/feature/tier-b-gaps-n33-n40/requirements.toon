@@ -1,0 +1,47 @@
+task: tier-b-gaps-n33-n40
+phase: requirements
+intent: Tier B N-33〜N-40のうちin-scope 6項目の受入基準定義
+riskScore: 3
+
+acceptanceCriteria[6]{id,gapId,description,verification}:
+  AC-1, N-33, "tests/hooks/hook-smoke.batsが3テストケースを含むbats-core互換ファイルとして存在する", "ファイル存在確認。@testブロック3件。#!/usr/bin/env batsヘッダー。"
+  AC-2, N-34, "tests/api/mcp-smoke.hurlがJSON-RPC tools/listリクエストを定義するhurl互換ファイルとして存在する", "ファイル存在確認。POST+Content-Type+JSON-RPCボディ+HTTP 200+jsonpathアサーション。"
+  AC-3, N-37, "workflow-plugin/eslint-local-rules/index.jsがno-string-only-throwルールを実装しESLint flat configから参照可能である", "ルールファイル存在確認。module.exportsにrules.no-string-only-throw定義。create関数がThrowStatementを検出。"
+  AC-4, N-38, "tests/eval/promptfoo.yamlがTOON品質評価の設定を定義する有効なYAMLファイルとして存在する", "ファイル存在確認。providers/prompts/tests/assertの4セクション。contains+llm-rubricアサーション。"
+  AC-5, N-39, "tests/safety/adversarial-cases.jsonが4カテゴリのテストケースを含む有効なJSONファイルとして存在する", "ファイル存在確認。JSON.parse成功。cases配列4要素。各要素にid/tool/field/payload/expected。"
+  AC-6, N-40, "src/__tests__/mcp-contract.test.tsがTOOL_DEFINITIONSのスキーマ検証テストを含みvitest実行で全パスする", "vitest run実行。3テストケース全パス。TOOL_DEFINITIONSのname/description/inputSchema検証。"
+
+rtmMapping[6]{acId,featureId,status}:
+  AC-1, F-033, pending
+  AC-2, F-034, pending
+  AC-3, F-037, pending
+  AC-4, F-038, pending
+  AC-5, F-039, pending
+  AC-6, F-040, pending
+
+priorityOrder[6]{acId,priority,rationale}:
+  AC-6, P1, "vitestで即座に実行検証可能。最も高い確認精度。"
+  AC-3, P1, "ESLint flat configで即座に統合可能。実用性最高。"
+  AC-1, P2, "bats-core未インストールのため実行検証不可。ファイル構造検証のみ。"
+  AC-2, P2, "hurl未インストールのため実行検証不可。ファイル構造検証のみ。"
+  AC-4, P2, "promptfoo未インストールのため実行検証不可。YAML構文検証のみ。"
+  AC-5, P2, "スキャフォールド。JSON構文検証のみ。"
+
+decisions[5]{id,statement,rationale}:
+  RQ-1, "AC-6（コントラクトテスト）を最優先で実装しvitest実行で検証する", "唯一の自動実行可能テスト。実装品質の客観的検証が可能。"
+  RQ-2, "AC-3（ESLintローカルルール）はルールファイル作成のみでeslint.config.js変更は別タスク", "既存設定への変更は影響範囲が広いためルール定義の作成に限定する"
+  RQ-3, "AC-1/AC-2は外部ツール形式に準拠したファイル作成を検証基準とする", "実行不可のためファイル構造の正確性をDoD基準とする"
+  RQ-4, "AC-4のYAML構文はpromptfoo公式ドキュメントのスキーマに準拠する", "promptfoo eval -c で読み込み可能な形式を保証する"
+  RQ-5, "AC-5のJSONはversion/description/cases構造で標準化する", "PyRIT非依存でもテストケース定義の構造を再利用可能にする"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n33-n40/scope-definition.toon, input, スコープ定義
+  docs/workflows/tier-b-gaps-n33-n40/research.toon, input, 技術調査結果
+  docs/workflows/tier-b-gaps-n33-n40/requirements.toon, output, 受入基準6件定義
+
+next:
+  criticalDecisions: "RQ-1（AC-6最優先）により実装はmcp-contract.test.tsから開始"
+  readFiles: "handler.ts, defs-a.ts, defs-b.ts"
+  warnings: "AC-3のeslint.config.js変更は別タスクとして切り出す必要あり"
+
+result{phase,status,artifact,lines}: requirements, complete, docs/workflows/tier-b-gaps-n33-n40/requirements.toon, 52

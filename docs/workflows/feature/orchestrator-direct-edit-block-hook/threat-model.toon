@@ -1,0 +1,31 @@
+taskName: orchestrator-direct-edit-block-hook
+phase: threat_modeling
+createdAt: 2026-03-11
+scope: "PreToolUseフック（bashスクリプト）によるdocs/workflows/配下のWrite/Editブロック"
+userIntent: "Orchestratorがdocs/workflows/配下を直接編集することを防止するPreToolUseフックの脅威分析"
+
+strideAnalysis{category,applicable,rationale}:
+  Spoofing, no, "stdin JSONはClaude Codeプロセスが生成するため外部偽装の経路が存在しない"
+  Tampering, no, "フックはステートレスでファイルシステムへの書き込みを行わず改ざん対象がない"
+  Repudiation, no, "フックのブロック結果はClaude Codeのログに記録されるため否認防止は不要"
+  InformationDisclosure, no, "ネットワーク通信を行わずstdinのツール呼び出し情報のみを処理する"
+  DenialOfService, no, "パスパターンマッチのみの処理でリソース枯渇の経路がない"
+  ElevationOfPrivilege, low, "ORCHESTRATOR_GUARD_DISABLE環境変数によるバイパスが可能だが開発者の意図的操作が必要"
+
+decisions[5]{id,statement,rationale}:
+  TM-01, "認可制御のみに限定しSTRIDE6軸のうち5軸を対象外と判定する", "フックはstdin JSON解析とパスマッチのみのステートレス処理でありネットワーク不使用かつファイル書き込みなしのため攻撃面が極めて限定的である"
+  TM-02, "ORCHESTRATOR_GUARD_DISABLE環境変数によるバイパスリスクを受容可能と判定する", "環境変数の設定は開発者がシェルで明示的に実行する必要がありLLMエージェントが自律的に設定する経路はClaude Codeのサンドボックス内に存在しない"
+  TM-03, "stdin JSON入力をClaude Code生成の信頼できるソースとして扱う", "PreToolUseフックのstdinはClaude Codeプロセスが内部生成するJSON構造体であり外部ユーザー入力が直接注入される経路がない"
+  TM-04, "パスパターンマッチをgrep正規表現で実装し外部依存を最小化する", "jqとgrepのみを使用するステートレス設計により依存ライブラリの脆弱性リスクを排除しフック自体の攻撃面を最小化する"
+  TM-05, "フックのexit code設計を0(許可)/2(ブロック)の二値に限定する", "複雑な戻り値体系は誤解釈リスクを生むため最小限の二値設計でフォールセーフ動作を保証する"
+
+threats[2]{id,description,impact,mitigation,residualRisk}:
+  T-001, "ORCHESTRATOR_GUARD_DISABLE環境変数による意図的バイパス", "docs/workflows/配下のファイルがOrchestratorによって直接編集される可能性", "環境変数設定は開発者の明示的操作が必要でありLLMが自律設定する経路はない", 低
+  T-002, "パスパターンの不一致による保護漏れ", "docs/workflows/の変形パス表記がフックを迂回する可能性", "tool_input.file_pathフィールドに対する部分一致マッチで正規化前パスも捕捉する", 低
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/threat-model.toon, report, "smallタスク向け最小脅威分析（STRIDE全軸評価とバイパスリスク受容判定）"
+
+next:
+  criticalDecisions[2]: TM-02, TM-03
+  readFiles[1]: docs/workflows/orchestrator-direct-edit-block-hook/requirements.toon

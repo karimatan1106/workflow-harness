@@ -1,0 +1,89 @@
+phase: scope_definition
+task: rtm-intent-gate
+status: complete
+targetRepo: C:/ツール/Workflow/workflow-harness/mcp-server/
+
+summary: RTMチェーン検証（AC-N追跡の機械的ゲート強化）と意図明確化ゲート（IA-1 OPEN_QUESTIONSループ）をDoD検証に実装するタスク。影響ファイルは gates/dod-l4-requirements.ts・dod-l4-ia.ts・dod.ts、tools/handlers/approval.ts・lifecycle.ts、phases/defs-stage1.ts・registry.tsに集中する。
+
+entryPoints[7]{file,role}:
+  src/gates/dod-l4-requirements.ts, "checkOpenQuestions/checkACFormat/checkNotInScope — requirementsフェーズDoD L4検証"
+  src/gates/dod-l4-ia.ts, "checkAcDesignMapping/checkAcTcMapping/checkAcAchievementTable/checkTCCoverage — IA-3〜5クロスフェーズAC追跡"
+  src/gates/dod.ts, "runDoDChecks オーケストレーター — 全L1〜L4チェックの実行順序定義"
+  src/tools/handlers/approval.ts, "handleHarnessApprove — IA-1/IA-2 承認前ブロックロジック実装済み"
+  src/tools/handlers/lifecycle.ts, "handleHarnessNext — DoD検証→リトライプロンプト→フェーズ遷移の主制御フロー"
+  src/phases/defs-stage1.ts, "requirementsフェーズ subagentTemplate — OPEN_QUESTIONS確認ループのオーケストレーター指示"
+  src/phases/registry.ts, "PHASE_REGISTRY — requirements/design_review/test_design/code_review の requiredSections 定義"
+
+currentImplementation[6]{check,location,gap}:
+  checkOpenQuestions, "dod-l4-requirements.ts:110-130", "存在確認のみ。空配列と有効項目の区別なし。DoDゲートとしてopenQuestionsが非空の場合にブロックする仕組みが欠落"
+  checkRTMCompleteness, "dod-l3.ts:41-58", "code_review/acceptance_verification/completedの3フェーズのみ検査。requirements→design_review→test_designのクロスフェーズAC追跡が途切れる"
+  checkAcDesignMapping, "dod-l4-ia.ts:12-38", "design_reviewでacDesignMapping必須チェック実装済み。state.acceptanceCriteriaとの突合検証あり"
+  checkAcTcMapping, "dod-l4-ia.ts:42-61", "test_designでacTcMapping必須チェック実装済み。AC件数との突合なし（checkTCCoverageで補完）"
+  checkAcAchievementTable, "dod-l4-ia.ts:90-128", "code_reviewでacAchievementStatus必須チェック実装済み。not_met判定あり"
+  openQuestionsApprovalBlock, "handlers/approval.ts:35-52", "requirementsフェーズ承認時にopenQuestions非空をブロックする実装あり。DoDゲート（harness_next）では未検査"
+
+gapAnalysis[5]{id,description,affectedFiles}:
+  GAP-RTM-1, "requirementsフェーズDoD: openQuestionsが空配列でない場合にharness_nextをブロックするL4ゲートが未実装。checkOpenQuestionsは存在確認のみで内容を検査しない", "gates/dod-l4-requirements.ts"
+  GAP-RTM-2, "design_reviewフェーズDoD: acDesignMappingのAC-N件数完全一致チェックが実装済みだが、requirementsフェーズでRTM F-NNNエントリをharness_add_rtmで追加する要件がsubagentTemplateに明示されていない", "phases/defs-stage1.ts"
+  GAP-RTM-3, "test_designフェーズDoD: acTcMappingとtcCoverageが独立チェックで実装済み。しかしRTMエントリのstatusをpending→implementedに更新するゲートがtest_design/code_reviewに不在", "gates/dod-l4-ia.ts, gates/dod-l3.ts"
+  GAP-RTM-4, "harness_nextのIA-1ループ: checkOpenQuestionsがDoD失敗を返してもretryPromptにOPEN_QUESTIONS解消の具体的指示が含まれない。ユーザー確認の促しがrequirementsテンプレートのコメントのみで強制されない", "tools/handlers/lifecycle.ts, tools/retry.ts"
+  GAP-RTM-5, "RTMチェーンの連続性: requirements→design_review→test_design→code_reviewの各フェーズでAC-N IDが一貫して参照されることの機械的検証が欠落。acDesignMappingとacTcMappingで個別チェックはあるが、F-NNNとAC-Nの連鎖検証がない", "gates/dod.ts, gates/dod-l3.ts"
+
+scopeFiles[12]{path,category}:
+  workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, core
+  workflow-harness/mcp-server/src/gates/dod-l4-ia.ts, core
+  workflow-harness/mcp-server/src/gates/dod.ts, core
+  workflow-harness/mcp-server/src/gates/dod-l3.ts, core
+  workflow-harness/mcp-server/src/tools/handlers/approval.ts, core
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts, core
+  workflow-harness/mcp-server/src/tools/handlers/recording.ts, supporting
+  workflow-harness/mcp-server/src/tools/retry.ts, supporting
+  workflow-harness/mcp-server/src/phases/defs-stage1.ts, supporting
+  workflow-harness/mcp-server/src/phases/registry.ts, supporting
+  workflow-harness/mcp-server/src/state/types.ts, reference
+  workflow-harness/mcp-server/src/state/types-core.ts, reference
+
+testFiles[4]{path,relevance}:
+  src/__tests__/dod-l4-requirements.test.ts, "checkOpenQuestions/checkACFormat テスト — 新ゲートのTDD Red対象"
+  src/__tests__/dod-ia.test.ts, "checkAcDesignMapping/checkAcTcMapping テスト — RTMチェーン連続性テスト追加対象"
+  src/__tests__/handler-traceability.test.ts, "harness_add_ac/harness_add_rtm/harness_update_ac_status のE2Eテスト"
+  src/__tests__/handler-approval.test.ts, "harness_approve のopenQuestionsブロックテスト"
+
+riskScore:
+  total: 6
+  factors: "fileCount=12, hasTests=true, hasConfig=false, hasInfra=false, hasSecurity=false, hasDatabase=false"
+  size: medium
+
+projectTraits:
+  hasUI: false
+  hasAPI: false
+  hasDB: false
+  hasEvents: true
+  hasI18n: false
+  hasDesignSystem: false
+
+notInScope[4]{item}:
+  RTM F-NNN→コードファイルの自動リンク検証（codeRef/testRef の存在チェック）
+  UIフェーズ（state_machine/flowchart/ui_design）へのAC追跡拡張
+  harness_update_rtm_statusの自動呼び出しロジック実装
+  acceptance_verification以降のAC最終検証フロー変更
+
+decisions[6]{id,statement,rationale}:
+  SD-1, "変更主対象は gates/dod-l4-requirements.ts の checkOpenQuestions関数", "現在は存在確認のみ。openQuestionsが空配列でない場合にDoD L4失敗を返すよう拡張することで IA-1 ゲートが機械的に強制される"
+  SD-2, "RTMチェーン検証は既存の checkAcDesignMapping/checkAcTcMapping/checkAcAchievementTable を拡張し dod.ts の呼び出し順を変更しない", "各フェーズのゲートは独立して機能しており、新規ゲート関数の追加より既存関数の強化が変更コストを最小化する"
+  SD-3, "phases/defs-stage1.ts の requirements subagentTemplate に harness_add_rtm 必須呼び出しとOPEN_QUESTIONS確認指示を追加", "テンプレートがオーケストレーターへの唯一の指示媒体であり、ここに記述しないと実行時に無視される"
+  SD-4, "checkOpenQuestionsのロジック変更: 存在確認から内容検査へ。空配列またはすべて 'なし' の場合のみ passed:true", "approval.tsのopenQuestionsチェックと同一判定ロジックを用いることで挙動の一貫性を保つ"
+  SD-5, "RTMチェーン途切れ検証は dod-l4-ia.ts に新関数 checkRtmChainContinuity を追加し dod.ts から呼び出す", "既存のdod-l3.tsのcheckRTMCompletenessはステータス検査のみ。IDレベルのクロスフェーズ突合は別関数に分離してSRP維持"
+  SD-6, "対象ファイル12件は全200行以下のSRP設計に従っており、追加実装は既存ファイルへの関数追加で完結する", "新規ファイル作成が必要な場合は dod-l4-rtm-chain.ts として分離する。dod-l4-ia.tsが200行に近い場合は分割を検討"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/rtm-intent-gate/scope-definition.toon, primary, "影響ファイル12件・ギャップ5件・決定事項6件を記録したスコープ定義"
+  workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, target, "checkOpenQuestions拡張: 空でないopenQuestionsをDoD L4 failとして返す"
+  workflow-harness/mcp-server/src/gates/dod-l4-ia.ts, target, "checkRtmChainContinuity追加: requirements→design_review→test_design→code_reviewのAC-ID連鎖検証"
+  workflow-harness/mcp-server/src/gates/dod.ts, target, "runDoDChecks: 新ゲート関数をチェックチェーンに追加"
+  workflow-harness/mcp-server/src/phases/defs-stage1.ts, target, "requirements subagentTemplate: harness_add_rtm必須化とOPEN_QUESTIONS確認ループ指示追加"
+
+next:
+  criticalDecisions: "dod-l4-ia.tsの行数確認（200行制限）。超過時はdod-l4-rtm-chain.tsに分離。checkOpenQuestionsの 'なし' フィルタロジックをapproval.tsと統一するか独自実装するか確認"
+  readFiles: "src/gates/dod-l4-ia.ts全行(現在130行)、src/__tests__/dod-l4-requirements.test.ts(TDD Red基準確認)、src/tools/retry.ts(retryPrompt生成ロジック確認)"
+  warnings: "approval.tsとdod-l4-requirements.tsでopenQuestions判定が二重実装になる。ロジックを共通関数に抽出するか検討が必要。registry.tsのrequiredSectionsとdefs-stage1.tsのrequiredSectionsが二箇所管理になっている整合性に注意"

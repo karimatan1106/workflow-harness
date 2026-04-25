@@ -1,0 +1,136 @@
+flowchart TD
+    Start([修正処理開始]) --> Route{修正対象}
+
+    Route -->|BUG-2| BUG2Flow["BUG-2: 密度計算フロー"]
+    Route -->|BUG-3| BUG3Flow["BUG-3: mkdirコマンド検証フロー"]
+    Route -->|SEC-ENV-1| SEC1Flow["SEC-ENV-1: インライン環境変数検出フロー"]
+    Route -->|SEC-TIME-1| SEC2Flow["SEC-TIME-1: タイミング安全な比較"]
+    Route -->|SEC-LOG-1| SEC3Flow["SEC-LOG-1: ログマスキング"]
+
+    %% BUG-2 Density Calculation Flow
+    subgraph BUG2 ["BUG-2: 密度計算フロー (artifact-validator.ts)"]
+        B2Start([artifact入力]) --> B2Step1["セクション単位で処理対象を取得"]
+        B2Step1 --> B2Step2["各行の種別を分類"]
+        B2Step2 --> B2Step3["空行と構造行をカウント"]
+        B2Step3 --> B2Step4["substantiveLineを計数"]
+        B2Step4 --> B2Step5["分母から構造行を除外"]
+        B2Step5 --> B2Step6["密度計算: substantive / effective"]
+        B2Step6 --> B2Check{effective > 0?}
+        B2Check -->|Yes| B2Compare["計算密度とMIN_SECTION_DENSITY比較"]
+        B2Check -->|No| B2Zero["密度を0.0として扱い"]
+        B2Zero --> B2MinCheck["minSubstantiveLines検証"]
+        B2Compare --> B2MinCheck
+        B2MinCheck --> B2Result{テスト結果}
+        B2Result -->|成功| B2Pass["✓ バリデーション成功"]
+        B2Result -->|失敗| B2Fail["✗ バリデーション失敗"]
+        B2Pass --> B2End([修正完了])
+        B2Fail --> B2End
+    end
+
+    %% BUG-3 Mkdir Validation Flow
+    subgraph BUG3 ["BUG-3: mkdirコマンド検証フロー (bash-whitelist.js)"]
+        B3Start([コマンド受信]) --> B3Parse["コマンド文字列を分割"]
+        B3Parse --> B3Detect["mkdirコマンドを検出"]
+        B3Detect --> B3Check{mkdir検出?}
+        B3Check -->|No| B3Skip["他のコマンド処理へ移行"]
+        B3Check -->|Yes| B3Extract["対象パスを抽出"]
+        B3Extract --> B3Normalize["path.normalize()で正規化"]
+        B3Normalize --> B3Realpath["fs.realpathSync()でシンボリックリンク解決"]
+        B3Realpath --> B3AllowList["許可ディレクトリリストと照合"]
+        B3AllowList --> B3Match{許可パス?}
+        B3Match -->|docs/workflows/| B3AllowDocs["✓ 許可: docs/workflows/"]
+        B3Match -->|docs/security/| B3AllowSec["✓ 許可: docs/security/"]
+        B3Match -->|.claude/state/| B3AllowState["✓ 許可: .claude/state/"]
+        B3Match -->|No match| B3BlockPath["✗ ブロック: 非許可パス"]
+        B3AllowDocs --> B3Whitecheck["readonly配列登録チェック"]
+        B3AllowSec --> B3Whitecheck
+        B3AllowState --> B3Whitecheck
+        B3Whitecheck --> B3Final{最終判定}
+        B3Final -->|許可| B3Exec["mkdir実行許可"]
+        B3Final -->|ブロック| B3BlockPath
+        B3BlockPath --> B3End([処理終了])
+        B3Exec --> B3End
+    end
+
+    %% SEC-ENV-1 Inline Environment Variable Detection Flow
+    subgraph SEC1 ["SEC-ENV-1: インライン環境変数検出フロー (bash-whitelist.js)"]
+        S1Start([コマンド受信]) --> S1Split["コマンド文字列を単語分割"]
+        S1Split --> S1Pattern["各単語にVAR=valueパターンをマッチ"]
+        S1Pattern --> S1Match{パターン一致?}
+        S1Match -->|No| S1Pass["素通し"]
+        S1Match -->|Yes| S1Extract["変数名を抽出"]
+        S1Extract --> S1List["SECURITY_ENV_VARSに照合"]
+        S1List --> S1HasVar{セキュリティ変数?}
+        S1HasVar -->|HMAC_STRICT| S1SecVar["✗ ブロック対象"]
+        S1HasVar -->|VALIDATE_DESIGN_STRICT| S1SecVar
+        S1HasVar -->|Other| S1AllowVar["✓ 通常変数"]
+        S1SecVar --> S1Result{最終判定}
+        S1AllowVar --> S1Result
+        S1Result -->|ブロック| S1Block["✗ コマンド実行ブロック"]
+        S1Result -->|許可| S1Allow["✓ コマンド実行許可"]
+        S1Block --> S1End([処理終了])
+        S1Allow --> S1End
+    end
+
+    BUG2Flow --> BUG2
+    BUG3Flow --> BUG3
+    SEC1Flow --> SEC1
+    SEC2Flow --> SEC2Sub
+    SEC3Flow --> SEC3Sub
+
+    %% SEC-TIME-1 Timing-Safe Comparison Flow
+    subgraph SEC2Sub ["SEC-TIME-1: タイミング安全な比較 (manager.ts)"]
+        S2Start([セッショントークン比較]) --> S2Len["トークン長チェック"]
+        S2Len --> S2LenMatch{長さ64?}
+        S2LenMatch -->|No| S2Fail["✗ 不正トークン"]
+        S2LenMatch -->|Yes| S2ToBuf["Buffer.from()で両者をUTF-8変換"]
+        S2ToBuf --> S2Compare["crypto.timingSafeEqual()で比較"]
+        S2Compare --> S2Result{一致?}
+        S2Result -->|Yes| S2Valid["✓ トークン有効"]
+        S2Result -->|No| S2Invalid["✗ トークン無効"]
+        S2Valid --> S2End([比較終了])
+        S2Invalid --> S2End
+        S2Fail --> S2End
+    end
+
+    %% SEC-LOG-1 Log Masking Flow
+    subgraph SEC3Sub ["SEC-LOG-1: ログマスキング (phase-edit-guard.js)"]
+        S3Start([コマンドログ記録]) --> S3Input["ログ文字列入力"]
+        S3Input --> S3Pattern1["パスワードパターンをスキャン"]
+        S3Pattern1 --> S3Found1{パターン一致?}
+        S3Found1 -->|Yes| S3Mask1["[REDACTED]に置換"]
+        S3Found1 -->|No| S3Pattern2["トークンパターンをスキャン"]
+        S3Mask1 --> S3Pattern2
+        S3Pattern2 --> S3Found2{パターン一致?}
+        S3Found2 -->|Yes| S3Mask2["[REDACTED]に置換"]
+        S3Found2 -->|No| S3Pattern3["APIキーパターンをスキャン"]
+        S3Mask2 --> S3Pattern3
+        S3Pattern3 --> S3Found3{パターン一致?}
+        S3Found3 -->|Yes| S3Mask3["[REDACTED]に置換"]
+        S3Found3 -->|No| S3Pattern4["その他機密パターンをスキャン"]
+        S3Mask3 --> S3Pattern4
+        S3Pattern4 --> S3Found4{パターン一致?}
+        S3Found4 -->|Yes| S3Mask4["[REDACTED]に置換"]
+        S3Found4 -->|No| S3Output["マスキング完了"]
+        S3Mask4 --> S3Output
+        S3Output --> S3Write["マスキング済みログをファイル記録"]
+        S3Write --> S3End([ログ記録終了])
+    end
+
+    BUG2End --> Complete([全修正完了])
+    B3End --> Complete
+    S1End --> Complete
+    S2End --> Complete
+    S3End --> Complete
+
+    style Start fill:#e1f5ff
+    style Complete fill:#c8e6c9
+    style BUG2Pass fill:#c8e6c9
+    style BUG2Fail fill:#ffccbc
+    style B3Exec fill:#c8e6c9
+    style B3BlockPath fill:#ffccbc
+    style S1Allow fill:#c8e6c9
+    style S1Block fill:#ffccbc
+    style S2Valid fill:#c8e6c9
+    style S2Invalid fill:#ffccbc
+    style S3Write fill:#c8e6c9

@@ -1,0 +1,81 @@
+phase: requirements
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "docs_updateテンプレートの動的カテゴリ選択機能の要件定義。ProjectTraits型(6 booleanフラグ)をTaskStateに追加し、scope_definitionフェーズでプロジェクト性質を判定、buildSubagentPromptを通じてdocs_updateテンプレートに動的カテゴリリストを注入する。全変更は後方互換であり、既存タスクはフォールバック固定リストで動作継続する。"
+
+functionalRequirements[7]{id,description,traceability}:
+  REQ-F1, "types-core.tsにProjectTraits interfaceを定義する。hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystemの6つのbooleanフィールドを持つ", "SD-2, R-1"
+  REQ-F2, "types.tsのTaskState interfaceにprojectTraits?: ProjectTraitsオプショナルフィールドを追加する", "SD-1, R-PAT-1"
+  REQ-F3, "harness_set_scopeのinputSchema(defs-a.ts)にprojectTraitsオブジェクトプロパティを追加し、scope-nav.tsのhandleHarnessSetScopeでTaskStateに永続化する", "SD-6, R-5"
+  REQ-F4, "buildSubagentPrompt(definitions.ts)に第7引数projectTraits?: Record<string,boolean>を追加し、{docCategories}プレースホルダーを展開する", "SD-4, R-2, R-3"
+  REQ-F5, "definitions.ts内にbuildDocCategories(traits?: Record<string,boolean>): stringヘルパー関数を追加する。traitsのフラグに応じてカテゴリリスト文字列を生成する", "R-8"
+  REQ-F6, "defs-stage6.tsのdocs_updateテンプレート内の固定5項目リストを{docCategories}プレースホルダーに置換する", "SD-5, R-3"
+  REQ-F7, "defs-stage1.tsのscope_definitionテンプレートにプロジェクト性質判定ステップを追加し、harness_set_scopeのprojectTraitsパラメータへの設定を指示する", "SD-3"
+
+nonFunctionalRequirements[5]{id,category,description}:
+  REQ-NF1, "後方互換性", "projectTraitsが未設定(undefined)の場合、docs_updateテンプレートは現行の固定5項目をフォールバック出力する。既存タスクの動作は一切変わらない"
+  REQ-NF2, "200行制限遵守", "変更対象ファイル(types-core.ts=194行/defs-stage6.ts=197行/defs-stage1.ts=194行)は200行上限を超過しない。行数圧縮を先行実施して余裕を確保する"
+  REQ-NF3, "型安全性", "ProjectTraitsはTypeScript interfaceとして定義し、Record<string,boolean>で受け渡す際もbuildDocCategories内で6フラグの存在を検証する"
+  REQ-NF4, "Zodバリデーション非破壊", "TaskStateSchemaはpassthrough()を使用しているため、projectTraitsフィールド追加でZodバリデーションの変更は不要(SD-7)"
+  REQ-NF5, "コンテキスト効率", "projectTraitsをTaskStateに永続化することで、後続フェーズがファイル読み込みなしにプロジェクト性質を参照できる"
+
+categoryMapping[6]{trait,categories,source}:
+  hasUI, "docs/spec/screens/ docs/spec/wireframes/ docs/spec/components/ docs/spec/interactions/ docs/spec/responsive/ docs/spec/accessibility/", "workflow-docs.md L27-31"
+  hasAPI, "docs/spec/api/", "workflow-docs.md L27"
+  hasDB, "docs/spec/database/", "workflow-docs.md L27"
+  hasEvents, "docs/spec/events/ docs/spec/messages/", "workflow-docs.md L27"
+  hasI18n, "docs/spec/i18n/ docs/spec/seo/ docs/spec/sitemap.md", "workflow-docs.md L29"
+  hasDesignSystem, "docs/spec/design-system/ docs/spec/components/", "workflow-docs.md L30"
+
+acceptanceCriteria[6]{id,description,verificationMethod}:
+  AC-1, "ProjectTraits interfaceがtypes-core.tsに定義され、6つのbooleanフィールド(hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystem)を持つこと", "npm run build成功 + 型定義の目視確認"
+  AC-2, "projectTraitsが未設定のタスクでdocs_updateテンプレートを取得した場合、現行の固定5項目リストと同一内容が出力されること", "harness_get_subphase_templateでprojectTraits無しタスクのdocs_updateテンプレートを取得し、固定5項目の存在を確認"
+  AC-3, "projectTraits={hasUI:true,hasAPI:true,hasDB:false,hasEvents:false,hasI18n:false,hasDesignSystem:false}のタスクでdocs_updateテンプレートを取得した場合、screens/api関連カテゴリが含まれ、database/events/i18n/design-system関連カテゴリが含まれないこと", "harness_get_subphase_templateでprojectTraits付きタスクのdocs_updateテンプレートを取得し、カテゴリの動的選択を確認"
+  AC-4, "harness_set_scopeにprojectTraitsパラメータを渡した場合、TaskStateに永続化されること。パラメータを省略した場合も既存動作が変わらないこと", "harness_set_scope呼び出し後にharness_statusでprojectTraitsの存在を確認。省略時はundefinedのまま"
+  AC-5, "変更対象の全ファイルが200行以下であること", "wc -l による行数確認"
+  AC-6, "npm run buildが成功し、既存テスト(npm test)が全件パスすること", "CI相当のビルド+テスト実行"
+
+notInScope[5]{item,reason}:
+  "ProjectTraitsの自動推定ロジック実装", "scope_definitionサブエージェントがコードベースを調査して判定する。ハーネス側は値の受け取りと永続化のみ担当"
+  "workflow-docs.mdの変更", "カテゴリ定義の権威ソースとして参照するのみで、ファイル自体は変更しない"
+  "テストファイルの設計・実装", "test_designフェーズで設計し、test_implフェーズで実装する"
+  "manager.tsのupdateScope引数変更", "manager.tsは196行で余裕4行のためシグネチャ変更を回避。scope-nav.ts内でloadTask+フィールド設定+addProofパターンで永続化する(R-5)"
+  "docs_update以外のテンプレートへのprojectTraits注入", "現時点ではdocs_updateのみが動的カテゴリ選択を必要とする。他テンプレートへの拡張は将来タスクとして分離"
+
+openQuestions[0]{id,question,impact}:
+
+resolvedQuestions[2]{id,answer}:
+  OQ-1, "番号付きリスト形式(1. path -- 説明)を採用。現行テンプレートとの一貫性を維持"
+  OQ-2, "自動重複排除を採用。buildDocCategories内でSetを使い同一パスは1回のみ出力"
+
+implementationStrategy:
+  step1: "types-core.tsの行数圧縮(RiskScore.factors圧縮で4-6行確保) → ProjectTraits interface追加"
+  step2: "types.tsにprojectTraits?: ProjectTraitsフィールド追加 + import追加"
+  step3: "defs-a.tsのharness_set_scope inputSchemaにprojectTraitsプロパティ追加"
+  step4: "scope-nav.tsのhandleHarnessSetScopeにprojectTraits抽出+永続化ロジック追加"
+  step5: "definitions.tsにbuildDocCategories関数追加 + buildSubagentPromptに第7引数とプレースホルダー展開追加"
+  step6: "defs-stage6.tsの行数圧縮(空行削減で8-10行確保) → docs_updateテンプレートの固定リストを{docCategories}プレースホルダーに置換"
+  step7: "defs-stage1.tsの行数圧縮(Serenaチェック圧縮で3-4行確保) → scope_definitionテンプレートにプロジェクト性質判定ステップ追加"
+  step8: "query.tsのhandleHarnessGetSubphaseTemplateでtaskからprojectTraitsを取得しbuildSubagentPromptに渡す"
+
+decisions[8]{id,statement,rationale}:
+  REQ-1, "ProjectTraitsの6フラグはworkflow-docs.mdのカテゴリ構造と1対1対応させる", "カテゴリの網羅性と最小フラグ数のバランス。将来カテゴリ追加時はフラグ追加で対応可能"
+  REQ-2, "buildDocCategories関数はdefinitions.ts内にpure functionとして定義する", "テンプレート展開と同一ファイルに配置することで依存関係を最小化。引数はRecord<string,boolean>で型安全性を確保"
+  REQ-3, "フォールバック時の固定リストは現行docs_updateテンプレートの5項目と完全一致させる", "後方互換性を保証。フォールバック出力が現行と異なると既存タスクの挙動が変わるリスク"
+  REQ-4, "scope-nav.ts内でprojectTraitsを永続化する際、updateScopeとは独立した2段階処理を採用する", "manager.tsの200行制限によりupdateScope引数追加が困難。loadTask→フィールド設定→signAndPersistの既存パターンを踏襲"
+  REQ-5, "buildSubagentPromptの第7引数はRecord<string,boolean>型とし、ProjectTraits型への依存を避ける", "definitions.tsがtypes-core.tsに依存するとインポートチェーンが深くなる。プリミティブ型で受け渡すことで疎結合を維持"
+  REQ-6, "行数圧縮はimplementationフェーズの最初のステップとして実施する", "圧縮後の余裕が実装可能性の前提条件。先行実施でブロッカーを早期発見"
+  REQ-7, "scope_definitionテンプレートではプロジェクト性質の判定基準を明示的に指示する", "サブエージェントがpackage.json/tsconfig/ディレクトリ構造から判定できるよう、具体的な判定基準(React/Vue存在=hasUI等)を記載"
+  REQ-8, "categoryMappingのカテゴリパスはworkflow-docs.mdのディレクトリツリーと完全一致させる", "権威ソースとの整合性を保証。パス不一致はドキュメント配置の混乱を招く"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/requirements.toon, spec, "requirementsフェーズ成果物。機能要件7件、非機能要件5件、受入基準6件、スコープ外5件、未解決質問2件を定義"
+  docs/workflows/docs-update-dynamic-categories/research.toon, spec, "前フェーズ成果物。8ファイル精査結果と200行制限対策"
+  docs/workflows/docs-update-dynamic-categories/scope-definition.toon, spec, "前フェーズ成果物。7ファイル変更の影響範囲定義と7決定事項"
+
+next:
+  criticalDecisions: "REQ-4(updateScope非変更によるscope-nav.ts内2段階永続化)とREQ-5(Record<string,boolean>型での疎結合受け渡し)が設計フェーズでの詳細化対象。OQ-1(出力形式)とOQ-2(重複排除)はplanningフェーズで解決"
+  readFiles: "src/state/manager-write.ts(signAndPersist呼び出しパターン), src/__tests__/handler-templates-s6-docs-integration.test.ts(既存テスト構造)"
+  warnings: "types-core.ts/defs-stage6.ts/defs-stage1.tsの200行制限が最大リスク。行数圧縮の実現可能性をplanningフェーズで検証すること"

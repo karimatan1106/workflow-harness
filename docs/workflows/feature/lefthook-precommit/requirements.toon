@@ -1,0 +1,60 @@
+phase: requirements
+task: lefthook-precommit
+intent: G-05 Lefthookプリコミットフック導入によるcommit時品質自動強制
+status: complete
+timestamp: 2026-03-10
+
+summary: lefthook v2.1.3をnpm devDependencyとして親リポジトリに導入し、pre-commitフックでtsc --noEmit（3プロジェクト）とESLint（workflow-plugin）を並列実行する。Claude CodeエージェントのPreToolUseフックで--no-verifyを構造的にブロックする
+
+functionalRequirements[5]{id,title,description,source}:
+  REQ-F-001, lefthook.yml pre-commit定義, 親リポジトリルートにlefthook.ymlを作成しpre-commitセクションにtsc --noEmit 3コマンド + eslint 1コマンドを定義する。parallel: trueで並列実行し各コマンドにタイムアウト60秒を設定する, SD-02/SD-07/R-07
+  REQ-F-002, tsc型チェックコマンド, workflow-harness/mcp-server と workflow-plugin/mcp-server と src/frontend の3プロジェクトに対しそれぞれ cd + npx tsc --noEmit を実行する。node_modules不在時は警告出力しexit 0でスキップする, SD-03/R-04
+  REQ-F-003, ESLintコマンド, workflow-plugin配下で npx eslint . を実行する。node_modules不在時は警告出力しexit 0でスキップする。harnessはESLint設定不在のため対象外, SD-04/R-04
+  REQ-F-004, package.json作成とlefthookインストール, 親リポジトリルートにpackage.jsonを新規作成しdevDependenciesにlefthook ^2.1.3を追加する。postinstallスクリプトで npx lefthook install を実行しgitフックを自動登録する, SD-01/SD-06
+  REQ-F-005, --no-verifyブロックフック, .claude/hooks/pre-tool-no-verify-block.sh を作成しPreToolUse Bashマッチャーで git commit --no-verify および -n フラグを正規表現検出してexit 2で拒否する。.claude/settings.jsonにフックを登録する, SD-06/R-05
+
+nonFunctionalRequirements[4]{id,title,description}:
+  REQ-NF-001, pre-commit実行時間, 並列実行により全コマンドの合計wall-clock時間を60秒以内に抑える。タイムアウト超過時はlefthookが該当コマンドを強制停止する
+  REQ-NF-002, 冪等性, npm install と lefthook install は何度実行しても同一結果を得る。既存のgitフックシムが存在する場合は上書きする
+  REQ-NF-003, Windows互換性, MSYS_NT環境（Git Bash）で全コマンドが正常動作する。lefthook Go製バイナリはwin32-x64をネイティブサポートする
+  REQ-NF-004, 既存フックとの共存, post-tool-lint.sh（PostToolUse Write|Edit）は編集直後のフィードバック用として維持する。lefthookは commit前の最終ゲートとして補完関係を形成する
+
+acceptanceCriteria[6]{id,title,verificationMethod,passCondition}:
+  REQ-AC-01, lefthook.yml存在確認, ファイル存在チェック, 親リポジトリルートにlefthook.ymlが存在しpre-commitセクションに4コマンド（tsc_harness/tsc_plugin/tsc_frontend/eslint_plugin）が定義されている
+  REQ-AC-02, npm installによるlefthookインストール, コマンド実行, ルートで npm install 実行後に node_modules/.bin/lefthook が存在し lefthook --version が 2.1.3 以上を返す
+  REQ-AC-03, gitフック自動登録, ファイル存在チェック, npm install 完了後に .git/hooks/pre-commit が存在しlefthookシムスクリプトを含む
+  REQ-AC-04, 型エラーブロック, 手動テスト, ステージされた .ts ファイルに意図的な型エラーを含む状態で git commit を実行するとpre-commitフックが失敗しコミットがブロックされる
+  REQ-AC-05, ESLintエラーブロック, 手動テスト, workflow-plugin配下のステージされたファイルにESLint違反を含む状態で git commit を実行するとpre-commitフックが失敗しコミットがブロックされる
+  REQ-AC-06, --no-verifyブロック, Claude Codeフックテスト, Claude CodeのBashツールで git commit --no-verify を含むコマンドを実行しようとするとPreToolUseフックがexit 2で拒否する
+
+constraints[3]{id,description}:
+  REQ-C-01, フォーマッタ（prettier/biome）は導入しない。プロジェクトにフォーマッタ設定が存在しないため
+  REQ-C-02, サブモジュール内部に個別のlefthook設定を配置しない。親リポジトリで一元管理する
+  REQ-C-03, CI/CDパイプライン設定は本タスクのスコープ外。ローカルgitフックに限定する
+
+decisions[6]{id,statement,rationale}:
+  REQ-D-01, node_modules不在時はエラーではなく警告+スキップとする, サブモジュールの依存が未インストールでもコミットをブロックしない。開発者体験を優先し必要時は手動でnpm installを実行させる
+  REQ-D-02, src/frontendをtscチェック対象に含める, scope-definitionではharness+pluginのみだがresearchでtsconfig.jsonの存在を確認済み。Next.jsプロジェクトの型安全性も同時に確保する
+  REQ-D-03, postinstallスクリプトでlefthook installを自動実行する, npm install後に追加手順なしでgitフックが登録される。新規クローン時のセットアップコストを最小化する
+  REQ-D-04, 正規表現でgit commit -nフラグもブロック対象とする, -nは--no-verifyの短縮形。エージェントが短縮形で回避することを防止する
+  REQ-D-05, lefthook.ymlのpiped設定はfalseとしparallel: trueで並列実行する, tsc 3プロジェクトとeslintは相互依存なし。並列実行でwall-clock時間を短縮する
+  REQ-D-06, package.jsonはprivate: trueかつtype: moduleで作成する, npm publishを防止しESMモジュール形式に統一する。既存サブモジュールのESM設定と整合させる
+
+notInScope[4]{item,reason}:
+  フォーマッタ（prettier/biome）の新規導入, プロジェクトにフォーマッタ設定が存在しないため別タスクで対応
+  サブモジュール内部への個別lefthook導入, 親リポジトリのlefthook.ymlで一元管理する方針
+  CI/CDパイプライン設定, 本タスクはローカルgitフックに限定
+  src/frontend および src/backend のリント設定新規作成, 既存のESLint設定がないため別タスクで対応
+
+openQuestions[0]{id,question,impact}:
+
+artifacts[4]{path,action,description}:
+  package.json, create, 親リポジトリ用。private: true / type: module / devDependenciesにlefthook ^2.1.3 / postinstallでlefthook install
+  lefthook.yml, create, pre-commitフック定義。parallel: true / tsc_harness + tsc_plugin + tsc_frontend + eslint_plugin / 各コマンドにnode_modulesガードとタイムアウト60秒
+  .claude/hooks/pre-tool-no-verify-block.sh, create, PreToolUseフック。stdin JSON から command を抽出し git commit --no-verify / -n パターンをexit 2で拒否
+  .claude/settings.json, modify, hooks.PreToolUse配列にBashマッチャーでpre-tool-no-verify-block.shを追加
+
+next:
+  criticalDecisions: REQ-D-01(node_modules不在時スキップ) REQ-D-02(src/frontend追加) REQ-D-03(postinstall自動化)
+  readFiles: research.toon requirements.toon
+  warnings: 親リポジトリにpackage.jsonが新規作成される。src/frontendがスコープに追加されている（scope-definitionからの拡張）。harnessはESLint対象外（設定不在）

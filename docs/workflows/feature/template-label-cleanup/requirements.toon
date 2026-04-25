@@ -1,0 +1,48 @@
+phase: requirements
+task: template-label-cleanup
+intent: テンプレート内の太字ラベル装飾を除去しプレーンテキストに統一する。P5原則に基づきテンプレートへの装飾文字使用禁止ルールを追加する
+status: complete
+
+functionalRequirements[4]{id,description}:
+  F-001, 8テンプレートファイル内の全太字マークダウン装飾(**text**)をプレーンテキスト(text)に置換する
+  F-002, workflow-rules.md Section5末尾にテンプレート文字列内Markdown装飾文字使用禁止ルールを追加する
+  F-003, template-separator-cleanup.test.tsにBOLD_RE不在検査を追加する
+  F-004, definitions-shared.tsの共有定数フラグメント内の太字装飾も同様に除去する
+
+nonFunctionalRequirements[3]{id,description}:
+  NF-001, 全置換は装飾除去のみでテンプレートのロジック・出力構造に変更を加えない
+  NF-002, 置換後の既存テスト414件が全てパスすること
+  NF-003, ★記号等の非Markdown視覚マーカーは維持し除去対象としない
+
+decisions[6]{id,statement,rationale}:
+  REQ-1, 全120箇所を単一正規表現 /\*\*([^*]+)\*\*/ で機械的に置換する, 7分類すべて同一置換操作であり分類ごとの特別処理不要
+  REQ-2, Edit toolによる手動置換ではなくファイル単位で一括処理する, 120箇所を個別編集するとミス・漏れリスクが高い
+  REQ-3, CAT-4の★記号は維持し除去対象外とする, ★はMarkdown装飾ではなく視覚的重要度マーカーであり目的が異なる
+  REQ-4, workflow-rules.md Section5(Artifact Quality)末尾にルール追加する, 既存の禁止語/プレースホルダー禁止と同列の品質ルールとして配置
+  REQ-5, テスト追加はtemplate-separator-cleanup.test.tsの既存構造に統合する, 新テストファイル作成より既存テストスイートへの追加が適切
+  REQ-6, scope-definitionの117箇所とresearchの120箇所の差異(defs-stage4.ts 18→21)はresearchの実測値120を正とする, Grep実測値が権威データ
+
+acceptanceCriteria[3]{id,description,verification}:
+  AC-1, 全テンプレートファイル(8ファイル)から太字マークダウン装飾が完全に除去されていること, Grep検索で /\*\*[^*]+\*\*/ が0件
+  AC-2, workflow-rules.mdにテンプレート装飾禁止ルールが追加されていること, Section5末尾にルール文言が存在
+  AC-3, 既存テスト(414件)が全てパスしBOLD_RE不在検査が追加されていること, vitest実行で全件パス
+
+notInScope[3]{item,reason}:
+  テンプレートの内容やロジック変更, 本タスクは装飾文字の除去のみ
+  Markdown装飾以外の記号(★/▶等)の除去, これらはMarkdown装飾ではなく視覚マーカー
+  テンプレート以外のファイル(ドキュメント/スキル等)の太字除去, スコープはsrc/phases配下のテンプレート定義ファイルのみ
+
+openQuestions[0]{id,question,impact}:
+
+resolvedQuestions[1]{id,answer}:
+  OQ-1, defs-stage4.tsはGrep実測21箇所が正。scope-definitionの18箇所は初期見積もり誤差。合計120箇所で確定
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/template-label-cleanup/scope-definition.toon, spec, スコープ定義(9ファイル117箇所+ルール1件)
+  docs/workflows/template-label-cleanup/research.toon, research, 太字ラベル120箇所の7分類調査と置換戦略
+  docs/workflows/template-label-cleanup/requirements.toon, requirements, 機能要件4件+非機能要件3件+AC3件
+
+next:
+  criticalDecisions: REQ-1(単一正規表現一括置換) REQ-4(Section5ルール追加) REQ-5(既存テスト統合)
+  readFiles: src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts src/phases/defs-stage6.ts .claude/skills/harness/workflow-rules.md tests/template-separator-cleanup.test.ts
+  implementationOrder: 1.definitions-shared.ts 2.definitions.ts 3.defs-stage1〜6.ts 4.workflow-rules.md 5.テスト更新

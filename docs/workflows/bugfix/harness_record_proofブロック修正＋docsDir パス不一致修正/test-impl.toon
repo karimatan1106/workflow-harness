@@ -1,0 +1,71 @@
+phase: test_impl
+task: harness_record_proofブロック修正＋docsDir パス不一致修正
+taskId: d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f
+status: complete
+inputArtifact: docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/test-design.toon
+inputArtifact: docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/requirements.toon
+
+summary: TDD Red phase完了。TC-AC1-01/02はCHG-1適用済みのため全13アサーション合格。TC-AC2-01/02/TC-AC3-01/TC-AC5-01はCHG-2未実装のため全4件失敗(isAbsolute===false)。Red phaseとして期待通りの結果。
+
+testFiles[2]{path,type,testCases,framework}:
+  workflow-harness/hooks/__tests__/pre-tool-guard.test.sh, shell, "TC-AC1-01 TC-AC1-02", bash
+  workflow-harness/mcp-server/src/__tests__/getDocsPath.test.ts, unit, "TC-AC2-01 TC-AC2-02 TC-AC3-01 TC-AC5-01", vitest
+
+testResults[6]{tc,status,detail}:
+  TC-AC1-01, pass, "harness_*ツール8種が全てis_lifecycle_mcpを通過(CHG-1適用済み)"
+  TC-AC1-02, pass, "非harnessツール5種が全てis_lifecycle_mcpで拒否(CHG-1適用済み)"
+  TC-AC2-01, fail, "getDocsPath('test-task')がisAbsolute===falseの相対パスを返す(CHG-2未実装)"
+  TC-AC2-02, fail, "DOCS_DIR='custom/docs'設定時もisAbsolute===falseの相対パスを返す(CHG-2未実装)"
+  TC-AC3-01, fail, "DOCS_DIR絶対パス設定時もisAbsolute===falseを返す(resolveProjectPath未適用)"
+  TC-AC5-01, fail, "リグレッション確認: DOCS_DIR絶対パス時もisAbsolute===falseを返す(CHG-2未実装)"
+
+tddRedSummary: CHG-1関連テスト(shell)は全て合格。CHG-2関連テスト(TypeScript)は全て失敗。getDocsPathが現在join(DOCS_DIR, taskName)のみで相対パスを返すため、resolveProjectPath適用後に全テストが合格する想定。
+
+acCoverage[5]{ac,testCases,redStatus}:
+  AC-1, "TC-AC1-01 TC-AC1-02", green(CHG-1適用済み)
+  AC-2, "TC-AC2-01 TC-AC2-02", red(CHG-2未実装)
+  AC-3, TC-AC3-01, red(CHG-2未実装)
+  AC-4, TC-AC4-01, deferred(実装後にvitest全体実行)
+  AC-5, TC-AC5-01, red(CHG-2未実装)
+
+rtmTrace[6]{tc,rtm,ac,status}:
+  TC-AC1-01, F-001, AC-1, pass
+  TC-AC1-02, F-001, AC-1, pass
+  TC-AC2-01, F-002, AC-2, fail
+  TC-AC2-02, F-002, AC-2, fail
+  TC-AC3-01, F-003, AC-3, fail
+  TC-AC5-01, F-005, AC-5, fail
+
+decisions[5]{id,statement,rationale}:
+  TI-1, "shell テストは source + eval パターンで is_lifecycle_mcp 関数のみ抽出してテストする", "pre-tool-guard.sh 全体を実行するとstdin JSON入力が必要になり関数単体テストが困難なため"
+  TI-2, "TypeScript テストは afterEach で process.env.DOCS_DIR を復元し環境変数の副作用を隔離する", "他テストへの影響を防止するため"
+  TI-3, "TC-AC1-01 では8種のharness_*ツール名を列挙してワイルドカードマッチの網羅性を確認する", "代表的な1ツールだけでなく複数パターンで確認することでワイルドカードの正当性を保証"
+  TI-4, "TC-AC3-01 と TC-AC5-01 は同一のisAbsoluteガードを検証するが観点を分離した", "AC-3は内部メカニズム(二重解決防止)でAC-5はリグレッション(外部仕様)の観点"
+  TI-5, "TC-AC4-01(vitest全体実行)はRed phaseでは実行せず実装完了後に実行する", "CHG-2未実装の現状で全体実行すると新テスト4件の失敗が混在し判定が複雑になるため"
+
+shellTestDetail:
+  script: workflow-harness/hooks/__tests__/pre-tool-guard.test.sh
+  harnessToolsTested: 8
+  rejectToolsTested: 5
+  totalAssertions: 13
+  passedAssertions: 13
+  failedAssertions: 0
+
+typescriptTestDetail:
+  file: workflow-harness/mcp-server/src/__tests__/getDocsPath.test.ts
+  framework: vitest
+  totalTests: 4
+  passedTests: 0
+  failedTests: 4
+  failureReason: getDocsPath returns relative path (join only) without resolveProjectPath
+
+artifacts[3]{path,role,summary}:
+  "docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/test-impl.toon", spec, "TDD Red phase結果: 2 pass + 4 fail"
+  workflow-harness/hooks/__tests__/pre-tool-guard.test.sh, test, "is_lifecycle_mcp ワイルドカードマッチ検証(13アサーション)"
+  workflow-harness/mcp-server/src/__tests__/getDocsPath.test.ts, test, "getDocsPath 絶対パス検証(4テストケース)"
+
+next:
+  phase: implementation
+  criticalDecisions: CHG-2のみ未実装。manager-read.tsにresolveProjectPathのimport追加とgetDocsPath内でresolveProjectPath適用が必要。
+  readFiles: workflow-harness/mcp-server/src/state/manager-read.ts
+  expectedGreen: TC-AC2-01 TC-AC2-02 TC-AC3-01 TC-AC5-01 が全てpassになること

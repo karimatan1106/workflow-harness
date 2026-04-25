@@ -1,0 +1,52 @@
+title: research - harness_record_proofブロック修正＋docsDir パス不一致修正
+type: research
+
+summary: Bug #6: pre-tool-guard.sh の is_lifecycle_mcp() は6ツールのみ許可。harness_* MCPツールは全25種あり、19種がオーケストレーターからブロックされる。Bug #1: docsDir は相対パス(docs/workflows/taskName)で保存される。DoD gates の一部は resolveProjectPath() で絶対パス化するが、dod-l4-requirements.ts, dod-l4-ia.ts, progress-json.ts 等は直接文字列結合しており、CWD がプロジェクトルートと異なる場合にパス不一致が発生する。
+
+user_intent_analysis:
+  surface_request: pre-tool-guard.sh が harness_record_proof 等をブロックするバグと、docsDir パス不一致バグの修正
+  deep_need: ワークフローハーネスが正常に動作し、オーケストレーターからすべてのライフサイクルMCPツールを使用でき、DoD チェックが正しいパスで成果物を検証できること
+  unclear_points: docsDir パス不一致の具体的なエラー症状（どの場面で発生するか）が明示されていない
+  assumptions: docsDir 不一致は resolveProjectPath 未使用箇所が原因と仮定。修正は全箇所を resolveProjectPath 経由に統一する方針。
+
+bug6_analysis:
+  title: is_lifecycle_mcp が harness_* 全般を許可しない
+  current_allowed[6]: mcp__harness__harness_start, mcp__harness__harness_next, mcp__harness__harness_back, mcp__harness__harness_reset, mcp__harness__harness_status, mcp__harness__harness_approve
+  all_harness_tools: harness_start, harness_status, harness_next, harness_approve, harness_set_scope, harness_complete_sub, harness_back, harness_reset, harness_record_proof, harness_add_ac, harness_add_rtm, harness_record_feedback, harness_capture_baseline, harness_record_test_result, harness_record_test, harness_get_test_info, harness_record_known_bug, harness_get_known_bugs, harness_get_subphase_template, harness_pre_validate, harness_update_ac_status, harness_update_rtm_status, harness_delegate_coordinator
+  all_harness_tools_count: 23
+  tool_source_files: defs-a.ts (11 tools), defs-b.ts (11 tools), defs-c.ts (1 tool)
+  blocked_count: 17
+  fix: case文のパターンを mcp__harness__harness_* ワイルドカードに変更し、全harness_*ツールを一括許可
+
+bug1_analysis:
+  title: docsDir パス不一致
+  getDocsPath_location: manager-read.ts:20-23
+  getDocsPath_behavior: join(DOCS_DIR, taskName) で相対パスを返す（例: docs/workflows/my-task）
+  resolveProjectPath_location: project-root.ts:32-36
+  resolveProjectPath_behavior: git superproject root を基準に絶対パス化。isAbsolute チェックあり。
+  pattern_a_correct[7]: dod-l1-l2.ts, dod-l3.ts, dod-l4-content.ts, dod-l4-delta.ts, dod-l4-refs.ts, dod-l4-toon.ts, lifecycle.ts
+  pattern_b_broken[4]: "dod-l4-requirements.ts (4箇所)", "dod-l4-ia.ts (6箇所)", progress-json.ts, manager-write.ts
+  root_cause: パターンBは process.cwd() 基準。サブモジュール内から起動された場合やCWDが異なる場合に破綻。
+  fix: getDocsPath で resolveProjectPath を適用して絶対パスを返す根本修正。下流の全消費箇所が自動修正される。
+  safety: resolveProjectPath は isAbsolute チェックがあるため二重適用しても問題なし。
+
+fix_approach:
+  bug6_file: workflow-harness/hooks/pre-tool-guard.sh
+  bug6_change: is_lifecycle_mcp() の case パターンを mcp__harness__harness_* に変更
+  bug1_file: workflow-harness/mcp-server/src/state/manager-read.ts
+  bug1_change: getDocsPath 内で resolveProjectPath(join(DOCS_DIR, taskName)) を返す。import追加。
+
+decisions[5]{id,statement,rationale}:
+  D-1, "pre-tool-guard.sh はプレフィックスマッチ mcp__harness__harness_* に変更する", "個別列挙はツール追加時に漏れるリスクがあり全harness_*ツールはオーケストレーターが使用可能であるべき"
+  D-2, "docsDir は getDocsPath で絶対パス化する根本修正を採用する", "下流の全箇所を個別修正するより変更点が1箇所で済みresolveProjectPath の isAbsolute ガードにより二重適用も安全"
+  D-3, "DoD検証側のパス解決ロジックは変更しない", "docsDir生成側を修正すれば消費側は自動的に正しいパスを受け取る。両側を変更するとリグレッションリスクが増す"
+  D-4, "ensureStateDirs や progress-json 等の docsDir 消費箇所は変更不要", "docsDir が絶対パスになっても join() や existsSync() は正常動作しresolveProjectPath は isAbsolute ガードがあるため二重解決しない"
+  D-5, "harness_get_subphase_template はオーケストレーターから直接呼ばず coordinator subagent 経由で取得する", "オーケストレーターのMCPツール呼び出しを最小限に保ちsubagentに委譲する方針と整合"
+
+artifacts[4]{id,path}:
+  A-1, workflow-harness/hooks/pre-tool-guard.sh
+  A-2, workflow-harness/mcp-server/src/state/manager-read.ts
+  A-3, workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts
+  A-4, workflow-harness/mcp-server/src/gates/dod-l4-ia.ts
+
+next: implementation

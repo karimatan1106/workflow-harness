@@ -1,0 +1,15 @@
+phase: threat_modeling
+task: context-engineering-improvements
+status: skipped
+summary: "smallタスクのためthreat_modelingフェーズはスキップ"
+
+threats[0]{id,description,mitigation}:
+
+decisions[0]{id,statement,rationale}:
+
+artifacts[0]{path,role,summary}:
+
+next:
+  criticalDecisions: "なし(スキップ済みフェーズ)"
+  readFiles: "なし"
+  warnings: "なし"

@@ -1,0 +1,91 @@
+phase: test_design
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "docs_updateテンプレート動的カテゴリ選択機能のテスト設計。AC-1〜AC-6に対するテストケース22件を定義。テスト方針はユニットテスト中心(buildDocCategories純粋関数の入出力検証)に統合テスト(harness_set_scope→harness_get_subphase_template経由の動的カテゴリ反映確認)を組み合わせる構成。既存テストパターン(handler-test-setup.ts/handler-templates-s6-docs.test.ts)を踏襲し、setupHandlerTest+call+advanceUntilPhaseヘルパーを活用する。境界値テストとしてprojectTraitsの全false/全true/部分true/undefinedの4パターンと、hasUI+hasDesignSystem重複排除を網羅する。"
+
+testStrategy:
+  unitTarget: "buildDocCategories純粋関数。入力Record<string,boolean>|undefined、出力string。副作用なし・外部依存なしのため決定的テストが可能"
+  integrationTarget: "harness_set_scope(projectTraits付き)→TaskState永続化→harness_get_subphase_template(docs_update)→テンプレート内カテゴリ検証のエンドツーエンドフロー"
+  regressionTarget: "projectTraits未設定タスクでのdocs_updateテンプレート出力が現行固定5項目と完全一致すること"
+  buildTarget: "npm run build成功+npm test全件パス+全変更ファイルwc -l 200行以下"
+  testFileLayout: "src/__tests__/handler-dynamic-categories-unit.test.ts(ユニット) + src/__tests__/handler-dynamic-categories-integration.test.ts(統合)"
+
+testCases[22]{id,acId,description,type,expected}:
+  TC-AC1-01, AC-1, "ProjectTraits interfaceがtypes-core.tsにexportされている", unit, "import { ProjectTraits } from types-core.jsが型エラーなく成功する"
+  TC-AC1-02, AC-1, "ProjectTraitsが6つのbooleanフィールドを持つ", unit, "hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystemの各フィールドにboolean値を代入可能"
+  TC-AC1-03, AC-1, "ProjectTraitsの各フィールドがboolean以外を拒否する", unit, "npm run buildでstring/number代入がコンパイルエラーになることを確認"
+  TC-AC2-01, AC-2, "projectTraits未設定時にdocs_updateテンプレートが固定5項目を含む", unit, "buildDocCategories(undefined)の出力がdocs/architecture/overview.md、docs/operations/、CHANGELOG.md、README.md、docs/workflows/の5項目を含む"
+  TC-AC2-02, AC-2, "projectTraits未設定時の出力が番号付きリスト形式である", unit, "buildDocCategories(undefined)の出力が1. 2. 3. 4. 5.の番号を含む"
+  TC-AC2-03, AC-2, "統合テストでprojectTraits未設定タスクのdocs_updateテンプレートが固定5項目を含む", integration, "harness_get_subphase_templateの戻り値にdocs/architecture/overview.mdとdocs/operations/とCHANGELOG.mdとREADME.mdとdocs/workflows/が含まれる"
+  TC-AC3-01, AC-3, "hasUI=true時にscreens/wireframes/componentsカテゴリが含まれる", unit, "buildDocCategories({hasUI:true,hasAPI:false,hasDB:false,hasEvents:false,hasI18n:false,hasDesignSystem:false})の出力にdocs/spec/screens/とdocs/spec/wireframes/とdocs/spec/components/が含まれる"
+  TC-AC3-02, AC-3, "hasAPI=true時にapi関連カテゴリが含まれる", unit, "buildDocCategories({hasUI:false,hasAPI:true,...rest:false})の出力にdocs/spec/api/が含まれる"
+  TC-AC3-03, AC-3, "hasDB=false時にdatabase関連カテゴリが含まれない", unit, "buildDocCategories({hasDB:false,...rest:true})の出力にdocs/spec/database/が含まれない"
+  TC-AC3-04, AC-3, "hasUI=true+hasAPI=true時にscreensとapiが両方含まれevents/i18n/design-systemが含まれない", unit, "buildDocCategories({hasUI:true,hasAPI:true,hasDB:false,hasEvents:false,hasI18n:false,hasDesignSystem:false})の出力にdocs/spec/screens/とdocs/spec/api/が含まれ、docs/spec/database/とdocs/spec/events/とdocs/spec/i18n/とdocs/spec/design-system/が含まれない"
+  TC-AC3-05, AC-3, "全フラグtrue時にフォールバック5項目+全動的カテゴリが出力される", unit, "buildDocCategories({hasUI:true,hasAPI:true,hasDB:true,hasEvents:true,hasI18n:true,hasDesignSystem:true})の出力にフォールバック5項目+screens/api/database/events/i18n/design-systemが全て含まれる"
+  TC-AC3-06, AC-3, "全フラグfalse時にフォールバック5項目のみが出力される", unit, "buildDocCategories({hasUI:false,hasAPI:false,hasDB:false,hasEvents:false,hasI18n:false,hasDesignSystem:false})の出力がフォールバック5項目のみ"
+  TC-AC3-07, AC-3, "hasUI+hasDesignSystem両trueでdocs/spec/components/が重複しない", unit, "buildDocCategories({hasUI:true,hasDesignSystem:true,...rest:false})の出力でdocs/spec/components/が1回のみ出現する"
+  TC-AC3-08, AC-3, "統合テストでprojectTraits={hasUI:true,hasAPI:true}タスクのdocs_updateテンプレートにscreens/apiカテゴリが含まれる", integration, "harness_start→harness_set_scope(projectTraits付き)→advanceUntilPhase(docs_update)→harness_get_subphase_templateで取得したテンプレートにdocs/spec/screens/とdocs/spec/api/が含まれる"
+  TC-AC4-01, AC-4, "harness_set_scopeにprojectTraitsを渡すとTaskStateに永続化される", integration, "harness_set_scope({taskId,sessionToken,files:[...],projectTraits:{hasUI:true}})呼び出し後、harness_statusのレスポンスにprojectTraitsが含まれる"
+  TC-AC4-02, AC-4, "harness_set_scopeでprojectTraits省略時にTaskStateが変化しない", integration, "harness_set_scope({taskId,sessionToken,files:[...]})呼び出し後、harness_statusのレスポンスにprojectTraitsが含まれない(undefinedのまま)"
+  TC-AC4-03, AC-4, "projectTraitsの各フラグが正しく永続化される", integration, "6フラグ全てtrueで設定後、harness_statusで取得した値が全てtrueである"
+  TC-AC5-01, AC-5, "types-core.tsが200行以下である", unit, "readFileSyncで読み込んだtypes-core.tsの行数が200以下"
+  TC-AC5-02, AC-5, "definitions.tsが200行以下である", unit, "readFileSyncで読み込んだdefinitions.tsの行数が200以下"
+  TC-AC5-03, AC-5, "defs-stage6.tsが200行以下である", unit, "readFileSyncで読み込んだdefs-stage6.tsの行数が200以下"
+  TC-AC6-01, AC-6, "npm run buildがexit code 0で完了する", build, "npm run buildの終了コードが0"
+  TC-AC6-02, AC-6, "npm testが全件パスする", build, "npm testの終了コードが0で失敗テストが0件"
+
+boundaryAndEdgeCases[8]{id,scenario,rationale}:
+  BE-1, "projectTraitsが空オブジェクト{}の場合", "全フラグundefinedとなりfalsyとして処理される。フォールバック5項目+動的カテゴリなしの出力を期待"
+  BE-2, "projectTraitsに未知のフラグ(hasAuth:true)が含まれる場合", "Record<string,boolean>型のため受け入れるが、buildDocCategoriesは6つの既知フラグのみ参照し未知フラグは無視する"
+  BE-3, "projectTraitsの値がboolean以外(hasUI:'yes')の場合", "TypeScript型チェックで防止されるが、MCPツール経由のJSONではstringが来る可能性。truthyとして処理されるかboolean強制変換が必要"
+  BE-4, "harness_set_scopeを2回呼び出しprojectTraitsを上書きする場合", "2回目の値がTaskStateに反映され1回目の値は上書きされる"
+  BE-5, "defs-stage1.tsのscope_definitionテンプレートにStep 3.5が追加された状態でテンプレート全体が正常に展開される", "行数圧縮とStep追加が共存しbuildSubagentPromptで全プレースホルダーが正しく展開される"
+  BE-6, "buildDocCategoriesの出力がbuildSubagentPromptの{docCategories}プレースホルダーで正しく置換される", "改行を含む複数行文字列がreplace関数で正しく展開されることの確認"
+  BE-7, "hasI18n=trueでi18n/seo/sitemap.mdの3カテゴリが全て出力される", "1フラグで3カテゴリが出力されるパターンの検証"
+  BE-8, "hasEvents=trueでevents/messagesの2カテゴリが出力される", "1フラグで2カテゴリが出力されるパターンの検証"
+
+testDataPreparation:
+  unitTestData: "buildDocCategories関数の引数として、undefined/空オブジェクト/全false/全true/部分true(hasUI+hasAPI)/重複パターン(hasUI+hasDesignSystem)の6パターンを定数で定義する"
+  integrationTestData: "setupHandlerTest()でテンポラリディレクトリを作成し、harness_start→harness_set_scopeでprojectTraitsを設定。advanceUntilPhaseでdocs_updateまで遷移してテンプレートを取得する"
+  lineCountTestData: "変更対象ファイルのパスをjoin(__dirname, '..', ...)で解決し、readFileSyncで読み込んで行数を計測する"
+  existingPatternRef: "handler-test-setup.tsのsetupHandlerTest/teardownHandlerTest/call/advanceUntilPhaseをそのまま使用。handler-templates-s6-docs.test.tsのcreateMgr+callパターンを踏襲"
+
+testFileStructure:
+  unitFile: "src/__tests__/handler-dynamic-categories-unit.test.ts"
+  unitStructure: "describe(buildDocCategories)配下にTC-AC2-01〜TC-AC2-02、TC-AC3-01〜TC-AC3-07を配置。describe(ProjectTraits型定義)配下にTC-AC1-01〜TC-AC1-03を配置。describe(200行制限)配下にTC-AC5-01〜TC-AC5-03を配置"
+  integrationFile: "src/__tests__/handler-dynamic-categories-integration.test.ts"
+  integrationStructure: "describe(projectTraits永続化)配下にTC-AC4-01〜TC-AC4-03を配置。describe(docs_updateテンプレート動的カテゴリ)配下にTC-AC2-03とTC-AC3-08を配置"
+  buildFile: "既存のnpm run build/npm testコマンドで実行。専用テストファイル不要"
+
+unitTestImplementationGuide:
+  imports: "vitest(describe/it/expect/beforeAll/afterAll), node:fs(readFileSync), node:path(join), handler-test-setup(setupHandlerTest/teardownHandlerTest/TestCtx)"
+  buildDocCategoriesImport: "vi.resetModules()+dynamic import('../phases/definitions.js')でbuildDocCategoriesを取得"
+  assertionPattern: "expect(output).toContain(path)で含有確認、expect(output).not.toContain(path)で非含有確認、(output.match(/regex/g) ?? []).lengthで出現回数確認"
+  lineCountPattern: "readFileSync(join(__dirname,'..','phases','defs-stage6.ts'),'utf8').split('\\n').lengthで行数取得。expect(lineCount).toBeLessThanOrEqual(200)"
+
+integrationTestImplementationGuide:
+  setup: "setupHandlerTest()でTestCtxを取得。createMgr()でStateManagerインスタンスを生成"
+  persistenceFlow: "call(mgr,'harness_start',{taskName,userIntent})→taskId取得→call(mgr,'harness_set_scope',{taskId,sessionToken,files,projectTraits})→call(mgr,'harness_status',{taskId})でprojectTraits存在確認"
+  templateFlow: "harness_start→harness_set_scope(projectTraits付き)→advanceUntilPhase(docs_update)→call(mgr,'harness_get_subphase_template',{taskId,phase:'docs_update'})→res.subagentTemplateでカテゴリ検証"
+  teardown: "teardownHandlerTest(ctx)でテンポラリディレクトリとenv stubを解除"
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "ユニットテストを主軸としbuildDocCategories関数の全入力パターンを網羅する", "純粋関数であるためユニットテストで決定的に検証可能。統合テストはフロー確認に限定しテスト実行時間を抑制する"
+  TD-2, "既存テストパターン(handler-test-setup.ts)を踏襲しsetupHandlerTest/call/advanceUntilPhaseを再利用する", "テストインフラの一貫性を維持。テンポラリディレクトリ管理やenv stub処理の重複実装を回避する"
+  TD-3, "hasUI+hasDesignSystem重複排除テスト(TC-AC3-07)ではmatch正規表現で出現回数を検証する", "toContainは含有のみ確認するため重複排除の検証には不十分。正規表現マッチの結果配列長で厳密に1回を確認する"
+  TD-4, "型定義テスト(TC-AC1-01〜03)はnpm run buildの型チェック成功で代替検証する", "TypeScript interfaceのフィールド型はランタイムテストで検証不可。コンパイル成功が型定義の正当性を証明する"
+  TD-5, "統合テストでadvanceUntilPhaseを使用しdocs_updateまでフェーズを自動遷移させる", "harness_next+forceTransitionで中間フェーズを通過。テストが特定フェーズの内部実装に依存しない"
+  TD-6, "境界値テスト(BE-1〜BE-8)のうちBE-1/BE-2/BE-7/BE-8はユニットテストのテストケースに統合する", "独立したテストファイルを作成するほどの複雑さがなく、既存describeブロックに追加で十分"
+  TD-7, "200行制限テスト(TC-AC5-01〜03)はユニットテストファイルに配置しreadFileSyncで静的に検証する", "ビルド不要でファイル行数を検証可能。既存のhandler-templates-s6-docs.test.tsのAC-4パターンを踏襲する"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/test-design.toon, test, "test_designフェーズ成果物。テスト戦略、22テストケース(AC-1〜AC-6対応)、8境界値シナリオ、テストデータ準備方針、実装ガイドを定義"
+  src/__tests__/handler-dynamic-categories-unit.test.ts, test, "ユニットテスト実装先。buildDocCategories関数テスト+型定義確認+200行制限チェック(16テストケース)"
+  src/__tests__/handler-dynamic-categories-integration.test.ts, test, "統合テスト実装先。projectTraits永続化フロー+docs_updateテンプレート動的カテゴリ検証(6テストケース)"
+
+next:
+  criticalDecisions: "TD-1(ユニットテスト主軸)とTD-2(既存テストパターン踏襲)がtest_implフェーズでのテスト実装の基盤。buildDocCategories関数が未実装のためtest_implフェーズではimplementationフェーズと並行してモック化またはTDD順序で実装する"
+  readFiles: "src/__tests__/handler-test-setup.ts(テストインフラ再利用), src/__tests__/handler-templates-s6-docs.test.ts(ユニットテストパターン参照), src/__tests__/handler-templates-s6-docs-integration.test.ts(統合テストパターン参照)"
+  warnings: "統合テスト(TC-AC3-08/TC-AC4-01〜03)はadvanceUntilPhaseでdocs_updateまで遷移するため実行時間が長い。CI環境での並列実行を考慮しテストファイルを分離した。buildDocCategoriesの公開方法(named export)がimplementationフェーズで確定するまでimportパスは暫定値"

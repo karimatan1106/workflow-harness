@@ -1,0 +1,22 @@
+%% decisions: D-PL-1 worker 1 直列実行, D-PL-2 hooks=submodule権威, D-PL-3 cwd=. 厳守
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> CopyADR: start
+    CopyADR --> CopyPhases: adr copied
+    CopyPhases --> CopyHooks: phases copied
+    CopyHooks --> CopyCommands: hooks copied
+    CopyCommands --> CopyRules: commands copied
+    CopyRules --> FixMcp: rules copied
+    FixMcp --> Commit: mcp fixed cwd=.
+    Commit --> Push: commit-sha acquired
+    Push --> Done: origin/main updated
+    Done --> [*]
+    CopyADR --> Failed: error
+    CopyPhases --> Failed: error
+    CopyHooks --> Failed: error
+    CopyCommands --> Failed: error
+    CopyRules --> Failed: error
+    FixMcp --> Failed: mcp mismatch
+    Commit --> Failed: hook block
+    Push --> Failed: remote reject
+    Failed --> [*]

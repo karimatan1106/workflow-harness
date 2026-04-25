@@ -1,0 +1,45 @@
+task: tier-a-gaps-n01-n07
+phase: scope_definition
+intent: 記事ギャップ分析Tier A 7項目の実装（N-01〜N-07）
+riskScore: 3
+rationale: フック修正3件はシェルスクリプトで独立、MCP側変更2件はreflector/retryの既存関数拡張、AGENTS.mdは新規ファイル1件。全て既存コードへの追加・拡張であり破壊リスクは低い。
+
+scopeFiles[7]{path,role}:
+  .claude/hooks/post-tool-lint.sh, impl
+  .claude/hooks/pre-tool-config-guard.sh, impl
+  .claude/hooks/stop-test-enforcer.sh, impl
+  workflow-harness/mcp-server/src/tools/reflector.ts, impl
+  workflow-harness/mcp-server/src/tools/retry.ts, impl
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts, impl
+  workflow-harness/mcp-server/src/tools/adr.ts, impl
+
+scopeDirs[2]{path,purpose}:
+  .claude/hooks, フック実装の格納先
+  workflow-harness/mcp-server/src/tools, MCP側ツール実装の格納先
+
+newFiles[2]{path,role}:
+  AGENTS.md, spec
+  workflow-harness/mcp-server/src/__tests__/reflector-quality.test.ts, test
+
+outOfScope[4]{item,reason}:
+  Tier B (N-08〜N-15), npm install必要のため別タスク
+  Tier C (N-16〜N-25), 大規模アーキテクチャ変更のため別タスク
+  Biomeのnpm install, N-01はbiomeがインストール済みの場合のみ動作する設計
+  フロントエンド/プラグインのtscエラー, 既知の事前存在エラーでありスコープ外
+
+decisions[5]{id,statement,rationale}:
+  SD-1, フック修正はシェルスクリプトの直接編集で行う, フックはMCPサーバー外のファイルであり単体テスト対象外。手動確認で十分。
+  SD-2, N-01のBiome統合はgraceful degradationで実装する, biome未インストール環境でもエラーにならない設計にすることで後方互換性を維持。
+  SD-3, N-02のADRリンクはretry.tsのbuildRetryPromptに統合する, DoDエラー時のリトライプロンプトにADR根拠を含めることでエラー修正の文脈を提供。
+  SD-4, N-07のReflector品質フィルタはqualityScore閾値0.3で実装する, harmfulCountが高いレッスンを除外しつつ新規レッスン（スコア0.5）は通過させるバランス。
+  SD-5, N-05の起動ルーチンはhandoff-reader.shの拡張として実装する, 既存のセッション開始フックに4ステップチェックを統合することで新規フック不要。
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/scope-definition.toon, report, スコープ定義
+  docs/workflows/tier-a-gaps-n01-n07/requirements.toon, spec, 要件定義（次フェーズ）
+  AGENTS.md, spec, クロスプラットフォーム発見性ファイル
+
+next:
+  criticalDecisions: SD-2(graceful degradation)とSD-4(閾値0.3)が実装方針を決定
+  readFiles: workflow-phases.md, workflow-gates.md
+  warnings: N-05の起動ルーチンはhandoff-reader.shの複雑化に注意

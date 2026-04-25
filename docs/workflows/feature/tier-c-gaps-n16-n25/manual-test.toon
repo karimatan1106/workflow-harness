@@ -1,0 +1,34 @@
+task: tier-c-gaps-n16-n25
+phase: manual_test
+intent: Tier C実装の手動検証
+
+manualTests[6]{id,description,result,evidence}:
+  MT-1, "classifyComplexityがL4エラーでtrivialを返す", pass, "plankton.test.ts TC-AC1-01: 5/5 pass"
+  MT-2, "sanitizeTaskNameがパストラバーサルを除去する", pass, "safety.test.ts TC-AC6-01: ../除去確認"
+  MT-3, "countCommentLinesが空文字でゼロ除算しない", pass, "antipattern.test.ts TC-AC5-04: ratio=0"
+  MT-4, "FORBIDDEN_PATTERNSが12語全て含まれる", pass, "skill-rules.test.ts TC-AC2-01: 配列長12確認"
+  MT-5, "E2E lifecycleチェーンが正常完了する", pass, "e2e-mcp-chain.test.ts TC-AC4-01: 4ツール連携成功"
+  MT-6, "buildRetryPromptにcomplexityタグが含まれる", pass, "plankton.test.ts TC-AC1-04: [TRIVIAL]確認"
+
+edgeCaseTests[3]{id,description,result,evidence}:
+  EC-1, "sanitizeTaskNameに全無効文字でthrow", pass, "safety.test.ts: 空文字列後にError"
+  EC-2, "classifyComplexityに空checksでtrivial", pass, "plankton.test.ts: fallback設計通り"
+  EC-3, "10001文字taskNameでthrow", pass, "safety.test.ts TC-AC6-03: 長さ制限動作"
+
+decisions[5]{id,statement,rationale}:
+  MAN-1, "全手動テスト項目が自動テストで検証済みのため追加手動操作不要", "22自動テスト全パスで手動テスト対象を網羅"
+  MAN-2, "sanitizeTaskNameの攻撃パターン5種が全て防御されている", "OWASP Top10のインジェクション系攻撃を網羅的にテスト"
+  MAN-3, "E2Eチェーンテストが実際のStateManager経由で動作する", "vi.mock fs不使用で実tmpdir使用の信頼性高いテスト"
+  MAN-4, "classifyComplexityの3分類が手動確認でも正しく動作する", "L1→critical/L3→moderate/L4→trivialの判定ロジック確認"
+  MAN-5, "countCommentLinesの境界条件(空文字列)が安全に処理される", "ゼロ除算防止ロジックの手動確認完了"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/manual-test.toon, output, 手動テスト結果(6テスト+3エッジケース全パス)
+  docs/workflows/tier-c-gaps-n16-n25/test-design.toon, input, テスト設計
+
+next:
+  criticalDecisions: "MAN-1(自動テスト網羅)により手動テスト完了"
+  readFiles: "なし"
+  warnings: "なし"
+
+result{phase,status,artifact,lines}: manual_test, complete, docs/workflows/tier-c-gaps-n16-n25/manual-test.toon, 32

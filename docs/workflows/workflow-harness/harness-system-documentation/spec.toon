@@ -1,0 +1,147 @@
+title: ハーネスシステム永続ドキュメント 技術仕様書
+phase: planning
+taskName: harness-system-documentation
+intent: "ハーネスシステムの現状の要件、基本設計、アーキテクチャ、全30フェーズの仕様を永続ドキュメントとして作成し、各仕様がコードのどの部分(ファイル:行番号)と対応するかのトレーサビリティを含める"
+createdAt: 2026-03-08
+baseCommit: c01d68940cb06a2ae56de20f19491db6b4d9db48
+
+summary: "requirements.toonの6成果物(FR-1〜FR-6)・7受入基準・12設計決定に基づき、各ドキュメントの詳細セクション構成・コード参照マッピング・実装順序・予想行数を設計した。RTMエントリF-001〜F-006を登録済み。実装順序はFR-1(overview)→FR-2(phase-system)→FR-3(gate-system)→FR-5(state-management)→FR-4(mcp-tools)→FR-6(traceability)。全文書はsrc/配下の実装コードへのファイル:行番号参照を含み、baseCommit c01d689時点のスナップショットとして記録する。"
+
+rtmMapping[6]{frId,rtmId,document,status}:
+  FR-1, F-001, "docs/architecture/overview.md", pending
+  FR-2, F-002, "docs/spec/features/phase-system.md", pending
+  FR-3, F-003, "docs/spec/features/gate-system.md", pending
+  FR-4, F-004, "docs/spec/features/mcp-tools.md", pending
+  FR-5, F-005, "docs/architecture/modules/state-management.md", pending
+  FR-6, F-006, "docs/architecture/traceability-matrix.md", pending
+
+implementationOrder[6]{step,frId,document,dependsOn,estimatedLines,rationale}:
+  1, FR-1, "docs/architecture/overview.md", -, 180, "全体構造を最初に記述し後続文書の参照基盤とする"
+  2, FR-2, "docs/spec/features/phase-system.md", FR-1, 195, "フェーズ定義はゲート・ツール・状態管理の前提知識"
+  3, FR-3, "docs/spec/features/gate-system.md", "FR-1/FR-2", 190, "DoDチェックはフェーズ遷移時に実行されるためフェーズ知識が前提"
+  4, FR-5, "docs/architecture/modules/state-management.md", "FR-1/FR-2", 195, "TaskState v4はフェーズ追跡・ゲート結果の永続化基盤でありツール文書より先に記述"
+  5, FR-4, "docs/spec/features/mcp-tools.md", "FR-1/FR-2/FR-3/FR-5", 190, "MCPツールはフェーズ・ゲート・状態管理を統合する外部インターフェースのため最後から2番目"
+  6, FR-6, "docs/architecture/traceability-matrix.md", "FR-1〜FR-5", 180, "全文書完成後に3軸対応表を構築する参照文書"
+
+documentDesigns[6]{frId,document,sections,codeRefs,constraints}:
+
+  FR-1, "docs/architecture/overview.md":
+    sections[5]{name,content,estimatedLines}:
+      "システム概要", "MCP Server名(workflow-harness)・バージョン(0.1.0)・Node v22.15.0・TypeScript 5.9.3・46ソースファイル5117行・200行制限・@modelcontextprotocol/sdk依存", 25
+      "6モジュール構成表", "phases/(8ファイル:registry/definitions/definitions-shared/defs-stage1〜6) gates/(9ファイル:dod/dod-types/dod-l1-l2/dod-l3/dod-l4-content/dod-l4-requirements/dod-l4-delta/dod-l4-ia/dod-l4-art/dod-l4-commit/dod-l4-refs/dod-helpers) tools/(15ファイル:handler/handler-shared/defs-a/defs-b/retry/reflector/reflector-types/curator/curator-helpers/ace-context+handlers/) state/(7ファイル:types/types-core/types-invariant/manager/manager-read/manager-write/manager-invariant) utils/(1ファイル:hmac) entry/(2ファイル:index/cli)", 50
+      "モジュール間依存グラフ", "index.ts→handler.ts→handlers/*→StateManager→manager-read/write/invariant→hmac.ts。handler.ts→dod.ts→dod-l1-l2/l3/l4-*。definitions.ts→reflector.ts→curator.ts→ace-context.ts。全依存方向は一方向(循環なし)", 40
+      "MCPプロトコル統合", "StdioServerTransport使用・ListToolsRequestSchema(21ツール定義返却)・CallToolRequestSchema(switch文21分岐)・JSON応答形式{content:[{type:'text',text:JSON.stringify(obj)}]}", 35
+      "設計制約", "200行制限(全ファイル遵守、最大197行defs-stage6.ts)・L5(LLM判断)ゲート禁止・HMAC-SHA256状態整合性必須・sessionToken二層ルール", 30
+    codeRefs[5]{section,files}:
+      "システム概要", "src/index.ts:1-48(エントリポイント) package.json(依存定義)"
+      "6モジュール構成表", "src/phases/*.ts src/gates/*.ts src/tools/*.ts src/state/*.ts src/utils/*.ts src/index.ts src/cli.ts"
+      "モジュール間依存グラフ", "src/index.ts:7-11(import) src/tools/handler.ts:7-15(import) src/phases/definitions.ts:6-20(import)"
+      "MCPプロトコル統合", "src/index.ts:7-9(SDK import) src/index.ts:13-23(Server生成) src/index.ts:28-36(リクエストハンドラ)"
+      "設計制約", "src/utils/hmac.ts:1-85(HMAC) src/tools/handler-shared.ts:34-39(sessionToken検証)"
+
+  FR-2, "docs/spec/features/phase-system.md":
+    sections[7]{name,content,estimatedLines}:
+      "フェーズ一覧表", "30フェーズ+completed=31エントリ。各フェーズのname/stage/model/outputFile/requiredSections/minLines/bashCategories/parallelGroup/approvalRequired列", 40
+      "14ステージ構造", "Stage 1 Discovery(3)→Stage 2 Requirements(1)→Stage 3 Analysis(2)→Stage 4 Design(3)→Stage 5 Review(1)→Stage 6 Test Planning(2)→Stage 7 TDD(3)→Stage 8 Quality(2)→Stage 9 Testing(2)→Stage 10 Acceptance(1)→Stage 11 Verification(4)→Stage 12 Documentation(1)→Stage 13 Release(3)→Stage 14 Deployment(2)+completed(Stage 99)", 25
+      "並列グループ4種", "parallel_analysis(threat_modeling+planning,依存あり) parallel_design(state_machine+flowchart+ui_design) parallel_quality(build_check+code_review) parallel_verification(manual_test+security_scan+performance_test+e2e_test)", 25
+      "タスクサイジング", "small(riskScore 0-3,19スキップ,約12フェーズ) medium(riskScore 4-7,8スキップ,約22フェーズ) large(riskScore 8+,0スキップ,30フェーズ)。SIZE_SKIP_MAP定義によるスキップフェーズ一覧", 25
+      "リスク分類器", "fileCount(>=10:+3,>=5:+2,>=2:+1) codeLines(>=1000:+2,>=200:+1) booleanFactors(hasConfig+1,hasInfra+2,hasSecurity+2,hasDatabase+1,hasTests+1) maxScore=12。scopeAnalysisでファイルパスパターンマッチング", 25
+      "フェーズスキップマップ", "SIZE_SKIP_MAP[small]=19フェーズ(impact_analysis〜health_observation) SIZE_SKIP_MAP[medium]=8フェーズ(impact_analysis〜acceptance_verification) SIZE_SKIP_MAP[large]=空配列", 25
+      "サブエージェントテンプレート生成", "PHASE_DEFINITIONS(6ステージファイルから集約)→buildSubagentPrompt(ヘッダー圧縮・フラグメント展開・変数置換・TOON入力注入・Reflector教訓注入・Markdownサニタイズ)", 30
+    codeRefs[7]{section,files}:
+      "フェーズ一覧表", "src/phases/registry.ts:8-55(PHASE_REGISTRY)"
+      "14ステージ構造", "src/phases/registry.ts:8-55(stage値1-14,99)"
+      "並列グループ4種", "src/tools/handler-shared.ts:27-32(PARALLEL_GROUPS) src/phases/registry.ts:8-55(parallelGroup属性)"
+      "タスクサイジング", "src/phases/registry.ts:91-124(SIZE_SKIP_MAP) src/phases/registry.ts:126-129(getActivePhases)"
+      "リスク分類器", "src/phases/risk-classifier.ts:17-58"
+      "フェーズスキップマップ", "src/phases/registry.ts:91-124(SIZE_SKIP_MAP)"
+      "サブエージェントテンプレート生成", "src/phases/definitions.ts:26-33(PHASE_DEFINITIONS集約) src/phases/definitions.ts:79-136(buildSubagentPrompt) src/phases/definitions-shared.ts:10-57(PhaseDefinition/フラグメント) src/phases/defs-stage1.ts〜defs-stage6.ts(テンプレート本体)"
+
+  FR-3, "docs/spec/features/gate-system.md":
+    sections[6]{name,content,estimatedLines}:
+      "DoDチェック一覧", "22チェック関数をL1(2種:output_file_exists,input_files_exist) L2(2種:exit_code_zero,tdd_red_evidence) L3(6種:artifact_quality,rtm_completeness,ac_completeness,artifact_freshness,invariant_completeness,baseline_required,tc_coverage) L4(12種:content_validation,ac_format,not_in_scope,open_questions,intent_consistency,delta_entry_format,ac_design_mapping,ac_tc_mapping,ac_achievement_table,artifact_drift,package_lock_sync,dead_references)に分類して記述", 45
+      "チェック適用条件", "各チェックの適用フェーズ条件(phases with outputFile/inputFiles/特定フェーズ名指定)と判定ロジック", 30
+      "承認ゲート5種", "requirements(requirements)/design(design_review)/test_design(test_design)/code_review(code_review)/acceptance(acceptance_verification)。PHASE_APPROVAL_GATES定義。approval.ts:16-74のハンドラ実装(ART-1ハッシュ記録・IA-1/IA-2検証)", 25
+      "意図精度チェーンIA-1〜7", "IA-1(openQuestions空チェック,requirements) IA-2(AC-N最低3件+notInScope必須,requirements) IA-3(acDesignMapping全AC対応,design_review) IA-4(acTcMapping存在,test_design) IA-5(acAchievementStatus+not_metなし,code_review) IA-6(全AC+RTM最終検証,acceptance_verification) IA-7(impact_analysisはresearch後)", 30
+      "RTMステータスチェーン", "pending→implemented→tested→verified。code_review:implemented必須、acceptance_verification:tested必須、completed:verified必須。statusRank数値比較", 25
+      "ヘルパー関数", "forbiddenPatterns(12語:英語4+日本語8) bracketPlaceholder正規表現 structuralLineDetection nonCodeLineExtraction duplicateLineDetection(3回以上)", 35
+    codeRefs[6]{section,files}:
+      "DoDチェック一覧", "src/gates/dod.ts:24-59(runDoDChecks) src/gates/dod-l1-l2.ts:11-80 src/gates/dod-l3.ts:13-135 src/gates/dod-l4-content.ts:39-68 src/gates/dod-l4-requirements.ts:25-124 src/gates/dod-l4-delta.ts:20-66 src/gates/dod-l4-ia.ts:12-123 src/gates/dod-l4-art.ts:19-40 src/gates/dod-l4-commit.ts:16-36 src/gates/dod-l4-refs.ts:23-52"
+      "チェック適用条件", "src/gates/dod.ts:34-56(呼出順序と条件)"
+      "承認ゲート5種", "src/tools/handler-shared.ts:19-25(PHASE_APPROVAL_GATES) src/tools/handlers/approval.ts:16-74"
+      "意図精度チェーンIA-1〜7", "src/gates/dod-l4-requirements.ts:105-124(IA-1) src/gates/dod-l4-requirements.ts:25-67(IA-2) src/gates/dod-l4-ia.ts:12-37(IA-3) src/gates/dod-l4-ia.ts:40-58(IA-4) src/gates/dod-l4-ia.ts:86-123(IA-5) src/gates/dod-l3.ts:59-77+41-57(IA-6)"
+      "RTMステータスチェーン", "src/gates/dod-l3.ts:37-57(checkRTMCompleteness+statusRank)"
+      "ヘルパー関数", "src/gates/dod-helpers.ts:7-61"
+
+  FR-5, "docs/architecture/modules/state-management.md":
+    sections[7]{name,content,estimatedLines}:
+      "TaskState v4スキーマ", "70フィールド定義: identity(taskId/taskName/version=4) phaseTracking(phase/completedPhases/skippedPhases/subPhaseStatus) sizing(size/riskScore) intent(userIntent/openQuestions/notInScope) scope(scopeFiles/scopeDirs/scopeGlob/plannedFiles) traceability(acceptanceCriteria/rtmEntries/proofLog/invariants) checkpoint paths extended(approvals/feedbackLog/baseline/testResults/resetHistory/testFiles/knownBugs) sprint1-2(retryCount/artifactTimestamps/requirementCount/artifactHashes/parallelPhaseBackupLog) security(sessionToken/stateIntegrity) metadata(createdAt/updatedAt/parentTaskId/childTaskIds)", 35
+      "Zodバリデーション", "TaskStateSchema: taskId=z.string().uuid() taskName=z.string().min(1) version=z.literal(4) phase=z.enum(PHASE_NAMES) size=z.enum(['small','medium','large']) userIntent=z.string().min(20) sessionToken=z.string().min(32) passthrough()で未知フィールド許容", 20
+      "HMAC-SHA256署名", "algorithm=sha256 keyGeneration=randomBytes(32).toString('hex')=64hex chars keyRotation=current+previous verifyStateWithRotation=2鍵検証 signState=canonical JSON(sorted keys)→HMAC sessionToken=randomBytes(32) taskId=crypto.randomUUID()", 25
+      "StateManager 22メソッド", "createTask/loadTask/advancePhase/approveGate/completeSubPhase/goBack/resetTask/addAcceptanceCriterion/addRTMEntry/recordFeedback/recordBaseline/recordTestResult/addProof/updateScope/listTasks/recordTestFile/getTestInfo/updateAcceptanceCriterionStatus/updateRTMEntryStatus/recordKnownBug/getKnownBugs/incrementRetryCount/getRetryCount/resetRetryCount/recordArtifactHash/addInvariant/updateInvariantStatus", 30
+      "永続化・読取・書込", "manager-read.ts: loadTaskFromDisk(JSON.parse+HMAC検証)/listTasksFromDisk/buildTaskIndex manager-write.ts: persistState(JSON書出)/createTaskState(初期化+HMAC署名)/signAndPersist/updateCheckpoint/applyAddAC/applyAddRTM/applyUpdateACStatus/applyUpdateRTMStatus/appendProgressLog(claude-progress.txt)", 25
+      "Reflector-Curator-ACE 3層パイプライン", "Reflector: stashFailure(失敗時)→promoteStashedFailure(成功時)→getLessonsForPhase(注入)。MAX_LESSONS=50 qualityScore=helpful/(helpful+harmful+1)。Curator: runCuratorCycle(completed時)→stale剪定(30日+hitCount<=1)→fuzzyDedup(similarity>=0.7)→stashedFailures清掃(7日)→trim(MAX=40)。ACE: extractAndStoreBullets(quality>=0.6昇格)→ace-context.json永続化→getTopCrossTaskBullets(タスク横断知識注入)", 35
+      "不変条件管理", "Invariant型(id:INV-N/description/status:held|violated|pending/evidence) applyAddInvariant/applyUpdateInvariantStatus/checkInvariantCompleteness(DoDゲートL3)", 25
+    codeRefs[7]{section,files}:
+      "TaskState v4スキーマ", "src/state/types.ts:52-121(TaskState interface)"
+      "Zodバリデーション", "src/state/types-core.ts:183-194(TaskStateSchema)"
+      "HMAC-SHA256署名", "src/utils/hmac.ts:1-85(全関数)"
+      "StateManager 22メソッド", "src/state/manager.ts:23-196(StateManager class)"
+      "永続化・読取・書込", "src/state/manager-read.ts:1-91 src/state/manager-write.ts:1-120"
+      "Reflector-Curator-ACE 3層パイプライン", "src/tools/reflector.ts:1-153 src/tools/reflector-types.ts:1-70 src/tools/curator.ts:1-140 src/tools/curator-helpers.ts:1-98 src/tools/ace-context.ts:1-103"
+      "不変条件管理", "src/state/types-invariant.ts:1-23 src/state/manager-invariant.ts:1-58"
+
+  FR-4, "docs/spec/features/mcp-tools.md":
+    sections[5]{name,content,estimatedLines}:
+      "ツール定義一覧", "21ツールを4カテゴリに分類: ライフサイクル(start/status/next) 承認・ナビゲーション(approve/set_scope/complete_sub/back/reset) 記録(record_proof/add_ac/add_rtm/record_feedback/capture_baseline/record_test_result/record_test) 照会(get_test_info/record_known_bug/get_known_bugs/get_subphase_template/pre_validate/update_ac_status/update_rtm_status)。各ツールの入力パラメータ型一覧", 50
+      "ハンドラディスパッチ", "handler.ts:19-54のswitch文21分岐。TOOL_DEFINITIONS=TOOL_DEFS_A(11)+TOOL_DEFS_B(10)。エラーハンドリング: try/catch→respondError", 25
+      "セッション検証", "validateSession(handler-shared.ts:34-39): token存在チェック+state.sessionToken一致検証。Layer 1(全ツール)とLayer 2(testing/regression_testサブエージェントのみ)の二層ルール", 25
+      "スキルファイルルーティング", "SKILL_FILE_ROUTING(handler-shared.ts:42-73): 30フェーズ→スキルファイル名配列。最大4ファイル/フェーズ。buildPhaseGuide関数でmodel/bashCategories/allowedExtensions/requiredSections/minLines/skillFilesを統合返却", 40
+      "リトライシステム", "buildRetryPrompt(retry.ts:135-153): classifyError(4分類:FileNotFound/SyntaxError/LogicError/Unknown=EAC-1)→errorToImprovement(15パターン→改善指示)→プロンプト生成。modelEscalation: retry>=2&&haiku→sonnet retry>=3→sonnet強制。maxRetries=5(RLM-1) VDB-1=同エラー3回→バリデータバグ疑い", 50
+    codeRefs[5]{section,files}:
+      "ツール定義一覧", "src/tools/defs-a.ts:6-164(11ツール) src/tools/defs-b.ts:6-158(10ツール)"
+      "ハンドラディスパッチ", "src/tools/handler.ts:19-54(handleToolCall)"
+      "セッション検証", "src/tools/handler-shared.ts:34-39(validateSession)"
+      "スキルファイルルーティング", "src/tools/handler-shared.ts:42-97(SKILL_FILE_ROUTING+buildPhaseGuide)"
+      "リトライシステム", "src/tools/retry.ts:1-153(classifyError/errorToImprovement/buildRetryPrompt)"
+
+  FR-6, "docs/architecture/traceability-matrix.md":
+    sections[4]{name,content,estimatedLines}:
+      "ソースファイル→テストファイル対応表", "命名規則ベース(handler-*.test.ts→handlers/*.ts等)の対応。テスト対応が存在する約30組を記載。テスト非存在ファイル(definitions-shared.ts等)は明示的にuntested表記", 60
+      "ソースファイル→仕様文書対応表", "46ソースファイル→FR-1〜FR-5の5仕様文書への帰属マッピング。各ファイルが最も詳細に記述される文書を1つ指定", 50
+      "テストファイル→機能カテゴリ対応表", "42テストファイル→機能カテゴリ(phase-management/gate-validation/tool-handling/state-persistence/security/learning-pipeline)への分類", 40
+      "カバレッジサマリ", "テストカバレッジ率(ファイル対応ベース)・仕様カバレッジ率(全ソースファイルがFR-1〜FR-5のいずれかに記載されているか)・未カバー領域の明示", 30
+    codeRefs[4]{section,files}:
+      "ソースファイル→テストファイル対応表", "src/__tests__/*.test.ts(42ファイル)"
+      "ソースファイル→仕様文書対応表", "src/**/*.ts(46ファイル)→FR-1〜FR-5"
+      "テストファイル→機能カテゴリ対応表", "src/__tests__/*.test.ts(42ファイル)"
+      "カバレッジサマリ", "全ソース・テストファイルの集計"
+
+writingStandards:
+  format: "Markdown(.md)、ソースコード参照は`src/module/file.ts:NN-MM`形式"
+  commitRef: "全文書先頭にbaseCommit c01d68940cb06a2ae56de20f19491db6b4d9db48を記録"
+  tone: "断定形。推測・曖昧表現禁止。コードに存在しない機能は記載しない"
+  lineLimit: "各文書200行以内"
+  forbidden: "禁止語(英語4+日本語8)・プレースホルダー[#xxx#]・Markdown##ヘッダーのTOON混入"
+  crossRef: "文書間の相互参照はMarkdown相対リンク(../architecture/overview.md等)"
+  codeRefPolicy: "行番号はbaseCommit時点のスナップショット。ファイル先頭にコミットハッシュを明記"
+
+decisions[8]{id,statement,rationale}:
+  PL-1, "FR-1(overview)→FR-2(phase-system)→FR-3(gate-system)→FR-5(state-management)→FR-4(mcp-tools)→FR-6(traceability)の順序で実装する", "アーキテクチャ概要→コア機構(フェーズ→ゲート→状態)→統合層(ツール)→参照表の順で読者の理解が積み上がる。FR-5をFR-4より先にするのはMCPツールハンドラがStateManagerを呼び出すため"
+  PL-2, "各文書のセクション構成をcodeRefsとペアで定義し、セクション単位でソースファイル参照を追跡可能にする", "AC-7(ソースコード参照の追跡可能性)を構造的に保証するため。セクション→コード参照の対応が明示されていれば死参照検出も容易"
+  PL-3, "FR-2のフェーズ一覧表はresearch.toonのphases[31]テーブルを圧縮して30+completed行で記述する", "200行制限内で31フェーズの全属性を網羅するには1フェーズ1行の圧縮表形式が必須"
+  PL-4, "FR-3のDoDチェック一覧はレベル別(L1/L2/L3/L4)にグループ化し、適用条件・判定ロジック・ソース参照を3列構成で記述する", "22チェックを効率的に参照するにはレベル別グループ化が読者の認知負荷を最小化する"
+  PL-5, "FR-5の3層パイプライン(Reflector-Curator-ACE)はデータフロー順(失敗→Reflector→成功→Curator→ACE)で記述する", "時系列順の記述がパイプラインの動作理解に最も直結するため。概念説明→実装詳細の順ではなくデータの流れに沿う"
+  PL-6, "FR-4のリトライシステムセクションはerrorToImprovementの15パターンを全件記載せず、4分類(EAC-1)とエスカレーションルールに集約する", "200行制限内で15パターン全件記載は不可能。4分類への集約がリトライ設計の本質を伝える"
+  PL-7, "FR-6のトレーサビリティマトリクスは命名規則で自明な対応(registry.test.ts→registry.ts)を省略し、非自明な対応のみ個別記載する", "REQ-4(200行制限遵守+実用的参照価値維持)に基づく。OQ-1の解決策として採用"
+  PL-8, "全文書の共通ヘッダーにbaseCommit・対応FR番号・対応AC番号を記載し、文書自体のトレーサビリティを確保する", "REQ-5(コミットハッシュ記録)とREQ-2(ソースファイル参照必須)を文書レベルで実現するため"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-system-documentation/spec.toon, spec, "技術仕様書: 6文書の詳細セクション設計・コード参照マッピング・実装順序・予想行数・RTMマッピング"
+  docs/workflows/harness-system-documentation/requirements.toon, input, "要件定義: 6成果物・7AC・12設計決定(入力成果物)"
+  docs/workflows/harness-system-documentation/research.toon, input, "Research分析結果: 46ファイル5117行の全構造(入力成果物)"
+
+next:
+  implementationStart: "FR-1(docs/architecture/overview.md)から着手。6サブシステム構成表とモジュール間依存グラフを最初に記述し、後続文書の参照基盤とする"
+  criticalPaths: "FR-5(state-management)が200行圧力最大(7セクション・3サブシステム統合)。Reflector-Curator-ACEパイプラインのデータフロー記述を簡潔に保つことが鍵"
+  readFilesForImpl: "src/phases/defs-stage1.ts〜defs-stage6.ts(テンプレート詳細取得) src/gates/dod-l4-*.ts(L4チェック詳細取得) src/tools/handlers/*.ts(ハンドラ実装詳細取得) src/__tests/配下(トレーサビリティマトリクス構築用)"

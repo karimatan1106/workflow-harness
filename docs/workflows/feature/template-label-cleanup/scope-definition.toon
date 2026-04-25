@@ -1,0 +1,39 @@
+phase: scope_definition
+task: template-label-cleanup
+intent: テンプレート内の太字ラベル装飾を除去しプレーンテキストに統一する。P5原則に基づきテンプレートへの装飾文字使用禁止ルールを追加する
+status: complete
+size: small
+riskScore: 1
+
+affectedFiles[9]{path,occurrences,changeType}:
+  src/phases/definitions-shared.ts, 5, edit
+  src/phases/definitions.ts, 1, edit
+  src/phases/defs-stage1.ts, 30, edit
+  src/phases/defs-stage2.ts, 20, edit
+  src/phases/defs-stage3.ts, 14, edit
+  src/phases/defs-stage4.ts, 18, edit
+  src/phases/defs-stage5.ts, 14, edit
+  src/phases/defs-stage6.ts, 15, edit
+  .claude/skills/harness/workflow-rules.md, 1, edit
+
+totalOccurrences: 117箇所の太字ラベル装飾 + 1ルール追加
+changePattern: 二重アスタリスク囲み除去(太字ラベル→プレーンテキスト)
+
+notInScope[2]{item,reason}:
+  テンプレートの内容やロジック変更, 装飾文字の除去のみ
+  テストファイルの修正, 既存テストの太字パターン検査を更新する必要あり
+
+decisions[5]{id,statement,rationale}:
+  SD-1, 全テンプレート文字列内の太字マークダウン装飾を一括除去する, P5原則(コンテキスト最小)に基づき不要な装飾文字を排除
+  SD-2, 置換はEdit toolで機械的に実施する, 全箇所が同一パターンでありロジック変更なし
+  SD-3, workflow-rules.mdにテンプレート装飾禁止ルールを追加する, 将来的な装飾文字の再導入を防止
+  SD-4, 既存テストの太字パターン検査(boldLabelPattern)を更新する, 太字ラベルが存在しないことを検証するテストに変更
+  SD-5, definitions-shared.tsの共有フラグメントも同様にプレーンテキスト化する, テンプレートと共有フラグメントで一貫性を維持
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/template-label-cleanup/scope-definition.toon, spec, 太字ラベル除去のスコープ定義(9ファイル117箇所+ルール1件)
+
+next:
+  criticalDecisions: SD-1(全太字除去) SD-3(ルール追加)
+  readFiles: src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts .claude/skills/harness/workflow-rules.md
+  warnings: 既存テストtemplate-separator-cleanup.test.tsの太字パターン検査を更新する必要あり

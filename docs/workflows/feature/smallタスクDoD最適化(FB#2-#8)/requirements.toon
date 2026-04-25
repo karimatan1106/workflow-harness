@@ -1,0 +1,53 @@
+taskName: smallタスクDoD最適化(FB#2-#8)
+phase: requirements
+date: 2026-03-22
+size: medium
+
+acceptanceCriteria[6]{id,description,verificationMethod}:
+  AC-1, "SIZE_SKIP_MAP.smallにresearchとplanningを追加し、smallタスクのアクティブフェーズを10個に削減する", "getActivePhases('small')の戻り値にresearchとplanningが含まれないことをユニットテストで検証"
+  AC-2, "DELTA_ENTRY_MIN_COUNTをsize依存にし、smallタスクではdecisions最低3件、medium/largeは5件を要求する", "checkDeltaEntryFormatにsize='small'を渡した場合にdecisions3件でpassすることをユニットテストで検証"
+  AC-3, "checkTDDRedEvidenceがdodExemptions配列にtdd_red_evidenceを含む場合にpassed:trueを返す", "dodExemptions=['tdd_red_evidence']指定時にRed evidence不要でpassすることをユニットテストで検証"
+  AC-4, "smallタスクのrequirementsフェーズでAC>=3件かつopenQuestions空の場合に自動承認する", "shouldRequireApproval('requirements', 'small')がfalseを返す条件をユニットテストで検証"
+  AC-5, "getPhaseConfigにsize引数を追加しsmallタスクでminLinesを0.6倍(最低20)で返す", "getPhaseConfig('research', 'small').minLinesが30を返すことをユニットテストで検証"
+  AC-6, "definitions-shared.tsのSUMMARY_SECTION_RULEに## / ### / ** / ``` の明示的禁止リストを追加する", "SUMMARY_SECTION_RULEの文字列に禁止記法4種が含まれることを文字列検証テストで確認"
+
+decisions[7]{id,statement,rationale}:
+  RQ-1, "SIZE_SKIP_MAP.smallにresearchとplanningの2エントリを追加する(FB#3)", "smallタスクの複雑度ではresearch/planningの中間成果物が冗長。scope_definitionからrequirementsへ直接遷移すれば十分"
+  RQ-2, "DELTA_ENTRY_MIN_COUNTをRecord<TaskSize, number>型のMapに変更する(FB#5)", "定数からsize依存Mapへの変更は最小差分で実装可能。checkDeltaEntryFormatの引数にsizeを追加しdod.tsからstate.sizeを渡す"
+  RQ-3, "checkTDDRedEvidence冒頭にdodExemptionsチェックを3行追加する(FB#4)", "exit_code_zeroで確立済みの既存パターン(dod-l1-l2.ts:59-63)と同一構造を適用。差分最小で一貫性が高い"
+  RQ-4, "PHASE_APPROVAL_GATESをsize対応関数shouldRequireApprovalに置換する(FB#7)", "handler-shared.tsの静的Record定義をsize引数付き関数に変更。lifecycle.tsの呼び出し元でstate.sizeを渡す"
+  RQ-5, "getPhaseConfigにオプショナルsize引数を追加しminLines係数を適用する(FB#8)", "SIZE_MINLINES_FACTOR: Record<TaskSize, number>をregistry.tsに追加。small:0.6/medium:1.0/large:1.0。最低値20を保証"
+  RQ-6, "SUMMARY_SECTION_RULEの禁止記述を明確化しsubagentテンプレートにも禁止事項1行を追加する(FB#2)", "事後検出(dod-l3.ts)より事前防止(テンプレート)が効率的。LLMはスケルトンの形式を模倣するため禁止事項の明示が有効"
+  RQ-7, "全6件のFB修正に対応するユニットテストを追加しリグレッションを防止する", "DoDゲート変更は既存タスクの品質に直結するためテスト必須。各ACのverificationMethodに記載のテストを実装する"
+
+notInScope[4]{item,reason}:
+  "mediumタスクのフェーズ削減", "FB#3はsmallタスク限定。mediumのSIZE_SKIP_MAPは変更しない"
+  "L5(LLM判断)ゲートの追加", "ADR-001によりL5ゲートは禁止。全変更はL1-L4の決定的ゲートの範囲内"
+  "新規フェーズの追加", "既存フェーズの最適化のみ。フェーズ構造自体は変更しない"
+  "largeタスクのDoD変更", "large taskは全フェーズ必須のまま維持。今回のスコープ外"
+
+openQuestions[0]{id,question,impact}:
+
+changeSpec[6]{id,file,changeType,detail}:
+  CS-1, "workflow-harness/mcp-server/src/phases/registry.ts", "modify", "SIZE_SKIP_MAP.smallにresearch/planning追加。getPhaseConfigにsize引数追加。SIZE_MINLINES_FACTOR定数追加"
+  CS-2, "workflow-harness/mcp-server/src/gates/dod-l4-delta.ts", "modify", "DELTA_ENTRY_MIN_COUNTをsize依存Mapに変更。checkDeltaEntryFormatにsize引数追加"
+  CS-3, "workflow-harness/mcp-server/src/gates/dod-l1-l2.ts", "modify", "checkTDDRedEvidence冒頭にdodExemptionsチェック追加(3行)"
+  CS-4, "workflow-harness/mcp-server/src/tools/handler-shared.ts", "modify", "PHASE_APPROVAL_GATESをshouldRequireApproval関数に置換"
+  CS-5, "workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts", "modify", "approval判定でstate.sizeをshouldRequireApprovalに渡す"
+  CS-6, "workflow-harness/mcp-server/src/phases/definitions-shared.ts", "modify", "SUMMARY_SECTION_RULEに禁止記法リスト追加"
+
+rtm[6]{id,requirement,designRef,codeRef,testRef}:
+  F-001, "AC-1: SIZE_SKIP_MAP.smallにresearch/planning追加", "scope-definition.toon:SD-1", "registry.ts:SIZE_SKIP_MAP", "-"
+  F-002, "AC-2: decisions最低件数をsize依存化(small:3)", "scope-definition.toon:SD-2", "dod-l4-delta.ts:DELTA_ENTRY_MIN_COUNT", "-"
+  F-003, "AC-3: TDD Red checkにdodExemptions対応追加", "scope-definition.toon:SD-3", "dod-l1-l2.ts:checkTDDRedEvidence", "-"
+  F-004, "AC-4: smallタスクrequirements自動承認", "scope-definition.toon:SD-4", "handler-shared.ts:shouldRequireApproval", "-"
+  F-005, "AC-5: minLinesをsize依存で減算", "scope-definition.toon:SD-5", "registry.ts:getPhaseConfig", "-"
+  F-006, "AC-6: TOON形式禁止事項の明示的列挙", "scope-definition.toon:SD-6", "definitions-shared.ts:SUMMARY_SECTION_RULE", "-"
+
+artifacts[3]{id,path,format}:
+  A-1, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/scope-definition.toon", "toon"
+  A-2, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/research.toon", "toon"
+  A-3, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/requirements.toon", "toon"
+
+next: planning
+nextAction: 6件のAC/RTMに基づきplanning.toonで実装計画を策定する。各CSの実装順序と並列可能性を定義する

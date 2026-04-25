@@ -1,0 +1,48 @@
+flowchart TD
+    Start((開始))
+    ReadSpecFile["specifications.md を読み込み"]
+    ReadDefFile["definitions.ts を読み込み<br/>regression_test エントリを特定"]
+    IdentifyTemplate["regression_test.subagentTemplate<br/>を抽出"]
+    FR13Task["FR-13: 禁止ツールリスト更新<br/>workflow_capture_baseline を追加"]
+    UpdateList["禁止対象リストに<br/>workflow_capture_baseline を<br/>カンマで追記"]
+    AddExplanation["禁止の根拠を説明する<br/>1文を挿入<br/>testing フェーズのみで受付"]
+    FR14Task["FR-14: ベースライン前提条件<br/>セクション追加"]
+    FindInsertPos["挿入位置を特定<br/>sessionToken セクション直後<br/>ワークフロー制御禁止セクション直前"]
+    InsertNewSection["新規セクション挿入<br/>ベースライン前提条件"]
+    AddCondition1["前提条件1: testing フェーズで<br/>ベースライン記録済み"]
+    AddCondition2["前提条件2: regression_test では<br/>再度記録不要の説明"]
+    AddCondition3["前提条件3: workflow_get_test_info<br/>による確認方法案内"]
+    AddCondition4["前提条件4: ベースライン未設定時の<br/>差し戻し手順"]
+    MergeContent["FR-13 と FR-14 の変更を<br/>統合してテンプレート確定"]
+    BuildProject["ビルド実行<br/>npm run build"]
+    RunTests["テスト実行<br/>npm test"]
+    TestPass{テスト成功？}
+    Verify["変更内容を検証<br/>Grep/Read で確認"]
+    VerifyFR13["FR-13 確認:<br/>workflow_capture_baseline<br/>が禁止対象に含まれるか"]
+    VerifyFR14["FR-14 確認:<br/>ベースライン前提条件<br/>セクションが存在するか"]
+    Success((処理完了))
+    Error["エラー発生<br/>ビルドログ確認"]
+
+    Start --> ReadSpecFile
+    ReadSpecFile --> ReadDefFile
+    ReadDefFile --> IdentifyTemplate
+    IdentifyTemplate --> FR13Task
+    FR13Task --> UpdateList
+    UpdateList --> AddExplanation
+    AddExplanation --> FR14Task
+    FR14Task --> FindInsertPos
+    FindInsertPos --> InsertNewSection
+    InsertNewSection --> AddCondition1
+    AddCondition1 --> AddCondition2
+    AddCondition2 --> AddCondition3
+    AddCondition3 --> AddCondition4
+    AddCondition4 --> MergeContent
+    MergeContent --> BuildProject
+    BuildProject --> RunTests
+    RunTests --> TestPass
+    TestPass -->|失敗| Error
+    Error --> ReadDefFile
+    TestPass -->|成功| Verify
+    Verify --> VerifyFR13
+    VerifyFR13 --> VerifyFR14
+    VerifyFR14 --> Success

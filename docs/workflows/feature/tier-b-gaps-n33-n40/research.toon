@@ -1,0 +1,85 @@
+task: tier-b-gaps-n33-n40
+phase: research
+intent: Tier B 6項目(N-33 bats-core, N-34 Hurl, N-37 eslint-local-rules, N-38 promptfoo, N-39 PyRIT, N-40 Pact)の技術調査
+riskScore: 3
+
+environment:
+  nodeVersion: v22.15.0
+  npmVersion: 10.9.2
+  tscVersion: 5.9.3
+  platform: win32 (MSYS_NT-10.0-26200)
+  packageManager: npm
+
+existingDeps:
+  mcpServer: "@modelcontextprotocol/sdk@1.27.1, @toon-format/toon@2.1.0, zod@3.25.76, vitest@1.6.1"
+  workflowPlugin: "eslint@9.39.2, @eslint/js@9.39.2, typescript-eslint@8.55.0"
+
+toolResearch[6]{id,tool,version,installCmd,description,executability}:
+  N-33, bats-core, 1.11.0, "git clone https://github.com/bats-core/bats-core && cd bats-core && ./install.sh /usr/local", "Bash Automated Testing System。@testアノテーションでシェルスクリプトテストを記述。run/statusアサーション。", scaffold-only
+  N-34, Hurl, 6.1.0, "scoop install hurl (Windows) / brew install hurl (macOS)", "宣言的HTTPテストランナー。リクエスト/レスポンスをテキスト形式で記述。JSON-RPCテストに使用可能。", scaffold-only
+  N-37, eslint-plugin-local-rules, n/a, "不要（ESLint flat configのplugins機能で直接参照）", "ESLint flat configではローカルファイルをpluginとして直接importできる。npmパッケージ不要。", fully-executable
+  N-38, promptfoo, 0.103.0, "npx promptfoo@latest eval", "LLM出力品質の自動評価フレームワーク。YAML設定でプロンプト・テストケース・アサーションを定義。", scaffold-only
+  N-39, PyRIT, 0.8.0, "pip install pyrit", "MicrosoftのAI Red Teaming toolkit。Python環境必須。JSONスキーマでテストケース定義のみ。", scaffold-only
+  N-40, Pact, n/a, "npm install -D @pact-foundation/pact", "Consumer-driven contract testing。MCPツールのスキーマ検証はvitestのみで実現可能。", vitest-executable
+
+integrationPoints[6]{id,target,currentState,changeRequired}:
+  N-33, workflow-harness/mcp-server/tests/hooks/hook-smoke.bats, "ディレクトリ未存在", "batsファイル新規作成。3テストケース：post-tool-lint.sh/pre-tool-config-guard.sh/stop-test-enforcer.sh"
+  N-34, workflow-harness/mcp-server/tests/api/mcp-smoke.hurl, "ディレクトリ未存在", "hurlファイル新規作成。MCP JSON-RPCのtools/listエンドポイントテスト"
+  N-37, workflow-plugin/eslint-local-rules/index.js, "ディレクトリ未存在", "ローカルルールファイル新規作成。no-string-only-throwルールを実装"
+  N-38, workflow-harness/mcp-server/tests/eval/promptfoo.yaml, "ディレクトリ未存在", "YAML設定新規作成。TOON出力品質評価のプロンプト・テスト・アサーション定義"
+  N-39, workflow-harness/mcp-server/tests/safety/adversarial-cases.json, "ディレクトリ未存在", "JSONファイル新規作成。4カテゴリ（パストラバーサル/プロンプトインジェクション/XSS/SQLi）のテストケース"
+  N-40, workflow-harness/mcp-server/src/__tests__/mcp-contract.test.ts, "テストディレクトリ存在済み", "vitestテスト新規作成。TOOL_DEFINITIONSのスキーマ整合性検証"
+
+n33BatsDetail:
+  fileFormat: "#!/usr/bin/env bats ヘッダー + @test 'テスト名' { ... } ブロック"
+  assertions: "[ $status -eq N ] でexit code検証、[ $output = 'expected' ] で出力検証"
+  runCommand: "bats tests/hooks/hook-smoke.bats"
+  targetHooks: "post-tool-lint.sh, pre-tool-config-guard.sh, stop-test-enforcer.sh"
+
+n34HurlDetail:
+  fileFormat: "HTTPメソッド URL + ヘッダー + ボディ + HTTP ステータスコード + [Asserts]"
+  mcpProtocol: "JSON-RPC 2.0 over HTTP POST。method: tools/list でツール一覧取得。"
+  runCommand: "hurl --test tests/api/mcp-smoke.hurl"
+
+n37LocalRulesDetail:
+  flatConfigApproach: "eslint.config.jsでimport localRules from './eslint-local-rules/index.js'とし plugins: { local: localRules } で登録"
+  ruleImplementation: "AST visitor patternでThrowStatement > NewExpression[callee.name=Error]を検出しarguments[0].type=Literalの場合にreport"
+  ruleName: "local/no-string-only-throw"
+  rationale: "new Error('message')ではなくnew SpecificError('message', { cause })のような構造化エラーを強制する"
+
+n38PromptfooDetail:
+  configFormat: "YAML。providers/prompts/tests/assertの4セクション構成"
+  assertTypes: "contains（部分一致）, llm-rubric（LLM判定）, javascript（カスタムJS関数）"
+  runCommand: "npx promptfoo eval -c tests/eval/promptfoo.yaml"
+  evaluationTarget: "TOON形式出力の構造的正確性とキー・値の品質"
+
+n39PyRITDetail:
+  testCategories: "path-traversal, prompt-injection, xss, sql-injection"
+  jsonSchema: "cases配列。各要素にid/tool/field/payload/expected。"
+  pythonRequired: true
+  alternativeUsage: "JSONスキーマ自体をvitestで読み込みMCPツール入力バリデーション検証に流用可能"
+
+n40PactDetail:
+  contractScope: "TOOL_DEFINITIONSの全ツールがname/description/inputSchemaを持つことを検証"
+  vitestApproach: "Pactフレームワーク不要。vitest単体でスキーマ整合性を検証するコントラクトテスト"
+  keyAssertions: "全ツールにname/description存在、inputSchema.type=object、harness_startにtaskName/userIntent必須"
+
+decisions[6]{id,statement,rationale}:
+  R-1, "N-33はbats-core形式のテストファイルを作成しフックの検証可能性を確保する", "bats未インストールでもテストケース定義がフック仕様のドキュメントとして機能する。インストール後は即座にテスト実行可能。"
+  R-2, "N-34はhurl形式のHTTPテストファイルを作成しMCPサーバーのAPIテスト定義を提供する", "MCP SDKがHTTPトランスポートを提供する場合に即座に検証可能。現状はstdio通信のためドキュメント的価値。"
+  R-3, "N-37はESLint flat configのplugins機能を活用しnpmパッケージ化せずにローカルルールを実装する", "eslint-plugin-local-rulesパッケージは不要。ESLint 9のflat configは直接import可能なため、ファイル参照で十分。"
+  R-4, "N-38はpromptfoo YAML形式でLLM評価基準を構造化しハーネス品質の自動評価を定義する", "手動品質チェックの限界をLLMルーブリックで補完。TOON形式準拠・必須キー存在・禁止語不在を自動評価。"
+  R-5, "N-39はJSON形式でテストケースを定義しPyRIT非依存でもセキュリティテスト要件を標準化する", "テストケース定義自体がセキュリティ監査のチェックリストとして機能する。vitestからJSON読み込みでバリデーションテストに流用可能。"
+  R-6, "N-40はvitest単体でMCPツールのコントラクトテストを実装しPactフレームワークを不要にする", "TOOL_DEFINITIONSはTypeScript定数でありvitestで直接importしてスキーマ検証可能。Pactの複雑なセットアップは過剰。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n33-n40/scope-definition.toon, input, スコープ定義
+  docs/workflows/tier-b-gaps-n33-n40/research.toon, output, 6ツールの技術調査結果
+  docs/workflows/tier-b-gaps-n33-n40/requirements.toon, next, 受入基準定義
+
+next:
+  criticalDecisions: "R-3（ローカルESLintルール）とR-6（vitest契約テスト）が即時実行可能な実装"
+  readFiles: "eslint.config.js, handler.ts, defs-a.ts, defs-b.ts"
+  warnings: "N-33/N-34/N-38は外部ツール未インストールのため実行検証不可"
+
+result{phase,status,artifact,lines}: research, complete, docs/workflows/tier-b-gaps-n33-n40/research.toon, 82

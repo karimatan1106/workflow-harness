@@ -1,0 +1,16 @@
+phase: research
+taskId: c17eeac4-7e5c-4b57-a1ac-16744ac776bb
+ts: "2026-03-02T10:00:00+09:00"
+decisions[7]{id,statement,rationale}:
+  R-001,resetTaskはstate.retryCountをクリアしない,manager.ts L83でcompletedPhasesとsubPhaseStatusはクリアされるがretryCountへの代入がなくリセット後も旧カウントが残存する
+  R-002,goBackはstate.retryCountをクリアしない,manager.ts L74-75でフェーズ差し戻し処理を行うがretryCountはそのまま残りカウントが差し戻し先に引き継がれる
+  R-003,リトライ上限は5でgetRetryCountが5以上の場合にブロック,lifecycle.ts L73の判定によりカウンターが残存すると差し戻し後に同フェーズが即座にブロックされる
+  R-004,修正はstate.retryCount={}をresetTaskとgoBackに追加するのみで完結,型定義上Recordへの空オブジェクト代入は型安全であり公開APIの変更は不要
+  R-005,既存テストにretryCountクリアの検証が存在しない,manager-lifecycle.test.tsのresetTaskテスト群はsubPhaseStatusのクリアを検証するがretryCountのクリアを検証しておらずバグを検出できていない
+  R-006,incrementRetryCountはDoD失敗時にlifecycle.ts L78から呼び出される,引数retryCountが1以上の場合のみカウントを加算しDoD成功時はL105のresetRetryCountで単一フェーズキーを削除する
+  R-007,goBackの全フェーズretryCountクリアが最も安全な実装方針,"差し戻し先フェーズのみクリアより全クリアのほうが単純で誤りが少なく、差し戻し後は必ずクリーンな状態から再開できる"
+artifacts[2]{path,role,summary}:
+  docs/workflows/VDB-1 retryCount reset修正/research.md,report,調査結果と実装アクション一覧
+  docs/workflows/VDB-1 retryCount reset修正/research.toon,report,TOONチェックポイント
+next:
+  readFiles[2]: workflow-harness/mcp-server/src/state/manager.ts,workflow-harness/mcp-server/src/__tests__/manager-lifecycle.test.ts

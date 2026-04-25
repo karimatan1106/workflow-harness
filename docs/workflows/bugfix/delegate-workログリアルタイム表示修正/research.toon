@@ -1,0 +1,47 @@
+task-name: delegate-workログリアルタイム表示修正
+phase: research
+target-file: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+target-lines: 108-140 (spawnAsync関数)
+
+research-1-title: spawnAsync関数のstdout/stderrハンドラ現状
+research-1-finding: "stdoutは3経路(変数蓄積, process.stderr.write, appendFileSync)。stderrは変数蓄積のみで, logFileにもprocess.stderrにも出力されない"
+research-1-stdout-handler: "child.stdout?.on('data') → stdout += text, process.stderr.write(chunk), appendFileSync(logFile, text)"
+research-1-stderr-handler: "child.stderr?.on('data') → stderr += d.toString() のみ。logFile追記なし"
+research-1-stdio-config: "['ignore', 'pipe', 'pipe'] — stdin無視, stdout/stderrはpipe"
+
+research-2-title: claude CLI --printモードのstderr出力内容
+research-2-finding: "claude -p --print --output-format textはstdoutに最終結果テキストを出力。stderrにツール呼び出し進捗やスピナー的な情報を出力する"
+research-2-cmd-args: "-p, fullInstruction, --print, --output-format, text, --setting-sources, user, --disable-slash-commands, --allowedTools, ..., --permission-mode, bypassPermissions, --no-session-persistence, --system-prompt, systemPrompt"
+research-2-implication: "stderrにリアルタイム進捗が出るためlogFileに追記すればtail -fで可視化できる"
+
+research-3-title: appendFileSyncの呼び出しパターン
+research-3-finding: "delegate-work.ts内でappendFileSyncは1箇所のみ。127行目のstdout onDataコールバック内"
+research-3-guard: "if (options.logFile) チェック後に呼び出し。stderrハンドラにはこのガードも追記処理もない"
+research-3-init: "logFileは215行目でwriteFileSyncにより初期化(タイムスタンプ+フェーズ情報を書き込み)"
+research-3-pattern: "appendFileSync(options.logFile, text) — Buffer.toStringした文字列をそのまま追記"
+
+research-4-title: stderrバイナリデータ/大量出力リスク評価
+research-4-finding: "リスクは低い。claude CLIのstderrは人間可読なテキスト(進捗メッセージ, ツール名等)。--output-format textかつ--printモードではバイナリ出力なし"
+research-4-volume: "stderrの出力量はstdoutより少ない。ツール呼び出し毎の短い行が主体"
+research-4-encoding: "UTF-8テキスト。Buffer.toString()でのデコードは安全"
+
+research-5-title: stdout/stderr混在ログの注意点
+research-5-finding: "appendFileSyncは同期的でアトミックではないが, 単一プロセスの単一スレッドから呼ぶため競合なし。stdout/stderrの到着順は保証されないが, リアルタイム表示目的では問題ない"
+research-5-interleave: "Node.jsイベントループ内で順次処理されるため, 部分的なインターリーブは発生しうるが行単位の破壊はない"
+research-5-distinction: "scope-definition SD-4の通り, stdout/stderrの区別タグは不要。リアルタイム性優先"
+
+vscode-integration: "extension.tsがlog-pane.signalを監視し, tail -fでlogFileを表示。stderr追記により進捗がリアルタイムで見える"
+signal-flow: "writeSignal → .agent/log-pane.signal → FileSystemWatcher → openLogPane → tail -f .agent/delegate-work.log"
+
+decisions[5]{id, statement, rationale}:
+  RD-1, "stderrハンドラにappendFileSync追記を追加", "stdoutと同パターンで安全かつ最小変更"
+  RD-2, "process.stderr.writeによるstderrリレーも追加", "親プロセスにもリアルタイム進捗を伝搬するため"
+  RD-3, "stderr用のプレフィックスタグは付与しない", "SD-4準拠。リアルタイム性とシンプルさ優先"
+  RD-4, "Buffer.toString()のエンコーディング指定は不要", "デフォルトUTF-8で十分。claude CLIはUTF-8出力"
+  RD-5, "logFile存在チェックはoptions.logFileガードで十分", "既存stdoutパターンと同一。追加バリデーション不要"
+
+artifacts: "research.toon, scope-definition.toon"
+files-changed: docs/workflows/delegate-workログリアルタイム表示修正/research.toon
+success: true
+output: "5項目の調査完了。stderrハンドラへのappendFileSync追加は安全で最小変更と確認"
+next: "implementationフェーズ。delegate-work.ts 130行目のstderrハンドラにlogFile追記+process.stderr.writeを追加"

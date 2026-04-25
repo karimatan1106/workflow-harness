@@ -1,0 +1,53 @@
+phase: planning
+task: サイズ判定改善(harness_start size引数追加)
+status: complete
+inputArtifact: docs/workflows/サイズ判定改善(harness_start size引数追加)/requirements.toon
+
+decisions[8]{id,statement,rationale}:
+  PL-01, "defs-a.tsのharness_start inputSchema.propertiesにsize: { type: 'string', enum: ['small','medium','large'], description: 'Task size.' }を追加する", MCPスキーマレベルでバリデーションを行いランタイムチェックを不要にする(F-005/REQ-06)
+  PL-02, "lifecycle.tsのhandleHarnessStart内でargs.sizeをTaskSize型として取得しsm.createTask()の第5引数として渡す", EP-6の既存パターンに従いundefined時はデフォルト適用をcreateTaskState側に委ねる(F-001/REQ-04)
+  PL-03, "manager.tsのcreateTask()シグネチャにsize?: TaskSizeを第5引数として追加しcreateTaskState()に中継する", 既存の4引数(taskName/userIntent/files/dirs)の末尾に追加することで後方互換性を維持する(F-003/REQ-02)
+  PL-04, "manager-write.tsのcreateTaskState()シグネチャに第6引数size?: TaskSizeを追加しデフォルト値'large'を適用する", デフォルトlargeにより未指定時は全フェーズ実行となり安全側に倒す(F-002/F-003/REQ-04)
+  PL-05, "manager-write.tsからrisk-classifierのimport文(calculateRiskScore/classifySize/analyzeScope)を削除する", 呼び出し除去とimport除去を同時に行いデッドコード警告を防ぐ(F-004/REQ-05)
+  PL-06, "createTaskState内のriskScore算出をsize固定マッピングに置換する: small={total:2,factors:{}}/medium={total:5,factors:{}}/large={total:8,factors:{}}", classifySize()の閾値(small<=3/medium<=7/large>=8)と整合する代表値を設定しRiskScore型の必須フィールドを維持する(NF-002/REQ-03)
+  PL-07, "createTaskState内のconst size = classifySize(riskScore)行を削除しsize引数をそのまま使用する", classifySizeの結果ではなく呼び出し元が指定したsizeを直接使用する(F-004)
+  PL-08, "risk-classifier.tsファイル自体は削除せず残置する", 9件のテストファイルが参照しており削除は別タスクとする(NF-004/REQ-07)
+
+implementationSteps[5]{id,file,change,funcReqId}:
+  STEP-1, "workflow-harness/mcp-server/src/tools/defs-a.ts", "harness_start定義のinputSchema.propertiesにsize: { type: 'string', enum: ['small','medium','large'], description: 'Task size (default: large).' }を追加。requiredは変更しない(オプショナル)", F-005
+  STEP-2, "workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts", "handleHarnessStart内のconst dirs行の後にconst size = args.size as TaskSize | undefined;を追加。sm.createTask()呼び出しの第5引数にsizeを追加。TaskSize型のimportを追加", F-001
+  STEP-3, "workflow-harness/mcp-server/src/state/manager.ts", "createTask()シグネチャをcreateTask(taskName: string, userIntent: string, files: string[], dirs: string[], size?: TaskSize)に変更。createTaskState()呼び出しにsizeを第6引数として渡す", F-001
+  STEP-4, "workflow-harness/mcp-server/src/state/manager-write.ts", "createTaskState()シグネチャの末尾にsize: TaskSize = 'large'を追加。import文からcalculateRiskScore/classifySize/analyzeScopeを削除。riskScore算出行をsizeベースの固定マッピングに置換。const size = classifySize(riskScore)行を削除。TaskSize型のimportを追加", F-002/F-003/F-004
+  STEP-5, "回帰テスト実行", "vitest runで既存テスト全件パスを確認。特にmanager-core.test.tsのcreateTask()呼び出しがシグネチャ変更で壊れないことを確認", AC-3
+
+changeDetails[4]{file,before,after}:
+  defs-a.ts:12-18, "properties: { taskName, userIntent, files, dirs } の4プロパティ", "properties: { taskName, userIntent, files, dirs, size } の5プロパティ。sizeはenum制約付きオプショナル"
+  lifecycle.ts:45-50, "const files/dirs取得後にsm.createTask(taskName, userIntent, files, dirs)を呼び出す", "const size = args.size as TaskSize | undefined; を追加しsm.createTask(taskName, userIntent, files, dirs, size)を呼び出す"
+  manager.ts:49-50, "createTask(taskName, userIntent, files, dirs)の4引数で createTaskState(taskName, userIntent, this.hmacKey, files, dirs)を呼び出す", "createTask(taskName, userIntent, files, dirs, size?)の5引数で createTaskState(taskName, userIntent, this.hmacKey, files, dirs, size)を呼び出す"
+  manager-write.ts:12/48-51, "import {calculateRiskScore,classifySize,analyzeScope}あり。riskScore=calculateRiskScore(analyzeScope(files,dirs)); size=classifySize(riskScore);", "import文削除。引数にsize: TaskSize = 'large'追加。riskScoreMap = {small:{total:2,factors:{}},medium:{total:5,factors:{}},large:{total:8,factors:{}}}; riskScore = riskScoreMap[size];"
+
+riskMitigations[3]{risk,mitigation,owner}:
+  "manager-core.test.tsのcreateTask()呼び出しがシグネチャ変更で失敗する", "size引数はオプショナルであり既存テストはコード変更なしで動作する。回帰テストで確認", implementationフェーズ
+  "riskScoreの固定マッピング値がRiskScore型と不整合", "RiskScore型は{total:number,factors:any}であり固定マッピングの{total:N,factors:{}}は型制約を満たす", planningフェーズで確認済み
+  "HMAC署名がriskScore値の変更で既存stateと不整合", "新規タスク作成時のみriskScoreが設定されるため既存stateへの影響はない。IC-7によりcheckpointにriskScoreは含まれない", planningフェーズで確認済み
+
+rtm[5]{reqId,stepId,verification}:
+  F-001, STEP-1/STEP-2, "defs-a.tsにsizeプロパティが存在しlifecycle.tsがargs.sizeを取得してcreateTaskに渡すことをコードレビューで確認"
+  F-002, STEP-4, "createTaskState内でsize未指定時にlargeがデフォルト適用されることをユニットテストAC-2で確認"
+  F-003, STEP-3/STEP-4, "createTask/createTaskStateがsize引数を受け取り使用することをコードレビューとユニットテストAC-1で確認"
+  F-004, STEP-4, "manager-write.tsからrisk-classifierのimport文と呼び出しが除去されていることをコードレビューで確認"
+  F-005, STEP-1, "defs-a.tsのharness_start inputSchemaにsizeプロパティがenum: ['small','medium','large']で定義されていることをAC-4で確認"
+
+executionOrder: "STEP-1 → STEP-2 → STEP-3 → STEP-4 → STEP-5"
+estimatedChangedLines: 25
+estimatedFiles: 4
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/requirements.toon, 入力, 要件定義成果物
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/research.toon, 入力, リサーチ成果物
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/planning.toon, 出力, 実装計画成果物(本ファイル)
+
+next:
+  criticalDecisions: "4ファイル(defs-a.ts/lifecycle.ts/manager.ts/manager-write.ts)をSTEP-1からSTEP-4の順で変更する。riskScoreはsizeから固定マッピングで生成する。デフォルトlargeの適用はcreateTaskState内で行う"
+  readFiles: "変更対象4ファイルを実装フェーズで直接編集する"
+  warnings: "manager-core.test.tsのcreateTask()はオプショナル引数追加のため修正不要の見込みだが回帰テストで確認必須"

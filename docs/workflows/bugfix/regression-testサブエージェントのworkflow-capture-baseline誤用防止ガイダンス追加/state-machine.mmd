@@ -1,0 +1,32 @@
+stateDiagram-v2
+    Start --> TestingPhaseReady: Orchestrator が testing フェーズ開始
+
+    TestingPhaseReady --> BaselineCapture: テスト実行完了
+
+    BaselineCapture --> BaselineRecorded: workflow_capture_baseline 呼び出し成功\n（ベースライン記録）
+
+    BaselineRecorded --> RegressionTestReady: testing フェーズ完了\nregression_test フェーズへ遷移
+
+    RegressionTestReady --> ValidationStart: regression_test フェーズ開始\nサブエージェント起動
+
+    ValidationStart --> VerifyBaseline: ベースライン前提条件確認\n（workflow_get_test_info で確認可能）
+
+    VerifyBaseline --> ComparisonPhase: ベースラインが設定済み\nテスト結果と比較実行
+
+    ComparisonPhase --> AnalyzeResults: 新旧テスト結果の差分分析\nリグレッション検出
+
+    AnalyzeResults --> End: regression_test フェーズ完了\n結果レポート作成
+
+    VerifyBaseline --> MissingBaseline: ベースライン未設定\n（testing フェーズをスキップ）
+
+    MissingBaseline --> BackToTesting: Orchestrator が workflow_back 実行\ntesting フェーズへ差し戻し
+
+    BackToTesting --> TestingPhaseReady: testing フェーズ再開
+
+    RegressionTestReady --> ProhibitedToolCall: subagent が禁止ツール呼び出し試行\n（workflow_capture_baseline等）
+
+    ProhibitedToolCall --> ToolCallBlocked: MCP サーバー側でアーキテクチャエラー返却\nregression_test フェーズでは受け付けない設計
+
+    ToolCallBlocked --> ErrorHandling: エラー処理：ベースライン再記録不可を通知
+
+    ErrorHandling --> BackToTesting: Orchestrator が workflow_back で testing フェーズへ差し戻し\n（ベースラインが不完全な場合）

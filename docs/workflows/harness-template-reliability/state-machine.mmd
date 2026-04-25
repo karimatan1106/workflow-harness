@@ -1,0 +1,56 @@
+---
+title: FIX-3 cascade-reapprove State Machine
+---
+stateDiagram-v2
+    [*] --> CurrentPhase
+
+    CurrentPhase --> BackRequested : harness_back(cascade=true)
+    CurrentPhase --> CurrentPhase : harness_back(cascade=false) [従来動作維持]
+
+    BackRequested --> CascadeFailed : targetPhase未到達 or 無効フェーズ指定
+    BackRequested --> ApprovalCleared : goBack前提条件OK
+
+    ApprovalCleared --> CascadeFailed : state.approvals削除対象0件(承認ゲートなし)
+    ApprovalCleared --> PhaseRewound : PHASE_APPROVAL_GATES対象のapprovals削除完了
+
+    PhaseRewound --> ReapprovalLoop : goBack完了、targetPhaseに遷移
+
+    ReapprovalLoop --> ReapprovalLoop : handleHarnessApprove経由で次フェーズ承認
+    ReapprovalLoop --> CascadeFailed : IA-1/IA-2/IA-6前提条件未達で中断
+    ReapprovalLoop --> ReapprovalComplete : 全再承認対象フェーズの承認完了
+
+    ReapprovalComplete --> CurrentPhase : cascade処理正常終了、元フェーズに復帰
+
+    CascadeFailed --> CurrentPhase : ユーザーに手動対応を通知、現在位置で停止
+
+    note right of BackRequested
+        cascade=trueフラグ必須
+        明示的指定がない場合は従来動作
+    end note
+
+    note right of ApprovalCleared
+        削除対象: targetPhase以降の
+        completedPhasesから除外された
+        承認ゲート付きフェーズのみ
+    end note
+
+    note right of ReapprovalLoop
+        approval.tsのhandleHarnessApproveを
+        直接呼び出し。独自承認ロジック禁止。
+        completedPhasesは直接操作しない。
+    end note
+
+    note right of CascadeFailed
+        前提条件チェックバイパス禁止
+        中断位置をユーザーに通知
+    end note
+
+## decisions
+
+- SM-001: cascade=true指定時のみcascade-reapproveフローに遷移し、未指定またはfalse時は従来のgoBack動作と完全同一とする。根拠: REQ-010(後方互換性保証)、TM-005。
+- SM-002: ApprovalCleared状態ではPHASE_APPROVAL_GATESマップを走査し、targetPhaseから元フェーズまでの範囲で承認ゲートを持つフェーズのみをapprovals削除対象とする。根拠: TM-002(approval削除範囲限定)、AC-5。
+- SM-003: ReapprovalLoopはapproval.tsのhandleHarnessApprove関数を経由して再承認を実行し、独自の承認ロジックを実装しない。根拠: TM-001(承認バイパス防止)、PL-D04。
+- SM-004: ReapprovalLoop中にIA-1/IA-2/IA-6前提条件が未達の場合、cascade処理を即時中断してCascadeFailedに遷移する。部分承認状態でユーザーに手動対応を通知する。根拠: AC-6、TM-003(連鎖失敗ブロック防止)。
+- SM-005: cascade処理はstate.completedPhasesを直接操作しない。フェーズのcompletedステータス変更はlifecycle-next.tsの通常フロー(DoDゲート通過後)に委ねる。根拠: TM-004(Elevation of Privilege防止)。
+- SM-006: PhaseRewound状態はgoBack関数完了後に到達する。goBack自体はstate.approvalsを変更しないため、ApprovalCleared状態で事前にapproval削除を完了しておく必要がある。根拠: R-008。
+- SM-007: CascadeFailed状態からCurrentPhaseへの遷移時、中断理由と中断位置(どのフェーズの再承認で失敗したか)をユーザーに通知する。根拠: HR-002(半自動化設計、完全自動化は意図しない)。

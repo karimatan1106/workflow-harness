@@ -1,0 +1,30 @@
+flowchart TD
+    Start(修正実施開始) --> ReadSpec(spec.mdを読み込んで仕様確認)
+    ReadSpec --> CheckFR11(FR-11とFR-12の実装方針を確認)
+    CheckFR11 --> EditDef(definitions.tsを編集)
+
+    EditDef --> AddFR11Guide(manual_testのsubagentTemplateに総合評価ガイダンスを追加)
+    AddFR11Guide --> InsertPos1(出力セクション直前に挿入位置を特定)
+    InsertPos1 --> AddGuide5Points(5観点の記述指針を追記)
+    AddGuide5Points --> ConfirmFR11(FR-11ガイダンスブロック追加完了)
+
+    ConfirmFR11 --> AddFR12Guide(security_scanのsubagentTemplateに行数計算ロジックを追加)
+    AddFR12Guide --> InsertPos2(出力セクション直前に挿入位置を特定)
+    InsertPos2 --> CalcLogic(20行達成の計算ロジックを明示)
+    CalcLogic --> SectionBreakdown(3セクション15行と追加5行の式を記述)
+    SectionBreakdown --> ConfirmFR12(FR-12行数確保ガイダンスブロック追加完了)
+
+    ConfirmFR12 --> EditTest(definitions-subagent-template.test.tsを編集)
+    EditTest --> AddFR11Test(FR-11テストスイートを追加)
+    AddFR11Test --> TC111(TC-11-1総合評価検証テスト)
+    TC111 --> TC112(TC-11-2全テストシナリオ検証テスト)
+
+    TC112 --> AddFR12Test(FR-12テストスイートを追加)
+    AddFR12Test --> TC121(TC-12-120行基準検証テスト)
+    TC121 --> ConfirmTests(全テストケース追加完了)
+
+    ConfirmTests --> Build(npm run buildでTypeScriptをトランスパイル)
+    Build --> VerifyDist(dist/*.jsの更新日時を確認)
+    VerifyDist --> RestartMCP(MCPサーバープロセスを再起動)
+    RestartMCP --> VerifyStatus(workflow_statusで現在フェーズを確認)
+    VerifyStatus --> Complete(修正実施完了)

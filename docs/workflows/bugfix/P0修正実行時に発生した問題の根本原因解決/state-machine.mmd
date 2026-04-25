@@ -1,0 +1,55 @@
+stateDiagram-v2
+    InitState --> Start: タスク開始
+
+    Start --> FR_B1_InProgress: FR-B1修正開始\n(ルートCLAUDE.mdのsubagentTypeテーブル修正)
+
+    FR_B1_InProgress --> FR_B3_InProgress: FR-B1完了\n(5行のsubagentType・model値を変更済み:\nresearch, build_check, testing, commit, push)
+
+    FR_B3_InProgress --> FR_B2_InProgress: FR-B3完了\n(ルートCLAUDE.mdのBashカテゴリ許可テーブル修正済み:\nreadonly,git → readonly,implementation)
+
+    FR_B2_InProgress --> Verification: FR-B2完了\n(workflow-plugin/CLAUDE.mdの5行修正完了:\nresearch, build_check, testing, commit, pushのsubagentType更新)
+
+    Verification --> End: AC-1~AC-5の全項目合格\n(subagentType・model・2ファイル同期・カテゴリ整合確認済み)
+
+    Verification --> FR_B1_InProgress: AC不合格\n(修正漏れ検出により前フェーズに差し戻し)
+
+    End --> FinalState: 全修正完了
+
+    note right of Start
+        CLAUDE.mdの乖離状態発見
+        定義された5フェーズの
+        subagentType・modelが不正
+    end note
+
+    note right of FR_B1_InProgress
+        ルートCLAUDE.md
+        フェーズ別subagent設定テーブル
+        143,154,156,162,163行目修正
+    end note
+
+    note right of FR_B3_InProgress
+        ルートCLAUDE.md
+        Bashコマンド許可カテゴリテーブル
+        181行目修正
+    end note
+
+    note right of FR_B2_InProgress
+        workflow-plugin/CLAUDE.md
+        フェーズ別subagent設定テーブル
+        181,192,194,200,201行目付近修正
+    end note
+
+    note right of Verification
+        受け入れ基準チェック
+        AC-1: subagentType確認
+        AC-2: model確認
+        AC-3: 2ファイル同期確認
+        AC-4: カテゴリ参照解消確認
+        AC-5: カテゴリ定義整合確認
+    end note
+
+    note right of End
+        全乖離解消完了
+        CLAUDE.mdが
+        definitions.tsと完全整合
+    end note

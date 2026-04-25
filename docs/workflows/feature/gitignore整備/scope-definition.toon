@@ -1,0 +1,17 @@
+phase: scope_definition
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T07:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  SD-001,親リポの.gitignoreに3エントリ追加,自動生成ファイルをVCSから除外するため
+  SD-002,サブモジュールの追跡済みファイルをgit rm --cachedで除去,ビルド成果物と状態ファイルの追跡を停止するため
+  SD-003,サブモジュールの.gitignoreは既存エントリで十分なため追加不要,dist/とmcp-server/.claude/state/は既に記載済み
+  SD-004,.claude/settings.jsonは既に親リポ.gitignoreに存在するため追加不要,重複エントリの回避
+  SD-005,.mcp.jsonは環境固有設定のためgitignore対象外とする,リポジトリ共有設定として必要
+risks[2]{id,description,mitigation}:
+  SR-001,git rm --cachedで他開発者のプル時にファイル削除が発生する可能性,--cachedフラグでワーキングツリーのファイルは保持される
+  SR-002,mcp-server/.claude/state/にHMAC秘密鍵が含まれている可能性,untrackによりセキュリティリスクを低減
+artifacts[2]{path,role,summary}:
+  docs/workflows/gitignore整備/scope-definition.md,report,gitignore整備タスクのスコープ定義
+  docs/workflows/gitignore整備/scope-definition.toon,checkpoint,TOONフォーマットチェックポイントファイル
+next:
+  readFiles[2]: .gitignore,workflow-harness/.gitignore

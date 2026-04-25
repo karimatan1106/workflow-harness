@@ -1,0 +1,25 @@
+flowchart TD
+    A(code_reviewサブエージェント起動) --> B(spec.mdに従い成果物を生成)
+    B --> C{複数FRを評価するか}
+    C -->|単一FRのみ| D(単一フレーズで評価完了)
+    C -->|複数FRあり| E(FR-1、FR-2、FR-3の評価結論を記述)
+    E --> F{ガイダンスセクション追加の有無}
+    F -->|修正前: ガイダンスなし| G(同一フレーズを繰り返す)
+    F -->|修正後: ガイダンス追加| H(FR番号と対象ファイル名を含める)
+    G --> I(バリデーター検証)
+    H --> I
+    D --> I
+    I --> J{重複行検出}
+    J -->|重複行あり: 3回以上| K(バリデーション失敗)
+    J -->|重複行なし: 各行が一意| L(バリデーション成功)
+    K --> M(Orchestratorがエラー内容を確認)
+    M --> N(修正指示をリトライプロンプトに追加)
+    N --> O(subagentを再起動)
+    O --> E
+    L --> P(workflow_complete_sub呼び出し)
+    P --> Q(次フェーズへ進行)
+
+    style A fill:#e1f5ff
+    style L fill:#c8e6c9
+    style K fill:#ffcdd2
+    style Q fill:#c8e6c9

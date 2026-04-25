@@ -1,0 +1,94 @@
+taskName: inv-n-proof-tier
+phase: scope_definition
+createdAt: 2026-03-07
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+
+riskScore: 8
+riskFactors:
+  fileCount: 14
+  hasTests: true
+  hasConfig: false
+  hasInfra: false
+  hasSecurity: false
+  hasDatabase: false
+  codeLineEstimate: 450
+riskRationale: 14ファイルに跨る型定義・ステート管理・ツール定義・ハンドラ・DoDゲートの横断変更。既存AC-N/RTMパターンと並列する新追跡チェーンを追加するため、全レイヤに影響する。200行制限により一部ファイルは分割が必要。
+
+taskSize: large
+
+scopeFiles[14]{path,currentLines,role,changeType}:
+  workflow-harness/mcp-server/src/state/types-core.ts, 189, コア型定義, 型追加（Invariant + ProofTier）
+  workflow-harness/mcp-server/src/state/types.ts, 111, TaskState定義, invariants配列とproofTier参照を追加
+  workflow-harness/mcp-server/src/state/manager.ts, 200, StateManager本体, addInvariant/updateInvariantStatusメソッド追加
+  workflow-harness/mcp-server/src/state/manager-write.ts, 120, 書込み操作, applyAddInvariant/refreshCheckpointTraceability拡張
+  workflow-harness/mcp-server/src/tools/defs-a.ts, 163, MCPツール定義前半, harness_add_invariantツール定義を追加
+  workflow-harness/mcp-server/src/tools/defs-b.ts, 158, MCPツール定義後半, harness_update_invariant_statusツール定義を追加
+  workflow-harness/mcp-server/src/tools/handler.ts, 54, ツールディスパッチャ, 新ツール2種のcase追加
+  workflow-harness/mcp-server/src/tools/handlers/recording.ts, 121, 記録系ハンドラ, handleHarnessAddInvariantハンドラ追加
+  workflow-harness/mcp-server/src/tools/handlers/query.ts, 125, クエリ系ハンドラ, handleHarnessUpdateInvariantStatusハンドラ追加
+  workflow-harness/mcp-server/src/gates/dod.ts, 70, DoDオーケストレータ, invariant検証チェック呼出し追加
+  workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, 125, requirements用L4チェック, INV-N最低件数チェック追加
+  workflow-harness/mcp-server/src/gates/dod-types.ts, 17, DoD型定義, ProofTier列挙型をエクスポート
+  workflow-harness/mcp-server/src/phases/registry.ts, 170, フェーズ遷移定義, dogfooding用INV-Nエントリの不変条件ソース
+  workflow-harness/mcp-server/src/tools/handler-shared.ts, 61, 共有ヘルパー, validateSession等は変更不要だが参照確認
+
+scopeDirs[4]{path,purpose}:
+  workflow-harness/mcp-server/src/state, 型定義とステート管理
+  workflow-harness/mcp-server/src/tools, MCPツール定義とハンドラ
+  workflow-harness/mcp-server/src/gates, DoDゲートチェック
+  workflow-harness/mcp-server/src/__tests__, テストファイル群
+
+dependencyAnalysis:
+  upstreamDeps: types-core.ts が全モジュールの型基盤
+  downstreamDeps: handler.ts -> handlers/recording.ts -> manager.ts -> manager-write.ts -> types.ts
+  crossCutting: Checkpoint型にinvariants配列を追加するとcheckpointハッシュ計算に影響
+  zodSchema: TaskStateSchemaにinvariantsフィールドを追加（optional、後方互換性維持）
+
+lineCountRisks[2]{file,current,action}:
+  types-core.ts, 189, types-invariant.ts に分割が必要
+  manager.ts, 200, manager-invariant.ts に分離が必要
+
+decisions[12]{id,statement,rationale}:
+  SD-01, Invariant型はAcceptanceCriterionと並列構造で設計する, "AC-Nパターンが実証済みで学習コストが低く、既存のaddAcceptanceCriterion/updateACStatusと対称なAPIを提供できるため。id/description/status/proofTierの4フィールド構成とする"
+  SD-02, ProofTierはT1-T4の列挙型としてtypes-core.tsに定義する, "証明レベルはInvariantとACの両方に付与可能な独立概念であり型として分離すべき。T1=ExampleTest, T2=PropertyTest, T3=TypeProof, T4=FormalProofの4段階でカバー範囲を網羅する"
+  SD-03, harness_add_invariantツールはrequirementsフェーズで使用しAC-Nと同時期に定義する, "不変条件は要件定義時に確立するのが自然な設計フロー。recording.tsにhandleHarnessAddInvariantハンドラを追加し、defs-a.tsまたはdefs-c.tsにツール定義を配置する"
+  SD-04, types-core.tsとmanager.tsは200行制限超過のため新ファイルに分割する, "ハーネスのコア設計原則（200行制限）を遵守するため必須。types-invariant.tsとmanager-invariant.tsをそれぞれ新設し、Invariant関連の型定義とメソッドを分離する"
+  SD-05, dogfooding不変条件はregistry.tsのフェーズ遷移ルールから抽出しINV-1からINV-4として登録する, "ハーネス自身の不変条件で枠組みを検証する自己参照テスト。test_before_impl順序制約、completed終端性、skip_monotonicity上位集合性、next_phase前進性の4条件を定義する"
+  SD-06, ProofTierはAC-NとINV-Nの両方にoptionalフィールドとして付与する, "既存ACへの後方互換性を維持しつつ段階的に証明レベルを導入できる設計。proofTier未設定のACは従来どおり動作し、既存テストが壊れないことを保証する"
+  SD-07, Checkpoint型にinvariants配列を追加しセッション回復時に不変条件を復元可能にする, "AC/RTMと同等のトレーサビリティをINV-Nにも保証する。refreshCheckpointTraceability関数を拡張し、チェックポイント保存・復元サイクルでinvariantsが欠落しないようにする"
+  SD-08, DoDゲートにcheckInvariantCompleteness関数を追加しacceptance_verificationで全INV-Nのstatus検証を行う, "AC完全性チェック(checkACCompleteness)と対称な検証パターンを採用。requirementsフェーズではcheckInvariantFormatでINV-N最低1件を検証し、acceptance_verificationフェーズでは全INV-Nがheld状態であることを確認する"
+  SD-09, harness_update_invariant_statusツールをdefs-b.tsに定義しquery.tsにハンドラを配置する, "不変条件のステータス更新はクエリ系操作に分類される。updateAcceptanceCriterionStatusパターンに準拠し、status遷移をopen->held->violatedの3状態で管理する。evidence文字列でステータス変更理由を記録する"
+  SD-10, Invariant型のフィールドはid/description/status/proofTier/verifiedAt/evidenceの6項目とする, "AC型のフィールド構成を参考にしつつ、proofTierで証明レベルを明示し、verifiedAtで検証タイムスタンプを記録し、evidenceで証拠テキストを保持する拡張構成。最小限かつ十分な情報量を確保する"
+  SD-11, StateManagerにaddInvariant/updateInvariantStatus/getInvariantsの3メソッドを追加する, "addAcceptanceCriterion/updateACStatus/getKnownBugsの既存パターンに準拠し一貫したAPI設計を維持する。manager-invariant.tsに分離し200行制限を遵守しつつ、メインmanager.tsからre-exportする"
+  SD-12, テストファイルはhandler-invariant/dod-invariant/manager-invariantの3ファイルに分割する, "各レイヤ（ツールハンドラ・DoDゲート・ステート管理）を独立してテスト可能にし、テストの局所性を維持する。既存のhandler-traceability.test.tsとdod-l4-requirements.test.tsのパターンを踏襲する"
+
+acceptanceCriteria[6]{id,description,priority}:
+  AC-1, "Invariant型とProofTier列挙型がtypes-core.tsまたはtypes-invariant.tsに定義され、tscコンパイルが通ること", must
+  AC-2, "harness_add_invariantツールでINV-N形式の不変条件をTaskStateに追加でき、harness_statusで表示されること", must
+  AC-3, "harness_update_invariant_statusツールでINV-Nのステータスをopen/held/violatedに更新でき、evidence文字列が記録されること", must
+  AC-4, "DoDゲートのrequirementsフェーズでINV-Nが最低1件存在するかチェックされること", must
+  AC-5, "Checkpoint保存・復元サイクルでinvariants配列が欠落せず完全に復元されること", must
+  AC-6, "dogfooding不変条件INV-1からINV-4がregistry.tsの実際のフェーズ遷移ルールと整合すること", should
+
+notInScope[6]{item,reason}:
+  既存AC-NやRTM F-NNNの動作変更, "後方互換性を維持する追加のみに限定する。既存のAC-N/RTMフローは十分に安定しており、本タスクで変更すると回帰リスクが高い"
+  ProofTierに基づく自動テスト生成, "T1-T4は分類ラベルとしてのみ機能し、テスト自動生成は別タスク（auto-test-gen）として独立して計画する。本タスクのスコープを肥大化させない"
+  CI/CDパイプラインへのINV-N検証統合, "ハーネス内部のDoDゲートで検証を行う設計であり、外部CI/CDとの統合は運用フェーズの別タスクとして扱う。インフラ変更を含むため影響範囲が異なる"
+  形式的証明ツール（Lean/Coq等）との連携, "T4レベルの形式的証明は現時点では手動文書による記述を想定する。証明補助系との統合は将来の拡張タスクとして別途計画する"
+  CLAUDE.mdのセクション11ツール一覧更新, "docs_updateフェーズで実施する内容であり、本タスクのスコープ定義・実装フェーズでは対象外。ドキュメント更新は実装完了後に一括で行う"
+  workflow-pluginサブモジュールの対応する変更, "pluginサブモジュールは独立したリリースサイクルを持ち、本タスクではharness側のみを変更する。plugin側の対応は依存タスクとして別途起票する"
+
+openQuestions[3]{id,question,impact}:
+  OQ-1, "ProofTierをAC-Nに付与する場合、既存のAC-Nデータのマイグレーションは必要か", "optional型にすることで回避可能だが、既存データとの整合性ポリシーを明確にする必要がある"
+  OQ-2, "INV-Nのviolated状態はタスク全体をブロックすべきか、警告に留めるべきか", "DoDゲートの厳密性に直結する設計判断。ACのfailed状態と同等の扱いにするか軽量にするかで実装が変わる"
+  OQ-3, "dogfooding INV-1からINV-4の検証はCI上で自動実行すべきか、DoDゲート内のみで十分か", "自動実行する場合はテストランナーとの統合が必要になり、スコープ拡大の可能性がある"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/scope-definition.toon, spec, 本スコープ定義成果物
+  docs/workflows/inv-n-proof-tier/research.toon, spec, 次フェーズで作成する調査成果物
+  docs/workflows/inv-n-proof-tier/requirements.toon, spec, 要件定義成果物（AC-N + INV-Nを含む）
+
+next:
+  criticalDecisions[3]: SD-01, SD-04, SD-06
+  readFiles[3]: docs/workflows/inv-n-proof-tier/scope-definition.toon, workflow-harness/mcp-server/src/state/types-core.ts, workflow-harness/mcp-server/src/state/manager.ts
+  warnings[2]: types-core.tsは189行で追加後200行超過が見込まれるため分割計画が必須, Checkpoint型変更はcheckpointハッシュ計算に影響するため慎重な後方互換性対応が必要

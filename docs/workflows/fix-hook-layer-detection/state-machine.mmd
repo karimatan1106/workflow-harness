@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> EnvCheck : hook fires
+    EnvCheck --> Worker : HARNESS_LAYER=worker
+    EnvCheck --> Coordinator : HARNESS_LAYER=coordinator
+    EnvCheck --> AgentIdCheck : env empty
+    AgentIdCheck --> Orchestrator : agent_id absent
+    AgentIdCheck --> Worker : agent_id present (opaque hex)
+    Worker --> [*]
+    Coordinator --> [*]
+    Orchestrator --> [*]
+
+## decisions
+
+- D-001: env HARNESS_LAYER を最優先で評価する (debug override)
+- D-002: agent_id 不在のみ orchestrator 判定とする (L1 は agent_id を持たない)
+- D-003: agent_id 存在は全て worker 扱い (opaque hex は type 判別不可)
+- D-004: coordinator 分岐は HARNESS_LAYER=coordinator 明示時のみ到達する
+- D-005: 旧 startsWith('worker') 判定は削除済み (dead code)

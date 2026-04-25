@@ -1,0 +1,273 @@
+# 技術仕様書: ワークフロープラグイン大規模対応改修
+
+## サマリー
+
+本技術仕様書はワークフロープラグインの11件の要件（REQ-B1からREQ-D3まで）を実装するための詳細設計を定義するものである。
+対象範囲はMCPサーバーのツール層からフック層まで横断的に改修を実施し、1000万ステップ規模のAI駆動開発における品質保証を実現する。
+主要な技術決定事項として承認ゲートの拡充はapprovals属性にrequirements承認フラグを追加してHMAC署名対象に含めることで改竄を防止する。
+意味的整合性チェックはキーワード抽出と出現頻度分析により要件と成果物の実質的対応関係を検証する方式を採用する。
+動的フェーズスキップ機構はタスクスコープのファイル拡張子分析によりドキュメント限定タスクでコードフェーズを自動除外する。
+段階的リカバリ機構は差し戻し先以降の成果物をタイムスタンプ付きバックアップディレクトリに退避することで再実行可能性を担保する。
+bashホワイトリストバイパス対策はbase64デコード検出とeval/sh -c構文解析を組み合わせた多層防御を構築する。
+テスト真正性検証はナノ秒精度の実行時間計測とSHA-256ハッシュ記録により捏造と使い回しの両方を検出する。
+HMACキー管理統一はhmac-keys.json形式を共通フォーマットとして採用し世代別フォールバック検証を実装する。
+重複行誤検知修正はコードブロック範囲トラッキングとテーブル行判定により構造行除外の精度を向上させる。
+パス正規化対応はバックスラッシュ統一とUTF-8正規化によりWindows環境での比較処理を安定化させる。
+次フェーズでは本仕様に基づくステートマシン図とフローチャートを作成し、各関数の状態遷移と処理フローを可視化する必要がある。
+
+## 概要
+
+本改修はworkflow-pluginの品質保証機構を根本から強化し、大規模AI駆動開発における信頼性を確立するものである。
+現状のプラグインは19フェーズ固定のワークフローをMCPサーバーの15個のツールで制御しているが、ユーザー指示と成果物の乖離検出が不十分である。
+特にrequirementsフェーズで定義された要件が後続フェーズで適切に反映されているかの検証が形式的なREQ-ID照合にとどまっている。
+また全タスクに対して同一の19フェーズを強制することで、ドキュメント修正のみの軽量タスクでも実装フェーズの実行を求められる非効率が存在する。
+セキュリティ面ではbashコマンドのホワイトリスト検証がエンコード実行や間接実行を検出できず、テスト結果の捏造も時間計測とハッシュ記録の不足により容易である。
+これら11件の問題を解決するために、MCPサーバー側では6つのツール（approve/next/back/reset/set-scope/record-test-result）と3つのバリデーター（artifact/test-authenticity/scope）を修正する。
+フック側では2つのモジュール（bash-whitelist/hmac-verify）を強化し、プロジェクトルートのCLAUDE.mdにサブエージェント起動戦略を追加する。
+改修の技術的中核はタスク状態のapprovals属性拡張、キーワードベース整合性検証、ファイル拡張子ベーススキップ判定、バックアップベースリカバリの4点である。
+これらの機構は既存のHMAC署名ベース状態管理とフック多層防御の枠組みを維持しながら、検証精度と柔軟性を段階的に向上させる設計である。
+実装順序はB群（高優先度）からD群（低優先度）へと進め、各要件の受け入れ基準を満たすユニットテストを先行作成するTDDアプローチを採用する。
+
+## 実装計画
+
+### REQ-B1: requirementsフェーズ承認ゲート追加
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/tools/approve.tsとworkflow-plugin/mcp-server/src/tools/next.tsの2ファイルである。
+approve.tsの現状実装はtypeパラメータでdesign/test_designの2種類のみ受け入れており、requirements承認の処理分岐が存在しない。
+修正方針としてtypeパラメータのenum検証にrequirementsを追加し、currentPhaseがrequirementsの場合のみ承認処理を許可する。
+承認処理ではtaskState.approvals.requirementsをtrueに設定し、stateManager.updateで状態を更新してHMAC署名を再計算する。
+next.tsの現状実装はdesign_reviewフェーズからの遷移時のみapprovals.designの確認を行っているが、requirementsフェーズからの遷移チェックが不足している。
+修正方針としてnext.ts内のフェーズ遷移前検証セクションにif currentPhase equals requirements then check approvals.requirements条件を追加する。
+approvals.requirementsがfalseまたは未定義の場合はエラーメッセージ「requirements承認が必要です。workflow_approve requirementsを実行してください」を返却する。
+タスク状態のapprovals属性はtypes.tsで既にrequirements/design/test_designの3プロパティが定義されているため、型定義の追加修正は不要である。
+HMAC署名の対象フィールドはhmac.tsのcalculateStateHMAC関数内でJSON.stringifyによりTaskState全体を含むため、approvals属性の変更も自動的に署名対象に含まれる。
+受け入れ基準の第一項目を満たすためのユニットテストはapprove.test.tsにrequirements承認の正常系ケースを追加する。
+受け入れ基準の第二項目を満たすためのユニットテストはapprove.test.tsに他フェーズでrequirements承認を試みる異常系ケースを追加する。
+受け入れ基準の第三項目を満たすためのユニットテストはnext.test.tsにrequirementsフェーズから未承認状態で遷移を試みるケースを追加する。
+受け入れ基準の第四項目を満たすためのユニットテストはstatus.test.tsでapprovals.requirementsがtrueであることを確認するケースを追加する。
+受け入れ基準の第五項目を満たすためのユニットテストはhmac.test.tsでapprovals変更後のHMAC検証パステストを追加する。
+
+### REQ-B2: 意味的整合性チェック導入
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/validation/artifact-validator.tsであり、validateSemanticConsistency関数を新規追加する。
+関数シグネチャはasync function validateSemanticConsistency(taskState: TaskState, workflowDir: string): Promise<ValidationResult>とする。
+ValidationResult型は既存のValidationResultインターフェースを再利用し、valid/errors/warningsの3プロパティで結果を返却する。
+実装アプローチはキーワード抽出と出現頻度分析を組み合わせた統計的手法を採用し、自然言語処理ライブラリへの依存を回避する。
+キーワード抽出処理では要件ファイル（requirements.md）の各セクション見出しと本文からストップワード除去と品詞フィルタリングを実施する。
+品詞フィルタリングは簡易実装として名詞・動詞・形容詞に相当する単語（3文字以上かつ助詞・助動詞を除外）を抽出対象とする。
+ストップワード辞書はconst STOP_WORDS配列で「こと」「ため」「もの」「これ」「それ」等の一般的な機能語を定義する。
+抽出されたキーワードは出現頻度順にソートし、上位20個を要件の代表キーワードとして記録する。
+後続フェーズ成果物（spec.md/test-design.md/threat-model.md）のテキスト全体に対して各キーワードの出現回数をカウントする。
+出現頻度が1回以下のキーワードを未対応キーワードとして抽出し、該当要件IDと対象ファイル名を含むエラーメッセージを生成する。
+requirements.mdの各REQ-IDセクションを正規表現（/^###\s+(REQ-[A-Z0-9]+)/gm）で抽出し、セクション単位で整合性検証を実施する。
+spec.mdの検証ではrequirements.mdの各要件セクションのキーワードがspec.md内の対応セクション（実装計画等）に含まれることを確認する。
+test-design.mdの検証ではrequirements.mdの各REQ-IDに対応するテストケースセクションでキーワードが言及されていることを確認する。
+threat-model.mdの検証ではrequirements.mdのセキュリティ関連要件キーワードが脅威シナリオ記述に含まれることを確認する。
+validateSemanticConsistency関数はnext.ts内のvalidateArtifacts呼び出し直後に追加され、フェーズ遷移時の品質ゲートとして機能する。
+受け入れ基準の第一項目を満たすためのテストデータはrequirements.mdにREQ-B1とREQ-B2を含むサンプルファイルを作成し、test-design.mdで各要件のテストケースを記述する。
+受け入れ基準の第二項目を満たすためのテストデータはspec.mdに要件キーワードを含む機能記述セクションと含まないセクションを用意する。
+受け入れ基準の第三項目を満たすためのテストデータはthreat-model.mdにセキュリティ要件対応の脅威シナリオと非対応のシナリオを用意する。
+受け入れ基準の第四項目を満たすためのユニットテストはキーワード不足時のエラーメッセージフォーマットを検証するケースを追加する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はartifact-validator.test.tsでキーワード抽出/出現頻度計測/閾値判定の各分岐を網羅する。
+
+### REQ-B3: parallel_analysis内サブフェーズ依存関係追加
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/phases/definitions.tsのSUB_PHASE_DEPENDENCIES定数である。
+現状のSUB_PHASE_DEPENDENCIESはparallel_designのみ依存関係を定義しており、parallel_analysisキーが存在しないか空配列である。
+修正方針としてSUB_PHASE_DEPENDENCIESオブジェクトにparallel_analysisキーを追加し、値として配列['planning requires threat_modeling']を設定する。
+依存関係の表現形式は既存のparallel_design定義に倣い、SubPhaseName型の配列として推奨順序を記述する。
+complete-sub.ts内のworkflow_complete_sub関数でサブフェーズ完了時にSUB_PHASE_DEPENDENCIESを参照して前提サブフェーズの完了状態を確認する。
+具体的な検証ロジックはif subPhase equals planning and not taskState.subPhaseCompletion.threat_modeling then return warning messageとする。
+警告メッセージは「推奨: threat_modelingを先に完了してください。続行する場合はこのメッセージを確認の上で再度実行してください」とする。
+ユーザーが警告後に再度workflow_complete_sub planningを実行した場合は警告を抑制して処理を継続する仕組みを導入する。
+警告抑制の実装方法はタスク状態に一時的なwarningAcknowledged属性を追加し、同一サブフェーズの2回目実行では警告をスキップする。
+warningAcknowledged属性はタスク状態のvolatile領域（HMAC署名対象外）に配置し、タスク再起動時には初期化される設計とする。
+受け入れ基準の第一項目を満たすためのユニットテストはdefinitions.test.tsでSUB_PHASE_DEPENDENCIES.parallel_analysisの存在を確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはcomplete-sub.test.tsでthreat_modeling未完了時のplanning完了試行で警告が返却されることを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはcomplete-sub.test.tsで警告後の再実行が成功することを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはcomplete-sub.test.tsでthreat_modeling→planningの順序で完了した場合にエラー・警告がないことを確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はcomplete-sub.test.tsで依存関係チェックの条件分岐を網羅する。
+
+### REQ-B4: サブエージェントコンテキスト引き継ぎ改善
+
+本要件の実装対象はプロジェクトルートのCLAUDE.mdファイルであり、サブエージェント起動テンプレートセクションを拡張する。
+現状のCLAUDE.mdはフェーズ別サブagent設定テーブルで入力ファイルを列挙しているが、重要度による読み込み戦略の記載がない。
+修正方針としてフェーズ別サブagent設定テーブルに「入力ファイル重要度」列を追加し、各ファイルに（全文）（サマリー）（参照）の注釈を付与する。
+重要度の判定基準は当該フェーズの作業に直接必要な情報を含むファイルを全文、背景情報を含むファイルをサマリー、不要なファイルを参照なしとする。
+implementationフェーズの入力ファイル重要度はtest-design.md（全文）spec.md（全文）requirements.md（サマリー）threat-model.md（参照）research.md（参照）とする。
+testingフェーズの入力ファイル重要度はtest-design.md（全文）implementation成果物（全文）spec.md（サマリー）requirements.md（参照）とする。
+refactoringフェーズの入力ファイル重要度はimplementation成果物（全文）spec.md（サマリー）test-design.md（参照）とする。
+code_reviewフェーズの入力ファイル重要度はimplementation成果物（全文）spec.md（全文）test-design.md（サマリー）requirements.md（参照）とする。
+CLAUDE.mdにサマリーセクション要件として「成果物の先頭50行以内に配置すること」「目的・主要決定事項・次フェーズ必要情報の3要素を含むこと」を明記する。
+サブエージェント起動promptテンプレートに「重要度Highファイルは全文読み込み、重要度Mediumファイルはサマリーセクションのみ読み込み」の指示文を追加する。
+受け入れ基準の第一項目を満たすための確認はCLAUDE.mdのフェーズ別サブagent設定テーブルに入力ファイル重要度列が存在することを目視検証する。
+受け入れ基準の第二項目を満たすための確認はimplementationフェーズ行でtest-design.md（全文）spec.md（全文）requirements.md（サマリー）の記載を目視検証する。
+受け入れ基準の第三項目を満たすための確認はtestingフェーズ行でtest-design.md（全文）implementation成果物（全文）spec.md（サマリー）の記載を目視検証する。
+受け入れ基準の第四項目を満たすための確認はCLAUDE.mdのサマリーセクション必須化セクションに50行以内の記載を目視検証する。
+受け入れ基準の第五項目を満たすための確認はCLAUDE.mdのサマリーセクション必須化セクションに目的・主要決定事項・次フェーズ必要情報の記載を目視検証する。
+
+### REQ-C1: bashホワイトリストバイパス検出強化
+
+本要件の実装対象はworkflow-plugin/hooks/modules/bash-whitelist.jsであり、detectEncodedCommand関数とdetectIndirectExecution関数を新規追加する。
+detectEncodedCommand関数はBashコマンド文字列内でbase64/printf/echo等のエンコード関数を検出し、引数をデコードして危険コマンド照合を実施する。
+実装アプローチはコマンド文字列を正規表現（/base64\s+-d|printf\s+\\x|echo\s+-e/）でスキャンし、マッチした場合はエンコード種別を判定する。
+base64 -d検出時は標準入力または後続引数からbase64文字列を抽出し、Buffer.from(encoded, 'base64').toString()でデコードする。
+printf \\x検出時は16進エスケープシーケンスを正規表現（/\\x[0-9a-fA-F]{2}/g）で抽出し、parseInt(hex, 16)でASCII変換する。
+echo -e検出時は8進エスケープシーケンスを正規表現（/\\[0-7]{3}/g）で抽出し、parseInt(oct, 8)でASCII変換する。
+デコード後の文字列はcheckCommandWhitelist関数に渡してホワイトリスト照合を実施し、非許可コマンドが検出された場合はブロックする。
+detectIndirectExecution関数はeval/exec/sh -c/bash -c構文を検出し、実行対象文字列をホワイトリスト照合する。
+実装アプローチはコマンド文字列を正規表現（/\beval\s+|exec\s+|\bsh\s+-c\s+|\bbash\s+-c\s+/）でスキャンし、マッチした場合は引数部分を抽出する。
+引数部分の抽出はクォート処理を考慮し、シングルクォート・ダブルクォート・バッククォートで囲まれた文字列を正規表現で取得する。
+抽出された実行対象文字列はcheckCommandWhitelist関数に渡してホワイトリスト照合を実施し、非許可コマンドが検出された場合はブロックする。
+パイプ経由のシェル実行（例: echo cmd | sh）はパイプ演算子の右側をdetectIndirectExecution関数で検証する。
+phase-edit-guard.jsのvalidateBashCommand関数内でdetectEncodedCommandとdetectIndirectExecutionを既存のホワイトリストチェックの前に実行する。
+受け入れ基準の第一項目を満たすためのユニットテストはbash-whitelist.test.jsでecho "cm0gLXJmIC8=" | base64 -d | shの検出ケースを追加する。
+受け入れ基準の第二項目を満たすためのユニットテストはbash-whitelist.test.jsでeval "rm -rf /"の検出ケースを追加する。
+受け入れ基準の第三項目を満たすためのユニットテストはbash-whitelist.test.jsでsh -c "rm -rf /"の検出ケースを追加する。
+受け入れ基準の第四項目を満たすためのユニットテストはbash-whitelist.test.jsでecho "rm -rf /" | shの検出ケースを追加する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はbash-whitelist.test.jsでエンコード種別判定とシェル起動検出の分岐を網羅する。
+
+### REQ-C2: テスト真正性検証強化
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/validation/test-authenticity.tsであり、validateTestExecutionTime関数とrecordTestOutputHash関数を新規追加する。
+validateTestExecutionTime関数はテスト実行の開始時刻と終了時刻を記録し、実行時間が閾値未満の場合は捏造と判定する。
+関数シグネチャはasync function validateTestExecutionTime(taskId: string, startTime: number, endTime: number): Promise<ValidationResult>とする。
+startTimeとendTimeはミリ秒単位のUNIXタイムスタンプ（Date.now()の戻り値）として受け取り、差分計算で実行時間を算出する。
+実行時間の妥当性閾値はconst MIN_TEST_EXECUTION_MS = 100として定義し、100ミリ秒未満の場合は捏造と判定する。
+捏造判定時のエラーメッセージは「テスト実行時間が不自然に短いです（${duration}ms）。実際のテスト実行結果を提出してください」とする。
+record-test-result.ts内のworkflow_record_test_result関数でテスト実行前にconst startTime = Date.now()を記録する。
+テスト実行コマンド（exitCodeとoutputパラメータ受信）後にconst endTime = Date.now()を記録し、validateTestExecutionTimeを呼び出す。
+recordTestOutputHash関数はテスト出力全文のSHA-256ハッシュを計算し、タスク状態のtestOutputHashesプロパティに記録する。
+関数シグネチャはasync function recordTestOutputHash(taskId: string, output: string): Promise<ValidationResult>とする。
+SHA-256ハッシュ計算はNode.js標準ライブラリのcryptoモジュールを使用し、crypto.createHash('sha256').update(output).digest('hex')で実装する。
+タスク状態のtestOutputHashes属性は文字列配列として定義し、新規ハッシュ追加前に既存ハッシュとの重複チェックを実施する。
+重複検出時のエラーメッセージは「同一のテスト出力が既に記録されています。新規実行結果を提出してください」とする。
+types.tsのTaskStateインターフェースにtestOutputHashes?: string[]プロパティを追加し、オプショナルプロパティとして定義する。
+testOutputHashes属性はHMAC署名対象に含まれ、タスク状態の改竄検出により保護される。
+受け入れ基準の第一項目を満たすためのユニットテストはrecord-test-result.test.tsで実行時間が自動記録されることを確認するケースを追加する。
+受け入れ基準の第二項目を満たすためのユニットテストはrecord-test-result.test.tsで実行時間50msのテスト結果提出でエラーが返却されることを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはrecord-test-result.test.tsでハッシュがtaskState.testOutputHashesに追加されることを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはrecord-test-result.test.tsで同一出力の2回目提出でエラーが返却されることを確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はtest-authenticity.test.tsで時間計測ロジックとハッシュ計算ロジックの分岐を網羅する。
+
+### REQ-C3: 動的フェーズスキップ機構導入
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/phases/definitions.tsとworkflow-plugin/mcp-server/src/tools/next.tsである。
+definitions.tsにcalculateRequiredPhases関数を新規追加し、タスクスコープからスキップ対象フェーズを判定する。
+関数シグネチャはfunction calculateRequiredPhases(taskState: TaskState): PhaseName[]とし、実行すべきフェーズ名配列を返却する。
+スキップ判定ロジックはtaskState.scope.files配列の各要素から拡張子を抽出し、コードファイル（.ts/.tsx/.js/.jsx等）の有無を確認する。
+コードファイルが1つも含まれない場合はimplementation/refactoring/testing/regression_testの4フェーズをスキップ対象とする。
+ドキュメントファイル（.md/.mdx）のみのタスクではtest_implフェーズも不要であるため、test_impl/implementation/refactoring/testing/regression_testの5フェーズをスキップ対象とする。
+スキップ対象フェーズリストはtaskState.phaseSkipReasons属性（Map<PhaseName, string>型）に記録し、各フェーズのスキップ理由を保持する。
+phaseSkipReasons属性の記録例は「implementation: コードファイルが影響範囲に含まれないため」「testing: テストファイルが影響範囲に含まれないため」とする。
+next.ts内のdetermineNextPhase関数でフェーズ遷移時にcalculateRequiredPhasesを呼び出し、次フェーズがスキップ対象の場合は再帰的に次々フェーズを探索する。
+スキップ処理のログ出力は「${phaseName}をスキップします: ${reason}」の形式で実施し、ユーザーにスキップ理由を通知する。
+types.tsのTaskStateインターフェースにphaseSkipReasons?: Map<PhaseName, string>プロパティを追加し、オプショナルプロパティとして定義する。
+workflow_statusツールの出力にスキップされたフェーズとその理由を追加し、ユーザーがタスク状況を把握できるようにする。
+受け入れ基準の第一項目を満たすためのユニットテストはcalculateRequiredPhases.test.tsでfiles: ['doc/guide.md']の入力でimplementation等がスキップ対象になることを確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはnext.test.tsでスキップ対象フェーズを飛ばして次フェーズに遷移することを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはnext.test.tsでphaseSkipReasons属性にスキップ理由が記録されることを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはstatus.test.tsでworkflow_status出力にスキップ情報が含まれることを確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はcalculateRequiredPhases.test.tsで拡張子判定と条件分岐を網羅する。
+
+### REQ-C4: 段階的リカバリ機構改善
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/tools/back.tsとworkflow-plugin/mcp-server/src/tools/reset.tsである。
+back.tsにresetArtifactsFromPhase関数を新規追加し、差し戻し先フェーズ以降の成果物をバックアップディレクトリに移動する。
+関数シグネチャはasync function resetArtifactsFromPhase(taskState: TaskState, targetPhase: PhaseName): Promise<void>とする。
+バックアップディレクトリ名は実行日時とタスクIDを含む形式「backup_${taskId}_${timestamp}」とし、workflowDirの直下に作成する。
+timestampはnew Date().toISOString().replace(/[:.]/g, '-')で生成し、ファイル名に使用可能な形式に変換する。
+成果物ファイルの移動対象はdefinitions.tsのPHASE_ARTIFACT_REQUIREMENTSで定義されたファイル名を基準とし、targetPhase以降のフェーズのファイルを抽出する。
+移動処理はNode.jsのfs.promises.rename関数を使用し、元のファイルパスからバックアップディレクトリ内の同名ファイルパスに移動する。
+generateRecoveryGuidance関数を新規追加し、差し戻し理由と修正対象フェーズに基づく再実行手順を生成する。
+関数シグネチャはfunction generateRecoveryGuidance(targetPhase: PhaseName, reason?: string): stringとし、マークダウン形式のガイダンス文字列を返却する。
+ガイダンス内容は「${targetPhase}フェーズに差し戻しました。理由: ${reason}」「次の作業: ${targetPhase}フェーズの成果物を修正してください」「完了後: workflow_nextで次フェーズに進んでください」の3行で構成する。
+reset.ts内のworkflow_reset関数でもresetArtifactsFromPhase関数を呼び出し、researchフェーズ以降すべての成果物をバックアップする。
+back.ts内のworkflow_back関数でresetArtifactsFromPhase実行後にgenerateRecoveryGuidanceを呼び出し、戻り値をレスポンスメッセージに含める。
+受け入れ基準の第一項目を満たすためのユニットテストはback.test.tsでrequirementsフェーズへの差し戻し時にparallel_analysis以降の成果物が移動されることを確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはreset.test.tsでworkflow_reset実行時にすべての成果物が移動されることを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはback.test.tsで戻り値にgenerateRecoveryGuidanceの出力が含まれることを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはback.test.tsでガイダンスメッセージに差し戻し理由とフェーズ名が含まれることを確認する。
+受け入れ基準の第五項目を満たすためのユニットテストはback.test.tsでバックアップディレクトリ名にタスクIDとタイムスタンプが含まれることを確認する。
+
+### REQ-D1: HMACキー管理統一
+
+本要件の実装対象はworkflow-plugin/hooks/hmac-verify.jsであり、loadHMACKeys関数を新規追加する。
+現状のhmac-verify.jsはfs.readFileSyncで単一ファイルからHMACキーを読み込んでいるが、hmac-keys.json形式への対応が必要である。
+loadHMACKeys関数のシグネチャはfunction loadHMACKeys(keysFilePath)とし、鍵オブジェクト配列を返却する。
+鍵オブジェクトの構造はMCPサーバー側hmac.tsの既存定義と同一で、generation（世代番号）とkey（鍵文字列）とcreatedAt（作成日時）の3プロパティを保持する。
+hmac-keys.jsonのファイル形式はJSON配列として複数世代の鍵を格納し、最新世代が配列の末尾に配置される想定とする。
+loadHMACKeys関数内でJSON.parseによりファイル内容をパースし、配列の各要素を鍵オブジェクトにマッピングする。
+verifyHMACWithMultipleKeys関数を新規追加し、複数世代の鍵でフォールバック検証を実施する。
+関数シグネチャはfunction verifyHMACWithMultipleKeys(data, signature, keys)とし、第三引数は鍵オブジェクト配列である。
+検証ロジックは最新世代鍵（配列末尾）から順に検証を試行し、いずれかの鍵で検証成功した場合はtrueを返却する。
+各世代鍵での検証はcrypto.createHmac('sha256', key.key).update(data).digest('hex')でHMAC値を計算し、signatureと比較する。
+すべての世代鍵で検証失敗した場合はfalseを返却し、フック側でブロック処理を実施する。
+hmac-verify.jsのverifyStateIntegrity関数内でloadHMACKeysとverifyHMACWithMultipleKeysを呼び出し、既存の単一鍵検証ロジックを置き換える。
+受け入れ基準の第一項目を満たすためのユニットテストはhmac-verify.test.jsでhmac-keys.json形式ファイルの読み込み成功を確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはhmac-verify.test.jsで最新世代鍵署名の検証パスを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはhmac-verify.test.jsで過去世代鍵署名の検証パスを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはhmac-verify.test.jsで不正な署名の検証失敗を確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はhmac-verify.test.jsで鍵読み込みと世代別検証の分岐を網羅する。
+
+### REQ-D2: 重複行検出の誤検知修正
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/validation/artifact-validator.tsのisStructuralLine関数である。
+現状のisStructuralLine関数は水平線・コードフェンス・テーブルセパレータ・太字ラベルを構造行として判定している。
+修正方針としてコードブロック範囲トラッキングとテーブル行判定を追加し、これらの行を構造行として除外する。
+コードブロック範囲トラッキングはcheckSectionDensity関数内で開始フェンス（```）から終了フェンスまでのフラグ管理を実装する。
+具体的にはlet inCodeBlock = falseを初期化し、行が```で始まる場合にinCodeBlock = !inCodeBlockでトグルする。
+inCodeBlockがtrueの場合はその行を構造行としてカウントから除外し、実質行数にカウントしない。
+テーブル行判定は行がパイプ文字（|）で始まりパイプ文字で終わるパターンを正規表現（/^\|.*\|$/）で検出する。
+既存のテーブルセパレータ判定（/^\|[\s:-]+\|$/）はヘッダー区切り行のみ対象であるため、データ行判定を新規追加する必要がある。
+テーブルデータ行（パイプ区切りでハイフン・コロン以外の文字を含む行）も構造行として除外し、実質行数にカウントしない。
+リスト項目（- または* で始まる行）と通常本文行は既存動作を維持し、実質行としてカウントする。
+isStructuralLine関数の修正により誤検知が減少し、テーブル多用のドキュメントやコード例を含むドキュメントでの検証精度が向上する。
+受け入れ基準の第一項目を満たすためのユニットテストはisStructuralLine.test.tsでMarkdownコードブロック内の行がtrueを返すことを確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはisStructuralLine.test.tsでMarkdownテーブルのデータ行がtrueを返すことを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはisStructuralLine.test.tsでMarkdownリスト項目の行がfalseを返すことを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはisStructuralLine.test.tsで通常の本文行がfalseを返すことを確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はisStructuralLine.test.tsでコードブロック検出とテーブル行検出の分岐を網羅する。
+
+### REQ-D3: Windowsパス正規化対応
+
+本要件の実装対象はworkflow-plugin/mcp-server/src/state/manager.tsとworkflow-plugin/mcp-server/src/validation/scope-validator.tsである。
+normalizePath関数を新規追加し、バックスラッシュ統一とUTF-8正規化を実施する。
+関数シグネチャはfunction normalizePath(filePath: string): stringとし、正規化後のパス文字列を返却する。
+バックスラッシュ統一処理はfilePath.replace(/\\/g, '/')でバックスラッシュをスラッシュに置換する。
+UTF-8正規化処理はString.prototype.normalize('NFC')メソッドで合成文字を正規化形式に変換する。
+正規化形式としてNFC（Normalization Form Canonical Composition）を採用し、日本語文字の表現ゆれを吸収する。
+大文字小文字の扱いはWindows環境では不区別だがUNIX環境では区別されるため、toLowerCase()変換は実施しない。
+manager.tsのfindTaskFiles関数内でglobパターンマッチ結果のパス配列を正規化し、比較処理に使用する。
+scope-validator.tsのisWithinScope関数内でtaskState.scope.filesとeditTargetFilePathの両方を正規化してから比較する。
+set-scope.ts内のworkflow_set_scope関数でユーザー入力のファイルパスを受け取った時点で正規化し、タスク状態に保存する。
+正規化されたパスはタスク状態のscope属性に保存され、HMAC署名対象に含まれる。
+受け入れ基準の第一項目を満たすためのユニットテストはnormalizePath.test.tsで'src\\backend\\file.ts'が'src/backend/file.ts'に変換されることを確認する。
+受け入れ基準の第二項目を満たすためのユニットテストはnormalizePath.test.tsで'src/ツール/file.ts'が正しく比較されることを確認する。
+受け入れ基準の第三項目を満たすためのユニットテストはmanager.test.tsでfindTaskFiles関数が正規化パスで動作することを確認する。
+受け入れ基準の第四項目を満たすためのユニットテストはscope-validator.test.tsでisWithinScope関数が正規化パスで判定することを確認する。
+受け入れ基準の第五項目を満たすためのカバレッジ測定はnormalizePath.test.tsでバックスラッシュ置換とNFC正規化の処理を網羅する。
+
+## 変更対象ファイル
+
+本改修の対象ファイルは合計13ファイルであり、MCPサーバー側10ファイルとフック側2ファイルとプロジェクトルート1ファイルで構成される。
+MCPサーバーのツール層では4ファイル（approve.ts/next.ts/back.ts/set-scope.ts）を修正し、承認ゲートとフェーズ遷移とリカバリ機構を強化する。
+MCPサーバーのバリデーション層では3ファイル（artifact-validator.ts/test-authenticity.ts/scope-validator.ts）を修正し、品質検証精度を向上させる。
+MCPサーバーの状態管理層では2ファイル（manager.ts/types.ts）を修正し、タスク状態の属性追加とパス正規化を実装する。
+MCPサーバーのフェーズ定義層では1ファイル（definitions.ts）を修正し、サブフェーズ依存関係と動的スキップ機構を追加する。
+フック層では2ファイル（bash-whitelist.js/hmac-verify.js）を修正し、セキュリティ検証を強化する。
+プロジェクトルートでは1ファイル（CLAUDE.md）を修正し、サブエージェント起動戦略を追加する。
+
+workflow-plugin/mcp-server/src/tools/approve.tsはREQ-B1のrequirements承認ゲート追加のため、typeパラメータ検証と承認処理分岐を修正する。
+workflow-plugin/mcp-server/src/tools/next.tsはREQ-B1のrequirements承認チェックとREQ-C3の動的スキップ処理のため、フェーズ遷移ロジックを修正する。
+workflow-plugin/mcp-server/src/phases/definitions.tsはREQ-B3のサブフェーズ依存関係とREQ-C3のスキップ判定関数のため、定数定義と関数追加を実施する。
+workflow-plugin/mcp-server/src/validation/artifact-validator.tsはREQ-B2の意味的整合性チェックとREQ-D2の重複行誤検知修正のため、関数追加と既存関数修正を実施する。
+workflow-plugin/mcp-server/src/validation/test-authenticity.tsはREQ-C2のテスト真正性検証のため、実行時間検証とハッシュ記録の関数を追加する。
+workflow-plugin/mcp-server/src/validation/scope-validator.tsはREQ-D3のパス正規化のため、normalizePath関数をインポートして比較処理に適用する。
+workflow-plugin/mcp-server/src/state/manager.tsはREQ-D3のパス正規化のため、normalizePath関数を追加してタスク発見処理に適用する。
+workflow-plugin/mcp-server/src/state/types.tsはREQ-C2とREQ-C3の状態拡張のため、TaskStateインターフェースにtestOutputHashesとphaseSkipReasonsを追加する。
+workflow-plugin/mcp-server/src/tools/back.tsはREQ-C4の段階的リカバリのため、成果物バックアップとガイダンス生成の関数を追加する。
+workflow-plugin/mcp-server/src/tools/set-scope.tsはREQ-D3のパス正規化のため、ユーザー入力パスを正規化してから状態保存する処理を追加する。
+workflow-plugin/hooks/modules/bash-whitelist.jsはREQ-C1のバイパス検出のため、エンコード検出と間接実行検出の関数を追加する。
+workflow-plugin/hooks/hmac-verify.jsはREQ-D1のHMACキー統一のため、複数世代鍵読み込みとフォールバック検証の関数を追加する。
+CLAUDE.mdはREQ-B4のコンテキスト引き継ぎ改善のため、フェーズ別サブagent設定テーブルに入力ファイル重要度列を追加する。

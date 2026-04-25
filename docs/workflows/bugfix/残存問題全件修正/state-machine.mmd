@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> HookStarted: フック起動（check-test-first/check-spec/check-spec-sync/spec-first-guard/spec-guard-reset）
+
+    HookStarted --> NormalProcessing: 正常に処理開始
+    HookStarted --> GlobalError_UncaughtException: uncaughtExceptionイベント発生
+    HookStarted --> GlobalError_UnhandledRejection: unhandledRejectionイベント発生
+
+    NormalProcessing --> AllowExit: 条件を満たし許可判定 process.exit(0)
+    NormalProcessing --> BlockExit_Logic: 条件違反を検出しブロック判定 process.exit(2)に統一（修正箇所：spec-first-guard 68行目・107行目）
+
+    GlobalError_UncaughtException --> BlockExit_Error1: process.exit(2)に統一（修正箇所：各ファイルのuncaughtExceptionハンドラ）
+    GlobalError_UnhandledRejection --> BlockExit_Error2: process.exit(2)に統一（修正箇所：各ファイルのunhandledRejectionハンドラ）
+
+    AllowExit --> [*]
+    BlockExit_Logic --> [*]
+    BlockExit_Error1 --> [*]
+    BlockExit_Error2 --> [*]

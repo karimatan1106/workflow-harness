@@ -1,0 +1,71 @@
+phase: research
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内の===セパレーターを全て除去し、TOON成果物への===模倣の根本原因を排除する
+status: complete
+
+contaminationSources[2]{id,mechanism,description}:
+  R-SRC1, static-literal, テンプレート文字列内に直接===を記述している箇所(definitions-shared.ts 5箇所 + defs-stage6.ts 1箇所 + definitions.ts 1箇所)
+  R-SRC2, dynamic-conversion, buildSubagentPrompt内line184の正規表現が全テンプレートの##を===に変換する根本原因ロジック
+
+staticOccurrences[7]{id,file,line,context,content}:
+  R-S1, definitions-shared.ts, 26, ARTIFACT_QUALITY_RULES定数の冒頭行, 品質要件セパレーター
+  R-S2, definitions-shared.ts, 31, SUMMARY_SECTION_RULE定数の冒頭行, TOON成果物セパレーター
+  R-S3, definitions-shared.ts, 43, EXIT_CODE_RULE定数の冒頭行, 完了時の戻り値セパレーター
+  R-S4, definitions-shared.ts, 48, PROCEDURE_ORDER_RULE定数の冒頭行, 作業順序セパレーター
+  R-S5, definitions-shared.ts, 59, bashCategoryHelp関数の戻り値テンプレート, Bash制限セパレーター
+  R-S6, defs-stage6.ts, 84, docs_updateテンプレート内の配置ルールセクション, ドキュメント配置ルールセパレーター
+  R-S7, definitions.ts, 77, buildToonFirstSection関数の戻り値, TOON入力セパレーター
+
+dynamicConversion[1]{id,file,lines,effect}:
+  R-D1, definitions.ts, 182-184, prompt.replaceで行頭##を===に###を==に変換。stage1-6全ファイルの約80箇所が対象
+
+conversionSurvivors[6]{id,headerPattern,exampleFiles,count}:
+  R-CV1, 作業内容ヘッダー, defs-stage1〜6全テンプレート, 約15箇所
+  R-CV2, 必須ACマッピングヘッダー, defs-stage3/4/1, 5箇所
+  R-CV3, レビュー姿勢ヘッダー, defs-stage4, 1箇所
+  R-CV4, 設計チェックリストヘッダー, defs-stage4, 1箇所
+  R-CV5, StepNサブヘッダー, defs-stage1, 7箇所(==に変換)
+  R-CV6, タスク名ヘッダー, defs-stage6:176, 1箇所(stripで除去されない形式)
+
+strippedHeaders[3]{id,pattern,strippedBy}:
+  R-ST1, タスク情報ブロック, buildSubagentPrompt line143のreplace
+  R-ST2, 入力ブロック, buildSubagentPrompt line144のreplace
+  R-ST3, 出力ブロック, buildSubagentPrompt line146のreplace
+
+nonTargets[3]{id,file,line,reason}:
+  R-NT1, registry.ts, 137, JavaScript厳密等価演算子でありセパレーターではない
+  R-NT2, registry.ts, 148, JavaScript厳密等価演算子であり同上
+  R-NT3, definitions.ts, 70/76/95/110, JavaScript厳密等価演算子であり同上
+
+replacementStrategy[3]{id,target,action,replacement}:
+  R-RS1, 静的===セパレーター7箇所, ===ラベル===を太字ラベルに置換, LLMが視覚的区切りとして認識しTOON出力に混入しない
+  R-RS2, 動的変換ロジック(line182-184), 3行を完全削除, ##ヘッダーはlines143-146のstrip処理で大半が除去済み
+  R-RS3, テンプレート内の残存##ヘッダー, ##を太字ラベルに直接書き換え, 動的変換削除後に##が残るとTOON出力に##が混入するため事前に置換が必要
+
+technicalConstraints[4]{id,constraint,impact}:
+  R-TC1, definitions.tsのstrip処理は##タスク情報/入力/出力のみ除去する, ##作業内容や##必須等は残存し動的変換の対象となっている
+  R-TC2, 動的変換削除後はテンプレート内の##がそのまま出力される, サブエージェントが##を見てTOON内に##を書く危険がある
+  R-TC3, 太字ラベルへの置換はテンプレート文字列の直接編集が必要, defs-stage1〜6の約80箇所の##を太字に書き換える大量編集となる
+  R-TC4, buildToonFirstSection(line77)の===は関数戻り値内にあり定数ではない, 文字列リテラル内の直接編集で対応可能
+
+scopeRefinement:
+  originalScope: 8箇所の変更(静的7+削除1)
+  actualScope: 静的===7箇所の置換 + 動的変換ロジック3行の削除 + テンプレート内##ヘッダー約80箇所の太字置換
+  sizeImpact: scopeがsmallからmediumに拡大する可能性あり。ただし全変更は機械的な文字列置換であり複雑性は低い
+
+decisions[6]{id,statement,rationale}:
+  R-D1, 静的===セパレーター7箇所を太字ラベルに置換する, LLMはMarkdown太字をセクション区切りとして認識しTOON出力への混入リスクがない
+  R-D2, definitions.ts line182-184の動的##→===変換ロジックを完全削除する, ===生成の根本原因を断つ。このロジックが全テンプレートの##を===に変換している
+  R-D3, 動的変換削除に伴いテンプレート内の残存##ヘッダーを太字ラベルに事前変換する, ##がTOON出力に混入する二次汚染を防止する
+  R-D4, strip処理(lines143-146)は変更しない, ##タスク情報/入力/出力のstrip処理は正しく機能しておりヘッダー除去に貢献している
+  R-D5, defs-stage1〜6の##を一括で太字に置換する作業は正確な箇所数を確定して実施する, stage1〜6の全テンプレートが対象であり漏れなく特定する必要がある
+  R-D6, registry.tsのJavaScript===演算子は変更対象外とする, プログラミング言語の等価演算子でありテンプレートセパレーターではない
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/template-separator-cleanup/scope-definition.toon, spec, スコープ定義(静的7+削除1の初期見積もり)
+  docs/workflows/template-separator-cleanup/research.toon, report, ===汚染の2系統(静的7箇所+動的変換1箇所)と残存##ヘッダー約80箇所の調査結果
+
+next:
+  criticalDecisions: R-D2(動的変換ロジック削除) R-D3(残存##の太字変換で二次汚染防止)
+  readFiles: src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts
+  warnings: スコープがsmallからmediumに拡大する可能性あり(テンプレート内##の約80箇所が追加対象)

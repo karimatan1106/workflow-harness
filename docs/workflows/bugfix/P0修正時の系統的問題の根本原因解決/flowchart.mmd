@@ -1,0 +1,49 @@
+flowchart TD
+    Start(("実装フェーズ開始<br/>P0修正時の系統的問題の根本原因解決")) --> CheckSpec(("spec.mdから実装計画を確認<br/>FR-A1・FR-A2・FR-A3の修正順序確認"))
+
+    CheckSpec --> FR_A1_Start(("FR-A1: ルートCLAUDE.md<br/>subagent_type修正開始"))
+
+    FR_A1_Start --> FR_A1_Read(("C:\ツール\Workflow\CLAUDE.md<br/>フェーズ別subagent設定テーブルを読み込み"))
+
+    FR_A1_Read --> FR_A1_Modify(("security_scan・performance_test・e2e_testの<br/>subagent_type列を<br/>Bash → general-purpose に変更"))
+
+    FR_A1_Modify --> FR_A1_Check(("修正内容を目視確認<br/>他の列が変更されていないことを検証"))
+
+    FR_A1_Check --> FR_A2_Start(("FR-A2: workflow-plugin/CLAUDE.md<br/>subagent_type修正開始"))
+
+    FR_A2_Start --> FR_A2_Read(("C:\ツール\Workflow\workflow-plugin\CLAUDE.md<br/>フェーズ別subagent設定テーブルを読み込み"))
+
+    FR_A2_Read --> FR_A2_Modify(("FR-A1と同じ修正を適用<br/>security_scan・performance_test・e2e_testの<br/>subagent_type列を修正"))
+
+    FR_A2_Modify --> FR_A2_Check(("修正内容を目視確認<br/>ルートCLAUDE.mdとの整合性を検証"))
+
+    FR_A2_Check --> Sync_Check{{"2つのCLAUDE.mdの<br/>subagent_type列が<br/>一致しているか?"}}
+
+    Sync_Check -->|一致| FR_A3_Start(("FR-A3: definitions.tsへの<br/>禁止語転記防止注意書き追加"))
+    Sync_Check -->|不一致| FR_A2_Modify
+
+    FR_A3_Start --> FR_A3_Read(("workflow-plugin/mcp-server/src/phases/definitions.ts<br/>qualitySection部分を読み込み"))
+
+    FR_A3_Read --> FR_A3_Modify(("禁止語説明部分の末尾に<br/>入力ファイルからの語句転記禁止の<br/>注意書きと言い換え例3つ以上を追加"))
+
+    FR_A3_Modify --> BuildCheck{{"ビルド実行結果<br/>npm run buildで<br/>成功したか?"}}
+
+    BuildCheck -->|成功| MCPRestart(("MCPサーバー再起動<br/>ビルド完了後のプロセスで<br/>dist以下の変更を反映"))
+    BuildCheck -->|失敗| BuildFix(("ビルドエラーを修正<br/>TypeScriptコンパイルエラーを解決"))
+    BuildFix --> BuildCheck
+
+    MCPRestart --> FinalCheck(("最終確認チェックリスト<br/>3フェーズのsubagent_type: general-purpose確認<br/>manual_test: general-purpose のまま確認<br/>build_check/testing/commit/push: Bash のまま確認<br/>2ファイルのsubagent_type列が一致確認<br/>definitions.tsビルド成功確認"))
+
+    FinalCheck --> Complete(("実装フェーズ完了<br/>全修正が確認された状態"))
+
+    style Start fill:#e1f5ff
+    style CheckSpec fill:#f3e5f5
+    style FR_A1_Start fill:#fff3e0
+    style FR_A2_Start fill:#fff3e0
+    style FR_A3_Start fill:#fff3e0
+    style Sync_Check fill:#fff9c4
+    style BuildCheck fill:#fff9c4
+    style BuildFix fill:#ffcdd2
+    style MCPRestart fill:#b3e5fc
+    style FinalCheck fill:#fff9c4
+    style Complete fill:#a5d6a7

@@ -1,0 +1,61 @@
+task: tier-c-gaps-n16-n25
+phase: scope_definition
+intent: Tier C 10項目（N-16〜N-25）のアーキテクチャ変更分析とスコープ決定
+riskScore: 6
+rationale: "10項目中6件が既存ファイル変更で実装可能。N-19は既存30フェーズ設計で実現済み。N-22/N-23/N-24は外部API統合・ブラウザE2E環境・大規模評価インフラが必要であり現環境で実装不可。N-16のretry複雑度分類とN-18のarchgateフック統合が最もインパクトが大きく、DoD失敗時の修正精度を直接向上させる。"
+
+gapAnalysis[10]{id,name,verdict,integration,rationale}:
+  N-16, Planktonパターン, in-scope, "retry.tsのclassifyErrorを5段階複雑度に拡張しリトライプロンプトにルーティングタグを付与", "現在のclassifyErrorは4分類（FileNotFound/SyntaxError/LogicError/Unknown）だが違反の重大度（trivial/moderate/critical）を区別しない。trivialは自動修正指示、criticalはモデルエスカレーション推奨を付与することでリトライ成功率を向上させる。"
+  N-17, Doc-to-Test置換, in-scope, "スキルファイル886行から重要ルール5件を抽出しvitestテストケースとして検証可能にする", "全886行のテスト化は非現実的だが、禁止語リスト・TOON構文ルール・フェーズ遷移制約・Bash制限・成果物密度閾値の5ルールはテストで自動検証可能。これらは違反頻度が最も高いルール群。"
+  N-18, archgate-to-linter統合, in-scope, "archgate.tsのpattern_absent/pattern_required検査をPostToolUseフックから呼び出し可能にする", "現在archgateはDoD時のみ実行される。PostToolUseフックに軽量archgateチェックモードを追加することで、禁止パターン（console.log残存・any型乱用）を編集直後に検出できる。linter-runner.tsにarchgateHookMode関数を新設する。"
+  N-19, Plan-Execute分離, already-done, "既存30フェーズ設計がscope_definition〜planningで計画、test_design〜implementationで実行を分離", "ハーネスの30フェーズ構造自体がPlan/Execute分離を体現している。scope_definition→research→requirements→planningが計画フェーズ、test_design以降が実行フェーズ。追加実装不要。"
+  N-20, E2Eテスト強制, in-scope, "MCPツールチェーンの結合テスト3件を追加（start→next→status、record_test→record_proof、archgate→dod連携）", "個別ツールのユニットテストは充実しているがツール間の結合テストが存在しない。harness_startからharness_nextへのフロー、テスト記録からプルーフ検証への連鎖、archgateルール登録からDoD検証までの一貫テストを追加する。"
+  N-21, AIアンチパターン検出, in-scope, "archgate.tsに3種の新ルール（any乱用・コメント洪水・ゴーストimport）を追加しoxlintルール設定と併用", "LLMが生成しやすいアンチパターンを自動検出する。any型はpattern_absentルール（: any を禁止）、コメント洪水はline_countルール（コメント率40%超で警告）、ゴーストimportはast_grep_patternルール（未使用import検出）で実装する。"
+  N-22, Hybrid Claude-Codex戦略, out-of-scope, "該当なし", "タスク特性別に異なるLLMモデルを自動選択するにはOpenAI Codex APIとの統合が必要。現環境はClaude Code単独動作であり外部APIキー管理・モデル切替ロジック・コスト最適化が全て範囲外。"
+  N-23, CLS-Animation検証, out-of-scope, "該当なし", "CLS（Cumulative Layout Shift）とアニメーションパフォーマンス検証にはブラウザE2E環境（Playwright+Chromium）が必要。プロジェクトにPlaywright未導入でe2eディレクトリも未整備。N-14（Tier B deferred）の前提条件が未解決。"
+  N-24, LLM評価パイプライン, out-of-scope, "該当なし", "ハーネス改善効果の定量評価には複数セッションの自動実行・メトリクス収集・統計分析基盤が必要。metrics.tsが収集するデータは単一タスク内に限定されておりセッション横断の評価フレームワークは大規模インフラ投資が必要。"
+  N-25, Safety testing, in-scope, "MCPツール入力に対するサニタイゼーションテスト（パストラバーサル・コマンドインジェクション・過大入力）を追加", "MCPツールはユーザー入力をそのまま処理しておりインジェクション耐性が未検証。harness_start/harness_next/harness_record_testの主要3ツールに対しパストラバーサル（../../../etc/passwd）、コマンドインジェクション（; rm -rf /）、10MB超入力の3パターンをテストする。"
+
+scopeFiles[5]{path,role}:
+  workflow-harness/mcp-server/src/tools/retry.ts, impl
+  workflow-harness/mcp-server/src/tools/archgate.ts, impl
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, impl
+  .claude/hooks/post-tool-lint.sh, impl
+  workflow-harness/mcp-server/src/__tests__/, test
+
+scopeDirs[3]{path,purpose}:
+  workflow-harness/mcp-server/src/tools, retry複雑度分類とarchgateルール拡張の格納先
+  workflow-harness/mcp-server/src/__tests__, E2E結合テスト・ルールテスト・安全性テストの格納先
+  .claude/hooks, archgateフック統合の呼び出し元
+
+newFiles[5]{path,role}:
+  workflow-harness/mcp-server/src/__tests__/e2e-tool-chain.test.ts, test
+  workflow-harness/mcp-server/src/__tests__/skill-rules.test.ts, test
+  workflow-harness/mcp-server/src/__tests__/safety-sanitization.test.ts, test
+  workflow-harness/mcp-server/src/__tests__/archgate-antipattern.test.ts, test
+  workflow-harness/mcp-server/src/__tests__/retry-complexity.test.ts, test
+
+outOfScope[4]{item,reason}:
+  N-19 Plan-Execute分離, 既存30フェーズ設計（scope_definition〜planningが計画・test_design以降が実行）で実現済み
+  N-22 Hybrid Claude-Codex戦略, 外部APIキー管理とモデル切替ロジックが必要であり現環境で実装不可
+  N-23 CLS-Animation検証, Playwright未導入でe2eディレクトリ未整備のためブラウザE2E環境が前提条件未解決
+  N-24 LLM評価パイプライン, セッション横断の統計分析基盤が必要であり単一タスク内メトリクスでは不十分
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "N-16はretry.tsのclassifyErrorを拡張し違反複雑度（trivial/moderate/critical）をリトライプロンプトに付与する", "現在の4分類エラークラスに複雑度タグを追加する。trivial（禁止語削除等）は具体的修正指示を生成、moderate（密度不足等）は改善方針を提示、critical（構造的欠陥）はモデルエスカレーションを推奨する。RetryPromptResultにcomplexityフィールドを追加。"
+  SD-2, "N-17は886行のスキルファイルから違反頻度上位5ルールのみをテスト化する", "全ルールのテスト化は工数過大（推定40テスト以上）であり費用対効果が低い。禁止語リスト検証・TOON構文ルール・フェーズ遷移制約・Bash制限ホワイトリスト・成果物密度閾値の5件は実行時違反が最も多くテスト化の効果が最大。"
+  SD-3, "N-18はlinter-runner.tsにarchgateHookMode関数を新設しpost-tool-lint.shから呼び出す", "archgate.tsの全ルール評価はDoD時の重量処理であるため、フック用にはpattern_absent/pattern_requiredの2種のみを高速実行する軽量モードを別関数として提供する。実行時間は100ms以下を目標とする。"
+  SD-4, "N-20のE2Eテストは3つの主要ツールチェーンに絞る", "MCPツールは22種存在するが全組み合わせテストは非現実的。start→next→statusのライフサイクルチェーン、record_test→record_proofの品質チェーン、archgate→dodの検証チェーンが最も障害頻度が高い3経路であり優先度が最高。"
+  SD-5, "N-21のアンチパターン検出はarchgateルール3種として実装しoxlint設定と併用する", "any乱用はpattern_absent（glob: *.ts）、コメント洪水はline_count（閾値40%）、ゴーストimportはast_grep_pattern（未使用import検出）で実装する。oxlintのno-unused-varsルールとゴーストimport検出を併用し検出精度を向上させる。"
+  SD-6, "N-25の安全性テストは3種の攻撃パターンで主要3ツールをテストする", "パストラバーサル・コマンドインジェクション・過大入力の3パターンをharness_start・harness_next・harness_record_testに適用する。各ツールがエラーを適切にハンドリングしプロセスクラッシュやファイルシステム破壊が発生しないことを検証する。"
+  SD-7, "全実装はgraceful degradationパターンを維持し既存機能を破壊しない", "N-18のフック統合でarchgateモジュール読み込み失敗時はサイレントスキップ、N-21のoxlintルール未インストール時は警告のみ出力する。Tier A/Bで確立したgraceful degradationパターンをTier Cでも一貫適用する。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/scope-definition.toon, report, 10項目の実用性分析と6件のスコープ決定
+  docs/workflows/tier-c-gaps-n16-n25/requirements.toon, spec, 受入基準と要件定義（次フェーズ）
+  docs/workflows/tier-c-gaps-n16-n25/research.toon, research, 各実装の技術調査（次フェーズ）
+
+next:
+  criticalDecisions: "SD-1（retry複雑度分類の3段階設計）とSD-3（archgateHookMode軽量関数の実行時間100ms目標）が実装アーキテクチャの基盤を決定する"
+  readFiles: "retry.ts, archgate.ts, linter-runner.ts, post-tool-lint.sh, workflow-gates.md"
+  warnings: "N-20 E2Eテストはmanager.tsのタスク状態管理に依存しモック設計が複雑になる可能性がある"

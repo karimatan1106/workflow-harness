@@ -1,0 +1,69 @@
+phase: research
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+taskName: inv-n-cli-migration
+summary: INV-N関連MCPツール2つの削除箇所とCLI移行先の全依存関係を特定。StateManager APIは変更不要でNode.js標準parseArgsによるCLI実装が可能。
+
+defsAInvariantRange: L148-L161にharness_add_invariant定義が存在し配列要素1個分を占める
+defsBInvariantRange: L143-L156にharness_update_invariant_status定義が存在し配列要素1個分を占める
+handlerImportLine: L14でhandleHarnessAddInvariantとhandleHarnessUpdateInvariantStatusをrecording.jsからimport
+handlerCaseLines: L36のcase harness_add_invariantとL48のcase harness_update_invariant_statusの2行
+handlerTotalCases: 現在24ツールで削除後22になる
+recordingHandlerRange: handleHarnessAddInvariantがL124-L141でhandleHarnessUpdateInvariantStatusがL143-L158
+recordingImportCleanup: L8からProofTierとInvariantStatusを除去しL9のInvariantインポート行を完全削除する
+managerAPI: StateManager.addInvariantとupdateInvariantStatusは公開APIとして維持しCLIから直接呼び出す
+stateManagerInit: new StateManager()は引数なしで内部でSTATE_DIR環境変数からHMACキーを初期化する
+packageJsonType: module(ESM)でbinフィールドは未設定のため新規追加が必要
+tsconfigSettings: outDir=./dist rootDir=./src module=Node16 target=ES2022
+testToolCount: handler-misc.test.ts L178のtoHaveLength(24)をtoHaveLength(22)に変更する
+parseArgsStatus: node:util.parseArgsはNode 18.3+で標準搭載済みで外部ライブラリ不要
+cliDesign: src/cli.tsを新設しシバン付きESMスクリプトとしてparseArgsでサブコマンドを解析しStateManagerを直接呼び出す
+sessionTokenHandling: validateSessionはhandler-shared.tsに定義されておりCLIからインポートして同じ検証を適用する
+importChain: cli.ts経由でmanager.ts/manager-invariant.ts/types.ts/types-invariant.tsを参照する
+
+magicNumbers[6]{name,value,location}:
+  TOOL_DEFINITIONS_COUNT, 24, handler-misc.test.ts:L178
+  MIN_USER_INTENT_LENGTH, 20, defs-a.ts:L14
+  MIN_TEST_OUTPUT_LENGTH, 50, recording.ts:L99
+  STATE_DIR_DEFAULT, .claude/state, manager.ts:L21
+  INVARIANT_STATUSES, open/held/violated, types-invariant.ts:L10
+  PROOF_TIERS, T1/T2/T3/T4, types-core.ts
+
+dependencyVersions[3]{tool,version,notes}:
+  node, v22.15.0, parseArgs標準搭載済み
+  npm, 10.9.2, binフィールドサポート済み
+  tsc, 5.9.3, ES2022+Node16モジュール出力対応
+
+deletionTargets[6]{file,lines,action}:
+  defs-a.ts, L148-L161, harness_add_invariant配列要素を削除
+  defs-b.ts, L143-L156, harness_update_invariant_status配列要素を削除
+  handler.ts, L14+L36+L48, import文とcase文の3箇所を除去
+  recording.ts, L124-L158, ハンドラ関数2つを削除
+  recording.ts, L8-L9, 不要型インポートを除去
+  handler-misc.test.ts, L178, ツール数を24から22に変更
+
+newFiles[1]{file,purpose}:
+  src/cli.ts, parseArgs+StateManager直接呼び出しのCLIエントリポイント
+
+decisions[8]{id,statement,rationale}:
+  R-1, Node.js標準のparseArgsを使用し外部CLIライブラリは導入しない, Node 22.15.0で安定版であり依存追加コストに見合わない。parseArgsはvaluesとpositionalsを返すシンプルなAPIで十分
+  R-2, defs-a.tsのL148-L161を削除する, 配列要素1個で末尾カンマ調整のみ。直前のharness_add_acと直後のharness_add_rtmの間の要素を除去
+  R-3, recording.tsからハンドラ削除後に不要型インポートも除去する, デッドインポートはtscエラーにならないがコード品質を下げる。ProofTierとInvariantStatusとInvariantの3つが対象
+  R-4, handler-misc.test.tsのツール数を24から22に変更する, 2ツール削除で配列長が変わりテストが失敗するため。L178のtoHaveLengthアサーションが対象
+  R-5, CLI側でsessionToken検証をhandler-shared.tsからインポートして実装する, セッション検証スキップはセキュリティモデルの劣化になる。validateSession関数はtask.sessionTokenとの一致確認
+  R-6, package.jsonのbinフィールドにdist/cli.jsを登録する, npx実行でCLIコマンドとして利用可能にする。ESMモジュールのためシバン行とtype:moduleの組合せ
+  R-7, CLIの出力はJSON形式でstdoutに書き出す, パイプラインやスクリプトから結果を解析しやすくするため。エラーはstderrに書きexit code 1で終了
+  R-8, CLIはStateManagerのloadTaskで存在確認後にsessionToken検証を行う, MCPハンドラと同じ2段階検証フローを維持しセキュリティ一貫性を確保する
+
+risks[3]{id,description,mitigation}:
+  RISK-1, import行編集時に他ハンドラ用の型を誤って削除する可能性, 削除対象はProofTierとInvariantStatusのみでPhaseName等は残す
+  RISK-2, CLIでsessionToken検証を省略するとセキュリティ劣化, handler-shared.tsのvalidateSessionをインポートして適用する
+  RISK-3, ESMシバン行がWindowsで動作しない可能性, node直接実行を推奨しシバンはLinux/macOS互換用
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/research.toon, report, 調査結果と依存関係分析
+  docs/workflows/inv-n-cli-migration/init.sh, impl, ビルドとテスト環境確認スクリプト
+
+next:
+  criticalDecisions[2]: R-1, R-5
+  readFiles[4]: workflow-harness/mcp-server/src/tools/defs-a.ts, workflow-harness/mcp-server/src/tools/defs-b.ts, workflow-harness/mcp-server/src/tools/handler.ts, workflow-harness/mcp-server/src/tools/handlers/recording.ts
+  warnings[2]: recording.tsのimport編集で他ハンドラ用型を削除しないこと, CLIでsessionToken検証を省略しないこと

@@ -1,0 +1,68 @@
+flowchart TD
+    Start((実装開始)) --> FR1(FR-1: 角括弧禁止説明強化)
+
+    FR1 --> FR1A("definitions.ts の<br/>phaseGuide 角括弧セクション確認")
+    FR1A --> FR1B("コードブロック内も<br/>検査対象であることを記述")
+    FR1B --> FR1C("NG例・OK例を<br/>2パターン以上記載")
+    FR1C --> FR1D("散文形式での言い換え例<br/>を追加")
+    FR1D --> FR1E("TypeScript 構文チェック")
+    FR1E --> FR1F{ビルドエラー<br/>なし?}
+    FR1F -->|No| FR1D
+    FR1F -->|Yes| FR2
+
+    FR2(FR-2: 禁止語複合語説明追加) --> FR2A("definitions.ts の<br/>禁止語セクション確認")
+    FR2A --> FR2B("英語系複合語の<br/>言い換え例を追加")
+    FR2B --> FR2C("検討系複合語の<br/>言い換え例を追加")
+    FR2C --> FR2D("予定系複合語の<br/>言い換え例を追加")
+    FR2D --> FR2E("各複合語に対応する<br/>言い換え例を明記")
+    FR2E --> FR2F("構文チェック実施")
+    FR2F --> FR2G{ビルド成功<br/>確認?}
+    FR2G -->|No| FR2D
+    FR2G -->|Yes| FR3
+
+    FR3(FR-3: parallel_verification<br/>のモデル変更) --> FR3A("PHASE_DEFINITIONS 内<br/>parallel_verification確認")
+    FR3A --> FR3B("manual_test の<br/>model を haiku → sonnet")
+    FR3B --> FR3C("security_scan の<br/>model を haiku → sonnet")
+    FR3C --> FR3D("performance_test の<br/>model を haiku → sonnet")
+    FR3D --> FR3E("e2e_test の<br/>model を haiku → sonnet")
+    FR3E --> FR3F("コスト増加に関する<br/>コードコメント追加")
+    FR3F --> FR3G("構文チェック実施")
+    FR3G --> FR3H{ビルド成功<br/>確認?}
+    FR3H -->|No| FR3E
+    FR3H -->|Yes| FR4
+
+    FR4(FR-4: CLAUDE.md<br/>ルール追記) --> FR4A("MCPサーバーキャッシュセクション<br/>確認")
+    FR4A --> FR4B("強制再起動条件の<br/>サブセクション追加")
+    FR4B --> FR4C("再起動手順を<br/>2ステップで明記")
+    FR4C --> FR4D("フェーズ継続性の<br/>確保手順を記載")
+    FR4D --> FR4E("AIへの厳命セクションに<br/>Rule 22 を追加")
+    FR4E --> FR4F("再起動義務付けの<br/>記載")
+    FR4F --> FR4G("禁止事項の記載")
+    FR4G --> FR4H("理由: キャッシュ問題の<br/>技術的事実を記載")
+    FR4H --> FR4I{既存ルール<br/>1-21 保持確認?}
+    FR4I -->|No| FR4D
+    FR4I -->|Yes| BuildStage
+
+    BuildStage(ビルド実行) --> BuildCmd("npm run build<br/>実行")
+    BuildCmd --> BuildCheck{トランスパイル<br/>成功?}
+    BuildCheck -->|No| DebugBuild("ビルドエラー<br/>デバッグ")
+    DebugBuild --> BuildStage
+    BuildCheck -->|Yes| MCPRestart(MCPサーバー再起動)
+
+    MCPRestart --> RestartStep1("MCP サーバープロセス<br/>終了")
+    RestartStep1 --> RestartStep2("サーバー再起動")
+    RestartStep2 --> VerifyStatus("workflow_status で<br/>フェーズ確認")
+    VerifyStatus --> UnitTest("既存ユニットテスト<br/>実行")
+    UnitTest --> TestCheck{全テスト<br/>パス?}
+    TestCheck -->|No| TestDebug("テスト失敗原因<br/>特定と修正")
+    TestDebug --> UnitTest
+    TestCheck -->|Yes| Validation("成果物最終確認<br/>（品質基準）")
+
+    Validation --> CheckFR1("FR-1: 説明文と<br/>NG/OK例確認")
+    CheckFR1 --> CheckFR2("FR-2: 複合語説明<br/>3件以上確認")
+    CheckFR2 --> CheckFR3("FR-3: 4サブフェーズ<br/>model = sonnet 確認")
+    CheckFR3 --> CheckFR4("FR-4: Rule 22<br/>とテーブル更新確認")
+    CheckFR4 --> AllComplete{全ての受け入れ<br/>基準クリア?}
+    AllComplete -->|No| Remediate("該当要件の<br/>修正実施")
+    Remediate --> BuildStage
+    AllComplete -->|Yes| End((実装完了))

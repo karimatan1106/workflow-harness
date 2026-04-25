@@ -1,0 +1,105 @@
+## サマリー
+
+本ドキュメントは、parallel_verificationフェーズのsecurity_scan成果物バリデーション失敗を防止するための2つの実装タスク（FR-20とFR-21）の状態遷移を定義します。
+FR-20はdefinitions.tsのsecurity_scanテンプレートに総合評価セクションのガイダンスを追加する機能実装です。
+FR-21はCLAUDE.mdのAIへの厳命セクションにセッション再開後のsessionToken再取得手順を追記する文書修正です。
+状態遷移では、各実装の前提条件（ファイル確認）・実装フェーズ・テスト検証・サーバー再起動のサイクルを表現します。
+次フェーズへの移行には全検証完了が必須となっており、並列化不可な直線フェーズの特性を反映しています。
+
+## ステートマシン図
+
+このステートマシン図は、FR-20とFR-21の実装・検証プロセスが順序依存的であり、各段階で前提条件確認と検証が必須であることを表現しています。
+Start状態からInitial_Preparation（初期準備）を経て、2つの実装タスク（FR-20_Implementation、FR-21_Implementation）を順序実行します。
+それぞれの実装完了後は、詳細な検証ステップ（FR-20_Verification、FR-21_Verification）を経由して次の段階へ進みます。
+最終的にはTest_Execution（テスト実行）とServer_Restart（サーバー再起動）を経て、成功時はCompleted状態に、失敗時はError_State状態に遷移する設計です。
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start
+    Start --> Initial_Preparation: タスク開始\nスコープ確認
+
+    Initial_Preparation --> FR20_File_Confirmation: 準備完了
+    Initial_Preparation --> Error_State: ファイル未発見
+
+    FR20_File_Confirmation --> FR20_Implementation: definitions.ts確認完了
+    FR20_File_Confirmation --> Error_State: ファイルパス不正
+
+    FR20_Implementation --> FR20_Verification: テンプレート修正完了
+    FR20_Implementation --> Error_State: 修正失敗
+
+    FR20_Verification --> FR21_File_Confirmation: FR-20検証成功
+    FR20_Verification --> Error_State: 検証失敗\n(セクション欠落・構文エラー)
+
+    FR21_File_Confirmation --> FR21_Implementation: CLAUDE.md確認完了
+    FR21_File_Confirmation --> Error_State: ファイル未発見
+
+    FR21_Implementation --> FR21_Verification: ルール23追記完了
+    FR21_Implementation --> Error_State: 追記失敗
+
+    FR21_Verification --> Test_Execution: FR-21検証成功
+    FR21_Verification --> Error_State: 検証失敗\n(ルール欠落・書式不正)
+
+    Test_Execution --> Test_Success: npm test 実行\nリグレッション無し
+    Test_Execution --> Error_State: テスト失敗\nリグレッション検出
+
+    Test_Success --> Build_Compilation: ビルド準備
+    Build_Compilation --> Compilation_Success: npm run build完了
+    Build_Compilation --> Error_State: コンパイルエラー
+
+    Compilation_Success --> Server_Restart: サーバー再起動\n準備完了
+    Server_Restart --> Restart_Success: MCPサーバー\n再起動完了
+    Server_Restart --> Error_State: 再起動失敗
+
+    Restart_Success --> Final_Verification: 動作確認実行
+    Final_Verification --> Verification_Success: workflow_status\n正常応答確認
+    Final_Verification --> Error_State: 動作確認失敗
+
+    Verification_Success --> Completed: 全検証完了\nタスク成功
+    Error_State --> End_Failure: エラー処理完了
+
+    Completed --> [*]
+    End_Failure --> [*]
+```
+
+## ステートマシン解説
+
+### 状態定義
+
+**Start**: タスク開始時の初期状態。タスク名「修正時発生問題の根本原因調査と解決」の確認とスコープ確認を行う。
+
+**Initial_Preparation**: 両実装タスク（FR-20、FR-21）の前提条件を確認するステップ。変更対象ファイルの存在確認・読み込み権限確認・既存内容の検証を実施する。
+
+**FR20_File_Confirmation**: definitions.tsがC:\ツール\Workflow\workflow-plugin\mcp-server\src\phases\に正しく配置されていることを確認する状態。ファイルパスが不正な場合はError_Stateへ遷移する。
+
+**FR20_Implementation**: security_scan subagentTemplate内のFR-12セクション末尾と「## 出力」の間に新しい「## ★ 総合評価セクションの記述指針（FR-20）」セクションを挿入する状態。深刻度別サマリー・高リスク脅威・threat-model整合性・即時対応区分・全体評価の5観点ガイダンスを追加する。
+
+**FR20_Verification**: FR-20の修正内容が仕様通りであることを詳細に検証する状態。セクション見出しの正確性・5観点の完全性・禁止語チェック・構文妥当性を確認する。検証失敗時はエラーフィードバックとともにError_Stateへ遷移する。
+
+**FR21_File_Confirmation**: CLAUDE.mdがC:\ツール\Workflow\に存在し、「AIへの厳命」セクションが正しく配置されていることを確認する状態。
+
+**FR21_Implementation**: CLAUDE.mdの現在のルール22（コアモジュール変更後のMCPサーバー再起動）の直後にルール23（セッション再開後のsessionToken再取得手順）を追記する状態。ルール本文とその補足説明4行を正確に挿入する。
+
+**FR21_Verification**: FR-21の修正内容が仕様通りであることを詳細に検証する状態。ルール番号の正確性・workflow_statusへの言及・再取得手順の明確性を確認する。検証失敗時はError_Stateへ遷移する。
+
+**Test_Execution**: npm testコマンドをC:\ツール\Workflow\workflow-plugin\mcp-serverディレクトリで実行し、全テストケースが合格することを確認する状態。リグレッション検出時はError_Stateへ遷移する。
+
+**Build_Compilation**: npm run buildコマンドを実行してTypeScriptをトランスパイルし、dist/*.jsファイルが正しく生成されることを確認する状態。コンパイルエラーが発生した場合はError_Stateへ遷移する。
+
+**Server_Restart**: definitions.tsの変更がMCPサーバーのモジュールキャッシュに反映されるようにサーバープロセスを再起動する状態。FR-22の「コアモジュール変更後はMCPサーバーを再起動してから次フェーズに進むこと」に準拠する。
+
+**Final_Verification**: MCPサーバー再起動後のワークフロー状態を確認する状態。workflow_statusを呼び出してフェーズが正常に応答することを確認し、sessionTokenが正しく返されることを検証する。
+
+**Completed**: 全ての検証が成功し、タスクが完了した状態。次フェーズ（flowchartフェーズ）への移行が可能となる。
+
+**Error_State**: 任意の段階でエラーが発生した場合の終了状態。エラーの種類（ファイル未発見・修正失敗・検証失敗・テスト失敗・コンパイルエラー・再起動失敗・動作確認失敗）をログに記録し、原因分析と修正を行う必要がある。
+
+### 状態遷移の特徴
+
+**順序依存性**: FR-20とFR-21は並列化不可な直線フェーズであり、FR-20の完全な検証完了後にFR-21を開始する設計である。これは両タスクが独立しており、相互依存がないため順序の入れ替え自体は可能だが、変更ファイル数が2つ（definitions.ts、CLAUDE.md）であるため、テスト実行前に両方の修正を完了してからビルド・テストを実施する方が効率的である。
+
+**前提条件確認**: 各実装段階の前にFile_Confirmationステップを経由することで、ファイル存在・パス正確性・読み書き権限を事前に確認し、修正段階での失敗リスクを低減する。
+
+**検証の徹底**: 各実装完了後にVerificationステップを設置し、修正内容が仕様要件を満たしていることを詳細に確認する。この設計により、テスト実行段階での「期待と異なる結果」を事前に防止する。
+
+**テスト・再起動の順序**: Test_ExecutionでリグレッションがないことをBuild_CompilationとServer_Restart前に確認することで、「テストは通ったがサーバー再起動後に動作しない」という状況の発生を防止する。
+

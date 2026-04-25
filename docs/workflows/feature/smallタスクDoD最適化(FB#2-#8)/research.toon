@@ -1,0 +1,53 @@
+taskName: smallタスクDoD最適化(FB#2-#8)
+phase: research
+date: 2026-03-22
+size: medium
+
+findings[6]{fbId,summary,currentBehavior,fileRef,rootCause,proposedFix}:
+  FB#2, "subagentがTOON形式でなくMarkdownヘッダーで成果物を書く", "definitions-shared.ts:33でSUMMARY_SECTION_RULEに## ヘッダー禁止と記載あるが1行のみ。dod-l3.ts:29-32でTOON parse失敗時にMDヘッダー検出するが事後検出。subagentテンプレート(toon-skeletons-a.ts/toon-skeletons-b.ts)にはスケルトン提示あるが禁止事項の明示的列挙が不足", "definitions-shared.ts:33 / dod-l3.ts:29-32 / toon-skeletons-a.ts:9", "SUMMARY_SECTION_RULEの禁止記述が弱い。スケルトンに禁止事項セクションがない。subagentはスケルトンの形式を模倣するがルール文を無視しやすい", "definitions-shared.tsのSUMMARY_SECTION_RULEに明確な禁止リスト(## / ### / ** / ``` 等)を追加。toon-skeletons-a.ts/bのスケルトン先頭に禁止事項を1行追加"
+  FB#3, "smallタスクでもresearch/planningフェーズが残存し冗長", "registry.ts:91-112のSIZE_SKIP_MAP.smallに19フェーズがskip対象だがresearchとplanningは含まれない。getActivePhases(small)はscope_definition/research/requirements/planning/test_design/test_impl/implementation/build_check/testing/commit/push/completedの12フェーズを返す", "registry.ts:92-112 / registry.ts:126-129", "SIZE_SKIP_MAPの設計時にresearch/planningをsmallタスクで必要と判断したが実運用ではsmallタスクの複雑度が低く冗長。research:minLines50も過大", "SIZE_SKIP_MAP.smallにresearchとplanningを追加。smallタスクのフェーズ順序はscope_definition->requirements->test_design->test_impl->implementation->build_check->testing->commit->push->completedの10フェーズに削減"
+  FB#4, "TDD Redフェーズで実装済みコードのテスト追加時にRed evidenceを記録できない", "dod-l1-l2.ts:79-99のcheckTDDRedEvidenceはphase===test_implの場合のみ適用。proofLogにresult:falseのエントリがないとpassedにならない。dodExemptionsにtdd_red_evidenceを含める仕組みは型定義(types-core.ts:154)に存在するがcheckTDDRedEvidence内で参照していない", "dod-l1-l2.ts:79-99 / types-core.ts:154", "checkTDDRedEvidenceがPhaseConfig.dodExemptionsを参照しない。exit_code_zeroはdodExemptions対応済み(dod-l1-l2.ts:61)だがtdd_red_evidenceは未対応", "checkTDDRedEvidence冒頭にdodExemptionsチェックを追加。config.dodExemptions?.includes(tdd_red_evidence)の場合はpassed:trueで返す。test_implのPhaseConfigにdodExemptions追加はタスク単位でscope_definitionで指定する運用"
+  FB#5, "decisions[]最低5件がsmallタスクでも適用され水増し発生", "dod-l4-delta.ts:13でDELTA_ENTRY_MIN_COUNT=5がハードコード定数。checkDeltaEntryFormat(dod-l4-delta.ts:21-72)はphaseとdocsDirのみ受け取りsizeパラメータがない。全サイズ一律で5件を要求", "dod-l4-delta.ts:13 / dod-l4-delta.ts:61-65", "DELTA_ENTRY_MIN_COUNTが定数でsize非依存。checkDeltaEntryFormatの引数にsizeがなくTaskStateも参照しない", "DELTA_ENTRY_MIN_COUNTをsize依存のMap(small:3/medium:5/large:5)に変更。checkDeltaEntryFormatの引数にsizeを追加。呼び出し元(dod.ts)からstate.sizeを渡す"
+  FB#7, "smallタスクでもrequirementsフェーズでユーザー承認が必要", "handler-shared.ts:19-25のPHASE_APPROVAL_GATESにrequirements:requirementsが常時設定。lifecycle.ts:133-136でforceTransition以外は常にapproval要求。size条件の分岐がない", "handler-shared.ts:19-25 / lifecycle.ts:132-136", "PHASE_APPROVAL_GATESがRecord<string string>で静的定義。size情報を参照する仕組みがない。handleHarnessNextはstate.sizeを持つがapproval判定に使っていない", "PHASE_APPROVAL_GATESをsize対応関数に変更。shouldRequireApproval(phase, size)を新設しsmall+requirementsの場合はAC>=3かつopenQuestions空の条件付きで自動承認"
+  FB#8, "researchフェーズのminLines:50がsmallタスクでは過大", "registry.ts:11でresearch.minLines=50。dod-l3.ts/dod-l4系でminLinesチェック時にPHASE_REGISTRY[phase].minLinesを直接参照。size別の調整機構がない", "registry.ts:11 / dod-l3.ts:14-36", "PhaseConfig.minLinesが固定値でsize非依存。getPhaseConfig関数はsizeを受け取らない", "getPhaseConfig(phase)にsize引数を追加しsmallの場合はminLines*0.6(最低20)を返す。SIZE_MINLINES_FACTOR: Record<TaskSize number>をregistryに追加"
+
+codeLocations[8]{file,line,symbol,role}:
+  registry.ts, 91-112, SIZE_SKIP_MAP, "フェーズスキップ定義(FB#3)"
+  registry.ts, 11, "research.minLines: 50", "成果物最低行数(FB#8)"
+  dod-l4-delta.ts, 13, DELTA_ENTRY_MIN_COUNT, "decisions最低件数(FB#5)"
+  dod-l4-delta.ts, 61, "decisions.length < DELTA_ENTRY_MIN_COUNT", "件数比較ロジック(FB#5)"
+  dod-l1-l2.ts, 79-99, checkTDDRedEvidence, "TDD Red証拠チェック(FB#4)"
+  handler-shared.ts, 19-25, PHASE_APPROVAL_GATES, "承認ゲート定義(FB#7)"
+  lifecycle.ts, 132-136, "requiredApproval check", "承認要求判定(FB#7)"
+  definitions-shared.ts, 31-48, SUMMARY_SECTION_RULE, "TOON形式ルール(FB#2)"
+
+dependencies[3]{from,to,reason}:
+  FB#3, FB#8, "researchをskipすればminLines問題も解消。ただしmedium以上ではFB#8の修正が必要"
+  FB#5, dod-l4-delta.ts, "checkDeltaEntryFormatの引数変更はdod.tsの呼び出し元も修正必要"
+  FB#7, lifecycle.ts, "PHASE_APPROVAL_GATESの変更はhandleHarnessNextのapproval判定ロジックにも影響"
+
+impactAnalysis[6]{fbId,affectedFiles,testImpact}:
+  FB#2, "definitions-shared.ts / toon-skeletons-a.ts / toon-skeletons-b.ts", "既存テストへの影響なし。テンプレート文字列の変更のみ"
+  FB#3, "registry.ts", "dod-basic.test.tsのフェーズ数テストが変更される可能性あり"
+  FB#4, "dod-l1-l2.ts", "dod-tdd.test.tsにdodExemptions付きケース追加が必要"
+  FB#5, "dod-l4-delta.ts / dod.ts", "dod-l4-duplicate.test.tsのヘルパー関数にsize引数追加が必要"
+  FB#7, "handler-shared.ts / lifecycle.ts", "lifecycle関連テストにsmall+auto-approveケース追加が必要"
+  FB#8, "registry.ts", "registry関連テストにsize別minLines検証ケース追加が必要"
+
+existingPatterns[2]{pattern,location,reusability}:
+  dodExemptions, "dod-l1-l2.ts:59-63 (exit_code_zero)", "FB#4でtdd_red_evidenceに同パターン適用可能。3行追加で実装完了"
+  SIZE_SKIP_MAP, "registry.ts:91-124", "FB#3でsmall配列に2要素追加するのみ。既存パターンの拡張"
+
+decisions[5]{id,statement,rationale}:
+  R-1, "6件のFBは独立性が高く並列実装可能", "FB#2(テンプレート)/FB#3(skip)/FB#4(exemption)/FB#5(count)/FB#7(approval)/FB#8(minLines)は異なるファイルの異なる関数に局在"
+  R-2, "FB#3とFB#8は依存関係あり。FB#3でresearch skipが適用されればsmallではFB#8は不要だがmedium以上のためFB#8も実装する", "research.minLines:50はmediumタスクでも使用されるため両方修正が必要"
+  R-3, "FB#4はdodExemptionsパターンがexit_code_zeroで既に確立済み。同パターンをtdd_red_evidenceに適用するのみ", "dod-l1-l2.ts:61に参考実装があり差分は最小"
+  R-4, "FB#5のsize引数追加はcheckDeltaEntryFormatの呼び出し元dod.tsの修正も必要", "関数シグネチャ変更の影響範囲を確認済み。dod.tsからstate.sizeを渡すのみ"
+  R-5, "FB#7の自動承認はsmall+requirements限定でAC>=3かつopenQuestions空を条件とする", "影響範囲が限定的なsmallタスクでのみ適用しリスクを最小化"
+
+artifacts[2]{id,path,format}:
+  A-1, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/scope-definition.toon", "toon"
+  A-2, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/research.toon", "toon"
+
+next: requirements
+nextAction: 6件のFB修正をAC化しrequirements.toonを作成する。各FBに対応するACとRTMエントリを定義する

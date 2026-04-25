@@ -1,0 +1,37 @@
+phase: e2e_test
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+summary: invariant MCP→CLI移行のE2E統合テスト完了。全34ファイル314テストパス、tsc型チェックエラーなし、22ツール定義確認、validateSession共有確認。
+
+scenarios[5]{id,scenario,result,evidence}:
+  E2E-1,MCPサーバーが22ツールを公開しinvariant関連を含まない,pass,handler-misc.test.tsでTOOL_DEFINITIONS.length===22およびharness_add_invariant/harness_update_invariant_statusの不在を検証
+  E2E-2,CLIのadd-invariantがStateManager経由でタスク状態を更新,pass,cli.test.ts TC-AC2-01でinvariants配列への追加とstatus=openを検証
+  E2E-3,CLIのupdate-invariant-statusがステータス変更を反映,pass,cli.test.ts TC-AC3-01でheld遷移を検証+TC-AC3-02で不正値拒否を検証
+  E2E-4,TypeScript型チェック(tsc --noEmit)がエラーなし,pass,tsc --noEmit終了コード0で型整合性を確認
+  E2E-5,MCPハンドラとCLIの両方がvalidateSessionを使用,pass,cli.tsで2箇所+handlers/配下で16箇所のvalidateSession呼び出しを確認
+
+testResults[1]{id,command,files,tests,status}:
+  TR-1,npx vitest run,34,314,all passed
+
+typeCheck[1]{id,command,errors,status}:
+  TC-1,npx tsc --noEmit,0,pass
+
+codeVerification[4]{id,file,check,result}:
+  CV-1,src/tools/handler.ts,switch文が22ケース,22ケース確認
+  CV-2,src/tools/defs-a.ts+defs-b.ts,合計22ツール定義,TOOL_DEFS_A=11+TOOL_DEFS_B=11=22
+  CV-3,src/cli.ts,StateManager直接呼び出し,addInvariant+updateInvariantStatusを直接呼び出し
+  CV-4,src/cli.ts,validateSession共有,handler-shared.jsからimportして使用
+
+decisions[5]{id,statement,rationale}:
+  E2E-D1,全314テストがパスし回帰なし,vitest run結果で34ファイル314テスト全パス確認
+  E2E-D2,MCPツール定義からinvariant関連が完全に除去済み,defs-a.ts+defs-b.tsにinvariant定義なし+handler.tsのswitch文にinvariantケースなし
+  E2E-D3,CLIがStateManagerを直接呼び出す設計は正常動作,cli.test.tsの3テストで追加・更新・バリデーションを検証
+  E2E-D4,型安全性が維持されている,tsc --noEmitエラーゼロで型整合性確認
+  E2E-D5,セッション検証ロジックがMCPとCLIで共有されている,両者がhandler-shared.tsのvalidateSessionを使用し一貫性を確保
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/e2e-test.toon,report,E2E統合テスト結果レポート
+
+next:
+  criticalDecisions[1]: E2E-D1
+  readFiles[4]: src/cli.ts,src/tools/handler.ts,src/tools/defs-a.ts,src/tools/defs-b.ts
+  warnings[1]: invariant操作はCLI専用となったためMCPクライアントからは直接呼び出し不可

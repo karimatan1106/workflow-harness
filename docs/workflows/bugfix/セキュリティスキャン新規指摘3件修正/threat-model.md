@@ -1,0 +1,43 @@
+# セキュリティスキャン新規指摘3件修正 - 脅威モデル
+
+## サマリー
+
+本脅威モデルでは前回のセキュリティスキャンで検出された3件の新規脆弱性に対するSTRIDE分析を実施した。
+NEW-SEC-1はゼロ幅Unicode文字を悪用したコマンドインジェクション攻撃のリスクである。
+NEW-SEC-2はdetectEncodedCommand関数のFail-Open設計により検証がスキップされる深刻な脆弱性である。
+NEW-SEC-3はnormalizeFilePath関数のシンボリックリンク解決におけるTOCTOU脆弱性である。
+修正優先度はNEW-SEC-2が最も高くNEW-SEC-1が次でNEW-SEC-3は低優先度と評価した。
+
+## 脅威分析
+
+ゼロ幅Unicode文字を悪用した攻撃では攻撃者がbashコマンドにU+200Bを挿入しホワイトリスト検証をバイパスする可能性がある。
+splitCommandParts関数の正規表現/\s+/はゼロ幅文字にマッチしないため単一トークンとして誤認識される。
+エンコードコマンドのデコード失敗を悪用した攻撃では不正なbase64文字列で検証をスキップさせる。
+decodeBase64Safe関数がnullを返した場合にdetectEncodedCommandがallowed:trueを返す設計が悪用される。
+シンボリックリンク解決のTOCTOU攻撃はローカル環境限定であり実務的な脅威は極めて低いと判断される。
+
+## STRIDE分析
+
+Spoofingの観点ではゼロ幅文字により攻撃者が正当なコマンドに見せかけて危険なコマンドを実行できる。
+Tamperingの観点ではFail-Open設計によりホワイトリスト検証プロセス自体が改ざんされ本来拒否されるコマンドが許可される。
+Repudiationの観点ではゼロ幅文字やエンコード失敗を悪用した攻撃はログに通常のコマンドとして記録され攻撃者が否認できる。
+Information Disclosureの観点ではnormalizeFilePathのフォールバックにより意図しないファイルパスが使用される理論的リスクがある。
+Denial of Serviceの観点では不正なコマンドの大量送信によりホワイトリスト検証が不適切に動作する可能性がある。
+Elevation of Privilegeの観点ではホワイトリスト検証バイパスによりNode.jsプロセス権限で任意のコマンドが実行される。
+
+## リスク評価
+
+NEW-SEC-1のゼロ幅Unicode文字攻撃はリスクレベル「中」と評価する。
+攻撃の実現可能性は限定的だが成功すればホワイトリスト検証を完全にバイパスできるため影響度は大きい。
+NEW-SEC-2のFail-Open脆弱性はリスクレベル「高」と評価する。
+セキュリティの基本原則に反しており攻撃者が容易にホワイトリスト検証を回避できるため最も深刻な脅威である。
+NEW-SEC-3のTOCTOU脆弱性はリスクレベル「低」と評価する。
+ローカル開発環境限定であり攻撃者がファイルシステムへの同時書き込みアクセスを持つ状況は極めて稀である。
+
+## 対策方針
+
+ゼロ幅Unicode文字対策としてsplitCommandPartsとsplitCompoundCommandの先頭にサニタイズ処理を追加する。
+正規表現/[\u200B\u200C\u200D\uFEFF]/gで全てのゼロ幅文字を空文字列に置換するDefense in Depth戦略を採用する。
+Fail-Closed対策としてdetectEncodedCommandのデコード失敗時にallowed:falseとreasonを明示的に返す設計に変更する。
+TOCTOU対策としてnormalizeFilePathのフォールバック時にconsole.warnで警告ログを出力し異常動作を可視化する。
+全ての対策は既存テストスイート42件との互換性を維持しsrc/backend/tests/unit/hooks/配下に新規テストを追加する。

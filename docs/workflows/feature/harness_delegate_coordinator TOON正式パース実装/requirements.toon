@@ -1,0 +1,37 @@
+task: harness_delegate_coordinator TOON正式パース実装
+phase: requirements
+
+acceptance-criteria[4]{id,description,verification}:
+  AC-1, instructionがサーバー側でTOONパースされ構造化データとしてpromptに注入, parseToonKvの戻り値が空でない
+  AC-2, coordinator出力がTOONパースされ構造化戻り値として返される, success/output/files-changedキーが存在
+  AC-3, パース失敗時のフォールバック実装, 非TOON文字列で生文字列がそのまま使われる
+  AC-4, 既存テストが通る, vitest実行でfailなし
+
+functional-requirements[5]{id,description,ac-ref}:
+  FR-1, toon-helpers.tsにparseToonKv関数追加, AC-1/AC-2
+  FR-2, instruction受信時にparseToonKvでパースし構造化注入, AC-1
+  FR-3, extractResult後にparseToonKvでcoordinator出力を構造化, AC-2
+  FR-4, parseToonKvが空の場合は生文字列フォールバック, AC-3
+  FR-5, L.269のバックスラッシュをesc()に置換, AC-2
+
+not-in-scope:
+  - state-toon-parse.tsの変更
+  - toon-helpers.tsの既存関数変更
+  - 新規テストファイル作成
+
+open-questions[2]{id,question,impact}:
+  OQ-1, parseToonKvでテーブルブロックもパースすべきか, instructionにテーブル含む場合の挙動
+  OQ-2, coordinator出力のsuccessがfalseの場合respondErrorに切替えるべきか, エラーハンドリング設計
+
+decisions[5]{id,statement,rationale}:
+  RQ-1, parseToonKvはkey:value行のみパースしテーブルスキップ, 最小実装でAC達成
+  RQ-2, フォールバックはObject.keys(kv).length===0で判定, シンプルに保つ
+  RQ-3, esc()はtoon-helpers.tsから既存import使用, コード重複回避
+  RQ-4, coordinator出力のsuccessがfalseならrespondError使用, 機械的エラー判定のため
+  RQ-5, instructionパース結果はkey:value形式でprompt再構成, 正規化の副次効果
+
+artifacts[2]{id,path,description}:
+  A-1, delegate-coordinator.ts, メイン実装対象
+  A-2, toon-helpers.ts, parseToonKv追加
+
+next: planning

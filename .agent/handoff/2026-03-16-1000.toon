@@ -1,0 +1,44 @@
+## HANDOFF
+date: 2026-03-16 10:00
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] pre-tool-guard.sh: delegate_workをis_lifecycle_mcpから除外 → 完了
+- [x] delegate-work.ts: --setting-sources projectに変更 → 完了
+- [x] delegate-work.ts: DEFAULT_DISALLOWED_TOOLSに15ツール追加 → 完了
+- [x] delegate-work.ts: ログフォーマッタ(formatStreamJsonLine)追加 → 完了
+- [x] delegate-work.ts: ログ初期化をtruncate→appendに変更 → 完了
+- [x] VS Code拡張: node .agent/log-watcher.js方式に書き換え → 完了
+- [x] 3層E2E検証: 全PASS（Coordinator制限/Worker制限/リアルタイムログ）
+- [x] コミット完了: submodule 50c478c, parent e37c798
+
+## 試したこと・結果
+- 成功: node .agent/log-watcher.js でGit Bashからリアルタイムログ表示（fs.statSync 500msポーリング）
+- 成功: formatStreamJsonLine でstream-json→人間可読変換（thinking/tool_use/tool_result/result）
+- 成功: DEFAULT_DISALLOWED_TOOLS拡張でWorkerからSkill/WebSearch等15ツール除去
+- 失敗: --setting-sources none → 無効値エラー。有効値はuser/project/localのみ
+- 失敗: VS Code拡張のtail -f → Windows上で信頼できないリアルタイム検知
+- 失敗: WSL Node.jsでのファイル監視 → Windowsファイルシステム変更を検知できない
+- 失敗: Output Channel方式 → ユーザーはターミナル表示を希望
+
+## ハーネス運用で学んだこと
+- WSL Node.jsはWindows FSの変更をリアルタイム検知できない。Git Bash(MINGW)のNode.jsを使うこと
+- VS Code拡張の修正サイクル（edit→build→package→install→reload）は遅い。standalone scriptで先にロジック検証すべき
+- --setting-sources の有効値: user, project, local のみ（noneは無効）
+- delegate_workが壊れるとself-repairできないデッドロック。hookのブートストラップ問題に注意
+- rate_limit_eventはstream-jsonの標準typeだがフォーマッタが必要
+
+## 次のセッションで最初にやること
+- harness_statusで既存タスク確認・不要タスクのクリーンアップ
+- git push で今回の変更をリモートに反映
+- HANDOFFバリデーターの必須セクション要件を満たすよう更新
+- 本番ワークフローでの3層E2E運用テスト（実際のコード変更タスク）
+
+## 注意点・ブロッカー
+- MCPサーバーはモジュールキャッシュ。コード変更後はセッション再起動が必要
+- VS Codeのデフォルトターミナルは Git Bash に設定済み（WSLだとlog-watcherが動かない）
+- bypassPermissionsは維持中
+- ガードhook変更はブートストラップ問題。.bak でバックアップしてから変更すること
+- HANDOFF.toonのバリデーター要件: 6セクション必須（前回は4セクション欠落で警告）

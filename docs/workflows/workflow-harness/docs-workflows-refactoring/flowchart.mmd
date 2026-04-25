@@ -1,0 +1,55 @@
+# Flowchart: docs-workflows-refactoring
+
+taskId: 0963bf20-4201-494c-ad1b-32e6b476e97e
+
+## flowchart
+
+```mermaid
+flowchart TD
+    Start([Start]) --> ScanDirs[Scan docs/workflows/]
+    ScanDirs --> ForEachDir{For each directory}
+
+    ForEachDir --> CheckHalfWidth{Has half-width katakana?}
+    CheckHalfWidth -->|No| CheckOldProject{Old project?}
+    CheckHalfWidth -->|Yes| CheckDuplicate{Full-width pair exists?}
+
+    CheckDuplicate -->|Yes| DiffContents{Contents identical?}
+    DiffContents -->|Yes| DeleteHalf[Delete half-width dir]
+    DiffContents -->|No| MergeFirst[Merge into full-width] --> DeleteHalf
+
+    CheckDuplicate -->|No| RenameFullWidth[Rename to full-width]
+
+    CheckOldProject -->|Yes| DeleteOld[Delete directory]
+    CheckOldProject -->|No| Classify{Classify category}
+
+    Classify --> Bugfix[bugfix/]
+    Classify --> Feature[feature/]
+    Classify --> WFHarness[workflow-harness/]
+    Classify --> Investigation[investigation/]
+
+    DeleteHalf --> ForEachDir
+    RenameFullWidth --> Classify
+    DeleteOld --> ForEachDir
+    Bugfix --> MoveDir[Move to category]
+    Feature --> MoveDir
+    WFHarness --> MoveDir
+    Investigation --> MoveDir
+    MoveDir --> ForEachDir
+
+    ForEachDir -->|Done| HandleLoose[Wrap 14 loose .md files]
+    HandleLoose --> Verify[Verify AC-1 through AC-7]
+    Verify --> End([End])
+```
+
+## decisions
+
+- Half-width katakana detection uses Unicode range FF65-FF9F to identify directories needing normalization
+- When a full-width counterpart exists and contents differ, merge strategy is: copy missing files from half-width into full-width, then delete half-width directory
+- When a full-width counterpart exists and contents are identical, the half-width directory is deleted without merge
+- When no full-width counterpart exists, the half-width directory is renamed in-place to full-width katakana
+- Old project classification is based on directories belonging to completed/archived tasks that no longer have active workflow state
+- Category classification uses the task prefix or content analysis: bug-related goes to bugfix/, new capability to feature/, harness changes to workflow-harness/, and exploratory work to investigation/
+- Loose .md files (14 files directly under docs/workflows/) are wrapped into appropriately named subdirectories before category assignment
+- Verification step checks all seven acceptance criteria (AC-1 through AC-7) as a final gate before completion
+- Directory moves preserve git history by using git mv rather than filesystem mv
+- The loop processes directories one at a time to avoid conflicts when half-width and full-width pairs reference the same logical project

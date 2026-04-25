@@ -1,0 +1,23 @@
+phase: planning
+taskId: toon-only-migration-2026-03-02
+ts: "2026-03-02T11:30:00+09:00"
+decisions[12]{id,statement,rationale}:
+  PL-001,registry.tsの17フェーズ分のoutputFileをすべて.md拡張子から.toon拡張子に変更することがTOON-only移行の起点である,L1のcheckL1FileExistsはoutputFileの文字列値のみを参照するため拡張子変更だけで全バリデーター経路がTOON対象になる
+  PL-002,dod-l3.tsのanalyzeArtifact関数はtoonDecodeベースに全面再実装しMarkdown専用ロジックを全廃する,TOON形式にはMarkdown見出しとコードフェンスが存在しないため既存ロジックが全無効になる
+  PL-003,dod-l4-delta.tsのcheckDeltaEntryFormatをdecisions[]配列のlength検証に全面置き換えしDELTA_ENTRY_REGEXとセクション区間検出を廃止する,TOONデコード後のdecisions配列lengthチェックが等価実装として成立する
+  PL-004,dod-l4-requirements.tsの4関数はrequirements.toonをtoonDecodeで読む実装に変更しrequirements.mdへのハードコードパスを解消する,checkACFormat等がrequirements.mdのパスをdocsDir+'/requirements.md'で直接構築しておりTOON移行時に個別改修が必要である
+  PL-005,checkToonCheckpointをL1チェックに統合しdod-l4-toon.tsの独立チェックとして廃止する,L1でTOONファイルの存在確認が完結するためcheckToonCheckpointの別途実行は役割重複になる
+  PL-006,definitions.tsのOUTPUT_FILE_TO_PHASEマッピングを全17エントリで.md→.toon拡張子に変更する,buildToonFirstSectionがこのマッピングを参照しておりTOON-only化後も正しいフェーズ名解決が必要である
+  PL-007,buildToonFirstSectionのMDフォールバック指示（「TOONが存在しない場合はMDにフォールバックする」）を削除する,TOON-onlyへの移行後はMDへのフォールバック案内は不要かつ誤指示になる
+  PL-008,defs-stage1〜6.tsの全subagentテンプレートの出力指示を「xxx.toon に保存してください」に変更する,subagentが生成する成果物形式はテンプレート指示に従うためMD生成指示を残すとバリデーターと不整合になる
+  PL-009,CLAUDE.md Section 13をTOON-only前提に全面更新しMarkdown見出し前提の記述を全てTOONキー名前提に置き換える,Section 13はL3/L4チェックのルールを説明しておりTOON-only化後も整合する内容に更新が必要である
+  PL-010,フォールバック実装は採用せず一括切り替えとする,進行中タスクがゼロのためフォールバックの複雑性コストより一括切り替えのシンプルさを優先する
+  PL-011,実装順序はStep1:registry.ts→Step2:definitions.ts・dod-l3〜l4.ts→Step3:defs-stage1〜6.ts→Step4:CLAUDE.md→Step5:build+test確認,registry.tsが全バリデーターから参照されるため最初に変更する依存関係が存在する
+  PL-012,各dod-*.tsファイルの200行以下制限を維持しanalyzeArtifact置き換えはファイル内改修で収める,CLAUDE.md Section 1の200行ルールはハーネスのコア原則であり改修でも厳守が必要である
+artifacts[2]{path,role,summary}:
+  docs/workflows/TOON-onlyフェーズ成果物移行/spec.md,spec,15ファイルの変更対象・RTMエントリF-001〜F-015・実装順序と依存関係を含む技術仕様書
+  docs/workflows/TOON-onlyフェーズ成果物移行/planning.toon,spec,planningフェーズのTOONチェックポイント
+next:
+  criticalDecisions[5]: PL-001,PL-002,PL-003,PL-004,PL-005
+  readFiles[7]: workflow-harness/mcp-server/src/gates/dod-l3.ts,workflow-harness/mcp-server/src/gates/dod-l4-delta.ts,workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts,workflow-harness/mcp-server/src/gates/dod-l4-toon.ts,workflow-harness/mcp-server/src/phases/registry.ts,workflow-harness/mcp-server/src/phases/definitions.ts,workflow-harness/mcp-server/src/phases/defs-stage1.ts
+  warnings[4]: analyzeArtifact全面再実装はtoonDecodeの戻り値型を事前に確認してからcontentLines計算ロジックを実装すること,dod-l4-requirements.tsの4関数はTOONオブジェクトのacceptanceCriteria[]・notInScope[]・openQuestions[]キー名をrequirements.toonの実際の構造と照合してから実装すること,checkToonCheckpointの廃止前にgates runnerでの呼び出し箇所を全て確認してから削除すること,defs-stage1〜6.tsの変更ではSUMMARY_SECTION_RULEプレースホルダーが展開する内容にもMD成果物への言及が残っていないか確認すること

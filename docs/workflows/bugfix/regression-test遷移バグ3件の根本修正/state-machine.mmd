@@ -1,0 +1,83 @@
+stateDiagram-v2
+    Start --> RecordTestResult: workflow_record_test_result 呼び出し
+
+    RecordTestResult --> ExtractCounts: テスト出力から集計行を抽出
+    ExtractCounts --> HashStorage: ハッシュ値を計算・保存
+
+    HashStorage --> BugFixed: バグ3修正適用済み
+    HashStorage --> BugNotFixed: バグ3未修正
+
+    BugNotFixed --> BugFixed: 修正内容\nMAX_OUTPUT: 500→5000\nslice方向: 末尾→先頭
+
+    BugFixed --> bug2Check: バグ2チェック\n（'Tests 'プレフィックス）
+
+    bug2Check --> FalsePositive: バグ2未修正\n'Tests '欠落時
+    bug2Check --> NormalFlow: バグ2修正済み\n'Tests '追加済み
+
+    FalsePositive --> FalsePositive: キーワード誤検出\nblocking_failure_keywords\nヒット時
+
+    NormalFlow --> ValidateAuth: test-authenticity検証
+    FalsePositive --> ValidateAuth
+
+    ValidateAuth --> AuthSuccess: 真正性検証OK\n集計行パターンマッチ成功
+    ValidateAuth --> AuthFail: 真正性検証NG\n入力不足またはmismatch
+
+    AuthFail --> End: エラー: 「テスト出力から\nテスト数を抽出できません」
+
+    AuthSuccess --> WorkflowNext: workflow_next 呼び出し
+
+    WorkflowNext --> DupCheck: ハッシュ重複チェック
+
+    DupCheck --> Bug1Unfixed: バグ1未修正\nregression_testフェーズ
+    DupCheck --> Bug1Fixed: バグ1修正済み\n他フェーズまたは\nregression_testスキップ
+
+    Bug1Unfixed --> SelfReference: 自己参照バグ発生\nhash一致エラー
+    SelfReference --> End: エラー: 遷移ブロック\n「同一出力」判定
+
+    Bug1Fixed --> IntegrityCheck: 真正性検証（2回目）\nstate-manager HMAC検証
+
+    IntegrityCheck --> BaselineCompare: ベースライン比較\n（テスト対象選択フェーズのみ）
+
+    BaselineCompare --> RegressionDetect: リグレッション検出\nベースライン不一致
+    BaselineCompare --> NoRegression: リグレッション無し\nベースライン一致
+
+    RegressionDetect --> RegressionWarning: 警告レベル\nテスト数増加・削除
+    RegressionDetect --> RegressionBlock: ブロックレベル\n真正性検証失敗
+
+    RegressionWarning --> ParallelVerif: parallel_verification\nフェーズへ遷移
+
+    RegressionBlock --> End: エラー: リグレッション\nブロック
+
+    NoRegression --> ParallelVerif
+
+    IntegrityCheck --> IntegrityFail: 整合性検証失敗\nHMAC mismatch
+    IntegrityFail --> End
+
+    ParallelVerif --> NextPhase: 遷移成功\n→ manual_test/security_scan\n/performance_test/e2e_test
+
+    NextPhase --> End: End
+
+    note right of BugNotFixed
+        バグ3: テスト出力切り詰め
+        MAX_OUTPUT_LENGTH=500（小さすぎる）
+        output.slice(-500): 末尾保持
+        ➔ 先頭集計行が失われ
+        真正性検証失敗の要因
+    end
+
+    note right of FalsePositive
+        バグ2: false positive
+        SUMMARY_PREFIXES='Tests'のみ
+        'Tests '（スペース）欠落
+        ➔ vitest出力誤検出
+        キーワードフィルタ誤ヒット
+    end
+
+    note right of SelfReference
+        バグ1: 自己参照バグ
+        regression_testで
+        record_test_result→workflow_next
+        existingHashes[]に新規記録
+        ➔ ハッシュ重複判定
+        遷移永遠ブロック
+    end

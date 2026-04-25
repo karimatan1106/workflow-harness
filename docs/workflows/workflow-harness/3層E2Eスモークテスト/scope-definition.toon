@@ -1,0 +1,26 @@
+phase: scope_definition
+task: 3層E2Eスモークテスト
+status: complete
+
+summary:
+  purpose: "3層構造（Orchestrator→Coordinator→Worker）の実タスク動作を検証し、HANDOFF.toonに検証結果セクションを追加する"
+  rootCause: "3層委譲フローの実動作が未検証であり、E2Eスモークテストで全レイヤーの連携を確認する必要がある"
+  reporter: user
+
+scopeFiles[1]{path,role,lines,changeType}:
+  .agent/handoff/HANDOFF.toon, spec, 35, modified
+
+decisions[5]{id,statement,rationale}:
+  SD-01, "変更対象をHANDOFF.toon1ファイルに限定", "スモークテストの目的は3層フロー検証であり最小変更が適切"
+  SD-02, "検証結果セクションをHANDOFF.toonに追記する方式を採用", "既存ファイルへの追記は影響範囲が最小で安全"
+  SD-03, "変更タイプはmodifiedとし新規ファイル作成は行わない", "既存構造を維持しつつE2E検証を実施する方針"
+  SD-04, "TOON形式の既存フォーマットに準拠した追記とする", "フォーマット不整合による問題を回避"
+  SD-05, "スコープ外として他の設定ファイルやソースコードの変更は行わない", "スモークテストの目的外の変更リスクを排除"
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/3層E2Eスモークテスト/scope_definition.toon, spec, "3層E2Eスモークテストのスコープ定義"
+
+next:
+  criticalDecisions: "HANDOFF.toon1ファイルのみの最小変更でE2E検証を完了させる"
+  readFiles: ".agent/handoff/HANDOFF.toon"
+  warnings: "TOON形式のフォーマットルールを厳守すること"

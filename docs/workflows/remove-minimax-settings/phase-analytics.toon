@@ -1,0 +1,113 @@
+phase: analytics
+task: remove-minimax-settings
+taskId: 56415374-a8fe-4d21-b2fe-ed9d9c7a0116
+generatedAt: "2026-04-11T01:19:10.643Z"
+totalElapsed: 5366s
+phaseTimings:
+  hearing:
+    duration: 1234s
+    current: false
+  scope_definition:
+    duration: 188s
+    current: false
+  research:
+    duration: 216s
+    current: false
+  impact_analysis:
+    duration: 142s
+    current: false
+  requirements:
+    duration: 349s
+    current: false
+  threat_modeling:
+    duration: 104s
+    current: false
+  planning:
+    duration: 83s
+    current: false
+  state_machine:
+    duration: 62s
+    current: false
+  flowchart:
+    duration: 49s
+    current: false
+  ui_design:
+    duration: 75s
+    current: false
+  design_review:
+    duration: 489s
+    current: false
+  test_design:
+    duration: 251s
+    current: false
+  test_selection:
+    duration: 90s
+    current: false
+  test_impl:
+    duration: 133s
+    current: false
+  implementation:
+    duration: 146s
+    current: false
+  refactoring:
+    duration: 67s
+    current: false
+  build_check:
+    duration: 53s
+    current: false
+  code_review:
+    duration: 295s
+    current: false
+  testing:
+    duration: 148s
+    current: false
+  regression_test:
+    duration: 115s
+    current: false
+  acceptance_verification:
+    duration: 160s
+    current: false
+  manual_test:
+    duration: 272s
+    current: false
+  security_scan:
+    duration: 114s
+    current: false
+  performance_test:
+    duration: 124s
+    current: false
+  e2e_test:
+    duration: 74s
+    current: false
+  docs_update:
+    duration: 71s
+    current: false
+  commit:
+    duration: 115s
+    current: false
+  push:
+    duration: 7s
+    current: false
+  ci_verification:
+    duration: 5s
+    current: false
+  deploy:
+    duration: 6s
+    current: false
+  health_observation:
+    duration: 129s
+    current: false
+  completed:
+    duration: 0s
+    current: true
+errorAnalysis[1]{phase,retries,topFailure}:
+  test_impl,0,test execution (exitCode=1)(L2) x1
+errorHistory[0]:
+bottlenecks:
+  slowestPhase: hearing (1234s)
+  mostFailedCheck: test execution (exitCode=1) (1 failures)
+advice[2]: "フェーズ分割またはスコープ縮小を検討: hearing (1234s)","タスクサイズの見直しを推奨 (総所要時間: 5366s)"
+outlierPhases[3]{phase,seconds,iqrScore}:
+  hearing,1234,11.55
+  requirements,349,2.03
+  design_review,489,3.54

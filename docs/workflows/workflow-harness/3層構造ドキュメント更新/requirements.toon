@@ -1,0 +1,40 @@
+phase: requirements
+taskName: 3層構造ドキュメント更新
+timestamp: 2026-03-18
+
+summary: "4対象ドキュメントの更新要件定義。scope-definitionとresearchから導出した8つの修正タスクと検証方法を記述。"
+
+acceptanceCriteria[4]{id,description,status}:
+  AC-1, "overview.mdのphasesセクション: ヘッダー「8ファイル」を「10ファイル」に修正、合計を46→47に修正", open
+  AC-2, "workflow-orchestrator.mdの3層モデル: 中間層「Manager」をすべて「Coordinator」に統一", open
+  AC-3, "workflow-orchestrator.mdのツール一覧: 幽霊ツール2件(harness_create_subtask/harness_link_tasks)を削除、DCI 4ツールを追記", open
+  AC-4, "state-management.mdのstateファイル一覧: 実装と一致確認（7ファイル）、変更不要確認", open
+
+requirements[8]{id,type,description,verification}:
+  R-1, correction, "overview.md phases段落ヘッダーの数値修正「8ファイル」→「10ファイル」", grep「8ファイル」が削除、「10ファイル」が存在
+  R-2, correction, "overview.md phases表の合計修正「46」→「47」", grepで合計値が47に変更
+  R-3, refactor, "workflow-orchestrator.md全箇所で「Manager層」→「Coordinator層」に統一", grep「Manager」マッチゼロ、「Coordinator」複数存在
+  R-4, refactor, "workflow-orchestrator.md 3層モデル図: 中間層ラベルをCoordinatorに修正", 図内「Coordinator」テキスト確認
+  R-5, deletion, "workflow-orchestrator.md ツール一覧から幽霊ツール削除: harness_create_subtask", 「harness_create_subtask」行削除確認
+  R-6, deletion, "workflow-orchestrator.md ツール一覧から幽霊ツール削除: harness_link_tasks", 「harness_link_tasks」行削除確認
+  R-7, addition, "workflow-orchestrator.md ツール一覧にDCI 4ツール追記: dci_build_index,dci_query_docs,dci_query_files,dci_validate", 4ツール全て存在確認
+  R-8, verification, "state-management.md stateファイル一覧が7ファイルで実装と一致を確認", 変更不要を確認、リスト内容検証
+
+editScopePerFile[4]{file,changeType,itemCount}:
+  "workflow-harness/docs/architecture/overview.md", "numeric-corrections", 2
+  ".claude/skills/harness/workflow-orchestrator.md", "refactoring+deletion+addition", 7
+  "workflow-harness/docs/architecture/modules/state-management.md", "verification-only", 1
+  ".claude/skills/harness/workflow-orchestrator.md", "diagram-update", 1
+
+testingStrategy[3]{id,method,checkPoint}:
+  T-1, "grep pattern-match", "修正前: 「Manager」マッチ >0, 修正後: =0"
+  T-2, "file line-count", "削除前後のツール一覧行数を記録、削除2行確認"
+  T-3, "grep presence-check", "DCI 4ツール + delegate_coordinatorの新規追記確認"
+
+notInScope:
+  - コード変更
+  - 新規ドキュメント作成
+  - テスト追加
+  - delegate_coordinatorの真偽検証（別タスク）
+
+next: docs_update

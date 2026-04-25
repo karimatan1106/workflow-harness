@@ -1,0 +1,33 @@
+flowchart TD
+    A("verify-sync.ts実行開始") --> B("PHASE_GUIDESをESM importで読み込み")
+    B --> C("extractFromDefinitions関数を呼び出し")
+    C --> D("subPhasesを再帰展開してフラット配列を生成")
+    D --> E{"フェーズ数チェック<br/>25以上か?"}
+    E -->|No| F("終了コード2でプロセス終了<br/>エラー出力")
+    F --> Z1("フェーズ数不足で終了")
+    E -->|Yes| G("ルートCLAUDE.mdをfs.readFileSyncで読み込み")
+    G --> H("セクション識別: フェーズ別subagent設定を検索")
+    H --> I("Markdownテーブル解析: 5列テーブル行を抽出")
+    I --> J("parseRootCLAUDEMdSubagentTable処理完了<br/>フェーズ名とTableEntryのマップを生成")
+    J --> K("セクション識別: フェーズ別Bashコマンド許可カテゴリを検索")
+    K --> L("Markdownテーブル解析: 3列テーブル行を抽出")
+    L --> M("parseRootCLAUDEMdBashTable処理完了<br/>フェーズ名とカテゴリ配列のマップを生成")
+    M --> N("workflow-plugin/CLAUDE.mdをfs.readFileSyncで読み込み")
+    N --> O("セクション識別: フェーズ別subagent設定を検索")
+    O --> P("Markdownテーブル解析: 6列テーブル行を抽出")
+    P --> Q("parsePluginCLAUDEMdSubagentTable処理完了<br/>フェーズ名とTableEntryのマップを生成")
+    Q --> R("compareAndReport関数を呼び出し")
+    R --> S("definitions展開結果と3つのマップを比較開始")
+    S --> T{"フェーズごとに<br/>subagentType一致か<br/>model一致か<br/>allowedBashCategories一致か?"}
+    T -->|全て一致| U("OK メッセージを出力<br/>全フィールド一致を記録")
+    T -->|不一致あり| V("NG メッセージを出力<br/>不一致フィールドと詳細を表示<br/>不一致カウント加算")
+    U --> W("次のフェーズへループ")
+    V --> W
+    W --> X{"全フェーズ<br/>処理完了か?"}
+    X -->|No| T
+    X -->|Yes| Y("サマリー行を出力<br/>フェーズ総数と不一致数を報告")
+    Y --> AA{"不一致数<br/>存在するか?"}
+    AA -->|No| AB("終了コード0でプロセス終了<br/>完全同期状態を通知")
+    AA -->|Yes| AC("終了コード1でプロセス終了<br/>差分ありの状態を通知")
+    AB --> Z2("検証成功で終了")
+    AC --> Z3("検証失敗で終了")

@@ -1,0 +1,52 @@
+taskName: tier-a-gaps-n26-n32
+phase: planning
+createdAt: 2026-03-10
+userIntent: Tier A 7項目(N-26〜N-32)の技術仕様。complexity-basedモデル選択・速度層定数・ADRマップ・DoD拡張・lint強化・ゴースト検出。
+
+decisions[7]{id,statement,rationale}:
+  PL-001, 実装順序はN-29→N-30→N-28→N-26→N-27→N-31→N-32とする, "N-29/N-30はdod-helpers.tsへの独立追加で依存なし。N-28はretry.tsへのマップ追加でN-26の前提。N-26はclassifyComplexity参照でN-28と同ファイル。N-27は独立定数。N-31はシェルスクリプト。N-32は独立ユーティリティ"
+  PL-002, N-26のsuggestedModelマッピングはbuildRetryPrompt内でclassifyComplexity呼出し直後に実施する, "既存のretryCount-based escalationを置き換えるため同一関数内で完結させ呼び出し元の変更を不要にする"
+  PL-003, N-27のFEEDBACK_SPEED_LAYERSはarchgate.tsに配置する, "archgateはアーキテクチャゲート関連の定数・関数が集約されたファイルでありフィードバック速度層も同カテゴリに属する"
+  PL-004, N-28のERROR_ADR_MAPはretry.tsに配置しbuildRetryPrompt内で参照する, "エラーパターンとADRの対応はリトライ文脈でのみ使用されるためretry.tsに閉じ込める"
+  PL-005, N-29とN-30はdod-helpers.tsに追加する, "DoD関連のヘルパー関数が集約されたファイルであり行数に余裕がある前提で同ファイルに配置する"
+  PL-006, N-32のdetectGhostFilesはdod-helpers.tsに配置しarchgateのcheckTypeとしては実装しない, "basename比較による簡易検出はgit-diffベースの本格実装の前段階でありユーティリティ関数として提供するのが適切"
+  PL-007, N-31のpost-tool-lint.sh変更はテストファイル除外条件を含める, "テストファイルではas anyが型テスト・モック等で正当に使用されるためno-explicit-anyルールの適用対象から除外する"
+
+implementationSteps[10]{order,target,action,detail}:
+  1, workflow-harness/mcp-server/src/gates/dod-helpers.ts, 関数追加, "checkFileLineLimit(content: string, limit?: number): { exceeded: boolean; lineCount: number } を追加。content.split('\\n').lengthで行数計算しlimit(デフォルト200)と比較"
+  2, workflow-harness/mcp-server/src/gates/dod-helpers.ts, 関数追加, "checkBrokenPointers(content: string, basePath: string): string[] を追加。artifacts[]行からパスを正規表現で抽出しpath.resolve(basePath, p)でfs.existsSyncチェック。存在しないパスの配列を返す"
+  3, workflow-harness/mcp-server/src/retry/retry.ts, 定数追加, "ERROR_ADR_MAP: Record<string, string[]>を追加。5パターン(Forbidden patterns/Section density/Missing required sections/File missing/TOON parse)をADR IDにマッピング"
+  4, workflow-harness/mcp-server/src/retry/retry.ts, ロジック変更, "buildRetryPrompt内でclassifyComplexity呼出し後にcomplexity→suggestedModelマッピングを追加。trivial→haiku/moderate→sonnet/critical→opus。ERROR_ADR_MAPからエラーパターンマッチでADR IDを取得し優先表示"
+  5, workflow-harness/mcp-server/src/archgate/archgate.ts, 定数追加, "FEEDBACK_SPEED_LAYERS定数をas constオブジェクトで定義しexport。4層(ms/s/min/h)それぞれにname/tools/maxTimeを定義"
+  6, workflow-harness/mcp-server/scripts/post-tool-lint.sh, コマンド修正, "oxlintコマンドに--deny no-explicit-anyを追加。テストファイル(*.test.ts/*.spec.ts)は--ignore-patternで除外"
+  7, workflow-harness/mcp-server/src/gates/dod-helpers.ts, 関数追加, "detectGhostFiles(newFiles: string[], existingFiles: string[]): string[] を追加。path.basenameで比較しnewFilesのbasenameがexistingFilesのbasenameと一致するものを返す"
+  8, workflow-harness/mcp-server/src/retry/retry.ts, 型定義, "COMPLEXITY_MODEL_MAP: Record<Complexity, string> = { trivial: 'haiku', moderate: 'sonnet', critical: 'opus' } を定義"
+  9, workflow-harness/mcp-server/src/archgate/archgate.ts, export確認, "FEEDBACK_SPEED_LAYERSがnamed exportされていることを確認"
+  10, 全変更ファイル, 行数確認, "全変更対象ファイルが200行以下であることを確認"
+
+verificationSteps[7]{ac,command,expected}:
+  AC-1, "vitest run plankton-routing.test.ts", trivial→haiku/moderate→sonnet/critical→opusの3パターンが全てパス
+  AC-2, "grep 'FEEDBACK_SPEED_LAYERS' archgate.ts && tsc --noEmit", 定数が存在しコンパイル通過
+  AC-3, "vitest run error-adr-map.test.ts", ERROR_ADR_MAPマッチとフォールバックの3テストがパス
+  AC-4, "vitest run dod-extended.test.ts (TC-D01/TC-D02)", 200行以下→exceeded:false/201行→exceeded:trueがパス
+  AC-5, "vitest run dod-extended.test.ts (TC-D03/TC-D04)", valid paths→空配列/invalid path→壊れたパスがパス
+  AC-6, "grep 'no-explicit-any' post-tool-lint.sh", --deny no-explicit-anyが存在
+  AC-7, "vitest run --reporter=verbose", 全既存テスト+新規テストが全てパス
+
+fileChangeMatrix[6]{path,changeType,estimatedLines,ac}:
+  workflow-harness/mcp-server/src/retry/retry.ts, modify, "+25行", "AC-1, AC-3"
+  workflow-harness/mcp-server/src/archgate/archgate.ts, modify, "+12行", AC-2
+  workflow-harness/mcp-server/src/gates/dod-helpers.ts, modify, "+35行", "AC-4, AC-5"
+  workflow-harness/mcp-server/scripts/post-tool-lint.sh, modify, "+2行", AC-6
+  workflow-harness/mcp-server/src/gates/dod-helpers.ts, modify, "+10行(detectGhostFiles)", AC-5
+  全ファイル, verify, "200行以下確認", AC-7
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n26-n32/spec.toon, spec, 技術仕様（本成果物）
+  docs/workflows/tier-a-gaps-n26-n32/requirements.toon, input, 受入基準と要件定義
+  docs/workflows/tier-a-gaps-n26-n32/threat-model.toon, input, 脅威分析
+
+next:
+  criticalDecisions[3]: PL-001, PL-002, PL-004
+  readFiles[4]: workflow-harness/mcp-server/src/retry/retry.ts, workflow-harness/mcp-server/src/gates/dod-helpers.ts, workflow-harness/mcp-server/src/archgate/archgate.ts, workflow-harness/mcp-server/scripts/post-tool-lint.sh
+  warnings[2]: "retry.tsの既存buildRetryPrompt呼び出し元がcomplexityパラメータ未指定で動作することを必ず確認", "dod-helpers.tsの行数が200行制限に収まることを追加前に確認"

@@ -1,0 +1,21 @@
+flowchart TD
+    A[test_impl フェーズ開始] --> B{phase が test_impl か}
+    B -- No --> C[passed: true で早期リターン]
+    B -- Yes --> D[state.scopeFiles を取得]
+    D --> E{scopeFiles.length > 0 か}
+    E -- No --> F[既存 TDD Red 証拠チェックロジック実行]
+    E -- Yes --> G{全ファイル拡張子が DOC_ONLY_EXTENSIONS か}
+    G -- Yes --> H[passed: true で免除リターン]
+    H --> I[evidence にドキュメントのみスコープの免除理由を記録]
+    G -- No --> F
+    F --> J{proofLog に Red テスト証拠が存在するか}
+    J -- Yes --> K[passed: true を返却]
+    J -- No --> L[passed: false を返却]
+
+    M[harness_get_subphase_template 呼び出し] --> N[ARTIFACT_QUALITY_RULES 定数を参照]
+    N --> O{全行ユニーク制約が含まれるか}
+    O -- Yes --> P[テンプレートに制約注入済みで返却]
+    O -- No --> Q[定数に制約追記が必要]
+    Q --> R[同一内容の行は2回まで許容の制約を追加]
+    R --> P
+    P --> S[subagent が制約を認識して成果物生成]

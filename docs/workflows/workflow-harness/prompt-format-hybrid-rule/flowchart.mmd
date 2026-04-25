@@ -1,0 +1,20 @@
+flowchart TD
+    A[Start: Add Prompt Format Rules] --> B[Read workflow-delegation.md]
+    B --> C[Identify insert position after 4-layer template section]
+    C --> D[Insert Format Rules section with TOON+MD hybrid spec]
+    D --> E[Add contamination guard to Common Constraints]
+    E --> F[Verify total line count]
+    F --> G{Line count <= 200?}
+    G -- Yes --> H[Validate Mermaid/TOON syntax]
+    H --> I[End: File updated]
+    G -- No --> J[Trim or split content to stay within limit]
+    J --> F
+
+## decisions
+
+- insert-position: after 4-layer template section -- Format Rules logically extends delegation templates; placing it adjacent avoids readers missing the rule
+- contamination-guard-location: Common Constraints block -- Every delegation call passes through Common Constraints, so the guard catches all outbound prompts
+- hybrid-spec-granularity: per-format bullet list not prose -- Bullet list is machine-parseable and avoids ambiguity that prose introduces for LLM consumers
+- line-count-loop: loop back to verify after trim -- A single trim pass may not suffice if multiple sections were added; re-check guarantees the invariant
+- decision-node-shape: diamond for 200-line check -- Standard flowchart convention; decision nodes use rhombus to signal branching logic
+- scope-single-file: modify workflow-delegation.md only -- Minimizes blast radius; cross-file changes require separate task to keep review atomic

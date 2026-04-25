@@ -1,0 +1,44 @@
+flowchart TD
+    Start(開始: アーキテクチャ改善タスク) --> Plan(計画: 実装順序の確認)
+
+    Plan --> FR2_Start(FR-2実装開始: requiredSections形式統一)
+    FR2_Start --> FR2_Manual(manual-test.md の requiredSections を修正)
+    FR2_Manual --> FR2_Security(security-scan.md の requiredSections を修正)
+    FR2_Security --> FR2_Threat(threat-model.md の requiredSections を修正)
+    FR2_Threat --> FR2_Complete(FR-2実装完了: artifact-validator.ts のみ変更)
+
+    FR2_Complete --> FR3_Start(FR-3実装開始: minLines単一ソース化)
+    FR3_Start --> FR3_Helper(next.ts に getMinLinesFromPhaseGuide関数を追加)
+    FR3_Helper --> FR3_Integration(checkPhaseArtifacts 内で PHASE_GUIDES minLines を優先参照)
+    FR3_Integration --> FR3_Mapping(FILE_TO_PHASE マッピングを実装)
+    FR3_Mapping --> FR3_Complete(FR-3実装完了: 循環参照を回避)
+
+    FR3_Complete --> FR1_Start(FR-1実装開始: workflow_get_subphase_template ツール追加)
+    FR1_Start --> FR1_New(get-subphase-template.ts 新規作成)
+    FR1_New --> FR1_Interface(GetSubphaseTemplateArgs と GetSubphaseTemplateResult インターフェース定義)
+    FR1_Interface --> FR1_Validation(VALID_SUB_PHASE_NAMES 定数と SUB_PHASE_TO_PARENT_PHASE マッピング定義)
+    FR1_Validation --> FR1_Function(workflowGetSubphaseTemplate 関数を実装)
+    FR1_Function --> FR1_ToolDef(getSubphaseTemplateToolDefinition をエクスポート)
+    FR1_ToolDef --> FR1_Register_Index(tools/index.ts に get-subphase-template をエクスポート)
+    FR1_Register_Index --> FR1_Register_Server(server.ts に import と TOOL_DEFINITIONS 登録)
+    FR1_Register_Server --> FR1_Register_Interface(server.ts の ToolArguments インターフェースに workflow_get_subphase_template を追加)
+    FR1_Register_Interface --> FR1_Register_Routing(server.ts のルーティングロジックに workflow_get_subphase_template ケース追加)
+    FR1_Register_Routing --> FR1_Complete(FR-1実装完了: MCP ツール登録完了)
+
+    FR1_Complete --> TestStart(テスト実装開始)
+    TestStart --> TestFR2(FR-2対応テスト: artifact-validator.test.ts の期待値更新)
+    TestFR2 --> TestFR3(FR-3対応テスト: next.ts の checkPhaseArtifacts 統合テスト追加)
+    TestFR3 --> TestFR1(FR-1対応テスト: get-subphase-template.test.ts 新規作成)
+    TestFR1 --> TestComplete(全テスト実装完了)
+
+    TestComplete --> BuildStart(ビルド実行: npm run build で TypeScript をトランスパイル)
+    BuildStart --> BuildCheck{ビルド成功?}
+    BuildCheck -->|Yes| RestartMCP(MCPサーバー再起動)
+    BuildCheck -->|No| FixBuild(ビルドエラーを修正)
+    FixBuild --> BuildStart
+
+    RestartMCP --> FunctionalTest(機能テスト: 各 MCP ツールが正常動作)
+    FunctionalTest --> ValidationCheck{バリデーション通過?}
+    ValidationCheck -->|Yes| End(完了: アーキテクチャ改善実装終了)
+    ValidationCheck -->|No| FixValidation(バリデーション失敗を修正)
+    FixValidation --> BuildStart

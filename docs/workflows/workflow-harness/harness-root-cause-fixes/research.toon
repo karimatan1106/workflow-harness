@@ -1,0 +1,55 @@
+phase: research
+task: harness-root-cause-fixes
+status: complete
+generatedAt: 2026-03-12T00:00:00.000Z
+summary: "RC-1(dodExemptions型設計・checkL2ExitCodeリファクタ)、RC-2(skippedPhases回帰テスト設計)、RC-3(HmacKeysバージョニング・TaskState.versionマイグレーション入口)の実装方針を確定。既存テストへの影響は最小。"
+
+decisions[9]{id,statement,rationale}:
+  R-1, "PhaseConfigにdodExemptions?: Array<'exit_code_zero'>を追加しtypes-core.tsのPhaseConfigインターフェースに定義する", "string任意ではなくリテラル型配列に限定することでコンパイル時に不正値を排除できる。現在PhaseConfigはtypes-core.ts:156-170に定義されており、dodChecks: DoDCheck[]の直下に追加する。"
+  R-2, "PHASE_REGISTRYのtest_implエントリにdodExemptions: ['exit_code_zero']を設定し他の全フェーズはdodExemptions未設定とする", "registry.ts:28のtest_implエントリのみに値を設定し、他フェーズはオプショナルフィールド省略でデフォルトなし=免除なしとなる。"
+  R-3, "checkL2ExitCodeをPhaseConfig.dodExemptionsドリブンに書き換え、if(state.phase==='test_impl')ハードコードを完全撤去する", "dod-l1-l2.ts:51-68のcheckL2ExitCodeでPHASE_REGISTRY[phase]?.dodExemptions?.includes('exit_code_zero')がtrueなら早期returnするよう変更。dod.ts(ランナー)の呼び出し側変更は不要でシグネチャを維持できる。"
+  R-4, "checkTDDRedEvidenceのif(phase!=='test_impl')早期returnはPhaseConfig.dodExemptionsで代替せず現行ロジックを維持する", "tdd_red_evidenceは'test_impl専用積極的制約'でありdodExemptions(=除外)とは意味論が異なる。SD-3の決定を遵守しtdd_red_evidenceはconfig駆動化スコープ外とする。"
+  R-5, "createTaskState回帰テストとしてsize=small/medium/largeの3種についてstate.skippedPhasesがSIZE_SKIP_MAP[size]と完全一致することをvitest expect.toEqual()でアサートする", "manager-write.ts:54でskippedPhases: SIZE_SKIP_MAP[size]を代入しているが、将来的な変数展開ミスを防ぐため回帰テストで再発防止する。テストファイルは新規作成しmanager-write.test.tsとする。"
+  R-6, "HmacKeysインターフェースにversion: 1を追加し、loadHmacKeysでtypeof raw.versionが'undefined'の場合にversion: 1を付与してwriteFileSync上書きするマイグレーションを実施する", "hmac.ts:12-16のHmacKeysにversion: 1フィールドを追加。loadHmacKeys:46の現行形式return前にversionフィールドが欠落している場合は1を付与して上書きする。将来version: 2へ移行する際はversion===1分岐を追加するだけで対応可能になる。"
+  R-7, "loadTaskFromDiskにstate.version===4チェック分岐の入口コメントとブロックを設置しv5マイグレーション関数の挿入点を予約する", "manager-read.ts:34のJSON.parse直後にif(state.version!==4){...}の骨格を設置する。現時点ではv4のみサポートで実処理は空だが、v5追加時のコスト削減と仕様明示が目的。"
+  R-8, "既存hmac.test.tsはHmacKeys内部構造をcontentオブジェクトとしてアサートしているため、versionフィールド追加後もcurrent/rotatedAtのアサートを維持しversionフィールドを追加アサートに限定する", "hmac.test.ts:44-49のpersists key in hmac-keys.json with correct structureテストがversion: 1を持つことをexpect(content.version).toBe(1)で追加する。既存アサートの破壊はない。"
+  R-9, "dod.tsのrunDoDChecksはcheckL2ExitCodeのシグネチャ変更がないため呼び出し側の変更は不要とする", "dod.ts:37のpush(checkL2ExitCode(state), 'L2')は引数stateのみでPHASE_REGISTRYはcheckL2ExitCode内部で参照する設計のため、dod.ts自体への変更は発生しない。"
+
+artifacts[7]{path,role,summary}:
+  docs/workflows/harness-root-cause-fixes/scope-definition.toon, report, "スコープ定義成果物。SD-1〜SD-7の決定事項がresearch.toonの基底となった。"
+  workflow-harness/mcp-server/src/state/types-core.ts, spec, "PhaseConfig定義(line 156-170)。dodExemptions?: Array<'exit_code_zero'>をdodChecks直下に追加する対象ファイル。"
+  workflow-harness/mcp-server/src/phases/registry.ts, spec, "PHASE_REGISTRY定義(line 8-55)。test_implエントリ(line 28)にdodExemptions: ['exit_code_zero']を追加する対象ファイル。"
+  workflow-harness/mcp-server/src/gates/dod-l1-l2.ts, impl, "checkL2ExitCode(line 51-68)。if(phase==='test_impl')ハードコードをPHASE_REGISTRY参照に置き換える対象ファイル。"
+  workflow-harness/mcp-server/src/utils/hmac.ts, impl, "HmacKeys(line 12-16)とloadHmacKeys(line 26-58)。version: 1フィールド追加とマイグレーション処理追加対象ファイル。"
+  workflow-harness/mcp-server/src/state/manager-read.ts, impl, "loadTaskFromDisk(line 24-45)。state.versionチェック分岐入口設置対象ファイル。"
+  workflow-harness/mcp-server/src/__tests__/hmac.test.ts, test, "既存HMACテスト。version: 1追加アサートを1行追加する対象ファイル(破壊的変更なし)。"
+
+implConstraints:
+  nodeVersion: "v22.15.0"
+  tscVersion: "5.9.3"
+  magicNumbers: "HMAC key=32 bytes(64 hex chars), sessionToken=32 bytes(64 hex chars), TaskState.version literal=4, SIZE_SKIP_MAP small=19 phases, medium=8 phases, large=0 phases"
+  hardcodedLiterals: "dod-l1-l2.ts:53 if(state.phase==='test_impl') — RC-1修正対象。dod-l1-l2.ts:72 if(phase!=='test_impl') — RC-1スコープ外(R-4による維持決定)"
+  implOrder: "types-core.ts(型先行) → registry.ts(値設定) → dod-l1-l2.ts(ロジック変更) → hmac.ts(並列可能) → manager-read.ts(並列可能) → manager-write.test.ts(新規テスト) → hmac.test.ts(既存テスト追記)"
+
+rc1Analysis:
+  dodExemptionsType: "Array<'exit_code_zero'>。将来'tdd_red_evidence'等の追加を考慮しリテラル型ユニオンのArrayとして定義。型名はDodExemptionType = 'exit_code_zero'としてexportし配列型はArray<DodExemptionType>。"
+  checkL2RefactorPlan: "PHASE_REGISTRY[state.phase as PhaseName]?.dodExemptions?.includes('exit_code_zero')がtrueの場合に早期returnで'skipped(dodExemptions)'evidenceを返す。falseの場合は現行のproofLog参照ロジックをそのまま実行。"
+  dodRunnerImpact: "dod.tsのrunDoDChecksは変更不要。checkL2ExitCode(state)の呼び出しシグネチャは維持されPHASE_REGISTRY参照はl1-l2内部に隠蔽される。"
+
+rc2Analysis:
+  regressionTestDesign: "manager-write.test.tsを新規作成しcreateTaskStateを直接テスト。size=smallでstate.skippedPhasesがSIZE_SKIP_MAP.smallと完全一致(19フェーズ)。size=mediumでSIZE_SKIP_MAP.mediumと一致(8フェーズ)。size=largeで空配列[]。expect(state.skippedPhases).toEqual(SIZE_SKIP_MAP[size])でアサート。"
+  regressionTestScope: "createTaskStateはhmacKeyを受け取るためensureHmacKeysでtempDirから取得してテスト。riskScoreとclassifySizeの組み合わせでsmall/medium/largeを確定的に生成するためfiles/dirs引数を制御。largeはdirs=['src','tests','infra','config','security','database']で高リスクスコアを誘導。"
+
+rc3Analysis:
+  hmacVersioningDesign: "HmacKeys.version: 1を追加。loadHmacKeys:46のif(raw.current)ブロック内でraw.versionフィールドが欠落している場合はversion: 1を付与してwriteFileSync上書き。マイグレーション完了後はreturnする。これによりlegacy配列→v0オブジェクト→v1オブジェクトの3段マイグレーションが完成する。"
+  taskStateMigrationChain: "loadTaskFromDisk内でif(state.version !== 4)の分岐骨格を追加。現時点ではconsole.warn('unknown state version: '+state.version)のみ実行してstateをそのまま返す。v5移行時はif(state.version === 3)にマイグレーション関数呼び出しを追加する。"
+
+existingTestImpact:
+  dodTddTest: "dod-tdd.test.ts全5ケースはcheckTDDRedEvidence/runDoDChecksを通じてtest_implの動作を検証しているが、RC-1変更(checkL2ExitCode内部のPHASE_REGISTRY参照化)はcheckL2ExitCodeのexit_code_zeroチェックをskipするようになるため、test_impl用のexit_code_zero passed判定が変わる。ただし既存テストはtdd_red_evidenceのcheck=を検索しておりexit_code_zeroのpassedを直接アサートしていないため破壊なし。"
+  hmacTest: "hmac.test.ts:44-49のpersists key with correct structureテストがcontent.currentとcontent.rotatedAtをアサートしている。version: 1追加後はこれら既存アサートは変わらず通過し、追加でexpect(content.version).toBe(1)を1行追記する。"
+  newTests: "manager-write.test.ts(新規)でskippedPhases回帰テスト3種を追加。既存テストへの影響なし。"
+
+next:
+  criticalDecisions: "R-1のDodExemptionType export名称確定。R-6のHmacKeys.version書き込みタイミング(現行形式読み込み時に即座に上書きするか遅延するか=即座上書きを採用)。"
+  readFiles: "workflow-harness/mcp-server/src/gates/dod-l4-art.ts(SD-7スコープ外確認), workflow-harness/mcp-server/src/__tests__/dod-test-helpers.ts(makeMinimalState実装確認)"
+  warnings: "manager-write.ts:54のSIZE_SKIP_MAP[size]直接代入はスプレッド不使用のため参照共有リスクあり。回帰テストで変更検知は可能だが実装時に[]スプレッドコピーへの修正も検討すること。dod.ts:37のpush順序(checkL2ExitCodeがcheckTDDRedEvidenceより先に実行)は変更しないこと。"

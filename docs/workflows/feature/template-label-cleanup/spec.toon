@@ -1,0 +1,62 @@
+phase: planning
+task: template-label-cleanup
+intent: テンプレート内の太字ラベル装飾を除去しプレーンテキストに統一する
+status: complete
+
+summary: 8テンプレートファイル計120箇所の**text**装飾を単一正規表現で除去。workflow-rules.mdに装飾禁止ルール追加。既存テストにBOLD_RE不在検査追加
+
+implementationPlan[10]{id,file,action,count,priority}:
+  PL-01, src/phases/definitions-shared.ts, 共有定数フラグメント内の太字装飾5箇所を除去, 5, 1
+  PL-02, src/phases/definitions.ts, buildToonFirstSection内の太字装飾1箇所を除去, 1, 2
+  PL-03, src/phases/defs-stage1.ts, Stage1テンプレート内の太字装飾30箇所を除去, 30, 3
+  PL-04, src/phases/defs-stage2.ts, Stage2テンプレート内の太字装飾20箇所を除去, 20, 4
+  PL-05, src/phases/defs-stage3.ts, Stage3テンプレート内の太字装飾14箇所を除去, 14, 5
+  PL-06, src/phases/defs-stage4.ts, Stage4テンプレート内の太字装飾21箇所を除去, 21, 6
+  PL-07, src/phases/defs-stage5.ts, Stage5テンプレート内の太字装飾14箇所を除去, 14, 7
+  PL-08, src/phases/defs-stage6.ts, Stage6テンプレート内の太字装飾15箇所を除去, 15, 8
+  PL-09, .claude/skills/harness/workflow-rules.md, Section5末尾にテンプレート装飾禁止ルール1行追加, 1, 9
+  PL-10, tests/template-separator-cleanup.test.ts, BOLD_RE(/\*\*[^*]+\*\*/gm)不在検査を追加, 1, 10
+
+replaceStrategy: 全箇所共通で /\*\*([^*]+)\*\*/ → $1 の単一正規表現置換。ネストなし。★記号は維持
+
+fileEditOrder[10]{step,file,reason}:
+  1, definitions-shared.ts, 共有定数が他テンプレートに展開されるため最初に修正
+  2, definitions.ts, buildToonFirstSection内のTOON入力ラベル修正
+  3, defs-stage1.ts, 最多30箇所のStage1テンプレート修正
+  4, defs-stage2.ts, 20箇所のStage2テンプレート修正
+  5, defs-stage3.ts, 14箇所のStage3テンプレート修正
+  6, defs-stage4.ts, 21箇所のStage4テンプレート修正
+  7, defs-stage5.ts, 14箇所のStage5テンプレート修正
+  8, defs-stage6.ts, 15箇所のStage6テンプレート修正
+  9, workflow-rules.md, 装飾禁止ルール追加(再発防止)
+  10, template-separator-cleanup.test.ts, BOLD_RE不在検査追加(AC-3検証)
+
+decisions[7]{id,statement,rationale}:
+  PL-1, ファイル単位でEdit toolのreplace_allを使用し一括置換する, 120箇所を個別編集するとミス・漏れリスクが高くreplace_allが安全
+  PL-2, 置換正規表現 /\*\*([^*]+)\*\*/ を全ファイル共通で使用する, 7分類すべて同一操作であり分類ごとの特別処理不要
+  PL-3, definitions-shared.tsを最初に修正する, 共有定数が他テンプレートに展開されるため依存順序を遵守
+  PL-4, workflow-rules.md Section5末尾に装飾禁止ルールを追加する, 既存の禁止語/プレースホルダー禁止と同列の品質ルールとして配置
+  PL-5, テスト追加はtemplate-separator-cleanup.test.tsの既存構造に統合する, 新テストファイル作成より既存テストスイートへの追加が適切
+  PL-6, CAT-4の★記号は維持し除去対象外とする, ★はMarkdown装飾ではなく視覚的重要度マーカーであり目的が異なる
+  PL-7, 各ファイル置換後にGrep検査で残存太字0件を確認する, 置換漏れを即座に検出し修正するためのインライン検証
+
+verificationPlan[3]{id,method,target}:
+  V-1, Grep検索で /\*\*[^*]+\*\*/ が対象8ファイルで0件, AC-1(全太字装飾除去)
+  V-2, workflow-rules.md Section5末尾に装飾禁止ルール文言が存在, AC-2(ルール追加)
+  V-3, vitest実行で全414件+BOLD_RE検査パス, AC-3(テスト全件パス+新規検査)
+
+riskMitigation[2]{risk,mitigation}:
+  正規表現の誤マッチで意図しない文字列が置換される, パターンが単純(**text**)でネストなし。各ファイル置換後にGrep検証
+  既存テストが置換により失敗する, 装飾除去はテンプレート出力の構造・ロジックに影響しない。NF-002で全件パス検証
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/template-label-cleanup/scope-definition.toon, spec, スコープ定義(9ファイル117箇所+ルール1件)
+  docs/workflows/template-label-cleanup/research.toon, research, 太字ラベル120箇所の7分類調査と置換戦略
+  docs/workflows/template-label-cleanup/requirements.toon, requirements, 機能要件4件+非機能要件3件+AC3件
+  docs/workflows/template-label-cleanup/spec.toon, planning, 実装計画10ステップ+検証計画3件
+
+next:
+  criticalDecisions: PL-1(replace_all一括置換) PL-3(definitions-shared.ts最優先) PL-7(インライン検証)
+  firstFile: src/phases/definitions-shared.ts
+  implementationOrder: PL-01→PL-02→PL-03→PL-04→PL-05→PL-06→PL-07→PL-08→PL-09→PL-10
+  totalChanges: 120箇所太字除去 + 1ルール追加 + 1テスト追加

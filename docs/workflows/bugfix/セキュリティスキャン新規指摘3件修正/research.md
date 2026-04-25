@@ -1,0 +1,65 @@
+# セキュリティスキャン新規指摘3件修正 - 調査結果
+
+## サマリー
+
+前回のセキュリティスキャンで検出された3件の新規脆弱性に対する詳細調査を実施した。
+対象はbash-whitelist.jsの2関数とloop-detector.jsの1関数である。
+指摘1のsplitCommandPartsはゼロ幅Unicode文字を区切りとして認識できない問題がある。
+指摘2のdetectEncodedCommandはbase64デコード失敗時にallowed:trueを返すFail-Open設計である。
+指摘3のnormalizeFilePathはfs.realpathSync失敗時のフォールバックにTOCTOU脆弱性が理論的に存在する。
+3件とも既存コードの設計上の問題であり前回の修正で新たに導入されたものではない。
+修正の優先度は指摘2のFail-Closed化が最も高く次に指摘1のUnicode対応で指摘3は低優先度である。
+
+## 調査結果
+
+3件の新規セキュリティ指摘について対象コードの詳細な静的分析を実施した。
+指摘1はsplitCommandParts関数のコマンド分割正規表現がゼロ幅Unicode文字を認識しない問題である。
+指摘2はdetectEncodedCommand関数がエンコードコマンドのデコード失敗時にFail-Open動作する問題である。
+指摘3はnormalizeFilePath関数のシンボリックリンク解決にTOCTOU脆弱性が存在する問題である。
+3件ともworkflow-pluginのhooksディレクトリに配置されたセキュリティフック内の関数が対象である。
+bash-whitelist.jsが2件の指摘を含みloop-detector.jsが1件の指摘を含む構成である。
+
+## 既存実装の分析
+
+### splitCommandParts関数の現状
+
+bash-whitelist.jsの行253-255に定義されたsplitCommandParts関数はcommand.split正規表現でコマンドを分割する。
+使用している正規表現は/\s*(?:&&|\|\||;)\s*/であり演算子前後の空白を含めて分割する。
+JavaScriptのES2015以降の\sはU+0009 TABからU+00A0 NBSPやU+3000 IDEOGRAPHICまでカバーしている。
+ただしU+200B ZERO WIDTH SPACEやU+FEFF BOM以外のゼロ幅文字は\sにマッチしない。
+splitCompoundCommand関数の行333-334とmatchesBlacklistEntry関数の行275でも同じロジックが使用されている。
+影響範囲はコマンド分割に依存する全てのホワイトリスト検証処理に及ぶ。
+
+### detectEncodedCommand関数の現状
+
+bash-whitelist.jsの行395-443に定義されたdetectEncodedCommand関数は3種類のエンコードパターンを検出する。
+base64パターン検出後にdecodeBase64Safe関数でデコードを試み結果がtruthyな場合のみ検証を実行する。
+decodeBase64Safe関数は行352-359でBuffer.fromを使用しエラー発生時にnullを返す実装になっている。
+printfのhexパターンとechoのoctalパターンでも同様のフローでデコード失敗時に検証がスキップされる。
+全てのパターンチェックを通過した後に行442でreturn allowed:trueが実行されるFail-Open設計である。
+Fail-Closed原則に従いデコード失敗時はallowed:falseを返すべきである。
+
+### normalizeFilePath関数の現状
+
+loop-detector.jsの行125-141に定義されたnormalizeFilePath関数はファイルパスを正規化する3段構成である。
+第1段としてfs.realpathSyncでシンボリックリンクを解決し実パスを取得する。
+第2段としてrealpathSync失敗時にpath.resolveにフォールバックするがリンク解決は行われない。
+第3段として両方失敗した場合は文字列置換のみの簡易正規化を実行する。
+checkLoop関数の行308でnormalizeFilePathが呼び出されファイル編集履歴の追跡に使用されている。
+ワークフロープラグインの使用環境はローカル開発マシン限定であるためTOCTOU脆弱性の実務リスクは極めて低い。
+
+## 修正対象ファイル
+
+bash-whitelist.jsはworkflow-plugin/hooks/bash-whitelist.jsに配置されている657行のセキュリティフックファイルである。
+splitCommandPartsは行253-255に位置しコマンド分割を担当する関数である。
+detectEncodedCommandは行395-443に位置しエンコードされたコマンドの検出を担当する関数である。
+loop-detector.jsはworkflow-plugin/hooks/loop-detector.jsに配置されている450行のループ検出フックファイルである。
+normalizeFilePathは行125-141に位置しファイルパスの正規化を担当する関数である。
+
+## 次フェーズへの情報
+
+requirementsフェーズでは3件の指摘に対する修正要件を定義する必要がある。
+指摘1はJavaScript正規表現の\sのカバー範囲を踏まえたゼロ幅文字のサニタイズ処理が焦点となる。
+指摘2はFail-Closed原則に基づくエラーハンドリングの再設計が焦点となる。
+指摘3はフォールバック時のログ出力強化とオプショナルな二重チェック機構の検討が焦点となる。
+既存テスト42件との互換性を維持しつつ最小限の変更でセキュリティを向上させることが重要である。

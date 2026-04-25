@@ -1,0 +1,28 @@
+phase: threat_modeling
+task: harness-stale-task-cleanup-and-hmac-recovery
+status: complete
+created: 2026-03-11
+scope: 内部状態管理の変更のみ。外部入力・外部APIなし。
+attack_surface: low
+reasoning: StateManager内部ロジックの変更。ユーザー入力はMCPツール経由で既にバリデーション済み。新たな外部入力パスなし。
+stride_summary: 内部専用変更のためSTRIDE全カテゴリで追加リスクは限定的
+stride_spoofing: 該当なし。外部認証・入力パスの変更なし
+stride_tampering: HMAC検証緩和によりintegrityWarning付きデータの読み取りを許可。書き込みはブロック
+stride_repudiation: 該当なし。ログ出力追加により監査性は向上
+stride_info_disclosure: HMAC検証失敗時の構造化ログにtaskIdとerrorContextを出力。秘密鍵情報は含まない
+stride_dos: completedタスクフィルタにより92件→3件のI/O削減。パフォーマンスは改善方向
+stride_elevation: integrityWarning付きタスクの書き込みブロックにより権限昇格リスクなし
+decisions[5]{id,statement,rationale}:
+  TM-01,HMAC検証失敗時にnullではなくintegrityWarning付きデータを返却する,タスクデータ自体が正常な場合のTask not found誤報を防止しつつ書き込みブロックで安全性を確保
+  TM-02,integrityWarning付きタスクへの全書き込み操作をStateManagerレベルでブロックする,HMAC不一致状態での状態変更は整合性をさらに悪化させるため読み取り専用に制限
+  TM-03,レガシー配列マイグレーション時にpreviousキーを保持し即時上書き保存する,旧キーで署名されたタスクのフォールバック検証を可能にしキーローテーション時のデータロスを防止
+  TM-04,HMAC検証失敗ログに秘密鍵情報を含めずtaskIdとerrorContextのみ出力する,デバッグ情報提供と秘密情報漏洩防止を両立する
+  TM-05,completedタスクのHMAC検証をスキップしphase判定のみで除外する,完了済みタスクへの書き込みは発生しないためHMAC検証コストを回避しI/Oを削減する
+threats[3]{id,description,impact,mitigation,residualRisk}:
+  T-01,HMAC検証緩和によるintegrityWarning付きデータの不正利用,改竄されたタスクデータが読み取り可能になる,書き込み操作の全面ブロックにより状態変更を防止,低
+  T-02,レガシーキーマイグレーション時のpreviousキー不正保持,古いHMACキーが意図せず保持される,即時上書き保存で最新状態を確定しキー数を2つに限定,低
+  T-03,構造化ログからの情報漏洩,HMAC検証失敗時のログにtaskId等が出力される,秘密鍵情報を含めずerrorContextのみ出力する設計,低
+artifacts[1]{path,role,summary}:
+  docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/threat-model.toon,report,脅威分析レポート
+next:
+  readFiles[1]: docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/spec.toon

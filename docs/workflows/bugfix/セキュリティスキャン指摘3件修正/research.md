@@ -1,0 +1,58 @@
+# 調査結果
+
+## サマリー
+
+前回のワークフロー「ワークフロープラグインレビュー指摘全件修正」のセキュリティスキャンで検出された3件の問題を調査した。
+問題1はSPEC_FIRST_TTL_MSがSECURITY_ENV_VARSに未登録でTTL無効化のリスクがある点でMedium重大度である。
+問題2はUnicode空白文字によるREQ-R6単語境界チェックのバイパス可能性でLow重大度である。
+問題3はpath.resolve()がシンボリックリンクを解決しない点でInformational重大度である。
+全3件とも修正対象ファイルは2ファイル（bash-whitelist.jsとloop-detector.js）に集約される。
+修正量は各問題とも数行の追加・変更で完了する軽微な変更である。
+
+## 調査結果
+
+セキュリティスキャンで検出された3件の問題について対象ファイルのコードを調査し修正方針を策定した。
+問題1のSPEC_FIRST_TTL_MS未保護はbash-whitelist.jsのSECURITY_ENV_VARS配列への1行追加で対応できる。
+問題2のUnicode空白文字バイパスはbash-whitelist.jsのnextChar判定を正規表現に置換することで対応できる。
+問題3のシンボリックリンク未解決はloop-detector.jsのpath.resolve関数をfs.realpathSync関数に変更することで対応できる。
+全問題とも既存のコード構造を活かした最小限の修正で対応でき回帰リスクは低い。
+
+## 既存実装の分析
+
+bash-whitelist.jsは約700行のJavaScriptフックファイルでBashコマンドのホワイトリスト検証を担当している。
+SECURITY_ENV_VARS配列はL11-15で定義されisCommandAllowed関数のL565-574でexport/unset検出に使用される。
+nextCharによる単語境界チェックはL624-633でホワイトリストマッチ後の文字判定として実装されている。
+loop-detector.jsは約250行のJavaScriptフックファイルでファイル編集のループ検出を担当している。
+normalizeFilePath関数のL125-135でパス正規化処理を行いpath.resolve()はL130のtry-catchブロック内にある。
+
+## 問題1の調査結果（SPEC_FIRST_TTL_MS未保護）
+
+bash-whitelist.jsのL11-15にSECURITY_ENV_VARS配列が定義されている。
+現在の保護対象は以下の7変数である：HMAC_STRICT、SCOPE_STRICT、SESSION_TOKEN_REQUIRED、HMAC_AUTO_RECOVER、SKIP_WORKFLOW、SKIP_LOOP_DETECTOR、VALIDATE_DESIGN_STRICT。
+spec-first-guard.jsのL17でSPEC_FIRST_TTL_MSがprocess.envから取得されデフォルト3600000msに設定されている。
+この環境変数をexportコマンドで極大値に書き換えるとTTL機能が実質無効化されセキュリティリスクとなる。
+対応方針としてSECURITY_ENV_VARS配列に文字列SPEC_FIRST_TTL_MSを1行追加するだけで保護が有効になる。
+
+## 問題2の調査結果（Unicode空白文字バイパス）
+
+bash-whitelist.jsのL627-628でnextChar変数によるコマンド境界判定を行っている。
+現在の判定条件はnextCharが空白（0x20）またはタブまたはコマンド区切り文字（セミコロン・アンパサンド・パイプ・リダイレクト）またはEOLである。
+Unicode空白文字（例：U+00A0ノーブレークスペース）は通常の空白として判定されないためバイパスの理論的可能性がある。
+対応方針として文字判定を正規表現の\sパターンに変更することでUnicode空白を含む全空白文字をカバーできる。
+具体的にはnextChar === ' ' || nextChar === '\t'の部分を/\s/.test(nextChar)に統合する。
+
+## 問題3の調査結果（シンボリックリンク未解決）
+
+loop-detector.jsのL130でpath.resolve(filePath)を使用してパスを正規化している。
+path.resolve()は相対パスから絶対パスへの変換を行うがファイルシステム上のシンボリックリンクは解決しない。
+同一ファイルへの異なるシンボリックリンクパスがそれぞれ別のファイルとしてカウントされループ検出を回避できる可能性がある。
+対応方針としてfs.realpathSync()に変更することでシンボリックリンク先の実パスを取得できる。
+既存のtry-catchブロック内に配置されているため、シンボリックリンクが無効な場合のエラーハンドリングも自然に実現できる。
+
+## 修正対象ファイル
+
+修正対象はworkflow-plugin/hooks/bash-whitelist.jsとworkflow-plugin/hooks/loop-detector.jsの2ファイルである。
+bash-whitelist.jsでは問題1のSECURITY_ENV_VARS配列追加と問題2のnextChar判定ロジック変更を行う。
+loop-detector.jsでは問題3のpath.resolve()からfs.realpathSync()への変更を行う。
+全修正の合計変更行数は10行未満と見積もられる。
+既存の42件のテストケースへの影響は最小限であり回帰リスクは低い。

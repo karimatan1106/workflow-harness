@@ -1,0 +1,39 @@
+stateDiagram-v2
+    [*] --> ReceiveState: checkTDDRedEvidence invoked
+
+    ReceiveState: Receive TaskState and phase
+    ReceiveState --> CheckPhase
+
+    CheckPhase: Evaluate phase value
+    CheckPhase --> Exempt_NonTestImpl: phase !== test_impl
+    CheckPhase --> ReadScopeFiles: phase === test_impl
+
+    Exempt_NonTestImpl: Return passed true (not applicable)
+    Exempt_NonTestImpl --> [*]
+
+    ReadScopeFiles: Extract scopeFiles from TaskState
+    ReadScopeFiles --> CheckScopeLength
+
+    CheckScopeLength: Evaluate scopeFiles.length
+    CheckScopeLength --> ExistingLogic: scopeFiles.length === 0
+    CheckScopeLength --> EvalExtensions: scopeFiles.length > 0
+
+    EvalExtensions: Check every file extension against DOC_ONLY_EXTENSIONS
+    EvalExtensions --> DocOnlyExempt: all extensions in Set(.md, .mmd)
+    EvalExtensions --> ExistingLogic: any extension outside Set(.md, .mmd)
+
+    DocOnlyExempt: Return passed true with doc-only exemption evidence
+    DocOnlyExempt --> [*]
+
+    ExistingLogic: Evaluate proofLog for TDD Red evidence
+    ExistingLogic --> CheckProofLog
+
+    CheckProofLog: Search proof entries for test failure records
+    CheckProofLog --> Passed: valid TDD Red evidence found
+    CheckProofLog --> Failed: no TDD Red evidence found
+
+    Passed: Return passed true with proof evidence
+    Passed --> [*]
+
+    Failed: Return passed false with missing evidence detail
+    Failed --> [*]

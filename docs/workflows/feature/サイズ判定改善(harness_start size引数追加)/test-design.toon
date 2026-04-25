@@ -1,0 +1,55 @@
+phase: test_design
+task: サイズ判定改善(harness_start size引数追加)
+status: complete
+inputArtifact: docs/workflows/サイズ判定改善(harness_start size引数追加)/planning.toon
+
+testStrategy: ユニットテスト(createTaskState直接呼び出し)とスキーマ検証(defs-a.tsのinputSchema)の2軸で全ACをカバーする。handler-lifecycle.test.tsパターンに準拠しvitest/vi.stubEnvで一時ディレクトリを使用する。回帰テストはvitest run全件実行で確認する。
+
+testFramework: vitest
+testRunner: npx vitest run
+testFileLocation: workflow-harness/mcp-server/src/__tests__/size-argument.test.ts
+
+decisions[6]{id,statement,rationale}:
+  TD-01, "createTaskStateの直接呼び出しでsize引数の伝搬を検証する", manager.tsのcreateTask経由ではなくcreateTaskState単体を呼ぶことでsize引数のデフォルト適用ロジックを分離して検証できる
+  TD-02, "riskScoreの固定マッピング値をアサーションに含める", small=2/medium=5/large=8の固定マッピングが正しく適用されることを検証し将来の値変更時にテストが検出する
+  TD-03, "defs-a.tsのinputSchemaを静的importして構造を検証する", ランタイム実行ではなくスキーマオブジェクトの構造を直接アサートすることでMCPプロトコルレベルの制約を確認する
+  TD-04, "vitest run全件実行を回帰テストとする", 個別テストの選択実行ではなく全件実行により予期しない副作用を検出する
+  TD-05, "各テストケースは1つのACのみを検証する", テストケースとACの1対1対応により障害箇所の特定を容易にする
+  TD-06, "handler-test-setup.tsのsetupHandlerTestパターンを再利用せずcreateTaskState直接呼び出しとする", size引数のデフォルト適用はcreateTaskState内で完結するためMCPハンドラ層を経由する必要がない
+
+testCases[6]{id,acId,title,description,setup,action,expectedResult,testType}:
+  TC-AC1-01, AC-1, "size='small'指定時のTaskState.size検証", "createTaskStateにsize='small'を渡した場合にTaskState.sizeが'small'であること", "vi.stubEnvでSTATE_DIR/DOCS_DIRを一時ディレクトリに設定しmanager-write.tsをdynamic importする", "createTaskState('test-task', 'Intent with sufficient length for validator check ok.', hmacKey, [], [], 'small')を呼び出す", "返却されたstateオブジェクトのsizeプロパティが'small'であること", unit
+  TC-AC1-02, AC-1, "size='medium'指定時のTaskState.size検証", "createTaskStateにsize='medium'を渡した場合にTaskState.sizeが'medium'であること", "TC-AC1-01と同一のsetup", "createTaskState('test-task', 'Intent with sufficient length for validator check ok.', hmacKey, [], [], 'medium')を呼び出す", "返却されたstateオブジェクトのsizeプロパティが'medium'であること", unit
+  TC-AC2-01, AC-2, "size未指定時のデフォルトlarge検証", "createTaskStateにsizeを渡さない場合にTaskState.sizeが'large'であること", "TC-AC1-01と同一のsetup", "createTaskState('test-task', 'Intent with sufficient length for validator check ok.', hmacKey, [], [])を呼び出す(第6引数省略)", "返却されたstateオブジェクトのsizeプロパティが'large'であること", unit
+  TC-AC2-02, AC-2, "riskScoreがsizeから固定マッピングで生成される検証", "各sizeに対応するriskScore.totalが固定マッピング値と一致すること", "TC-AC1-01と同一のsetup", "size='small'/'medium'/'large'それぞれでcreateTaskStateを呼び出しriskScore.totalを取得する", "small時total=2/medium時total=5/large時total=8であること。factorsは空オブジェクト{}であること", unit
+  TC-AC3-01, AC-3, "既存テスト全件パス(回帰テスト)", "変更後にvitest run全件実行で既存テストが全てパスすること", "実装完了後のコードベース", "npx vitest runを実行する", "全テストスイートがパスしfailure件数が0であること", regression
+  TC-AC4-01, AC-4, "harness_start inputSchemaのsizeプロパティ検証", "defs-a.tsのharness_start定義にsizeプロパティがenum制約付きで存在すること", "defs-a.tsをdynamic importしharness_start定義を取得する", "harness_start定義のinputSchema.properties.sizeオブジェクトを取得する", "type='string'であること。enumが['small','medium','large']と厳密一致すること", unit
+
+acTcMapping[4]{acId,tcIds,coverage}:
+  AC-1, TC-AC1-01/TC-AC1-02, "small/mediumの2値を検証。largeはAC-2のデフォルト検証で網羅"
+  AC-2, TC-AC2-01/TC-AC2-02, "デフォルト値largeの適用とriskScore固定マッピングの両方を検証"
+  AC-3, TC-AC3-01, "vitest run全件実行で後方互換性を確認"
+  AC-4, TC-AC4-01, "inputSchemaの構造を静的検証しenum制約の存在を確認"
+
+testFileStructure[1]{file,describes,testCount}:
+  workflow-harness/mcp-server/src/__tests__/size-argument.test.ts, "size引数のcreateTaskState伝搬/デフォルト値/riskScoreマッピング/スキーマ検証", 6
+
+testDataRequirements[3]{id,description,source}:
+  TDR-01, "一時ディレクトリ(STATE_DIR/DOCS_DIR)をvi.stubEnvで設定", manager-core.test.tsのbeforeAllパターンに準拠
+  TDR-02, "hmacKeyはcrypto.randomBytes(32)で生成", hmac.test.tsのパターンに準拠
+  TDR-03, "userIntentは最低50文字以上のバリデーション通過文字列", 既存テストの'Intent with sufficient length'パターンに準拠
+
+edgeCases[3]{id,description,coveredBy}:
+  EC-01, "size引数にundefinedを明示的に渡した場合にデフォルトlargeが適用される", TC-AC2-01で第6引数省略により暗黙的にカバー
+  EC-02, "3つのsize値全てでriskScoreが型制約(RiskScore型)を満たす", TC-AC2-02でtotal/factorsの両フィールドを検証
+  EC-03, "enum制約外の値はMCPスキーマレベルで拒否される", TC-AC4-01でenum配列の厳密一致を検証しランタイム到達前のバリデーションを確認
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/requirements.toon, 入力, 要件定義成果物(AC定義)
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/planning.toon, 入力, 実装計画成果物(変更対象ファイル定義)
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/test-design.toon, 出力, テスト設計成果物(本ファイル)
+
+next:
+  criticalDecisions: "createTaskState直接呼び出しで6テストケースを実装する。riskScore固定マッピング値(2/5/8)をアサーションに含める。defs-a.tsのスキーマはdynamic importで静的検証する"
+  readFiles: "workflow-harness/mcp-server/src/state/manager-write.ts, workflow-harness/mcp-server/src/tools/defs-a.ts"
+  warnings: "TC-AC3-01はimplementationフェーズ完了後に実行する。createTaskState内部でHMAC署名を行うためhmacKeyの生成が必須"

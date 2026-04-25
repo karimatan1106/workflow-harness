@@ -1,0 +1,39 @@
+%% Flowchart: docs-workflows-refactoring-v2
+%% taskId: 5127ee0c-0fad-4088-a2bc-e7c590595738
+%%
+%% decisions:
+%%   D1: Flowchart uses top-down layout (TD) for sequential phase visibility
+%%   D2: Each mutation phase has an explicit verification gate before proceeding
+%%   D3: All failure paths converge to a single Rollback node using git checkout
+%%   D4: Baseline count (1902) is the sole data-integrity oracle for start and end gates
+%%   D5: Inner-first deletion order for nested dirs is encoded as a sub-step within Phase 3
+%%   D6: Phase 4 (move dirs) and Phase 5 (move files) shown as sequential to match planning PL-01
+%%   D7: Verification checks use L1 deterministic gates (file count, path existence)
+
+flowchart TD
+    Start([Start]) --> Baseline[Phase 1: Capture baseline file count]
+    Baseline --> BaselineCheck{count == 1902?}
+
+    BaselineCheck -- Yes --> DelRoot[Phase 2: rmdir 9 empty root duplicate dirs]
+    BaselineCheck -- No --> Abort([Abort: baseline assumption violated])
+
+    DelRoot --> VerifyRoot{9 dirs removed AND 0 files lost?}
+    VerifyRoot -- Yes --> DelCategory[Phase 3: rmdir 13 empty category-side dirs\ninner-first then outer]
+    VerifyRoot -- No --> Rollback([Rollback via git checkout])
+
+    DelCategory --> VerifyCategory{13 dirs removed?}
+    VerifyCategory -- Yes --> MoveDirs[Phase 4: git mv 7 uncategorized dirs to categories]
+    VerifyCategory -- No --> Rollback
+
+    MoveDirs --> VerifyDirs{7 source paths absent\n7 dest paths present\n174 files accounted?}
+    VerifyDirs -- Yes --> CreateDirs[Phase 5a: mkdir -p 14 target dirs for loose .md files]
+    VerifyDirs -- No --> Rollback
+
+    CreateDirs --> MoveFiles[Phase 5b: git mv 19 loose .md files into category dirs]
+    MoveFiles --> VerifyFiles{0 .md at root\n19 files in new locations?}
+    VerifyFiles -- Yes --> FinalVerify[Phase 6: Recount all files]
+    VerifyFiles -- No --> Rollback
+
+    FinalVerify --> FinalCheck{count == 1902\nAND 0 loose files\nAND 5 root dirs only?}
+    FinalCheck -- Yes --> Done([Done: refactoring complete])
+    FinalCheck -- No --> Rollback

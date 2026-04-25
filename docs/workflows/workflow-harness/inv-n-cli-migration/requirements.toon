@@ -1,0 +1,43 @@
+phase: requirements
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+taskName: inv-n-cli-migration
+userIntent: INV-N関連の2つのMCPツールをMCP定義から削除しBash CLIエントリポイントに移行する
+
+acceptanceCriteria[4]{id,description,priority}:
+  AC-1, MCPツール定義harness_add_invariantとharness_update_invariant_statusがdefs-a.ts/defs-b.tsから削除されTOOL_DEFINITIONSの長さが22になること, must
+  AC-2, cli.tsが新設されnode dist/cli.js add-invariantでinvariantがTaskStateに追加されること, must
+  AC-3, node dist/cli.js update-invariant-statusでINV-Nのステータスが更新されること, must
+  AC-4, tsc --noEmitがエラーゼロで通り既存309テストが全パスすること, must
+
+notInScope[4]{item,reason}:
+  既存MCP全ツールのCLI移行, 本タスクはINV-N関連2ツールのみが対象で他ツールは安定稼働中
+  StateManager APIの変更, addInvariantとupdateInvariantStatusの公開APIは維持しCLIから直接呼び出す
+  CLIテストの自動化, CLIの動作確認はmanager層テストで十分にカバーされている
+  CLAUDE.mdのSection 11ツール一覧更新, docs_updateフェーズで対応する内容であり本タスクの実装スコープ外
+
+openQuestions: なし
+
+functionalRequirements[3]{id,description}:
+  FR-1, defs-a.tsからharness_add_invariant定義(L148-L161)を削除しdefs-b.tsからharness_update_invariant_status定義(L143-L156)を削除する
+  FR-2, handler.tsからinvariant関連のimport文2つとcase文2つを削除しrecording.tsからハンドラ関数2つと不要型インポートを削除する
+  FR-3, src/cli.tsを新設しparseArgsでadd-invariantとupdate-invariant-statusサブコマンドを実装しStateManagerを直接呼び出す
+
+nonFunctionalRequirements[2]{id,description}:
+  NFR-1, CLIはhandler-shared.tsのvalidateSession関数を使用してsessionToken検証を行いセキュリティモデルを維持する
+  NFR-2, CLIの出力はJSON形式でstdoutに書き出しエラーはstderrにexit code 1で出力する
+
+decisions[6]{id,statement,rationale}:
+  REQ-1, AC数は4件で全てmust優先度とする, MCPツール削除とCLI新設とビルド確認と回帰テストの4軸で検証が完結する
+  REQ-2, CLIはnode:util.parseArgsのみで実装し外部依存は追加しない, Node 22.15.0で安定版でありminimalistパッケージの追加は不要
+  REQ-3, sessionToken検証はhandler-shared.tsから関数をインポートして再利用する, 検証ロジックの重複を避けセキュリティ一貫性を確保する
+  REQ-4, package.jsonにbinフィールドを追加しdist/cli.jsを登録する, npxまたはnode直接実行でCLIを起動可能にする
+  REQ-5, handler-misc.test.tsのツール数アサーションを24から22に変更する, MCP定義削除による既存テスト修正が必要
+  REQ-6, recording.tsのimport編集ではProofTierとInvariantStatusのみを除去しPhaseName等は残す, 他ハンドラが依存する型を誤って削除するとビルドエラーになるため
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/requirements.toon, spec, 要件定義と受入基準
+
+next:
+  criticalDecisions[2]: REQ-2, REQ-3
+  readFiles[2]: docs/workflows/inv-n-cli-migration/requirements.toon, docs/workflows/inv-n-cli-migration/research.toon
+  warnings[1]: recording.tsのimport編集時にProofTierとInvariantStatusのみを削除しPhaseName等を残すこと

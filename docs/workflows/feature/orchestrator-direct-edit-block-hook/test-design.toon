@@ -1,0 +1,71 @@
+phase: test_design
+task: orchestrator-direct-edit-block-hook
+intent: "PreToolUseフックで、Orchestratorがdocs/workflows/配下の成果物ファイルを直接Write/Editすることをブロックするルールのテスト設計"
+
+testStrategy:
+  approach: "bashスクリプトのユニットテスト中心。echo でstdin JSONを生成しパイプでフックスクリプトに渡す。exit codeとstderr出力を検証する"
+  framework: "純粋bashテスト。外部テストフレームワーク不使用。各テストケースは独立した関数として定義しexit codeとstderr出力をassert関数で検証する"
+  layers: "ユニットテストのみ。bashフックはステートレス設計のため統合テスト・E2Eテストは不要。stdin JSON入力とexit code/stderr出力の入出力テストで全ACをカバーできる"
+  testRunner: "テストスクリプト(.claude/hooks/test-orchestrator-edit-guard.sh)を作成し、各TC関数を順次実行する。失敗時はテスト名と期待値/実測値を出力する"
+  testDataStrategy: "テストデータはテスト関数内にインラインで定義する。stdin JSONテンプレートを関数化し、file_pathのみパラメータとして差し替える"
+
+stdinJsonTemplate:
+  format: "echo '{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"<PATH>\"}}' | bash <SCRIPT>"
+  note: "tool_nameはWrite固定。matcherがWrite|Editでフック登録されるためtool_name自体はフックスクリプト内で参照しない"
+
+testCases[16]{id,ac,description,input,expectedExit,expectedStderr}:
+  TC-AC1-01, AC-1, "相対パスの.toonファイルへのWriteがブロックされる", "file_path=docs/workflows/my-task/design.toon", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC1-02, AC-1, "相対パスの.mmdファイルへのWriteがブロックされる", "file_path=docs/workflows/my-task/flowchart.mmd", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC1-03, AC-1, "相対パスの.mdファイルへのWriteがブロックされる", "file_path=docs/workflows/my-task/notes.md", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC1-04, AC-1, "docs/workflows直下のファイルもブロックされる", "file_path=docs/workflows/index.toon", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC1-05, AC-1, "docs/workflows外のファイルは許可される", "file_path=src/main.ts", 0, "出力なし"
+  TC-AC1-06, AC-1, "docs/配下だがworkflows外のファイルは許可される", "file_path=docs/readme.md", 0, "出力なし"
+  TC-AC2-01, AC-2, "claude-progress.txtへのWriteが許可される", "file_path=docs/workflows/my-task/claude-progress.txt", 0, "出力なし"
+  TC-AC2-02, AC-2, "ネストされたパスのclaude-progress.txtも許可される", "file_path=docs/workflows/deep/nested/claude-progress.txt", 0, "出力なし"
+  TC-AC2-03, AC-2, "claude-progress.txt以外の.txtファイルはブロックされる", "file_path=docs/workflows/my-task/notes.txt", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC3-01, AC-3, "ブロック時stderrにsubagent再起動指示が含まれる", "file_path=docs/workflows/my-task/spec.toon", 2, "subagent文言を含む"
+  TC-AC3-02, AC-3, "ブロック時stderrにTask tool言及が含まれる", "file_path=docs/workflows/my-task/design.toon", 2, "Task tool文言を含む"
+  TC-AC3-03, AC-3, "ブロック時stderrにORCHESTRATOR_GUARD_DISABLEバイパス方法が含まれる", "file_path=docs/workflows/my-task/impl.toon", 2, "ORCHESTRATOR_GUARD_DISABLE文言を含む"
+  TC-AC4-01, AC-4, "ORCHESTRATOR_GUARD_DISABLE=trueでブロック対象パスが許可される", "env ORCHESTRATOR_GUARD_DISABLE=true + file_path=docs/workflows/my-task/design.toon", 0, "出力なし"
+  TC-AC4-02, AC-4, "ORCHESTRATOR_GUARD_DISABLE未設定でブロックが有効", "env未設定 + file_path=docs/workflows/my-task/design.toon", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC5-01, AC-5, "Windows絶対パスでブロックが発火する", "file_path=C:/ツール/Workflow/docs/workflows/my-task/design.toon", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+  TC-AC5-02, AC-5, "Windowsバックスラッシュパスが正規化されブロックが発火する", "file_path=C:\\ツール\\Workflow\\docs\\workflows\\my-task\\design.toon (JSON内は二重エスケープ)", 2, "ORCHESTRATOR-EDIT-GUARD含む"
+
+edgeCases[5]{id,description,input,expectedExit,rationale}:
+  EC-01, "空のfile_pathが許可される", "file_path=(空文字列)", 0, "空パスはWrite/Edit操作の対象ファイルが不明であり、フックが誤ブロックしないようexit 0で通過させる"
+  EC-02, "file_pathフィールドが存在しないJSONが許可される", "JSONにfile_pathキーなし", 0, "grep抽出結果が空文字列となり、空パスチェックでexit 0に到達する"
+  EC-03, "docs/workflowsを含むがサブディレクトリ名の一部であるパスの扱い", "file_path=src/docs/workflows-backup/file.txt", 0, "case文パターン *docs/workflows/* はスラッシュ区切りで判定するため workflows-backup/ は不一致"
+  EC-04, "stdin入力が空の場合が許可される", "stdin=(空)", 0, "file_path抽出結果が空となり空パスチェックでexit 0。スクリプトがクラッシュしないことを確認"
+  EC-05, "claude-progress.txt.bakのような類似ファイル名がブロックされる", "file_path=docs/workflows/task/claude-progress.txt.bak", 2, "basename判定でclaude-progress.txtと不一致のためブロック対象となる"
+
+acTcMatrix[5]{ac,testCases,coverage}:
+  AC-1, "TC-AC1-01 TC-AC1-02 TC-AC1-03 TC-AC1-04 TC-AC1-05 TC-AC1-06", "ブロック対象3拡張子 + 直下ファイル + 範囲外パス2件で正常系・異常系を網羅"
+  AC-2, "TC-AC2-01 TC-AC2-02 TC-AC2-03", "claude-progress.txt許可 + ネストパス許可 + 類似.txt拒否で例外判定の精度を検証"
+  AC-3, "TC-AC3-01 TC-AC3-02 TC-AC3-03", "stderr出力のsubagent指示・Task tool言及・バイパス方法の3要素を個別に検証"
+  AC-4, "TC-AC4-01 TC-AC4-02", "環境変数ON/OFFの両方でバイパス動作を検証"
+  AC-5, "TC-AC5-01 TC-AC5-02", "スラッシュ絶対パスとバックスラッシュ絶対パスの両方でブロック発火を検証"
+
+testImplementationPlan:
+  scriptPath: ".claude/hooks/test-orchestrator-edit-guard.sh"
+  helperFunctions: "assert_exit(テスト名, 期待exit code, 実測exit code) / assert_stderr_contains(テスト名, 期待文字列, 実測stderr) / run_hook(file_path文字列) -> exit code + stderr取得"
+  executionPattern: "run_hook関数内でecho JSON | bash target.shを実行し、exit codeを$?で、stderrを2>&1リダイレクトで取得する"
+  reportFormat: "PASS/FAIL + テストID + 期待値/実測値。全テスト完了後にサマリ(pass/fail/total)を出力する"
+
+decisions[6]{id,statement,rationale}:
+  TD-01, "外部テストフレームワークを使用せず純粋bashでテストスクリプトを記述する", "テスト対象がbashスクリプトであり、echo+pipe+exit codeの検証にフレームワークは不要。依存ゼロでCI環境でも即実行可能"
+  TD-02, "各テストケースを独立した関数として定義し副作用を完全分離する", "テスト間の状態汚染を防止する。環境変数テスト(AC-4)ではsubshellでunset/exportを行い他テストに影響しない"
+  TD-03, "stderrの検証はgrep -qで部分一致とし完全一致を要求しない", "メッセージ文言の軽微な変更でテストが壊れることを防止する。キーワード(ORCHESTRATOR-EDIT-GUARD/subagent/Task tool/ORCHESTRATOR_GUARD_DISABLE)の存在確認で十分"
+  TD-04, "エッジケースEC-01からEC-05を正式テストケースとは別に管理し実装時に追加判断する", "エッジケースはスクリプトの堅牢性検証であり、ACカバレッジとは別の品質軸として扱う"
+  TD-05, "テストデータのJSONテンプレートをrun_hook関数内に集約しfile_pathのみパラメータ化する", "テストコードの重複を排除しつつ、各テストケースの意図を明確にする。tool_nameやtool_inputの構造は全テストで共通"
+  TD-06, "Windowsバックスラッシュテスト(TC-AC5-02)ではJSON内で二重エスケープ(\\\\)を使用する", "bashのecho内でバックスラッシュを正しくJSON文字列として渡すには二重エスケープが必要。MSYS環境特有の挙動差を検証する重要なテストケース"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/test-design.toon, output, "本テスト設計成果物。16テストケース+5エッジケースでAC-1からAC-5を完全カバー"
+  docs/workflows/orchestrator-direct-edit-block-hook/spec.toon, input, "技術仕様書。アーキテクチャ設計・実行フロー・擬似コードを参照"
+  docs/workflows/orchestrator-direct-edit-block-hook/requirements.toon, input, "要件定義。AC-1からAC-5の受入基準・FR-01からFR-06の機能要件を参照"
+  .claude/hooks/pre-tool-config-guard.sh, reference, "既存フックの実装パターン参照。stdin読取・パス抽出・正規化・case文判定の構造を踏襲"
+
+next:
+  criticalDecisions: "TD-01(純粋bashテスト), TD-03(stderr部分一致検証), TD-06(二重エスケープ)"
+  readFiles: "docs/workflows/orchestrator-direct-edit-block-hook/spec.toon, .claude/hooks/pre-tool-config-guard.sh"
+  warnings: "TC-AC5-02のバックスラッシュテストはMSYS環境のecho挙動に依存するため、実装時にecho -eとecho $の差異を検証すること"

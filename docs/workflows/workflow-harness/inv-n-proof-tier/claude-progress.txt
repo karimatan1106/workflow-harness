@@ -1,0 +1,11 @@
+[2026-03-07T07:30:03.502Z] COMPLETED: scope_definition → NEXT: research | Task: inv-n-proof-tier | Done: 1 phases
+[2026-03-07T07:33:27.466Z] COMPLETED: research → NEXT: requirements | Task: inv-n-proof-tier | Done: 2 phases
+[2026-03-07T07:37:48.190Z] COMPLETED: requirements → NEXT: planning | Task: inv-n-proof-tier | Done: 3 phases
+[2026-03-07T07:41:14.911Z] COMPLETED: planning → NEXT: test_design | Task: inv-n-proof-tier | Done: 4 phases
+[2026-03-07T07:45:35.960Z] COMPLETED: test_design → NEXT: test_impl | Task: inv-n-proof-tier | Done: 5 phases
+[2026-03-07T07:48:31.266Z] COMPLETED: test_impl → NEXT: implementation | Task: inv-n-proof-tier | Done: 6 phases
+[2026-03-07T07:54:17.781Z] COMPLETED: implementation → NEXT: build_check | Task: inv-n-proof-tier | Done: 7 phases
+[2026-03-07T07:56:00.858Z] COMPLETED: build_check → NEXT: testing | Task: inv-n-proof-tier | Done: 8 phases
+[2026-03-07T07:56:22.901Z] COMPLETED: testing → NEXT: commit | Task: inv-n-proof-tier | Done: 9 phases
+[2026-03-07T07:57:32.679Z] COMPLETED: commit → NEXT: push | Task: inv-n-proof-tier | Done: 10 phases
+[2026-03-07T08:06:15.853Z] COMPLETED: push → NEXT: completed | Task: inv-n-proof-tier | Done: 11 phases

@@ -1,0 +1,68 @@
+flowchart TD
+    Start([タスク開始：修正時発生問題の根本原因調査と残存問題解決]) --> Analysis{修正対象の問題分析}
+
+    Analysis -->|修正1| DefineFlow1Start(修正1: definitions.ts security_scanテンプレート改善)
+    Analysis -->|修正2| DefineFlow2Start(修正2: status.ts phaseGuideレスポンス削減)
+
+    DefineFlow1Start --> ReadSpec1(specification.mdから修正1の仕様を確認)
+    ReadSpec1 --> IdentifySection(「重複行回避の注意事項」セクションの末尾を特定)
+    IdentifySection --> ExtractCurrent1(現在のNG/OK例の構造を抽出)
+    ExtractCurrent1 --> AnalyzeGap1(評価結論フレーズのNG/OK例が不足していることを確認)
+    AnalyzeGap1 --> PrepareText1(追記するテンプレート文字列を準備)
+    PrepareText1 --> InsertBugPattern(BUG-A・BUG-BパターンのNG/OK例を作成)
+    InsertBugPattern --> ValidateText1(追記テキストがエスケープ処理される状態を確認)
+    ValidateText1 --> CompleteModify1(修正1: definitions.tsの918行目にテンプレート文字列を追記)
+
+    DefineFlow2Start --> ReadSpec2(specification.mdから修正2の仕様を確認)
+    ReadSpec2 --> IdentifyLogic(status.tsの121〜127行目のphaseGuide設定ロジックを特定)
+    IdentifyLogic --> AnalyzeCurrent2(現在のresolvePhaseGuide戻り値全体をresult.phaseGuideにセットしていることを確認)
+    AnalyzeCurrent2 --> AnalyzeSize(subagentTemplate・content・claudeMdSectionsのサイズを評価)
+    AnalyzeSize --> DetermineBigFields(40000文字超のサイズ過大問題を理解)
+    DetermineBigFields --> SelectMethodology(destructuring記法 vs delete演算子の実装方法を選択)
+    SelectMethodology --> CheckTypeStrict{TypeScriptの strict modeの設定確認}
+    CheckTypeStrict -->|strict=true| UseDelete(delete演算子ベースの代替実装を採用)
+    CheckTypeStrict -->|strict=false| UseDestructure(destructuring記法で実装)
+    UseDelete --> PrepareCode2Delete(delete演算子を使ったコードを準備)
+    UseDestructure --> PrepareCode2Destruct(destructuringコードを準備)
+    PrepareCode2Delete --> HandleSubphases(subPhases内の各サブフェーズから同3フィールドを削除)
+    PrepareCode2Destruct --> HandleSubphases
+    HandleSubphases --> ValidateLogic(削除ロジックがnull-safe構造で実装されていることを確認)
+    ValidateLogic --> CompleteModify2(修正2: status.tsの121〜127行目をロジック変更で置き換え)
+
+    CompleteModify1 --> IntegrationCheck{両修正の実装は独立しているか確認}
+    CompleteModify2 --> IntegrationCheck
+    IntegrationCheck --> PlanBuild(npm run buildでコンパイル計画を立案)
+    IntegrationCheck --> ClearNextTs(next.tsは変更しない方針を確認)
+
+    PlanBuild --> PrepareNav(MCPサーバー再起動手順を準備)
+    PrepareNav --> CompileTS(TypeScriptをコンパイル（npm run build実行予定）)
+    CompileNav --> DistGenerate(dist/以下のJavaScriptファイルが生成されることを期待)
+    CompileTS --> DistGenerate
+    DistGenerate --> RestartRequired{MCPサーバー再起動が必須であることを確認}
+    RestartRequired -->|必須| CacheExplain(Node.jsモジュールキャッシュ機構の説明を実装フェーズで参照)
+    RestartRequired -->|完了| VerifyMod1(修正1の動作確認方法：workflow_nextでsecurity_scanテンプレート内の文字列確認)
+    CacheExplain --> VerifyMod1
+
+    VerifyMod1 --> Verify1Steps(workflow_nextを呼び出してレスポンス内のsubagentTemplateを確認)
+    Verify1Steps --> CheckBugLabel(BUG番号・評価結論フレーズ・NG/OK例の文字列が含まれていることを確認)
+    CheckBugLabel --> VerifyMod2(修正2の動作確認方法：workflow_statusでレスポンスサイズを確認)
+
+    VerifyMod2 --> Verify2Steps(workflow_statusを呼び出してレスポンスJSONを確認)
+    Verify2Steps --> CheckSize(phaseGuideにsubagentTemplate・content・claudeMdSectionsが含まれないことを確認)
+    CheckSize --> VerifyBackwardCompat(workflow_nextのレスポンスにはsubagentTemplateが引き続き含まれることを確認)
+    VerifyBackwardCompat --> ConfirmNoRegression(後方互換性が維持されていることを検証)
+    ConfirmNoRegression --> DocumentSummary[修正内容のサマリー作成]
+
+    DocumentSummary --> End([タスク完了：flowchartフェーズ終了])
+
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style Analysis fill:#fff3e0
+    style CompleteModify1 fill:#f3e5f5
+    style CompleteModify2 fill:#f3e5f5
+    style PlanBuild fill:#fce4ec
+    style CompileTS fill:#fce4ec
+    style RestartRequired fill:#ffebee
+    style VerifyMod1 fill:#e8f5e9
+    style VerifyMod2 fill:#e8f5e9
+    style DocumentSummary fill:#f1f8e9

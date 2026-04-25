@@ -1,0 +1,65 @@
+phase: planning
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内のセパレーターとMarkdownヘッダーを太字ラベルに統一置換し、TOON成果物への汚染根本原因を排除する
+status: complete
+idPrefix: PL
+
+implementationPlan[4]{id,target,action,detail}:
+  PL-IP1, definitions-shared.ts 5箇所(L26/L31/L43/L48/L59), 静的セパレーター行を太字ラベルに置換, 各定数・関数の冒頭行を**ラベル名**形式に書き換え
+  PL-IP2, definitions.ts L77, buildToonFirstSection内の静的セパレーター1箇所を太字ラベルに置換, TOON入力(ACE)の行頭装飾を除去し**ラベル**に統一
+  PL-IP3, definitions.ts L182-184, 動的変換ロジック3行を完全削除, コメント2行+replaceAll1行を除去しセパレーター生成の根本原因を断つ
+  PL-IP4, defs-stage6.ts L84, docs_updateテンプレート内の静的セパレーター1箇所を太字ラベルに置換, ドキュメント配置ルールの行頭装飾を除去し**ラベル**に統一
+
+headerConversion[6]{id,file,headerCount,subheaderCount,action}:
+  PL-HC1, defs-stage1.ts, 15, 7, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+  PL-HC2, defs-stage2.ts, 20, 0, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+  PL-HC3, defs-stage3.ts, 14, 0, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+  PL-HC4, defs-stage4.ts, 17, 0, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+  PL-HC5, defs-stage5.ts, 14, 0, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+  PL-HC6, defs-stage6.ts, 14, 0, テンプレート内の全Markdownヘッダーを太字ラベルに置換
+
+changeDetails[8]{id,file,lines,currentLines,estimatedPostLines,changeType}:
+  PL-CD1, definitions-shared.ts, 61, 61, 61, 5箇所の行頭装飾を太字に置換(行数変化なし)
+  PL-CD2, definitions.ts, 188, 188, 185, L77の太字置換(行数変化なし)+L182-184の3行削除
+  PL-CD3, defs-stage1.ts, 201, 201, 201, 22箇所のヘッダーを太字に置換(行数変化なし)
+  PL-CD4, defs-stage2.ts, 173, 173, 173, 20箇所のヘッダーを太字に置換(行数変化なし)
+  PL-CD5, defs-stage3.ts, 131, 131, 131, 14箇所のヘッダーを太字に置換(行数変化なし)
+  PL-CD6, defs-stage4.ts, 175, 175, 175, 17箇所のヘッダーを太字に置換(行数変化なし)
+  PL-CD7, defs-stage5.ts, 154, 154, 154, 14箇所のヘッダーを太字に置換(行数変化なし)
+  PL-CD8, defs-stage6.ts, 194, 194, 194, 14箇所のヘッダーを太字に置換+1箇所のセパレーター太字置換(行数変化なし)
+
+replacementRules[3]{id,pattern,replacement,scope}:
+  PL-RR1, 行頭の三連等号+ラベル+三連等号の行, **ラベル名**形式(前後の装飾文字を除去), definitions-shared.ts/definitions.ts/defs-stage6.tsの静的7箇所
+  PL-RR2, 行頭の二重ハッシュ+スペース+ラベル, **ラベル名**形式(記号を除去しラベルのみ太字化), defs-stage1〜6の全テンプレート内94箇所
+  PL-RR3, 行頭の三連ハッシュ+スペース+ラベル, **ラベル名**形式(記号を除去しラベルのみ太字化), defs-stage1の7箇所
+
+executionOrder[4]{step,action,files,rationale}:
+  1, 静的セパレーター7箇所の太字置換, definitions-shared.ts/definitions.ts/defs-stage6.ts, 共有定数から着手し依存なしで安全に変更可能
+  2, defs-stage1〜6のテンプレート内ヘッダー101箇所の太字置換, defs-stage1.ts〜defs-stage6.ts, 動的変換削除前に太字化しておくことでヘッダー露出を防止
+  3, definitions.ts L182-184の動的変換ロジック削除, definitions.ts, ステップ1-2完了後に削除することでセパレーター生成が完全に停止
+  4, 全ファイルの検証, 全8ファイル, Grepで行頭セパレーターとMarkdownヘッダーが0件であることを確認
+
+verificationPlan[4]{id,check,command,expected}:
+  PL-VP1, 静的セパレーター残存チェック, 対象3ファイルでテンプレート内の行頭三連等号をGrep, 0件
+  PL-VP2, 動的変換ロジック残存チェック, definitions.tsでreplaceAllパターンをGrep, 0件
+  PL-VP3, テンプレート内ヘッダー残存チェック, defs-stage1〜6でsubagentTemplate内の行頭二重/三重ハッシュをGrep, 0件
+  PL-VP4, JS演算子非変更チェック, registry.tsのgit diffが空であること, 差分なし
+
+decisions[7]{id,statement,rationale}:
+  PL-D1, セパレーターの置換先は**太字ラベル**形式に統一する, LLMはMarkdown太字を視覚的区切りとして認識しつつTOON出力に混入しない。トークン効率も装飾文字より良い
+  PL-D2, テンプレート内の全Markdownヘッダー(94箇所の二重ハッシュ+7箇所の三重ハッシュ)を太字に変換する, 動的変換削除後にヘッダーが露出するとサブエージェントがTOON内にヘッダーを書く二次汚染が発生する
+  PL-D3, 動的変換ロジックはテンプレートヘッダー太字化の後に削除する, 順序を逆にするとヘッダーが一時的に露出する窓が生まれる
+  PL-D4, strip処理(L143-146)は変更しない, タスク情報/入力/出力のstrip処理は正しく機能しておりヘッダー除去に貢献している
+  PL-D5, stripで除去されるヘッダーも含めて全て太字に変換する, 防御的アプローチ。strip処理が将来変更されても汚染しない
+  PL-D6, 変更は全て機械的な文字列置換であり関数ロジック・実行パス・データフローへの影響がない, リスクスコアが低く回帰テストの範囲が限定される
+  PL-D7, registry.tsの厳密等価演算子は変更対象外とする, プログラミング言語の演算子でありテンプレートセパレーターではない
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/template-separator-cleanup/requirements.toon, spec, 機能要件4件+非機能要件3件+AC4件の要件定義
+  docs/workflows/template-separator-cleanup/research.toon, report, 汚染2系統と残存ヘッダー調査結果
+  docs/workflows/template-separator-cleanup/spec.toon, spec, 実装計画(静的7箇所+動的削除3行+テンプレートヘッダー101箇所の変更仕様)
+
+next:
+  criticalDecisions: PL-D2(全101箇所のヘッダー太字化) PL-D3(太字化後に動的変換削除)
+  readFiles: src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts src/phases/defs-stage6.ts
+  warnings: 変更総数が101+7+3=111箇所だが全て機械的置換であり複雑性は低い

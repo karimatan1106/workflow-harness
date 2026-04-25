@@ -1,0 +1,109 @@
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> PreImplementation: 作業開始
+
+    PreImplementation --> FR1_Ready: FR-1の追記準備完了
+    Note right of PreImplementation
+        definitions.tsのmanual_testテンプレート
+        を確認し、挿入位置を特定
+    End Note
+
+    FR1_Ready --> FR1_Completed: manual_testテンプレートへ\nFR-1ガイダンスを追記
+    Note right of FR1_Ready
+        906行目付近の
+        "## 出力"の直前に
+        実行日時行の一意化ガイダンスを挿入
+    End Note
+
+    FR1_Completed --> FR2_Ready: FR-2の追記準備完了
+    Note right of FR1_Completed
+        manual_test追記完了。
+        次にsecurity_scanの
+        テンプレート挿入位置を確認
+    End Note
+
+    FR2_Ready --> FR2_Completed: security_scanテンプレートへ\nFR-2ガイダンスを追記
+    Note right of FR2_Ready
+        918行目付近の
+        "## 出力"の直前に
+        サブヘッダー密度確保ガイダンスを挿入
+    End Note
+
+    FR2_Completed --> FR3_Ready: FR-3の追記準備完了
+    Note right of FR2_Completed
+        security_scan追記完了。
+        次にe2e_testの
+        テンプレート挿入位置を確認
+    End Note
+
+    FR3_Ready --> FR3_Completed: e2e_testテンプレートへ\nFR-3ガイダンスを追記
+    Note right of FR3_Ready
+        942行目付近の
+        "## 出力"の直前に
+        角括弧禁止パターンガイダンスを挿入
+    End Note
+
+    FR3_Completed --> FR4_Ready: FR-4の追記準備完了
+    Note right of FR3_Completed
+        e2e_test追記完了。
+        最後にperformance_testの
+        テンプレート挿入位置を確認
+    End Note
+
+    FR4_Ready --> FR4_Completed: performance_testテンプレートへ\nFR-4ガイダンスを追記
+    Note right of FR4_Ready
+        930行目付近の
+        "## 出力"の直前に
+        計測日時と角括弧対策ガイダンスを挿入
+    End Note
+
+    FR4_Completed --> BuildExecution: ビルド実行
+    Note right of FR4_Completed
+        全4つのFRガイダンス
+        追記が完了。
+        npm run buildを実行
+    End Note
+
+    BuildExecution --> BuildSuccess: ビルド成功
+    Note right of BuildExecution
+        TypeScriptコンパイル成功。
+        dist/*.jsが更新される
+    End Note
+
+    BuildSuccess --> TestExecution: テスト実行
+    Note right of BuildSuccess
+        artifact-validator.test.ts等の
+        テストスイート実行。
+        npm testコマンド実行
+    End Note
+
+    TestExecution --> TestSuccess: テスト合格
+    Note right of TestExecution
+        全テストスイート合格。
+        変更内容がコアロジックと
+        統合されていることを確認
+    End Note
+
+    TestSuccess --> VerifyChanges: 変更内容検証
+    Note right of TestSuccess
+        git diffで変更範囲を確認。
+        4サブフェーズのみに限定された
+        ことを確認
+    End Note
+
+    VerifyChanges --> VerifyContent: ガイダンス内容検証
+    Note right of VerifyChanges
+        FR-1～FR-4の追記テキストが
+        禁止語や角括弧プレースホルダー
+        を含まないことを確認
+    End Note
+
+    VerifyContent --> End: 実装完了
+    Note right of VerifyContent
+        全ての検証が成功。
+        definitions.tsの更新完了。
+        次フェーズへ準備完了
+    End Note
+
+    End --> [*]

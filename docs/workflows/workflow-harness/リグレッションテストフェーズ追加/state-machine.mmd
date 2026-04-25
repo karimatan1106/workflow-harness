@@ -1,0 +1,53 @@
+stateDiagram-v2
+    %% ワークフローフェーズ遷移（regression_test追加後）
+
+    [*] --> idle: タスクなし
+
+    idle --> research: workflow_start
+
+    research --> requirements: workflow_next
+    requirements --> parallel_analysis: workflow_next
+    parallel_analysis --> parallel_design: 全サブフェーズ完了
+
+    parallel_design --> design_review: 全サブフェーズ完了
+    design_review --> test_design: workflow_approve design
+
+    test_design --> test_impl: workflow_next
+    test_impl --> implementation: workflow_next
+    implementation --> refactoring: workflow_next
+    refactoring --> parallel_quality: workflow_next
+
+    parallel_quality --> testing: 全サブフェーズ完了
+
+    %% ★ regression_test フェーズの追加
+    testing --> regression_test: workflow_next
+    regression_test --> parallel_verification: 全テストパス
+
+    note right of regression_test
+        リグレッションテスト失敗時は
+        次フェーズに進めない
+    end note
+
+    parallel_verification --> docs_update: 全サブフェーズ完了
+    docs_update --> commit: workflow_next
+    commit --> push: workflow_next
+    push --> ci_verification: workflow_next
+    ci_verification --> deploy: workflow_next
+    deploy --> completed: workflow_next
+
+    completed --> [*]: タスク完了
+
+    %% リセット
+    research --> research: workflow_reset
+    requirements --> research: workflow_reset
+    parallel_analysis --> research: workflow_reset
+    parallel_design --> research: workflow_reset
+    design_review --> research: workflow_reset
+    test_design --> research: workflow_reset
+    test_impl --> research: workflow_reset
+    implementation --> research: workflow_reset
+    refactoring --> research: workflow_reset
+    parallel_quality --> research: workflow_reset
+    testing --> research: workflow_reset
+    regression_test --> research: workflow_reset
+    parallel_verification --> research: workflow_reset

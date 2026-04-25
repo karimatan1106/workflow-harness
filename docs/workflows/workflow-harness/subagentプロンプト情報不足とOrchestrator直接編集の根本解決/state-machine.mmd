@@ -1,0 +1,70 @@
+stateDiagram-v2
+    Start --> AnalyzeTargetFiles: 対象ファイル特定
+
+    AnalyzeTargetFiles --> PrepareCLAUDEMdFixes: CLAUDE.md修正準備
+    AnalyzeTargetFiles --> PrepareDefinitionsTsFixes: definitions.ts修正準備
+
+    PrepareCLAUDEMdFixes --> FR1_AddForbiddenList: FR-1禁止パターン完全リスト追加
+    PrepareCLAUDEMdFixes --> FR2_EnhanceRulesRegex: FR-2重複行ルール正規表現付記
+    PrepareCLAUDEMdFixes --> FR6_EnhanceRule21: FR-6ルール21エスカレーション手順追加
+
+    PrepareDefinitionsTsFixes --> FR3_ExtendSubagentTemplate: FR-3subagentTemplate拡張
+    PrepareDefinitionsTsFixes --> FR4_EnhanceBuildPromptPaths: FR-4buildPromptパス警告強化
+    PrepareDefinitionsTsFixes --> FR5_ExpandBashAlternatives: FR-5Bash代替ツール案内拡充
+    PrepareDefinitionsTsFixes --> FR7_EnhanceCodeReviewTemplate: FR-7code_reviewテンプレート拡張
+
+    FR1_AddForbiddenList --> FR2_EnhanceRulesRegex
+    FR2_EnhanceRulesRegex --> FR6_EnhanceRule21
+    FR6_EnhanceRule21 --> CLAUDEMdComplete: CLAUDE.md修正完了
+
+    FR3_ExtendSubagentTemplate --> FR4_EnhanceBuildPromptPaths
+    FR4_EnhanceBuildPromptPaths --> FR5_ExpandBashAlternatives
+    FR5_ExpandBashAlternatives --> FR7_EnhanceCodeReviewTemplate
+    FR7_EnhanceCodeReviewTemplate --> DefinitionsTsComplete: definitions.ts修正完了
+
+    CLAUDEMdComplete --> BuildVerification: ビルド検証
+    DefinitionsTsComplete --> BuildVerification
+
+    BuildVerification --> ExecuteNpmBuild: npm run build実行
+    ExecuteNpmBuild --> VerifyBuildSuccess: ビルド成功確認
+    VerifyBuildSuccess --> CheckDistFileUpdate: dist/ファイル更新確認
+
+    CheckDistFileUpdate --> MCPServerRestart: MCPサーバー再起動
+    MCPServerRestart --> VerifyRestartSuccess: 再起動成功確認
+
+    VerifyRestartSuccess --> VerifyIntegrity: 整合性確認
+    VerifyIntegrity --> VerifyFR1Completeness: FR-1禁止語リスト完全性確認
+    VerifyIntegrity --> VerifyFR2Boundaries: FR-2ルール境界条件確認
+    VerifyIntegrity --> VerifyFR3Templates: FR-3subagentテンプレート確認
+    VerifyIntegrity --> VerifyFR4Paths: FR-4出力パス埋め込み確認
+    VerifyIntegrity --> VerifyFR5Alternatives: FR-5代替ツール記載確認
+    VerifyIntegrity --> VerifyFR6Escalation: FR-6エスカレーション手順確認
+    VerifyIntegrity --> VerifyFR7InputFiles: FR-7入力ファイル指示確認
+
+    VerifyFR1Completeness --> AllVerificationsComplete
+    VerifyFR2Boundaries --> AllVerificationsComplete
+    VerifyFR3Templates --> AllVerificationsComplete
+    VerifyFR4Paths --> AllVerificationsComplete
+    VerifyFR5Alternatives --> AllVerificationsComplete
+    VerifyFR6Escalation --> AllVerificationsComplete
+    VerifyFR7InputFiles --> AllVerificationsComplete
+
+    AllVerificationsComplete --> ValidateNoSideEffects: 副作用検証
+    ValidateNoSideEffects --> ConfirmValidatorUnchanged: artifact-validator.ts未変更確認
+    ValidateNoSideEffects --> ConfirmStateManagerUnchanged: state-manager.ts未変更確認
+    ValidateNoSideEffects --> ConfirmHookUnchanged: phase-edit-guard.js未変更確認
+
+    ConfirmValidatorUnchanged --> SideEffectCheckComplete
+    ConfirmStateManagerUnchanged --> SideEffectCheckComplete
+    ConfirmHookUnchanged --> SideEffectCheckComplete
+
+    SideEffectCheckComplete --> DocumentationSync: ドキュメント同期確認
+    DocumentationSync --> VerifyArtifactValidator: artifact-validator.tsのFORBIDDEN_PATTERNS参照確認
+    DocumentationSync --> VerifyDefinitionsTsAlignment: definitions.tsの必須セクション整合確認
+    DocumentationSync --> VerifyCLAUDEMdAlignment: CLAUDE.mdの三者間整合性確認
+
+    VerifyArtifactValidator --> AllDocumentationSynced
+    VerifyDefinitionsTsAlignment --> AllDocumentationSynced
+    VerifyCLAUDEMdAlignment --> AllDocumentationSynced
+
+    AllDocumentationSynced --> End

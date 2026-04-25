@@ -1,0 +1,169 @@
+## サマリー
+
+- 目的: atomicWriteJson 関数のリトライロジック追加に伴う状態遷移の可視化。Windows 環境での一時的なファイルロック競合（EPERM/EBUSY）に対するリトライ機構を設計。
+- 主要な決定事項: 最大リトライ回数を3回に固定し、EPERM と EBUSY のみリトライ対象とする。その他のエラーコード（ENOENT、EACCES等）は即座に失敗状態へ遷移。リトライ前に 100ms の sleepSync による同期待機を挿入。
+- ステートマシン概要: 一時ファイル書き込み → リネーム実行 → エラー発生時のリトライループ → 最終成功または失敗
+- 次フェーズで必要な情報: implementation フェーズで sleepSync 関数の具体的実装（Atomics.wait ベース）と atomicWriteJson 関数のリトライループコードを実装する際、本図の状態遷移を基盤とすること。test_impl フェーズで各遷移パターン（成功、1回目リトライで成功、3回目リトライで成功、全リトライ失敗）に対応するテストケースを設計。
+
+---
+
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> WriteTempFile: 一時ファイル作成開始
+
+    WriteTempFile --> WriteTempFile_Success: writeFileSync 成功
+    WriteTempFile --> WriteFailed: writeFileSync失敗\n(EACCES, ENOENT等)
+
+    WriteTempFile_Success --> AttemptRename: 目的ファイルへのリネーム開始
+
+    AttemptRename --> Success: renameSync 成功
+    AttemptRename --> EPERMDetected: EPERM エラー発生\n(リトライ対象)
+    AttemptRename --> EBUSYDetected: EBUSY エラー発生\n(リトライ対象)
+    AttemptRename --> RenameFailed: 他のエラー\n(ENOENT, EACCES等)
+
+    EPERMDetected --> RetryAttempt1: リトライ回数チェック
+    EBUSYDetected --> RetryAttempt1: リトライ回数チェック
+
+    RetryAttempt1 --> WaitRetry1: リトライ1回目\n100ms 待機開始
+
+    WaitRetry1 --> RetryRename1: 待機完了
+
+    RetryRename1 --> Success: renameSync 成功
+    RetryRename1 --> EPERMDetected2: EPERM エラー\n(再発)
+    RetryRename1 --> EBUSYDetected2: EBUSY エラー\n(再発)
+    RetryRename1 --> RenameFailed: 他のエラー
+
+    EPERMDetected2 --> RetryAttempt2: リトライ回数チェック
+    EBUSYDetected2 --> RetryAttempt2: リトライ回数チェック
+
+    RetryAttempt2 --> WaitRetry2: リトライ2回目\n100ms 待機開始
+
+    WaitRetry2 --> RetryRename2: 待機完了
+
+    RetryRename2 --> Success: renameSync 成功
+    RetryRename2 --> EPERMDetected3: EPERM エラー\n(再発)
+    RetryRename2 --> EBUSYDetected3: EBUSY エラー\n(再発)
+    RetryRename2 --> RenameFailed: 他のエラー
+
+    EPERMDetected3 --> RetryAttempt3: リトライ回数チェック
+    EBUSYDetected3 --> RetryAttempt3: リトライ回数チェック
+
+    RetryAttempt3 --> WaitRetry3: リトライ3回目\n100ms 待機開始
+
+    WaitRetry3 --> RetryRename3: 待機完了
+
+    RetryRename3 --> Success: renameSync 成功
+    RetryRename3 --> RenameFailed: EPERM/EBUSY エラー\n(リトライ上限超過)
+
+    WriteFailed --> Cleanup: 一時ファイルのクリーンアップ
+    RenameFailed --> Cleanup: 一時ファイルのクリーンアップ
+
+    Cleanup --> Failed: エラーを throw
+
+    Success --> [*]
+    Failed --> [*]
+
+---
+
+## 状態詳細説明
+
+### 初期状態・成功系
+
+| 状態 | 説明 | 遷移条件 |
+|------|------|--------|
+| Start | 処理開始。一時ファイル作成の準備 | 常に WriteTempFile へ |
+| WriteTempFile | fs.writeFileSync で一時ファイルに JSON データを書き込む | 成功時は WriteTempFile_Success 、失敗時は WriteFailed |
+| WriteTempFile_Success | 一時ファイルへの書き込み成功。リネーム処理へ移行 | 常に AttemptRename へ |
+| AttemptRename | fs.renameSync で一時ファイルを目的ファイルに置き換え | 成功時は Success 、エラー時は各エラー状態へ |
+| Success | リネーム成功。アトミックな書き込み完了。処理終了 | 終了状態 [*] |
+
+### エラー検出・リトライ系
+
+| 状態 | 説明 | 遷移条件 |
+|------|------|--------|
+| EPERMDetected | renameSync から EPERM エラー（Permission denied）が返される。リトライ対象。 | RetryAttempt1 へ（リトライ1回目） |
+| EBUSYDetected | renameSync から EBUSY エラー（Resource busy）が返される。リトライ対象。 | RetryAttempt1 へ（リトライ1回目） |
+| EPERMDetected2 | リトライ1回目後の renameSync が EPERM を返す。再発の検出。 | RetryAttempt2 へ（リトライ2回目） |
+| EBUSYDetected2 | リトライ1回目後の renameSync が EBUSY を返す。再発の検出。 | RetryAttempt2 へ（リトライ2回目） |
+| EPERMDetected3 | リトライ2回目後の renameSync が EPERM を返す。3回目リトライへ。 | RetryAttempt3 へ（リトライ3回目） |
+| EBUSYDetected3 | リトライ2回目後の renameSync が EBUSY を返す。3回目リトライへ。 | RetryAttempt3 へ（リトライ3回目） |
+
+### リトライ・待機系
+
+| 状態 | 説明 | 遷移条件 |
+|------|------|--------|
+| RetryAttempt1 | リトライ1回目の開始。リトライ回数をカウント。 | WaitRetry1 へ |
+| RetryAttempt2 | リトライ2回目の開始。リトライ回数をカウント。 | WaitRetry2 へ |
+| RetryAttempt3 | リトライ3回目の開始。リトライ回数をカウント。 | WaitRetry3 へ |
+| WaitRetry1 | sleepSync(100) で 100ms 待機。Windows のファイルロック解放を待つ。 | 待機完了後 RetryRename1 へ |
+| WaitRetry2 | sleepSync(100) で 100ms 待機。Windows のファイルロック解放を待つ。 | 待機完了後 RetryRename2 へ |
+| WaitRetry3 | sleepSync(100) で 100ms 待機。Windows のファイルロック解放を待つ。 | 待機完了後 RetryRename3 へ |
+| RetryRename1 | リトライ1回目の renameSync 再実行 | 成功時は Success 、エラー時は各エラー状態へ |
+| RetryRename2 | リトライ2回目の renameSync 再実行 | 成功時は Success 、エラー時は各エラー状態へ |
+| RetryRename3 | リトライ3回目の renameSync 再実行。最後のリトライ。 | 成功時は Success 、失敗時は RenameFailed（上限超過） |
+
+### エラー終了・クリーンアップ系
+
+| 状態 | 説明 | 遷移条件 |
+|------|------|--------|
+| WriteFailed | writeFileSync 失敗。リトライ非対象エラー（ファイルシステム障害等）。 | Cleanup へ |
+| RenameFailed | renameSync 失敗（ENOENT、EACCES、またはリトライ上限超過）。 | Cleanup へ |
+| Cleanup | 一時ファイルの削除を試みる。削除失敗は無視。 | Failed へ |
+| Failed | エラーを呼び出し元に throw 。処理終了。 | 終了状態 [*] |
+
+---
+
+## リトライ判定ロジック
+
+各 renameSync エラーの扱い：
+
+| エラーコード | リトライ判定 | 理由 |
+|-------------|----------|------|
+| EPERM | リトライする | ウィルス対策ソフトやファイルシステムの一時的ロック。待機後に解放される可能性が高い。 |
+| EBUSY | リトライする | 別プロセスがファイルを開いている状態。一時的な競合。待機後に解放される可能性が高い。 |
+| ENOENT | リトライしない | 目的ファイルのパスが無効。待機では解決しない。 |
+| EACCES | リトライしない | パーミッション不足。待機では解決しない。 |
+| その他 | リトライしない | 予期しないエラー。すぐに上位へ伝播。 |
+
+---
+
+## 遷移パターン例
+
+### パターン1: 初回 renameSync 成功（リトライなし）
+
+```
+Start → WriteTempFile → WriteTempFile_Success → AttemptRename → Success → [*]
+```
+
+一時ファイル書き込みと renameSync が両方一度で成功する通常系。
+
+### パターン2: リトライ1回目で成功
+
+```
+Start → WriteTempFile → WriteTempFile_Success → AttemptRename → EPERMDetected
+→ RetryAttempt1 → WaitRetry1 → RetryRename1 → Success → [*]
+```
+
+初回 renameSync で EPERM または EBUSY が発生し、100ms 待機後の再試行で成功。
+
+### パターン3: リトライ3回全て失敗（上限超過）
+
+```
+Start → WriteTempFile → WriteTempFile_Success → AttemptRename → EPERMDetected
+→ RetryAttempt1 → WaitRetry1 → RetryRename1 → EPERMDetected2
+→ RetryAttempt2 → WaitRetry2 → RetryRename2 → EPERMDetected3
+→ RetryAttempt3 → WaitRetry3 → RetryRename3 → RenameFailed
+→ Cleanup → Failed → [*]
+```
+
+3回のリトライを全て消費してもエラーが解消しない。最後のエラーを throw。
+
+### パターン4: WriteFileSync 失敗（即座にエラー）
+
+```
+Start → WriteTempFile → WriteFailed → Cleanup → Failed → [*]
+```
+
+一時ファイルの書き込み段階で失敗（EACCES、ENOENT等）。リトライなしで終了。
+

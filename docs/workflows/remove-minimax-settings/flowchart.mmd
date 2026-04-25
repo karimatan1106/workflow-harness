@@ -1,0 +1,33 @@
+%% flowchart: remove-minimax-settings
+%% decisions:
+%% - D-FC-1: 削除前に各対象ファイルで precheck grep を実行、対象行存在を確認する
+%% - D-FC-2: 4 並列操作、各操作は独立しエラー時はロールバック分岐へ
+%% - D-FC-3: 全操作完了後 post grep で 0 件確認、AC-5 判定
+%% - D-FC-4: いずれかの操作が失敗した場合 git revert で全体を巻き戻す
+
+flowchart TD
+    Start([Start]) --> Precheck{precheck grep hits?}
+    Precheck -->|yes| Parallel
+    Precheck -->|no| Skip[no-op, already clean]
+    Skip --> Done
+
+    subgraph Parallel[parallel 4 ops]
+        A[CLAUDE.md section delete] --> A2{ok?}
+        B[feedback_no-minimax.md rm] --> B2{ok?}
+        C[MEMORY.md line 96 edit] --> C2{ok?}
+        D[canboluk.md line 67 edit] --> D2{ok?}
+    end
+
+    A2 -->|yes| PostGrep
+    B2 -->|yes| PostGrep
+    C2 -->|yes| PostGrep
+    D2 -->|yes| PostGrep
+    A2 -->|no| Rollback
+    B2 -->|no| Rollback
+    C2 -->|no| Rollback
+    D2 -->|no| Rollback
+
+    PostGrep{post grep zero?}
+    PostGrep -->|yes| Done([Pass AC-5])
+    PostGrep -->|no| Rollback
+    Rollback[git revert] --> End([Fail])

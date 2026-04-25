@@ -1,0 +1,18 @@
+phase: test_selection
+taskName: inv-n-proof-tier
+ts: "2026-03-07T14:00:00+09:00"
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+decisions[5]{id,statement,rationale}:
+  TS-001, テストファイルを3分割（型テスト/マネージャテスト/dogfoodingテスト）とする, 関心の分離によりテスト失敗時の原因特定を容易にするため
+  TS-002, AC-1/AC-2の型テストはdynamic importで実装前失敗（TDD Red）を確認する, 型ファイルが未作成の段階でimportエラーにより確実にRedとなるため
+  TS-003, AC-3/AC-4のStateManagerテストはaddInvariant/updateInvariantStatusメソッドの呼出しで検証する, StateManagerの公開APIを直接テストすることで実装との結合を最小化するため
+  TS-004, AC-5のDoDゲートテストはcheckInvariantCompleteness関数の4パターン入力で検証する, 全held/open混在/violated/空配列の4条件が境界値を網羅するため
+  TS-005, AC-6のdogfoodingテストはregistry.tsの実データに対して検証しモックを使用しない, 実際のPHASE_ORDER/SIZE_SKIP_MAPに対するテストがdogfoodingとしての信頼性を担保するため
+artifacts[3]{path,role,summary}:
+  workflow-harness/mcp-server/src/__tests__/invariant-types.test.ts, test, AC-1/AC-2型定義テスト
+  workflow-harness/mcp-server/src/__tests__/invariant-manager.test.ts, test, AC-3/AC-4/AC-5マネージャとDoDゲートテスト
+  workflow-harness/mcp-server/src/__tests__/invariant-dogfooding.test.ts, test, AC-6フェーズ遷移不変条件テスト
+next:
+  criticalDecisions[2]: TS-001, TS-005
+  readFiles[3]: docs/workflows/inv-n-proof-tier/test-design.toon, workflow-harness/mcp-server/src/phases/registry.ts, workflow-harness/mcp-server/src/state/manager.ts
+  warnings[1]: "AC-1/AC-2/AC-3/AC-4/AC-5のテストは実装未存在によりTDD Red（失敗）となる"

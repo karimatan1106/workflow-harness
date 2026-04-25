@@ -1,0 +1,50 @@
+phase: requirements
+task: orchestrator-direct-edit-block-hook
+intent: "PreToolUseフックで、Orchestratorがdocs/workflows/配下の成果物ファイルを直接Write/Editすることをブロックし、DoD失敗時のsubagent再起動強制を機械的に担保する"
+
+functionalRequirements[6]{id,description,source}:
+  FR-01, "docs/workflows/配下のファイルに対するWrite/Edit操作をexit 2でブロックする", "intent + DC-01/DC-03"
+  FR-02, "claude-progress.txtへの書き込みのみ例外として許可する（basename判定）", "DC-05 + SKILL.md Sec7"
+  FR-03, "ブロック時のstderrメッセージにsubagent再起動手順を含める（Task tool経由の再実行指示）", "IC-03 + workflow-rules.md Rule21"
+  FR-04, "stdin JSONからfile_pathを抽出しWindowsバックスラッシュをスラッシュに正規化する", "DC-06 + IC-02"
+  FR-05, "ORCHESTRATOR_GUARD_DISABLE=true環境変数でフック全体をバイパス可能にする", "DC-04 + 既存フックの共通パターン"
+  FR-06, "settings.jsonのhooks.PreToolUse配列にmatcher: Write|Editで新フックエントリを登録する", "DC-02 + R-06"
+
+nonFunctionalRequirements[5]{id,category,description}:
+  NFR-01, performance, "フック実行時間は100ms以内に完了すること。bashスクリプト+grep/sed/caseのみで外部プロセス呼び出しを最小化する"
+  NFR-02, maintainability, "スクリプト全体を50行以内に収める。既存フック群（config-guard/no-verify-block）と同一の構造パターンを踏襲する"
+  NFR-03, observability, "log_obs関数で/tmp/harness-hook-obs.logにタイムスタンプ付きの発火・ブロック記録を出力する"
+  NFR-04, reliability, "ステートレス設計を維持する。ワークフローstate参照やファイルシステム上の状態確認は一切行わない。パスパターンのみで判定する"
+  NFR-05, compatibility, "MSYS_NT-10.0環境（GNU bash 5.2.37）で動作すること。shebangは#!/bin/bashを使用する"
+
+acceptanceCriteria[5]{id,description,verification}:
+  AC-1, "docs/workflows/配下の.toon/.mmd/.md等のファイルに対するWrite/Edit操作がexit 2でブロックされること", "テスト: file_path=docs/workflows/task/design.toonのstdin JSONをフックに渡しexit code 2を確認"
+  AC-2, "docs/workflows/{taskName}/claude-progress.txtへのWrite/Edit操作がexit 0で許可されること", "テスト: file_path=docs/workflows/task/claude-progress.txtのstdin JSONをフックに渡しexit code 0を確認"
+  AC-3, "ブロック時のstderrメッセージにsubagent再起動の具体的指示文言が含まれること", "テスト: ブロック発生時のstderr出力にTask toolおよびsubagentの文言が含まれることをgrep確認"
+  AC-4, "ORCHESTRATOR_GUARD_DISABLE=true設定時にdocs/workflows/配下への書き込みがexit 0で許可されること", "テスト: 環境変数設定下でブロック対象パスを渡しexit code 0を確認"
+  AC-5, "絶対パス(C:/ツール/Workflow/docs/workflows/...)と相対パス(docs/workflows/...)の両方でブロックが発火すること", "テスト: 両形式のパスをstdin JSONで渡し、いずれもexit code 2を確認"
+
+notInScope[4]{id,description,reason}:
+  NIS-01, "Node.js層のphase-edit-guard.jsへの変更", "bashフック層とNode.jsフック層は独立した2つのガードレイヤーであり、本タスクはbashフック層のみが対象"
+  NIS-02, "docs/workflows/配下以外のディレクトリに対するOrchestrator編集制限", "本タスクのスコープはdocs/workflows/配下の成果物ファイル保護に限定する"
+  NIS-03, "Read操作のブロック", "matcherはWrite|Editのみ。Orchestratorによるファイル読み取りは正当な操作であり制限しない"
+  NIS-04, "フック間の実行順序制御や優先度メカニズムの導入", "既存のPreToolUse配列定義順による実行で十分であり、優先度機構の追加は過剰な複雑化になる"
+
+openQuestions: "なし（researchフェーズで設計判断R-01〜R-07が確定済み、IC-01〜IC-04で暗黙的制約も洗い出し済み）"
+
+decisions[5]{id,statement,rationale}:
+  REQ-01, "AC判定はパスパターンのみのステートレス判定とし、ワークフローステートを参照しない", "bashフック層の設計原則に従い、外部依存を排除して信頼性を最大化する。フェーズ判定はNode.js層のphase-edit-guardが担当する"
+  REQ-02, "ブロックメッセージは日本語で記述し、Task tool経由のsubagent再起動手順を具体的に含める", "Orchestratorが即座に代替行動（subagent再起動）を取れるようにする。曖昧な指示ではなく具体的なツール名を示す"
+  REQ-03, "case文でワイルドカード *docs/workflows/* を使用し、パスの先頭部分に依存しないマッチングを行う", "絶対パスと相対パスの両方を単一のパターンで捕捉する。R-02の設計判断をそのまま採用"
+  REQ-04, "settings.jsonのPreToolUse配列ではconfig-guardの直後に配置する", "Write|Editに対する2段階ガード（設定ファイル保護→成果物保護）として論理的な実行順序を維持する"
+  REQ-05, "例外判定はbasenameベースでclaude-progress.txtのみ許可し、将来の例外追加に備えてcase文のパターンとして記述する", "拡張性を確保しつつ、現時点では最小限の例外のみを定義する"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/requirements.toon, spec, "本要件定義成果物。機能要件6件・非機能要件5件・受入基準5件を定義"
+  docs/workflows/orchestrator-direct-edit-block-hook/research.toon, input, "リサーチ成果物。既存フックアーキテクチャ分析・設計制約・リスク評価を記録"
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, impl, "実装対象のPreToolUseフックスクリプト（designフェーズ以降で作成）"
+
+next:
+  criticalDecisions: "REQ-01(ステートレス判定), REQ-03(ワイルドカードパスマッチ), REQ-04(settings.json配置順序)"
+  readFiles: ".claude/hooks/pre-tool-config-guard.sh, .claude/settings.json, .claude/skills/harness/workflow-rules.md"
+  warnings: "AC-5のWindows絶対パステストはMSYS環境特有のパス変換挙動に注意。stdinに渡すJSONのバックスラッシュは二重エスケープ(\\\\)で記述する必要がある"

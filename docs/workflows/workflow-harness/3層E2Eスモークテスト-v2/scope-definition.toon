@@ -1,0 +1,7 @@
+task: 3層E2Eスモークテスト-v2
+intent: "path.normalize修正後の3層構造動作検証。harness_nextのDoD成果物チェックがWindows環境で正常動作するか確認"
+scope-files: .agent/handoff/HANDOFF.toon
+size: small
+verification-target: "harness_nextがforceTransition無しで成果物を検出できること"
+previous-issue: "docsDir(バックスラッシュ)+outputFile(フォワードスラッシュ)の混在パスでexistsSyncが失敗"
+fix-applied: "lifecycle.ts + 6 DoD gate filesにpath.normalize()適用 (45c2df2)"

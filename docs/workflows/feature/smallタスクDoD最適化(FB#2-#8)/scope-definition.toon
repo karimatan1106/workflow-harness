@@ -1,0 +1,52 @@
+taskName: smallタスクDoD最適化(FB#2-#8)
+userIntent: smallタスク実行時のDoDゲートを最適化し、不要な厳格さを緩和して効率を上げる
+date: 2026-03-22
+size: medium
+
+feedbackItems[6]{id,summary,rootCause}:
+  FB#2, "subagentがTOON形式でなくMarkdownヘッダー(##)で成果物を書く", "dod-l4-contentで検出はするがsubagentテンプレートの強制力不足"
+  FB#3, "smallタスクでもフェーズ数が多すぎる(research/planning等が残存)", "SIZE_SKIP_MAPでresearch/planningがskip対象外"
+  FB#4, "TDD Redフェーズで実装済みの場合テストがpassしてしまいRed evidenceを記録できない", "checkTDDRedEvidenceがsize/状況による例外を持たない"
+  FB#5, "decisions[]最低5件がsmallタスクでも適用され無意味な水増しが発生", "DELTA_ENTRY_MIN_COUNTがハードコード定数5でsize非依存"
+  FB#7, "smallタスクでもrequirements承認にユーザー操作が必要", "PHASE_APPROVAL_GATESがsize非依存でrequirementsに常時ゲート設定"
+  FB#8, "researchフェーズのminLines:50がsmallタスクでは過大", "registry.tsのminLinesがsize非依存の固定値"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "SIZE_SKIP_MAPにresearchとplanningを追加しsmallタスクでスキップ", "smallタスクはscope_definition直後にrequirementsへ進めば十分。research/planningの中間成果物は複雑度が低いタスクでは冗長"
+  SD-2, "DELTA_ENTRY_MIN_COUNTをsize依存にする(small:3/medium:5/large:5)", "smallタスクで5件のdecisionsを要求すると水増しが発生し品質が下がる。3件あれば判断根拠は十分記録できる"
+  SD-3, "checkTDDRedEvidenceにdodExemptions対応を追加", "実装済みコードに対するテスト追加ケースではRedフェーズが成立しない。dodExemptionsにtdd_red_evidenceが含まれていれば免除"
+  SD-4, "smallタスクのrequirementsフェーズでauto-approvalを実装", "smallタスクは影響範囲が限定的でユーザー確認の費用対効果が低い。AC3件以上かつopenQuestionsなしなら自動承認"
+  SD-5, "registry.tsのminLinesをsize依存で減算する仕組みを導入", "research:50はsmallタスクでは過大。smallタスク用に0.6倍等の係数を適用する"
+  SD-6, "subagentテンプレートにTOON形式の明示的禁止事項を追記", "dod-l4-contentで検出済みだがsubagent側で事前防止する方が効率的。## ヘッダー禁止を明記"
+  SD-7, "全変更にユニットテストを追加しリグレッションを防止", "DoDゲート変更は既存タスクの品質に影響するためテスト必須"
+
+scopeFiles[8]{path,changeType,fb}:
+  workflow-harness/mcp-server/src/phases/registry.ts, "modify SIZE_SKIP_MAP + minLines size-aware", "FB#3 FB#8"
+  workflow-harness/mcp-server/src/gates/dod-l4-delta.ts, "DELTA_ENTRY_MIN_COUNT size-dependent", "FB#5"
+  workflow-harness/mcp-server/src/gates/dod-l1-l2.ts, "checkTDDRedEvidence dodExemptions support", "FB#4"
+  workflow-harness/mcp-server/src/tools/handler-shared.ts, "PHASE_APPROVAL_GATES size-conditional", "FB#7"
+  workflow-harness/mcp-server/src/tools/handlers/approval.ts, "auto-approve for small requirements", "FB#7"
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts, "pass size to approval check", "FB#7"
+  workflow-harness/mcp-server/src/phases/definitions-shared.ts, "TOON format prohibition in template", "FB#2"
+  workflow-harness/mcp-server/src/state/types-core.ts, "add size to DoDCheck context if needed", "FB#5"
+
+currentState[6]{file,key,value}:
+  registry.ts, "SIZE_SKIP_MAP.small", "19 phases skipped but research/planning not included"
+  registry.ts, "research.minLines", "50"
+  dod-l4-delta.ts, "DELTA_ENTRY_MIN_COUNT", "5 (hardcoded constant)"
+  dod-l1-l2.ts, "checkTDDRedEvidence", "no dodExemptions support; always requires Red evidence for test_impl"
+  handler-shared.ts, "PHASE_APPROVAL_GATES.requirements", "always requires user approval regardless of size"
+  definitions-shared.ts, "subagentTemplate", "mentions TOON but no explicit ## prohibition"
+
+riskAssessment[3]{id,risk,mitigation}:
+  R-1, "auto-approve for requirements could miss bad ACs", "既存のIA-1(openQuestions)とIA-2(AC>=3)チェックを維持しそれらを通過した場合のみ自動承認"
+  R-2, "minLines削減で成果物品質が低下する可能性", "smallタスクでも最低20行は維持。L4 content validationは引き続き適用"
+  R-3, "TDD Red免除で実装品質が低下する可能性", "dodExemptions明示指定時のみ免除。デフォルトは従来通りRed必須"
+
+artifacts[3]{id,path,format}:
+  A-1, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/scope-definition.toon", "toon"
+  A-2, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/research.toon", "toon"
+  A-3, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/requirements.toon", "toon"
+
+next: research
+nextAction: registry.ts/dod-l4-delta.ts/dod-l1-l2.tsの現行ロジックを詳細調査し、各FB項目の具体的な変更差分を設計する

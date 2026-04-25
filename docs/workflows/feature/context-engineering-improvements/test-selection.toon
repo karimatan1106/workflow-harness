@@ -1,0 +1,15 @@
+phase: test_selection
+task: context-engineering-improvements
+status: skipped
+summary: "smallタスクのためtest_selectionフェーズはスキップ。全テストケース(7件)をそのまま実行対象とする"
+
+selected_tests[0]{id,reason}:
+
+decisions[0]{id,statement,rationale}:
+
+artifacts[0]{path,role,summary}:
+
+next:
+  criticalDecisions: "なし(スキップ済みフェーズ)"
+  readFiles: "なし"
+  warnings: "なし"

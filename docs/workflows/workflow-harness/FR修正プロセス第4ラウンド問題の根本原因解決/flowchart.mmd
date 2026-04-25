@@ -1,0 +1,38 @@
+flowchart TD
+    Start((修正開始)) --> Step1(第1ステップ: bash-whitelist.js修正<br/>221行目のverificationPhases配列に<br/>parallel_verification要素を追加)
+
+    Step1 --> FileWrite1(ファイル保存実行)
+    FileWrite1 --> Validate1{変更内容<br/>ディスクに<br/>反映確認}
+    Validate1 -->|反映確認済| Step1Success(✓ bash-whitelist.js修正完了<br/>次回Bash実行から有効化)
+    Validate1 -->|反映未確認| FileWrite1
+
+    Step1Success --> Step2(第2ステップ: definitions.ts修正<br/>914行目のperformance_test.subagentTemplate<br/>にセクション別ガイダンス追加)
+
+    Step2 --> GuidanceAdd1(パフォーマンス計測結果セクション<br/>向けガイダンス追加<br/>計測対象・計測手法・計測値・<br/>閾値達成状況・総合合否)
+    GuidanceAdd1 --> GuidanceAdd2(ボトルネック分析セクション<br/>向けガイダンス追加<br/>ボトルネック名称・原因分析・<br/>影響範囲・改善提案・優先度)
+
+    GuidanceAdd2 --> Build(npm run buildを実行<br/>TypeScriptをdist/*.jsに<br/>トランスパイル)
+
+    Build --> BuildCheck{ビルド<br/>成功か?}
+    BuildCheck -->|失敗| BuildError(ビルドエラーを修正)
+    BuildError --> Build
+    BuildCheck -->|成功| BuildVerify(dist/definitions.jsの<br/>更新日時を確認<br/>修正内容がディスクに反映)
+
+    BuildVerify --> VerifyCheck{ディスクに<br/>反映確認<br/>完了?}
+    VerifyCheck -->|未確認| Build
+    VerifyCheck -->|確認完了| Step2Success(✓ definitions.ts修正完了<br/>MCPサーバー再起動前の状態)
+
+    Step2Success --> Step3(第3ステップ: MCPサーバー再起動<br/>Claude Desktopのサーバー<br/>再起動ボタンで再起動実行)
+
+    Step3 --> ServerRestart(MCPサーバープロセス停止<br/>新プロセス起動)
+    ServerRestart --> WorkflowStatus(workflow_statusコマンド<br/>実行して起動確認)
+
+    WorkflowStatus --> StatusCheck{フェーズ情報<br/>正常に<br/>読み取れか?}
+    StatusCheck -->|読み取り失敗| ServerRestart
+    StatusCheck -->|読み取り成功| Verify(✓ MCPサーバー再起動完了<br/>両修正が有効化確認)
+
+    Verify --> FinalVerify(最終確認:<br/>parallel_verificationフェーズで<br/>testingカテゴリコマンド実行可能<br/>performance_testテンプレートに<br/>ガイダンス追加確認)
+
+    FinalVerify --> FinalCheck{変更完全<br/>適用確認<br/>OK?}
+    FinalCheck -->|NG: 再起動必要| ServerRestart
+    FinalCheck -->|OK: 完全適用| End((修正完了))

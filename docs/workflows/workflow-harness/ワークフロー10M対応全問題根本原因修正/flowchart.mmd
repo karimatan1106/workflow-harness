@@ -1,0 +1,168 @@
+%% ワークフロー10M対応全問題根本原因修正 - フローチャート
+%% フック実行・同期・エラー分類・HMAC鍵ローテーションの処理フロー
+
+%% フロー1: フック実行フロー
+flowchart TD
+    Start1["フック実行開始<br/>コマンド受信"]
+    ReadTask["task-index.jsonから<br/>タスク情報読み込み"]
+    SearchTask["タスク検索<br/>タスクIDでマッチ確認"]
+    TaskFound{タスク存在?}
+
+    GetPhase["現在フェーズを取得"]
+    CheckPhase["フェーズ権限判定<br/>編集可能ファイルを確認"]
+
+    EditFile{編集対象ファイル<br/>に許可?}
+    AllowEdit["編集許可<br/>exit 0"]
+    BlockEdit["編集拒否<br/>exit 2"]
+
+    TaskNotFound["タスク未発見<br/>exit 2"]
+
+    Start1 --> ReadTask
+    ReadTask --> SearchTask
+    SearchTask --> TaskFound
+    TaskFound -->|YES| GetPhase
+    TaskFound -->|NO| TaskNotFound
+    GetPhase --> CheckPhase
+    CheckPhase --> EditFile
+    EditFile -->|YES| AllowEdit
+    EditFile -->|NO| BlockEdit
+
+%% フロー2: task-index.json同期フロー
+flowchart TD
+    Start2["新タスク作成<br/>または状態更新"]
+    AcquireLock["ファイルロック取得<br/>acquireLockSync"]
+    LockAcquired{ロック<br/>成功?}
+
+    DiscoverTasks["discoverTasks実行<br/>全タスク検出"]
+    BuildIndex["タスク配列構築<br/>id, name, workflowDir等"]
+    CreateIndexObj["index オブジェクト作成<br/>tasks配列とupdatedAt"]
+
+    AtomicWrite["atomicWriteJson実行<br/>write-then-rename"]
+    WriteSuccess{書き込み<br/>成功?}
+
+    InvalidateCache["キャッシュ無効化<br/>taskCache.invalidate"]
+    ReleaseLock["ファイルロック解放"]
+    SyncComplete["同期完了"]
+
+    LockFailed["ロック失敗<br/>リトライまたはエラー"]
+    WriteFailed["書き込み失敗<br/>トランザクション<br/>ロールバック"]
+
+    Start2 --> AcquireLock
+    AcquireLock --> LockAcquired
+    LockAcquired -->|YES| DiscoverTasks
+    LockAcquired -->|NO| LockFailed
+    DiscoverTasks --> BuildIndex
+    BuildIndex --> CreateIndexObj
+    CreateIndexObj --> AtomicWrite
+    AtomicWrite --> WriteSuccess
+    WriteSuccess -->|YES| InvalidateCache
+    WriteSuccess -->|NO| WriteFailed
+    InvalidateCache --> ReleaseLock
+    ReleaseLock --> SyncComplete
+    WriteFailed --> ReleaseLock
+
+%% フロー3: エラー分類フロー
+flowchart TD
+    Start3["エラー発生"]
+    CatchError["エラーオブジェクト取得"]
+
+    CheckHMAC{HMAC検証<br/>エラー?}
+    CheckPhaseViolation{フェーズ<br/>違反エラー?}
+    CheckMessage{メッセージに<br/>HMAC含む?}
+    CheckPath{workflow-state<br/>またはhmac-keys?}
+
+    SecurityError["セキュリティ<br/>カテゴリ設定"]
+
+    CheckErrno{エラー<br/>コード?}
+    TempError["一時的エラー<br/>カテゴリ設定"]
+
+    SelectExitCode{WORKFLOW_FAIL_MODE<br/>チェック}
+    ExitZero["exit 0<br/>許可"]
+    ExitTwo["exit 2<br/>拒否"]
+
+    Start3 --> CatchError
+    CatchError --> CheckHMAC
+    CheckHMAC -->|YES| SecurityError
+    CheckHMAC -->|NO| CheckPhaseViolation
+    CheckPhaseViolation -->|YES| SecurityError
+    CheckPhaseViolation -->|NO| CheckMessage
+    CheckMessage -->|YES| SecurityError
+    CheckMessage -->|NO| CheckPath
+    CheckPath -->|YES| SecurityError
+    CheckPath -->|NO| CheckErrno
+
+    CheckErrno -->|ENOENT/EACCES<br/>ETIMEDOUT| TempError
+    CheckErrno -->|その他| SecurityError
+
+    SecurityError --> ExitTwo
+
+    TempError --> SelectExitCode
+    SelectExitCode -->|permissive| ExitZero
+    SelectExitCode -->|strict| ExitTwo
+
+%% フロー4: HMAC鍵ローテーションフロー
+flowchart TD
+    Start4["MCP Server起動時<br/>または定期実行"]
+    LoadKeys["hmac-keys.jsonから<br/>鍵情報読み込み"]
+    KeysLoaded{鍵データ<br/>存在?}
+
+    CheckVersion["スキーマバージョン<br/>チェック"]
+    CurrentKey["current鍵を取得"]
+
+    CheckExpiry["current鍵の<br/>expiresAtを確認"]
+    IsExpired{30日<br/>経過?}
+
+    GetGracePeriod["グレース期間を<br/>チェック"]
+    InGrace{グレース期間内?}
+
+    LastRotation["最後のローテーション<br/>日時を確認"]
+    CanRotate{24時間以上<br/>経過?}
+
+    GenerateKey["新鍵を生成<br/>createdAt/expiresAt設定"]
+    BackupOldKey["旧鍵をバックアップ<br/>previous = current"]
+    UpdateCurrent["新鍵をcurrentに更新"]
+    ReSignState["アクティブタスクの<br/>workflow-stateを<br/>新鍵で再署名"]
+
+    SaveKeys["hmac-keys.jsonに<br/>保存"]
+    UpdateTimestamp["lastRotation更新"]
+    RotationComplete["ローテーション完了"]
+
+    NoRotation["ローテーション<br/>スキップ"]
+    CacheKeys["鍵をメモリに<br/>キャッシュ"]
+    Ready["MCP Server<br/>Ready"]
+
+    NoKeysInit["初期鍵を生成"]
+
+    Start4 --> LoadKeys
+    LoadKeys --> KeysLoaded
+    KeysLoaded -->|YES| CheckVersion
+    KeysLoaded -->|NO| NoKeysInit
+
+    NoKeysInit --> GenerateKey
+
+    CheckVersion --> CurrentKey
+    CurrentKey --> CheckExpiry
+    CheckExpiry --> IsExpired
+
+    IsExpired -->|YES| GenerateKey
+    IsExpired -->|NO| GetGracePeriod
+
+    GetGracePeriod --> InGrace
+    InGrace -->|YES| LastRotation
+    InGrace -->|NO| NoRotation
+
+    LastRotation --> CanRotate
+    CanRotate -->|YES| GenerateKey
+    CanRotate -->|NO| NoRotation
+
+    GenerateKey --> BackupOldKey
+    BackupOldKey --> UpdateCurrent
+    UpdateCurrent --> ReSignState
+    ReSignState --> SaveKeys
+    SaveKeys --> UpdateTimestamp
+    UpdateTimestamp --> RotationComplete
+
+    NoRotation --> CacheKeys
+    RotationComplete --> CacheKeys
+
+    CacheKeys --> Ready

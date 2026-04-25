@@ -1,0 +1,48 @@
+flowchart TD
+    Start(calculatePhaseSkips実行開始) --> GetScope("スコープからfilesを取得<br/>const files = scope.affectedFiles または scope.files または空配列")
+    GetScope --> CheckEmpty{"files.length === 0<br/>スコープが未設定か？"}
+
+    CheckEmpty -->|YES: スコープ空| EarlyReturn("3フェーズをスキップリストに追加<br/>test_impl, implementation, refactoring")
+    EarlyReturn --> CheckTestKeyword1{"userIntentに<br/>テストキーワード含む？<br/>テスト/testing"}
+    CheckTestKeyword1 -->|YES| RemoveTestSkip1("test_implをスキップリストから除外")
+    CheckTestKeyword1 -->|NO| KeepTestSkip1("test_implはスキップリスト継続")
+    RemoveTestSkip1 --> CheckImplKeyword1{"userIntentに<br/>実装キーワード含む？<br/>実装/implement/implementation"}
+    KeepTestSkip1 --> CheckImplKeyword1
+    CheckImplKeyword1 -->|YES| RemoveImplSkip1("implementation, refactoringを<br/>スキップリストから除外")
+    CheckImplKeyword1 -->|NO| KeepImplSkip1("implementation, refactoringは<br/>スキップリスト継続")
+    RemoveImplSkip1 --> ReturnEarly1("スキップリストを返却<br/>早期return")
+    KeepImplSkip1 --> ReturnEarly1
+
+    CheckEmpty -->|NO: スコープ設定済み| AnalyzeFiles("スコープのfiles配列を分析")
+    AnalyzeFiles --> CheckCodeFiles{"コードファイルが存在するか？<br/>拡張子.ts/.tsx/.js/.jsx<br/>かつテストパターン非該当"}
+    CheckCodeFiles -->|YES| SetCodeTrue("hasCodeFiles = true")
+    CheckCodeFiles -->|NO| SetCodeFalse("hasCodeFiles = false")
+
+    SetCodeTrue --> CheckTestFiles{"テストファイルが存在するか？<br/>パターン: .test. または .spec."}
+    SetCodeFalse --> CheckTestFiles
+    CheckTestFiles -->|YES| SetTestTrue("hasTestFiles = true")
+    CheckTestFiles -->|NO| SetTestFalse("hasTestFiles = false")
+
+    SetTestTrue --> JudgeSkip{"hasCodeFiles と hasTestFiles<br/>の組み合わせで判定"}
+    SetTestFalse --> JudgeSkip
+
+    JudgeSkip -->|両方true| NoSkip("スキップなし<br/>空オブジェクトを返却")
+    JudgeSkip -->|両方false| AllSkip("全フェーズスキップ<br/>test_impl, implementation,<br/>refactoringを追加")
+    JudgeSkip -->|Code only| CodeOnlySkip("test_implのみスキップ")
+    JudgeSkip -->|Test only| TestOnlySkip("implementation, refactoringを<br/>スキップ")
+
+    NoSkip --> ReturnNormal("スキップリストを返却")
+    AllSkip --> ReturnNormal
+    CodeOnlySkip --> ReturnNormal
+    TestOnlySkip --> ReturnNormal
+
+    ReturnEarly1 --> End(実行終了<br/>スキップリストを呼び出し元へ)
+    ReturnNormal --> End
+
+    style Start fill:#e1f5e1
+    style End fill:#ffe1e1
+    style EarlyReturn fill:#fff3cd
+    style CheckEmpty fill:#e3f2fd
+    style JudgeSkip fill:#f3e5f5
+    style NoSkip fill:#c8e6c9
+    style AllSkip fill:#ffccbc

@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> Start
+    Start --> ReadCurrentFile : read workflow-delegation.md
+
+    ReadCurrentFile --> InsertFormatRules : current content parsed
+    ReadCurrentFile --> End_Error : file not found
+
+    InsertFormatRules --> AddContaminationGuard : format rules inserted into templates
+    InsertFormatRules --> InsertFormatRules : missing section, retry insertion
+
+    AddContaminationGuard --> VerifyLineCount : guard clause added to Constraints block
+    AddContaminationGuard --> AddContaminationGuard : guard text conflicts with existing line
+
+    VerifyLineCount --> End : line count <= 200
+    VerifyLineCount --> SplitFile : line count > 200
+
+    SplitFile --> VerifyLineCount : re-check after extraction
+    SplitFile --> End_Error : cannot reduce below 200
+
+    End --> [*]
+    End_Error --> [*]
+
+%% ## decisions
+%%
+%% - state granularity: 6 named states (Start through End) -- each maps to one discrete edit action, preventing combined steps that hide failures
+%% - ReadCurrentFile as explicit state: separates file I/O from transformation logic -- allows distinct error path when file is missing or unreadable
+%% - InsertFormatRules before AddContaminationGuard: format rules must exist before the guard references them -- guard clause says "Format: Markdown" which is part of the inserted rules
+%% - self-loop on InsertFormatRules: accounts for partial insertion when template sections differ between Template A/B/C -- retry within same state avoids state explosion
+%% - VerifyLineCount as gate: 200-line constraint is a hard rule from core-constraints.md -- must be checked after all insertions, not during
+%% - SplitFile recovery path: if line count exceeds 200 after edits, extract supplementary content to a separate file -- maintains core-constraints compliance without losing content
+%% - End_Error terminal: two failure paths (file not found, cannot reduce lines) both terminate without partial changes -- prevents half-applied edits from corrupting the delegation template
+%% - no rollback state: git provides rollback; adding an explicit rollback state duplicates VCS capability -- keeps diagram focused on forward progress

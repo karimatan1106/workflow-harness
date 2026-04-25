@@ -1,0 +1,23 @@
+phase: requirements
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T08:00:00+09:00"
+decisions[7]{id,statement,rationale}:
+  REQ-001,親リポジトリの .gitignore に .claude-phase-guard-log.json を追加する,git ls-files で追跡済みと確認済み。git rm --cached 後に .gitignore で再追跡を防止する
+  REQ-002,親リポジトリの .gitignore に .claude/settings.local.json を追加する,ユーザー固有のローカル設定でありバージョン管理不要。現在未追跡(??)状態のため .gitignore 追記のみで対応可能
+  REQ-003,親リポジトリの .gitignore に .claude/generated-files.json を追加する,自動生成ファイルでありバージョン管理不要。現在未追跡(??)状態のため .gitignore 追記のみで対応可能
+  REQ-004,"サブモジュール workflow-harness 内で mcp-server/dist/ 配下の全ファイル(192件)を git rm -r --cached で untrack する",dist/ はビルド成果物であり追跡対象外。.gitignore に dist/ が既に記載済みだが追跡済みファイルには効果がないため git rm --cached が必須
+  REQ-005,"サブモジュール workflow-harness 内で mcp-server/.claude/state/ 配下の3ファイル(hmac-keys.json, reflector-log.json, task-index.json)を git rm -r --cached で untrack する",HMAC秘密鍵を含むセキュリティリスク最高のファイル群。.gitignore に既記載だが追跡済みのため git rm --cached が必須
+  REQ-006,親リポジトリの .claude-phase-guard-log.json を git rm --cached で untrack する,research フェーズで追跡済みと確認済み。.gitignore 追記前に untrack が必要
+  REQ-007,Git履歴からの秘密鍵完全削除は本タスクのスコープ外とする,hmac-keys.json は Git 履歴に残存するがBFG等による履歴書き換えは別タスクとして分離する
+acceptanceCriteria[4]{id,description,verification}:
+  AC-1,"親リポジトリの .gitignore に .claude-phase-guard-log.json と .claude/settings.local.json と .claude/generated-files.json の3エントリが追加されていること",grep で .gitignore 内の3パターンの存在を確認
+  AC-2,"サブモジュール workflow-harness 内の追跡済みファイル(mcp-server/dist/ 配下および mcp-server/.claude/state/ 配下)が git rm -r --cached で除去されていること","サブモジュール内で git ls-files mcp-server/dist/ および git ls-files mcp-server/.claude/state/ の出力が空であることを確認"
+  AC-3,"親リポジトリの .claude-phase-guard-log.json が git rm --cached で除去されていること",git ls-files .claude-phase-guard-log.json の出力が空であることを確認
+  AC-4,"git status で対象ファイルが追跡対象外として正しく表示されること(サブモジュール内のファイルが Untracked に表示されないこと)",git status の出力に対象ファイルが staged deletion として表示され新規追跡されていないことを確認
+notInScope[3]: Git履歴からのhmac-keys.json完全削除(BFG等),サブモジュールの.gitignoreへの新規パターン追加(既に記載済み),他リポジトリやCI設定の変更
+openQuestions[0]:
+artifacts[2]{path,role,summary}:
+  docs/workflows/gitignore整備/requirements.toon,requirements,受入基準と決定事項の定義
+  docs/workflows/gitignore整備/research.toon,input,調査フェーズの成果物
+next:
+  readFiles[3]: .gitignore,workflow-harness/.gitignore,docs/workflows/gitignore整備/requirements.toon

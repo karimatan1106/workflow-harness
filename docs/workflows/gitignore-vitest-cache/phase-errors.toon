@@ -1,0 +1,176 @@
+entries[5]:
+  - timestamp: "2026-04-25T07:05:00.966Z"
+    phase: scope_definition
+    retryCount: 1
+    errors[1]: "[L4] テーブル配列 \"acceptanceCriteria\" の行1: フィールド数 1 != 宣言数 3; テーブル配列 \"acceptanceCriteria\" の行2: フィールド数 1 != 宣言数 3; テーブル配列 \"acceptanceCriteria\" の行3: フィールド数 1 != 宣言数 3"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\scope-definition.md",L1,null,null
+      input_files_exist,true,All 1 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: scope_definition",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,false,"テーブル配列 \"acceptanceCriteria\" の行1: フィールド数 1 != 宣言数 3; テーブル配列 \"acceptanceCriteria\" の行2: フィールド数 1 != 宣言数 3; テーブル配列 \"acceptanceCriteria\" の行3: フィールド数 1 != 宣言数 3",L4,"テーブル配列のフィールド数がヘッダー宣言と一致しません。各行のカンマ区切りフィールド数を確認してください。値にカンマが含まれる場合は \"...\" で囲んでください。",null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: scope_definition",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: scope_definition",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: scope_definition",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: scope_definition",L3,null,null
+      ac_format,true,"ac_format check not required for phase: scope_definition",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: scope_definition",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: scope_definition",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: scope_definition",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: scope_definition",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 3 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: scope_definition",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: scope_definition",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: scope_definition",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: scope_definition",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: scope_definition",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: scope_definition",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: scope_definition",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: scope_definition",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: scope_definition",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: scope_definition",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-25T07:25:12.611Z"
+    phase: implementation
+    retryCount: 1
+    errors[1]: "[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\planning.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\test-design.md"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,No output file required for this phase,L1,null,null
+      input_files_exist,false,"Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\planning.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\test-design.md",L1,前フェーズの成果物が不足しています。前フェーズを完了させてから再実行してください。,null
+      spec_paths_exist,true,All @spec paths in 1 scope files are valid,L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,No artifact quality check required for this phase,L3,null,null
+      toon_safety,true,No output file for this phase,L4,null,null
+      content_validation,true,No content validation required for this phase,L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: implementation",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: implementation",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: implementation",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: implementation",L3,null,null
+      ac_format,true,"ac_format check not required for phase: implementation",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: implementation",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: implementation",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: implementation",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: implementation",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format check not applicable for phase: implementation",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: implementation",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: implementation",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: implementation",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: implementation",L3,null,null
+      artifact_drift,true,All 1 approved artifacts are unmodified (ART-1),L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: implementation",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: implementation",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: implementation",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: implementation",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: implementation",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-25T07:51:14.723Z"
+    phase: implementation
+    retryCount: 1
+    errors[1]: "[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\planning.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\test-design.md"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,No output file required for this phase,L1,null,null
+      input_files_exist,false,"Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\planning.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\test-design.md",L1,前フェーズの成果物が不足しています。前フェーズを完了させてから再実行してください。,null
+      spec_paths_exist,true,All @spec paths in 1 scope files are valid,L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,No artifact quality check required for this phase,L3,null,null
+      toon_safety,true,No output file for this phase,L4,null,null
+      content_validation,true,No content validation required for this phase,L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: implementation",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: implementation",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: implementation",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: implementation",L3,null,null
+      ac_format,true,"ac_format check not required for phase: implementation",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: implementation",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: implementation",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: implementation",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: implementation",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format check not applicable for phase: implementation",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: implementation",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: implementation",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: implementation",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: implementation",L3,null,null
+      artifact_drift,true,All 1 approved artifacts are unmodified (ART-1),L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: implementation",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: implementation",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: implementation",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: implementation",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: implementation",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-25T07:58:58.721Z"
+    phase: testing
+    retryCount: 1
+    errors[1]: "[L1] No test results recorded"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,No output file required for this phase,L1,null,null
+      input_files_exist,true,No input files required for this phase,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: testing",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,No artifact quality check required for this phase,L3,null,null
+      toon_safety,true,No output file for this phase,L4,null,null
+      content_validation,true,No content validation required for this phase,L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: testing",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: testing",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: testing",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: testing",L3,null,null
+      ac_format,true,"ac_format check not required for phase: testing",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: testing",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: testing",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: testing",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: testing",L3,null,null
+      artifact_freshness,true,No input files to check freshness for this phase,L3,null,null
+      delta_entry_format,true,"Delta Entry format check not applicable for phase: testing",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: testing",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: testing",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: testing",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: testing",L3,null,null
+      artifact_drift,true,All 1 approved artifacts are unmodified (ART-1),L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: testing",L2,null,null
+      test_results_exist,false,No test results recorded,L1,Run tests and record results with harness_record_test_result,null
+      test_regression_gate,true,No baseline captured — regression gate skipped,L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: testing",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: testing",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-25T08:00:37.325Z"
+    phase: docs_update
+    retryCount: 1
+    errors[1]: "[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\requirements.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\code-review.md"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\docs-update.md",L1,null,null
+      input_files_exist,false,"Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\requirements.md, C:\\ツール\\Workflow\\docs\\workflows\\gitignore-vitest-cache\\code-review.md",L1,前フェーズの成果物が不足しています。前フェーズを完了させてから再実行してください。,null
+      spec_paths_exist,true,"@spec path check not required for phase: docs_update",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: docs_update",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: docs_update",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: docs_update",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: docs_update",L3,null,null
+      ac_format,true,"ac_format check not required for phase: docs_update",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: docs_update",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: docs_update",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: docs_update",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: docs_update",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format check not applicable for phase: docs_update",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: docs_update",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: docs_update",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: docs_update",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: docs_update",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: docs_update",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: docs_update",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: docs_update",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: docs_update",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: docs_update",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: docs_update",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null

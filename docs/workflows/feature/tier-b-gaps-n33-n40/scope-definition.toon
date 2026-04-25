@@ -1,0 +1,58 @@
+task: tier-b-gaps-n33-n40
+phase: scope_definition
+intent: Tier B 8項目（N-33〜N-40）の実用性分析とスコープ決定
+riskScore: 3
+rationale: "8ツール中、4件は既存環境で設定ファイル作成可能、2件はスキャフォールドのみ（ランタイム未整備）、2件はブラウザ環境必須のためスキップ。外部ツール依存のため実行可能性はインストール状態に依存する。"
+
+toolAnalysis[8]{id,tool,verdict,integration,rationale}:
+  N-33, bats-core, in-scope, "tests/hooks/hook-smoke.batsにフック用スモークテストを作成", "Claude Codeフック（post-tool-lint.sh等）のシェルスクリプトテストに最適。bats-coreインストール時のみ実行可能。テストファイル自体は即座に作成可能。"
+  N-34, Hurl, in-scope, "tests/api/mcp-smoke.hurlにMCPサーバーHTTPスモークテストを作成", "MCP SDKがHTTPトランスポートをサポートする場合のAPIテスト用。hurl CLIインストール時のみ実行可能。宣言的HTTPテスト形式の設定ファイルとして価値がある。"
+  N-35, Playwright CLI, out-of-scope, "該当なし", "N-14で既に延期判定済み。ブラウザ環境未整備かつe2eディレクトリ未構築。再評価はe2e基盤整備後。"
+  N-36, agent-browser, out-of-scope, "該当なし", "ブラウザ自動操作ライブラリ。npm installとブラウザバイナリが必要。本プロジェクトにブラウザ操作要件なし。"
+  N-37, eslint-plugin-local-rules, in-scope, "workflow-plugin/eslint-local-rules/index.jsにカスタムESLintルールを作成", "workflow-pluginにESLint 9 flat config構成済み。ローカルルールファイルを作成しeslint.config.jsから参照する形で即座に統合可能。プロジェクト固有の規約をルール化できる。"
+  N-38, promptfoo, in-scope, "tests/eval/promptfoo.yamlにLLM評価設定を作成", "ハーネスのTOON出力品質をLLM評価で検証する設定ファイル。promptfooインストール時のみ実行可能。評価基準の定義自体がドキュメントとして有用。"
+  N-39, PyRIT, in-scope-scaffold, "tests/safety/adversarial-cases.jsonに敵対的テストケースを定義", "MCPツール入力に対するセキュリティテストケース集。PyRITはPython環境必須のためスキャフォールドのみ。JSONスキーマ定義によりテストケースの構造を標準化。"
+  N-40, Pact, in-scope-scaffold, "src/__tests__/mcp-contract.test.tsにコントラクトテストを作成", "MCPツールの入出力スキーマをvitestで検証するコントラクトテスト。Pact本体は未導入だがvitest互換のスキーマ検証テストとして即座に実行可能。"
+
+scopeFiles[4]{path,role}:
+  workflow-plugin/eslint-local-rules/index.js, impl
+  workflow-plugin/eslint.config.js, config
+  workflow-harness/mcp-server/src/__tests__/mcp-contract.test.ts, test
+  workflow-harness/mcp-server/src/tools/handler.ts, reference
+
+scopeDirs[5]{path,purpose}:
+  workflow-harness/mcp-server/tests/hooks, bats-coreテストファイル格納先
+  workflow-harness/mcp-server/tests/api, Hurl APIテストファイル格納先
+  workflow-harness/mcp-server/tests/eval, promptfoo評価設定格納先
+  workflow-harness/mcp-server/tests/safety, 敵対的テストケース格納先
+  workflow-plugin/eslint-local-rules, ローカルESLintルール格納先
+
+newFiles[6]{path,role}:
+  workflow-harness/mcp-server/tests/hooks/hook-smoke.bats, test
+  workflow-harness/mcp-server/tests/api/mcp-smoke.hurl, test
+  workflow-plugin/eslint-local-rules/index.js, impl
+  workflow-harness/mcp-server/tests/eval/promptfoo.yaml, config
+  workflow-harness/mcp-server/tests/safety/adversarial-cases.json, config
+  workflow-harness/mcp-server/src/__tests__/mcp-contract.test.ts, test
+
+outOfScope[2]{item,reason}:
+  N-35 Playwright CLI, N-14で延期済み。ブラウザ環境・e2eディレクトリ未整備
+  N-36 agent-browser, ブラウザバイナリ必須。本プロジェクトにブラウザ操作要件なし
+
+decisions[6]{id,statement,rationale}:
+  SD-1, "N-33 bats-coreはtests/hooks/配下にbatsファイルを配置しフックのスモークテストを提供する", "フックはシェルスクリプトでありbats-coreがBashテストフレームワークとして最適。bats未インストール時はファイルが存在するだけで害がない。"
+  SD-2, "N-34 Hurlはtests/api/配下にhurlファイルを配置しMCPサーバーのHTTPテストを定義する", "MCPプロトコルのJSON-RPC通信をHTTPレベルで検証する宣言的テスト。hurl未インストール時もテスト定義としてのドキュメント価値がある。"
+  SD-3, "N-37 eslint-plugin-local-rulesはworkflow-plugin/eslint-local-rules/にローカルルールを実装する", "ESLint flat configのplugins機能でローカルファイルを直接参照可能。npmパッケージ化不要でプロジェクト固有ルールを即座に適用できる。"
+  SD-4, "N-38 promptfooはYAML設定ファイルとしてLLM評価基準を定義する", "TOON出力品質の評価をLLMルーブリックで自動化する設計。promptfooのassert型（contains, llm-rubric）でTOON形式準拠を検証する。"
+  SD-5, "N-39 PyRITはJSONスキーマによる敵対的テストケース定義のみ実施する", "PyRITはPython環境必須のため実行はスキップ。しかしテストケースの構造定義（パストラバーサル、プロンプトインジェクション、XSS、SQLi）自体がセキュリティ要件のドキュメントとして機能する。"
+  SD-6, "N-40 Pactはvitestベースのスキーマ検証テストとして実装する", "Pactフレームワーク本体は未導入だがMCPツールの入出力契約をvitestのアサーションで検証するコントラクトテストは即座に実行可能。TOOL_DEFINITIONSのスキーマ整合性を保証する。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n33-n40/scope-definition.toon, report, 8ツールの実用性分析とスコープ決定
+  docs/workflows/tier-b-gaps-n33-n40/requirements.toon, spec, 受入基準と要件定義（次フェーズ）
+  docs/workflows/tier-b-gaps-n33-n40/research.toon, research, 各ツールの技術調査（次フェーズ）
+
+next:
+  criticalDecisions: "SD-3（ローカルESLintルール）がworkflow-pluginのlint体制を拡張する唯一の即時実行可能項目"
+  readFiles: "eslint.config.js, handler.ts, post-tool-lint.sh, defs-a.ts"
+  warnings: "N-33/N-34/N-38は外部ツール未インストールのため実行検証不可。N-40のコントラクトテストはvitestで実行可能。"

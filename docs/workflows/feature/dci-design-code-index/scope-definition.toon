@@ -1,0 +1,41 @@
+→purpose: DCI (Design-Code Index) 実装 — コード⇔設計書の双方向マッピングシステム
+→task: dci-design-code-index
+→size: medium
+→risk_score: 28
+→risk_factors: 新規MCP4ツール(高), インデックス生成ロジック(中), @spec強制チェック(低), フェーズテンプレート修正(低)
+
+## 影響範囲
+
+→scope_files[7]{path,role}:
+  workflow-harness/mcp-server/src/tools/defs-a.ts,4つの新規MCPツール定義追加
+  workflow-harness/mcp-server/src/tools/handlers/query.ts,DCI関連ハンドラーの呼び出し追加
+  workflow-harness/mcp-server/src/tools/handler-dispatch.ts,新規ツールのディスパッチ登録
+  workflow-harness/mcp-server/src/state/types.ts,DCIインデックス型定義
+  workflow-harness/mcp-server/src/state/types-core.ts,確認のみ(200行制限)
+  workflow-harness/mcp-server/src/phases/defs-stage1.ts,scope_definitionテンプレートにDCIクエリ統合
+  workflow-harness/mcp-server/src/phases/definitions.ts,buildSubagentPromptでDCI情報注入
+
+→new_files[4]{path,role}:
+  workflow-harness/mcp-server/src/dci/index-builder.ts,インデックス生成ロジック
+  workflow-harness/mcp-server/src/dci/index-query.ts,クエリ・バリデーションロジック
+  workflow-harness/mcp-server/src/dci/types.ts,DCI型定義
+  workflow-harness/mcp-server/src/__tests__/dci.test.ts,DCIテスト
+
+## decisions
+
+→decisions[6]{id,decision,rationale}:
+  D-1,DCIロジックをsrc/dci/に分離,既存のtools/state/phasesディレクトリの責務を汚さない
+  D-2,インデックス生成は4ソース優先順位で統合,@specコメント>設計書@related>RTM F-xxx>ディレクトリ推論
+  D-3,インデックスは.claude/state/design-code-index.jsonに保存,既存のstate管理と同じディレクトリ
+  D-4,@spec強制はimplementationフェーズのDoD L4チェックとして実装,新規.tsファイルのみ対象
+  D-5,パフォーマンス上限は1000ファイル/10秒タイムアウト,大規模プロジェクト対応
+  D-6,docPathsとの統合はorphans.specWithoutCodeに既存docPathsを初期値として使用,今回追加したdocPaths機能を活用
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/dci-design-code-index/scope-definition.toon,created
+
+## next
+
+→next: research

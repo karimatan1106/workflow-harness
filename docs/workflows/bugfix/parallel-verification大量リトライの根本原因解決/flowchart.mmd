@@ -1,0 +1,62 @@
+flowchart TD
+    Start(("タスク開始: 根本原因解決")) --> FR3_Begin("FR-3: 重複テストファイルの削除を準備")
+    FR3_Begin --> FR3_Search("Grepで重複テスト行を検索<br/>確認対象: verify-sync.test.ts")
+    FR3_Search --> FR3_Check{"重複状態を確認<br/>src直下と__tests/に<br/>両方存在するか"}
+    FR3_Check -->|確認完了| FR3_Delete("重複テスト削除実行<br/>削除対象: src/verify-sync.test.ts<br/>保持: src/__tests__/verify-sync.test.ts")
+    FR3_Delete --> FR3_Test("テスト実行で削除効果を確認<br/>テスト総数が正常化されたか")
+    FR3_Test --> FR3_Pass{テスト結果<br/>正常化<br/>確認}
+    FR3_Pass -->|パス| FR2_Begin("FR-2: isStructuralLine関数拡張を開始")
+    FR3_Pass -->|失敗| FR3_Test
+
+    FR2_Begin --> FR2_Analyze("現行実装を分析<br/>artifact-validator.ts 92～111行目<br/>ルール8の動作確認")
+    FR2_Analyze --> FR2_Design("拡張設計: リスト記号をオプション化<br/>変更内容を正規表現に落とし込む<br/>アプローチ1を採用")
+    FR2_Design --> FR2_Implement("isStructuralLine関数を修正<br/>リスト記号なしのプレーンラベル行も<br/>50文字以内で対応")
+    FR2_Implement --> FR2_Build("ビルド実行<br/>TypeScriptをコンパイルして<br/>dist/を更新")
+    FR2_Build --> FR2_Build_Check{ビルド<br/>成功<br/>確認}
+    FR2_Build_Check -->|エラー| FR2_Fix("ビルドエラーを修正")
+    FR2_Fix --> FR2_Build
+    FR2_Build_Check -->|成功| FR2_TestAdd("テストケース追加<br/>artifact-structural-line.test.ts に記述<br/>リスト記号なしプレーンラベル行")
+    FR2_TestAdd --> FR2_TestAdd2("追加テスト内容<br/>実行結果: OK（10文字以内）<br/>合否: 合格（5文字）")
+    FR2_TestAdd2 --> FR2_TestAdd3("追加テスト内容続き<br/>ステータス: 正常終了（全角）<br/>終了コード: 0（3文字）")
+    FR2_TestAdd3 --> FR2_TestAdd4("追加テスト内容の境界値<br/>50文字ちょうどは除外される<br/>51文字は除外されない")
+    FR2_TestAdd4 --> FR2_TestRun("ユニットテスト実行<br/>既存テストと新規テスト<br/>両方がパスするか確認")
+    FR2_TestRun --> FR2_TestCheck{全テスト<br/>パス<br/>確認}
+    FR2_TestCheck -->|失敗| FR2_TestFix("テストまたは実装を修正")
+    FR2_TestFix --> FR2_TestRun
+    FR2_TestCheck -->|成功| FR2_Restart("MCPサーバーを再起動<br/>変更を反映させる<br/>モジュールキャッシュをクリア")
+    FR2_Restart --> FR2_Verify("バリデーション動作改善を確認<br/>プレーンラベル行の誤検出が<br/>解消されたか")
+    FR2_Verify --> FR2_Complete{FR-2<br/>完了<br/>確認}
+    FR2_Complete -->|確認完了| FR1_Begin("FR-1: CLAUDE.md更新を開始")
+    FR2_Complete -->|修正必要| FR2_Debug("動作不具合をデバッグ修正")
+    FR2_Debug --> FR2_Restart
+
+    FR1_Begin --> FR1_Root("ルート版CLAUDE.md 修正開始<br/>成果物品質要件セクションを更新")
+    FR1_Root --> FR1_Root_Rules("ルール1～8を正確に記述<br/>ルール1: シャープ見出し行<br/>ルール2: 水平線行")
+    FR1_Root --> FR1_Root_Rules2("ルール3～5を記述<br/>ルール3: コードフェンス<br/>ルール4: テーブルセパレータ")
+    FR1_Root_Rules2 --> FR1_Root_Rules3("ルール6～8を記述<br/>ルール6: 太字ラベルのみ<br/>ルール7: リスト記号付き太字")
+    FR1_Root_Rules3 --> FR1_Root_Rules4("ルール8詳細: ハイフンまたはアスタリスク<br/>リスト記号で始まり50文字以内<br/>コロン終端")
+    FR1_Root_Rules4 --> FR1_Root_Note("重複検出対象の注意書き追加<br/>プレーンラベル行が除外されない<br/>ことを明記")
+    FR1_Root_Note --> FR1_Root_Scenario("複数テストシナリオ報告時の<br/>対応方法を記述<br/>シナリオ識別子の使用")
+    FR1_Root_Scenario --> FR1_Root_Bracket("角括弧制約の記述を修正<br/>コードフェンス内角括弧も禁止<br/>インラインコード内は安全")
+    FR1_Root_Bracket --> FR1_Root_Table("禁止語言い換えテーブルを追加<br/>英語進捗キーワード4語の代替<br/>日本語状態表現語8語の代替")
+    FR1_Root_Table --> FR1_Root_Complete("ルート版CLAUDE.md 更新完了")
+
+    FR1_Root_Complete --> FR1_Plugin("プラグイン版CLAUDE.md 修正開始<br/>ルート版と同じ変更を適用")
+    FR1_Plugin --> FR1_Plugin_Rules("プラグイン版にルール1～8を記述<br/>ルート版と同一内容を配置")
+    FR1_Plugin_Rules --> FR1_Plugin_Note("プレーンラベル行の注意書きを<br/>プラグイン版に追記")
+    FR1_Plugin_Note --> FR1_Plugin_Scenario("複数テストシナリオ対応方法を<br/>プラグイン版に追記")
+    FR1_Plugin_Scenario --> FR1_Plugin_Bracket("角括弧制約の記述をプラグイン版に<br/>追加")
+    FR1_Plugin_Bracket --> FR1_Plugin_Table("禁止語言い換えテーブルを<br/>プラグイン版に追加")
+    FR1_Plugin_Table --> FR1_Diff("両CLAUDE.md版の差分を確認<br/>同一内容が反映されているか")
+    FR1_Diff --> FR1_Check{両ファイル<br/>一貫性<br/>確認}
+    FR1_Check -->|不一致| FR1_Fix("差分を修正して同期")
+    FR1_Fix --> FR1_Diff
+    FR1_Check -->|一致| Verify("受け入れ条件を確認")
+
+    Verify --> AC1("AC-1: CLAUDE.md更新確認<br/>ルール1～8が正確に記述<br/>プレーンラベル行の説明あり")
+    AC1 --> AC2("AC-2: 角括弧制約の確認<br/>コードフェンス内禁止<br/>インラインコード内安全")
+    AC2 --> AC3("AC-3: isStructuralLine動作確認<br/>既存テスト全パス<br/>プレーンラベル行除外OK")
+    AC3 --> AC4("AC-4: 重複テスト削除確認<br/>src/verify-sync.test.ts 削除<br/>src/__tests__/版は存在")
+    AC4 --> AllPass{全受け入れ<br/>条件<br/>パス}
+    AllPass -->|完了| Complete(("タスク完了: 根本原因解決"))
+    AllPass -->|再確認| Verify

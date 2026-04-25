@@ -1,0 +1,419 @@
+# 仕様書 - ワークフロー構造的問題P0-P1根本解決
+
+## サマリー
+
+本仕様書は、ワークフローシステムの6つの構造的問題を解決するための技術設計を定義する。
+
+最優先のP0問題群として、成果物事前検証ツールによるフェーズ遷移前の品質保証、ユーザーフィードバック記録によるコンテキスト補完機能、キーワードトレーサビリティ検証による設計実装整合性保証の3機能を提供する。これらは既存のartifact-validator検証ロジックを再利用しながら、OrchestratorとMCPサーバー間の協調動作を強化する。
+
+次にP1問題群として、CLAUDE.mdフェーズ別配信によるsubagentトークン効率化、タスク親子関係による大規模プロジェクト階層管理、task-index.json完全同期保証によるHookキャッシュ陳腐化根絶の3機能を実装する。CLAUDE.mdパーサーはメモリキャッシュにより初回以降の高速化を実現し、タスク親子関係は循環参照防止により安全性を保証し、task-index.json同期は全フェーズ遷移APIへの呼び出し追加により網羅性を確保する。
+
+全ての変更は既存TaskState形式との後方互換性を維持し、オプショナルフィールドとして実装される。セッショントークン検証により状態変更の正当性を保ち、環境変数による動作制御で運用柔軟性を提供する。実装は疎結合な設計により、将来的なバリデーションルール追加やフェーズ拡張を容易にする。
+
+影響するソースコードはworkflow-plugin/mcp-server/src/配下のツール、バリデーション、状態管理モジュールであり、テストはsrc/backend/tests/配下に配置する。
+
+## 概要
+
+本仕様書は、ワークフローMCPサーバー（workflow-plugin/mcp-server/src/）における6つの構造的問題を解決する。
+P0-3（成果物事前検証）は、Orchestratorがsubagent出力をworkflow_next呼び出し前に検証するツールである。
+P0-1（ユーザーフィードバック記録）は、各フェーズでuserIntentを動的に更新する機能である。
+P0-2（キーワードトレーサビリティ）は、requirements→spec→test-design→implementation間の整合性を自動検証する。
+P1-1（CLAUDE.md分割配信）は、フェーズに必要なセクションのみをsubagentに配信しトークン効率を向上させる。
+P1-2（タスク親子関係）は、大規模タスクを階層的に管理するためのworkflow_create_subtaskとworkflow_link_tasksツールである。
+P1-3（task-index.json同期）は、全フェーズ遷移APIでキャッシュ更新を保証する修正である。
+全機能はworkflow-plugin/mcp-server/src/tools/配下に新規ツールとして追加されるか、workflow-plugin/mcp-server/src/validation/配下のバリデーション拡張として実装される。
+
+## システム構成
+
+### ツール構成
+
+本仕様で追加される6つのMCPツールは、既存のワークフローツール群と同じ階層で実装される。各ツールはtoolsディレクトリ配下に独立したモジュールとして配置され、server.tsのTOOL_DEFINITIONSおよびTOOL_HANDLERSに登録される。
+
+新規ツールは以下の3つのカテゴリに分類される。検証系ツールとしてworkflow_pre_validateが追加され、Orchestratorが任意のタイミングで成果物品質を事前確認できる。状態変更系ツールとしてworkflow_record_feedbackが追加され、各フェーズでユーザーの意図を動的に記録可能にする。タスク管理系ツールとしてworkflow_create_subtaskとworkflow_link_tasksが追加され、タスク階層の構築と既存タスクの後付けリンクを実現する。
+
+### データフロー
+
+成果物検証フローでは、Orchestratorがsubagent完了後にworkflow_pre_validateを呼び出し、対象ファイルパスとフェーズ名を指定する。MCPサーバーは該当フェーズのPhaseGuide定義を読み込み、requiredSections、禁止パターン、最低行数要件を取得する。次にファイルシステムから対象ファイルを読み込み、既存のartifact-validator内の検証関数群を再利用して品質確認を実行する。検証結果はpassed、errors、warnings、checkedRulesを含む構造化形式で返却され、Orchestratorは結果に基づきworkflow_next呼び出しまたは修正指示を判断する。
+
+フィードバック記録フローでは、ユーザーがworkflow_record_feedbackを呼び出し、タスクIDとフィードバック内容、追記モードフラグを指定する。MCPサーバーはセッショントークンを検証後、WorkflowStateManagerを経由して該当タスクのTaskStateを読み込む。appendModeがfalseの場合はuserIntentフィールドを置換し、trueの場合は既存内容に改行区切りで追記する。更新後のTaskStateはHMAC署名を再計算してディスクに保存され、結果として更新後のuserIntent全文が返却される。
+
+タスク親子関係構築フローでは、workflow_create_subtaskまたはworkflow_link_tasksが呼び出される。前者は新規サブタスクを作成し、初期フェーズをresearchに設定し、parentTaskIdとchildTaskIdsを双方向にリンクする。後者は既存の2タスクを指定し、循環参照チェックを実行後にリンクを確立する。どちらの場合も親子両方のTaskStateが更新され、親のtaskTypeがparentに、子のtaskTypeがchildに設定される。
+
+### キーワードトレーサビリティ機構
+
+キーワードトレーサビリティ検証は、workflow_next内で特定のフェーズ遷移時に自動的に実行される。requirements終了後のparallel_analysis移行時には、requirements.mdから抽出された技術キーワードがspec.md内で参照されているかを検証する。test_design終了後のtest_impl移行時には、spec.mdのキーワードがtest-design.md内で言及されているかを確認する。implementation終了後のrefactoring移行時には、test-design.mdのキーワードが実装コード内で使用されているかを確認する。
+
+キーワード抽出処理では、ソースドキュメントを形態素解析相当のロジックでトークン分割し、名詞句と技術用語を識別する。冠詞、接続詞、一般的な動詞は除外され、ドメイン固有の専門用語のみが抽出対象となる。抽出結果はメモリキャッシュに保存され、同一ファイルへの再検証時は再抽出を省略する。
+
+トレース検証では、ターゲットドキュメント全体を走査し、ソースキーワードの出現頻度を計測する。カバレッジスコアは参照されたキーワード数を総キーワード数で除算して算出される。スコアが閾値（デフォルト0.8）未満の場合、missingKeywords配列に未参照キーワードが列挙され、環境変数SEMANTIC_TRACE_STRICTの値に応じてエラーまたは警告が返却される。
+
+### CLAUDE.md分割配信機構
+
+CLAUDE.mdパーサーは、プロジェクトルートのCLAUDE.mdファイルをフェーズ別セクションに分割する。パース処理は初回実行時にメモリキャッシュに結果を保存し、2回目以降の呼び出しでは即座にキャッシュ結果を返却する。
+
+セクションマッピング定義はcllaude-md-sections.tsモジュールで管理され、各フェーズに必要な見出しパターンを定義する。例えばresearchフェーズには「調査フェーズ」「AIへの厳命1」が含まれ、implementationフェーズには「実装フェーズ」「AIへの厳命16-17」が含まれる。commitフェーズには「コミットルール」「完了宣言ルール」が含まれる。
+
+resolvePhaseGuide関数は、フェーズ名を受け取るとparseCLAUDEMdByPhaseを呼び出し、該当セクションのMarkdownテキストをPhaseGuideのcontentフィールドに格納する。並列フェーズの場合は各サブフェーズに対して個別にパース処理を実行し、subPhasesの各PhaseGuideにcontentを設定する。CLAUDE.mdファイルが見つからない場合はcontentをundefinedとし、既存のPhaseGuide情報は通常通り返却される。
+
+### task-index.json同期機構
+
+task-index.json同期問題の根本原因は、フェーズ遷移API群が一部でupdateTaskIndexForSingleTask呼び出しを省略していたことにある。本仕様では、全てのフェーズ変更を伴うツール関数にupdateTaskIndexForSingleTask呼び出しを追加する。
+
+対象APIはworkflow_next、workflow_complete_sub、workflow_approve、workflow_back、workflow_resetの5つである。各関数内でTaskState更新後、updateTaskIndexForSingleTaskを呼び出してtask-index.jsonの該当エントリを即座に更新する。エラーハンドリングは警告ログ出力のみとし、task-index.json更新失敗がフェーズ遷移を妨げないようにする。
+
+updateTaskIndexForSingleTask関数は、指定されたタスクIDのTaskStateを読み込み、taskId、taskName、phase、taskSize、timestampを含むエントリをtask-index.jsonに書き込む。書き込み時は既存エントリを検索し、存在する場合は置換、存在しない場合は追加する。schemaVersionがv2であることを確認し、古いバージョンの場合は自動アップグレード処理を実行する。
+
+## 詳細設計
+
+### P0-3: workflow_pre_validateツール
+
+workflow_pre_validateツールは、OrchestratorがMCPサーバーに対して成果物の事前検証を依頼するためのインターフェースを提供する。ツール定義ではtaskId、targetPhase、filePath、sessionTokenの4パラメータを受け取る。taskIdが省略された場合はアクティブタスクIDを自動補完し、sessionTokenが省略された場合はセッション検証をスキップする。
+
+ツールハンドラーでは、まず指定されたfilePathの存在確認を行い、ファイルが見つからない場合は即座にエラー応答を返却する。次にPhaseGuide定義を読み込み、targetPhaseに対応するminLines、requiredSections、禁止パターンを取得する。該当フェーズの定義が見つからない場合は汎用的なバリデーションのみを実行する。
+
+検証処理では、既存のartifact-validator内のvalidateSectionsCompleteness、validateMinimumLines、validateNoForbiddenPatterns、validateNoDuplicateLinesの各関数を順次呼び出す。各検証関数は独立して成功または失敗を返し、失敗メッセージはerrors配列に追加される。全検証完了後、errors配列が空の場合はpassed trueを返却し、1件以上のエラーがある場合はpassed falseを返却する。
+
+warnings配列には、エラーではないが注意すべき事項を格納する。例えば環境変数VALIDATE_DESIGN_STRICTがfalseの場合、本来エラーとなる禁止パターン検出を警告に格下げしてwarningsに追加する。checkedRules配列には実行された検証ルール名を格納し、Orchestratorが検証内容を把握できるようにする。
+
+結果構造はPreValidateResult型として定義され、passed、errors、warnings、checkedRules、messageの5フィールドを含む。messageフィールドには人間可読な結果サマリーを格納し、検証成功時は「全ての検証に合格しました」、失敗時は「次の問題が見つかりました」という形式でエラー概要を記述する。
+
+### P0-1: workflow_record_feedbackツール
+
+workflow_record_feedbackツールは、ユーザーがワークフロー実行中に追加の意図や補足説明を記録する機能を提供する。ツール定義ではtaskId、feedback、appendMode、sessionTokenの4パラメータを受け取る。feedbackは必須であり、空文字列の場合はエラーを返却する。最大長は10000文字に制限され、超過時もエラーを返す。
+
+ツールハンドラーでは、まずセッショントークン検証を実行する。sessionTokenが指定されている場合はWorkflowStateManagerのvalidateSessionToken関数で正当性を確認し、不正な場合は即座にエラー応答を返却する。sessionTokenが省略された場合はフェーズによる制限なしでフィードバックを記録可能とする。
+
+TaskState読み込み後、既存のuserIntentフィールドを確認する。appendModeがfalseの場合は新しいfeedback内容で完全に置換する。appendModeがtrueの場合は、既存userIntentの末尾に改行を2つ挿入した後、新しいfeedback内容を追記する。この方式により、フェーズごとのフィードバック履歴が自然な形で蓄積される。
+
+更新後のTaskStateはstateManager.saveStateを経由してディスクに保存される。この際HMAC署名が自動的に再計算され、stateIntegrityフィールドが更新される。保存完了後、結果としてsuccess true、完了メッセージ、updatedUserIntentの3フィールドを返却する。updatedUserIntentには更新後のuserIntent全文が含まれ、Orchestratorが確認メッセージを表示可能にする。
+
+エラーケースとしては、タスクIDが存在しない場合、feedbackが空文字列の場合、feedbackが10000文字を超える場合、sessionToken検証失敗の場合がある。各ケースで明確なエラーメッセージを返却し、Orchestratorが適切な対処を実施できるようにする。
+
+### P0-2: validateKeywordTraceability関数
+
+validateKeywordTraceability関数は、artifact-validator.ts内に新規追加される検証関数である。関数シグネチャはdocsDir、sourcePhase、targetPhase、minCoverageの4引数を受け取る。docsDirはワークフローのドキュメントディレクトリパスであり、通常はdocs/workflows/タスク名の形式となる。
+
+ソースドキュメント読み込み処理では、sourcePhaseに対応するファイル名を決定する。requirementsフェーズの場合はrequirements.md、specフェーズの場合はspec.md、test-designフェーズの場合はtest-design.mdを読み込む。ファイルが存在しない場合はエラーを返却する。
+
+キーワード抽出ロジックでは、ソースドキュメントの本文からMarkdown装飾を除去した後、単語単位に分割する。各単語について品詞推定を行い、名詞、固有名詞、技術用語のみを抽出対象とする。品詞推定は単純なヒューリスティックとして、大文字で始まる単語、ハイフンを含む単語、2文字以上の英大文字連続を技術用語と判定する。日本語の場合は形態素解析ライブラリを使用せず、カタカナ語と漢字2文字以上の連続を抽出する。
+
+一般的な停止語リストにより、冠詞、接続詞、代名詞、助動詞を除外する。英語の場合はthe、a、an、of、to、in、for、and、or、but等を除外し、日本語の場合はこと、もの、ため、など、こと、よう等を除外する。抽出されたキーワードは小文字に正規化され、重複を排除した配列として保持される。
+
+ターゲットドキュメント読み込み処理では、targetPhaseに対応するファイルまたはディレクトリを決定する。specやtest-designの場合は単一ファイルを読み込み、implementationの場合は実装コードディレクトリ配下の全ファイルを再帰的に走査する。各ファイル内でソースキーワードの出現回数を計測し、1回以上出現したキーワードを参照済みとしてカウントする。
+
+カバレッジ計算では、参照済みキーワード数を総キーワード数で除算する。例えば総キーワードが10個で参照済みが8個の場合、カバレッジは0.8となる。カバレッジがminCoverage未満の場合、passedをfalseに設定し、未参照キーワードをmissingKeywords配列に格納する。環境変数SEMANTIC_TRACE_STRICTがfalseの場合はpassedをtrueに保ち、未参照キーワードをwarnings配列に格納する。
+
+結果構造はKeywordTraceabilityResult型として定義され、passed、coverage、missingKeywords、errors、warningsの5フィールドを含む。Orchestratorはこの結果に基づき、カバレッジが低い場合は設計書または実装の修正を促すメッセージを表示する。
+
+### P1-1: parseCLAUDEMdByPhase関数
+
+parseCLAUDEMdByPhase関数は、claude-md-parser.tsモジュールに実装される独立した関数である。関数シグネチャはclaudeMdPath、phaseNameの2引数を受け取り、抽出結果としてcontent、sections、errorsの3フィールドを含むオブジェクトを返却する。
+
+CLAUDE.mdファイル読み込み処理では、指定されたclaudeMdPathの存在を確認する。ファイルが見つからない場合はerrorsにエラーメッセージを格納し、contentをundefinedとして返却する。ファイルが見つかった場合は全文をUTF-8エンコーディングで読み込む。
+
+セクションマッピング取得処理では、claude-md-sections.tsからフェーズ名に対応するセクション見出しパターン配列を取得する。例えばresearchフェーズの場合は「調査フェーズ」「AIへの厳命1」のパターンが取得される。パターンは正規表現または文字列一致で定義され、柔軟な見出しマッチングを実現する。
+
+Markdown見出し抽出処理では、CLAUDE.md全文を行単位で走査し、シャープ記号で始まる見出し行を識別する。見出しレベル（シャープの数）と見出しテキストを保持し、階層構造を構築する。各見出し配下の本文は次の同レベル以上の見出しまでを範囲として抽出される。
+
+セクション抽出処理では、取得したセクション見出しパターンに一致する見出しを検索し、該当見出し配下の本文を抽出する。複数のセクションが指定されている場合は、全てのセクション本文を順次連結する。連結時は各セクション間に改行を2つ挿入し、自然な段落区切りを保つ。
+
+パース結果はモジュールレベルのMapオブジェクトにキャッシュされる。キーはフェーズ名とclaudeMdPathの組み合わせとし、値は抽出結果オブジェクトとする。2回目以降の同一フェーズへのパース要求はキャッシュから即座に返却され、ファイル読み込みと正規表現処理を省略する。
+
+エラーケースとしては、CLAUDE.mdファイルが見つからない場合、該当セクションが見つからない場合、ファイル読み込み時のエンコーディングエラーがある。各ケースでerrorsにエラーメッセージを追加し、contentにはエラー内容を簡潔に記述したテキストを格納する。
+
+### P1-2: resolvePhaseGuide統合
+
+resolvePhaseGuide関数はphases/definitions.tsに既に存在する関数であり、本仕様では既存実装に対してCLAUDE.md配信機能を追加する形で拡張する。関数内で現在のフェーズ名を受け取り、該当フェーズのPhaseGuideオブジェクトを構築する既存処理の後に、parseCLAUDEMdByPhase呼び出しを追加する。
+
+CLAUDE.mdパス決定処理では、環境変数CLAUDE_MD_PATHが設定されている場合はその値を使用し、未設定の場合はプロジェクトルートのCLAUDE.mdをデフォルトとする。パス解決は絶対パスと相対パスの両方に対応し、相対パスの場合はprocess.cwd()を基準とする。
+
+parseCLAUDEMdByPhase呼び出し後、返却されたcontentフィールドをPhaseGuideオブジェクトのcontentプロパティに設定する。sectionsフィールドはclaudeMdSectionsプロパティに設定し、Orchestratorが含まれるセクション名を把握できるようにする。errorsフィールドが空でない場合は、contentに警告メッセージを含める形でエラー内容を伝達する。
+
+並列フェーズの場合は、subPhasesの各要素に対して再帰的にparseCLAUDEMdByPhaseを呼び出し、各サブフェーズのPhaseGuideにcontentを設定する。例えばparallel_analysisフェーズの場合、threat_modelingサブフェーズとplanningサブフェーズの両方に対して個別にCLAUDE.mdパースを実行する。
+
+contentフィールドはPhaseGuide型にオプショナルフィールドとして追加される。型定義はtypes.tsで行い、既存のPhaseGuideインターフェースにcontent文字列オプショナルとclaudeMdSections文字列配列オプショナルを追加する。この変更により既存コードとの後方互換性が保たれる。
+
+workflow_statusとworkflow_nextの両ツールハンドラーでresolvePhaseGuideを呼び出している箇所があるが、これらは既存のまま変更不要である。resolvePhaseGuide内部でcontentフィールドが自動的に設定されるため、両ツールの返却値に自然にcontentが含まれる形となる。
+
+### P1-3: タスク親子関係のTaskState拡張
+
+TaskStateインターフェース拡張では、types.tsの既存TaskState定義に3つのオプショナルフィールドを追加する。parentTaskIdフィールドは文字列型オプショナルとし、親タスクが存在する場合にそのタスクIDを格納する。childTaskIdsフィールドは文字列配列型オプショナルとし、子タスクのIDリストを格納する。taskTypeフィールドは文字列リテラル型オプショナルとし、parent、child、standaloneのいずれかを値として持つ。
+
+既存タスクとの互換性保証として、これら3フィールドが全てundefinedの場合はstandaloneタスクとして扱う。WorkflowStateManager内のloadStateおよびsaveState関数では、フィールドの有無に関わらず正常に動作する実装とする。HMAC署名計算では、これら新規フィールドを含めた全フィールドを対象とするが、フィールドがundefinedの場合は署名計算から除外する形とする。
+
+親子関係の制約として、循環参照を防止するため、workflow_link_tasks実行時に祖先チェーンを辿る検証処理を実装する。最大階層深度は定数MAX_TASK_DEPTHとして定義し、デフォルト値を5階層とする。5階層を超える親子関係の構築試行はエラーとして拒否される。
+
+childTaskIds配列の初期化は、workflow_create_subtaskまたはworkflow_link_tasksで初回リンク確立時に空配列として設定される。2番目以降の子タスク追加時は既存配列に要素を追加する形となる。配列内のタスクID順序は追加順とし、明示的なソート処理は行わない。
+
+### P1-4: workflow_create_subtaskツール
+
+workflow_create_subtaskツールは、指定された親タスクの配下に新規サブタスクを作成する機能を提供する。ツール定義ではparentTaskId、subtaskName、taskSize、sessionTokenの4パラメータを受け取る。parentTaskIdは必須であり、省略時はエラーを返却する。subtaskNameは100文字以内の制約があり、超過時はエラーとする。
+
+ツールハンドラーでは、まず親タスクの存在確認を行う。WorkflowStateManagerのloadState関数で親タスクIDを指定し、タスクが見つからない場合はエラー応答を返却する。親タスクが見つかった場合はセッショントークン検証を実行し、不正なトークンの場合は拒否する。
+
+新規タスク作成処理では、WorkflowStateManagerのcreateTask関数を呼び出し、subtaskName、taskSizeを引数として渡す。createTask関数内部で一意なタスクIDが生成され、初期フェーズがresearchに設定され、タイムスタンプが記録される。この際、新規作成されるTaskStateのparentTaskIdフィールドに親タスクIDを設定し、taskTypeフィールドをchildに設定する。
+
+親タスク更新処理では、親TaskStateのchildTaskIdsフィールドに新規作成されたタスクIDを追加する。childTaskIdsがundefinedの場合は空配列として初期化した後に追加する。親TaskStateのtaskTypeフィールドがstandaloneまたはundefinedの場合はparentに更新する。既にparentの場合は変更しない。
+
+両方のTaskStateをディスクに保存する処理では、親タスクと子タスクの両方に対してstateManager.saveStateを呼び出す。各保存時にHMAC署名が再計算され、stateIntegrityフィールドが更新される。保存順序は親タスク、子タスクの順とし、途中でエラーが発生した場合は既に保存済みの変更をロールバックしない設計とする。
+
+結果構造はCreateSubtaskResult型として定義され、success、taskId、taskName、phase、parentTaskId、messageの6フィールドを含む。成功時にはsuccessをtrueに設定し、新規作成されたタスクIDとタスク名を返却する。Orchestratorはこの情報を使用して、サブタスクへのスイッチや進捗確認を実施できる。
+
+### P1-5: workflow_link_tasksツール
+
+workflow_link_tasksツールは、既存の2つのタスクを親子関係で後付けリンクする機能を提供する。ツール定義ではparentTaskId、childTaskId、sessionTokenの3パラメータを受け取る。parentTaskIdとchildTaskIdは必須であり、同一のタスクIDが指定された場合は自己参照エラーとして拒否する。
+
+ツールハンドラーでは、まず親タスクと子タスクの両方が存在することを確認する。WorkflowStateManagerのloadState関数で両方のタスクを読み込み、いずれかが見つからない場合はエラー応答を返却する。両方のタスクが見つかった場合は親タスクに対するセッショントークン検証を実行する。
+
+循環参照検出処理では、子タスクから親方向に祖先チェーンを辿り、指定された親タスクIDが祖先に含まれていないかを確認する。具体的には子タスクのparentTaskIdを取得し、そのタスクを読み込んで再度parentTaskIdを取得する処理を、parentTaskIdがundefinedになるまで繰り返す。途中で指定された親タスクIDと一致した場合は循環参照と判定し、エラーを返却する。
+
+既存リンク確認処理では、親タスクのchildTaskIds配列に既に子タスクIDが含まれていないかを確認する。含まれている場合は既にリンク済みとしてエラーを返却する。子タスクのparentTaskIdが既に別のタスクIDを指している場合も、既に他の親にリンク済みとしてエラーを返却する。
+
+リンク確立処理では、子タスクのparentTaskIdに親タスクIDを設定し、taskTypeをchildに更新する。親タスクのchildTaskIds配列に子タスクIDを追加し、taskTypeをparentに更新する。両方のTaskStateを保存し、HMAC署名を再計算する。
+
+結果構造はLinkTasksResult型として定義され、successとmessageの2フィールドを含む。成功時にはsuccessをtrueに設定し、リンク確立を確認するメッセージを返却する。失敗時にはsuccessをfalseに設定し、エラー理由を明記したメッセージを返却する。
+
+### P1-6: task-index.json同期保証
+
+task-index.json同期保証では、既存の5つのフェーズ遷移ツール関数にupdateTaskIndexForSingleTask呼び出しを追加する。各ツール関数内でTaskStateの更新が完了した直後、return文の前にupdateTaskIndexForSingleTask呼び出しを挿入する。
+
+workflow_next内での追加位置は、新しいフェーズへの遷移が完了しstateManager.saveStateを実行した後とする。updateTaskIndexForSingleTaskには更新後のタスクIDを引数として渡す。エラーハンドリングはtry-catch文で囲み、エラー発生時は警告ログを出力するがフェーズ遷移処理は継続する。
+
+workflow_complete_sub内での追加位置は、サブフェーズ完了フラグを更新しstateManager.saveStateを実行した後とする。並列フェーズの場合は各サブフェーズ完了時に呼び出しが発生するため、task-index.jsonは複数回更新される可能性がある。最終的には全サブフェーズ完了時の状態が正しく反映される。
+
+workflow_approve内での追加位置は、レビュー承認フラグを更新しstateManager.saveStateを実行した後とする。design_reviewフェーズでのapprove実行時にも即座にtask-index.jsonが更新され、Hook側が最新のフェーズ情報を取得できる。
+
+workflow_back内での追加位置は、指定フェーズへの巻き戻しが完了しstateManager.saveStateを実行した後とする。巻き戻し後のフェーズ情報が即座にtask-index.jsonに反映され、Hook側のキャッシュ陳腐化を防止する。
+
+workflow_reset内での追加位置は、researchフェーズへのリセットが完了しstateManager.saveStateを実行した後とする。リセット後もtask-index.jsonが正しく更新され、Hook側が一貫した状態を保つ。
+
+updateTaskIndexForSingleTask関数内部では、まずtask-index.jsonの存在を確認する。ファイルが存在しない場合は新規作成し、schemaVersionをv2、tasksを空配列として初期化する。ファイルが存在する場合は全内容を読み込み、schemaVersionを確認する。v2未満の場合は自動アップグレード処理を実行する。
+
+既存エントリ検索処理では、tasks配列内でtaskIdが一致するエントリを探す。見つかった場合は該当エントリのphase、taskSize、timestampフィールドを更新する。見つからなかった場合は新規エントリとしてtasks配列に追加する。更新後のtask-index.jsonをディスクに書き込み、処理を完了する。
+
+エラーケースとしては、ファイルシステムアクセスエラー、JSON解析エラー、スキーマバージョン不整合がある。各ケースでエラーログを出力するが、呼び出し元にはエラーを伝播せず、フェーズ遷移処理を継続させる設計とする。
+
+## インターフェース定義
+
+### workflow_pre_validateツール
+
+ツール名はworkflow_pre_validateとし、MCPツール定義内のnameフィールドに設定される。descriptionフィールドには「成果物を事前に検証し、フェーズ遷移前に品質を確認する」という説明を記述する。
+
+inputSchemaは4つのプロパティを持つオブジェクトとして定義される。taskIdプロパティは文字列型でオプショナルとし、descriptionには「対象タスクID。省略時はアクティブタスク」と記述する。targetPhaseプロパティは文字列型で必須とし、descriptionには「検証対象フェーズ名」と記述する。filePathプロパティは文字列型で必須とし、descriptionには「検証対象ファイルの相対パスまたは絶対パス」と記述する。sessionTokenプロパティは文字列型でオプショナルとし、descriptionには「セッショントークン」と記述する。
+
+出力型PreValidateResultは5つのフィールドを持つオブジェクトとして定義される。passedフィールドは真偽値型で必須とし、検証成功時にtrue、失敗時にfalseを格納する。errorsフィールドは文字列配列型で必須とし、検出されたエラーメッセージのリストを格納する。warningsフィールドは文字列配列型でオプショナルとし、警告メッセージのリストを格納する。checkedRulesフィールドは文字列配列型で必須とし、実行された検証ルール名のリストを格納する。messageフィールドは文字列型で必須とし、結果の人間可読サマリーを格納する。
+
+### workflow_record_feedbackツール
+
+ツール名はworkflow_record_feedbackとし、descriptionフィールドには「ユーザーフィードバックをタスクに記録し、以降のフェーズで参照可能にする」という説明を記述する。
+
+inputSchemaは4つのプロパティを持つオブジェクトとして定義される。taskIdプロパティは文字列型でオプショナルとし、descriptionには「対象タスクID。省略時はアクティブタスク」と記述する。feedbackプロパティは文字列型で必須とし、descriptionには「フィードバック内容。最大10000文字」と記述する。appendModeプロパティは真偽値型でオプショナルとし、descriptionには「true時は追記、false時は置換。デフォルトはfalse」と記述する。sessionTokenプロパティは文字列型でオプショナルとし、descriptionには「セッショントークン」と記述する。
+
+出力型RecordFeedbackResultは3つのフィールドを持つオブジェクトとして定義される。successフィールドは真偽値型で必須とし、記録成功時にtrueを格納する。messageフィールドは文字列型で必須とし、結果メッセージを格納する。updatedUserIntentフィールドは文字列型でオプショナルとし、更新後のuserIntent全文を格納する。
+
+### validateKeywordTraceability関数
+
+関数名はvalidateKeywordTraceabilityとし、artifact-validator.ts内にエクスポート関数として定義される。関数コメントには「要件定義から実装までのキーワードトレーサビリティを検証する」という説明を記述する。
+
+引数は4つあり、docsDirは文字列型でドキュメントディレクトリパスを受け取る。sourcePhaseは文字列型でトレース元フェーズ名を受け取り、requirements、spec、test-designのいずれかが指定される。targetPhaseは文字列型でトレース先フェーズ名を受け取り、spec、test-design、implementationのいずれかが指定される。minCoverageは数値型でオプショナルとし、デフォルト値は0.8とする。
+
+戻り値型KeywordTraceabilityResultは5つのフィールドを持つオブジェクトとして定義される。passedフィールドは真偽値型で必須とし、検証成功時にtrueを格納する。coverageフィールドは数値型で必須とし、0.0から1.0の範囲でカバレッジスコアを格納する。missingKeywordsフィールドは文字列配列型で必須とし、未参照キーワードのリストを格納する。errorsフィールドは文字列配列型で必須とし、エラーメッセージのリストを格納する。warningsフィールドは文字列配列型でオプショナルとし、警告メッセージのリストを格納する。
+
+### parseCLAUDEMdByPhase関数
+
+関数名はparseCLAUDEMdByPhaseとし、claude-md-parser.ts内にエクスポート関数として定義される。関数コメントには「CLAUDE.mdからフェーズに必要なセクションを抽出する」という説明を記述する。
+
+引数は2つあり、claudeMdPathは文字列型でCLAUDE.mdファイルパスを受け取る。phaseNameは文字列型でフェーズ名を受け取り、researchやimplementation等の有効なフェーズ名が指定される。
+
+戻り値型ParseResultは3つのフィールドを持つオブジェクトとして定義される。contentフィールドは文字列型でオプショナルとし、抽出されたMarkdownテキストを格納する。sectionsフィールドは文字列配列型で必須とし、含まれるセクション見出し名のリストを格納する。errorsフィールドは文字列配列型で必須とし、パースエラーメッセージのリストを格納する。
+
+### workflow_create_subtaskツール
+
+ツール名はworkflow_create_subtaskとし、descriptionフィールドには「親タスクの配下に新規サブタスクを作成する」という説明を記述する。
+
+inputSchemaは4つのプロパティを持つオブジェクトとして定義される。parentTaskIdプロパティは文字列型で必須とし、descriptionには「親タスクID」と記述する。subtaskNameプロパティは文字列型で必須とし、descriptionには「サブタスク名。最大100文字」と記述する。taskSizeプロパティは文字列型でオプショナルとし、descriptionには「タスクサイズ。small、medium、largeのいずれか。デフォルトはmedium」と記述する。sessionTokenプロパティは文字列型でオプショナルとし、descriptionには「セッショントークン」と記述する。
+
+出力型CreateSubtaskResultは6つのフィールドを持つオブジェクトとして定義される。successフィールドは真偽値型で必須とし、作成成功時にtrueを格納する。taskIdフィールドは文字列型で必須とし、新規作成されたサブタスクIDを格納する。taskNameフィールドは文字列型で必須とし、サブタスク名を格納する。phaseフィールドは文字列型で必須とし、初期フェーズとしてresearchを格納する。parentTaskIdフィールドは文字列型で必須とし、親タスクIDを格納する。messageフィールドは文字列型で必須とし、結果メッセージを格納する。
+
+### workflow_link_tasksツール
+
+ツール名はworkflow_link_tasksとし、descriptionフィールドには「既存の2つのタスクを親子関係でリンクする」という説明を記述する。
+
+inputSchemaは3つのプロパティを持つオブジェクトとして定義される。parentTaskIdプロパティは文字列型で必須とし、descriptionには「親タスクID」と記述する。childTaskIdプロパティは文字列型で必須とし、descriptionには「子タスクID」と記述する。sessionTokenプロパティは文字列型でオプショナルとし、descriptionには「セッショントークン」と記述する。
+
+出力型LinkTasksResultは2つのフィールドを持つオブジェクトとして定義される。successフィールドは真偽値型で必須とし、リンク成功時にtrueを格納する。messageフィールドは文字列型で必須とし、結果メッセージを格納する。
+
+### PhaseGuide型拡張
+
+既存のPhaseGuideインターフェースに2つのオプショナルフィールドを追加する。contentフィールドは文字列型オプショナルとし、フェーズに必要なCLAUDE.mdセクションの抽出テキストを格納する。claudeMdSectionsフィールドは文字列配列型オプショナルとし、含まれるセクション見出し名のリストを格納する。
+
+既存のフィールドであるphase、description、minLines、requiredSections、allowedTools、prohibitedPatterns、subPhasesは変更なしで維持される。後方互換性のため、contentとclaudeMdSectionsがundefinedでも既存動作に影響しない設計とする。
+
+### TaskState型拡張
+
+既存のTaskStateインターフェースに3つのオプショナルフィールドを追加する。parentTaskIdフィールドは文字列型オプショナルとし、親タスクが存在する場合にそのタスクIDを格納する。childTaskIdsフィールドは文字列配列型オプショナルとし、子タスクIDのリストを格納する。taskTypeフィールドは文字列リテラル型オプショナルとし、parent、child、standaloneのいずれかの値を持つ。
+
+既存のフィールドであるtaskId、taskName、phase、completedSubPhases、approvals、testFiles、baseline、knownBugs、scope、userIntent、timestamps、stateIntegrity、sessionTokenは変更なしで維持される。後方互換性のため、新規フィールドがundefinedでも既存動作に影響しない設計とする。
+
+## エラーハンドリング
+
+### workflow_pre_validate エラーケース
+
+ファイル存在確認エラーでは、指定されたfilePathが見つからない場合にpassedをfalseに設定し、errorsに「指定されたファイルが見つかりません」というメッセージを追加する。ファイルパスの相対絶対変換に失敗した場合も同様のエラーとする。
+
+フェーズ定義未取得エラーでは、指定されたtargetPhaseに対応するPhaseGuide定義が見つからない場合に、warningsに「フェーズ定義が見つからないため汎用検証のみ実行」というメッセージを追加する。この場合でも検証処理は継続し、最低限の品質確認を実施する。
+
+セクション不足エラーでは、validateSectionsCompletenessが失敗を返した場合に、errorsに「必須セクションが不足しています」というメッセージと不足セクション名のリストを追加する。複数セクションが不足している場合は全てのセクション名を列挙する。
+
+最低行数未達エラーでは、validateMinimumLinesが失敗を返した場合に、errorsに「最低行数要件を満たしていません」というメッセージと現在の行数、必要行数を追加する。空行やコメント行は行数カウントから除外される。
+
+禁止パターン検出エラーでは、validateNoForbiddenPatternsが失敗を返した場合に、環境変数VALIDATE_DESIGN_STRICTの値に応じて処理を分岐する。trueの場合はerrorsに「禁止パターンが検出されました」というメッセージと該当パターンのリストを追加する。falseの場合はwarningsに同内容を追加し、passedはtrueのまま保持する。
+
+重複行検出エラーでは、validateNoDuplicateLinesが失敗を返した場合に、errorsに「重複行が検出されました」というメッセージと重複行の内容を追加する。重複判定ロジックは既存のartifact-validator実装と完全に一致させる。
+
+### workflow_record_feedback エラーケース
+
+タスク未発見エラーでは、指定されたtaskIdに対応するタスクが見つからない場合にsuccessをfalseに設定し、messageに「指定されたタスクが見つかりません」という内容を記述する。アクティブタスク取得失敗時も同様のエラーとする。
+
+フィードバック空文字エラーでは、feedbackパラメータが空文字列の場合にsuccessをfalseに設定し、messageに「フィードバック内容を入力してください」という内容を記述する。空白文字のみの場合もエラーとする。
+
+フィードバック長超過エラーでは、feedbackパラメータが10000文字を超える場合にsuccessをfalseに設定し、messageに「フィードバックは10000文字以内で入力してください」という内容を記述する。現在の文字数も併記する。
+
+セッショントークン不正エラーでは、sessionTokenが指定されているが検証に失敗した場合にsuccessをfalseに設定し、messageに「セッショントークンが不正です」という内容を記述する。トークンの再取得を促すメッセージも含める。
+
+ファイル保存エラーでは、stateManager.saveStateが例外を投げた場合にsuccessをfalseに設定し、messageに「フィードバックの保存に失敗しました」という内容とエラー詳細を記述する。ディスク容量不足やアクセス権限エラーを想定する。
+
+### validateKeywordTraceability エラーケース
+
+ソースファイル未発見エラーでは、sourcePhaseに対応するファイルが見つからない場合にpassedをfalseに設定し、errorsに「要件定義ファイルが見つかりません」という内容を追加する。ファイルパスも併記する。
+
+ターゲットファイル未発見エラーでは、targetPhaseに対応するファイルまたはディレクトリが見つからない場合にpassedをfalseに設定し、errorsに「実装ファイルが見つかりません」という内容を追加する。implementationフェーズの場合はディレクトリパスを併記する。
+
+キーワード抽出失敗エラーでは、ソースドキュメントからキーワードが1つも抽出できなかった場合にwarningsに「キーワードが抽出できませんでした」という内容を追加する。ドキュメントが空または装飾のみの場合を想定する。
+
+カバレッジ低下エラーでは、coverageがminCoverageを下回った場合に、環境変数SEMANTIC_TRACE_STRICTの値に応じて処理を分岐する。trueの場合はpassedをfalseに設定しerrorsに内容を追加し、falseの場合はpassedをtrueのままwarningsに内容を追加する。
+
+ファイル読み込みエラーでは、ファイルシステムアクセスまたはエンコーディング変換に失敗した場合にpassedをfalseに設定し、errorsに「ファイルの読み込みに失敗しました」という内容とエラー詳細を追加する。
+
+### parseCLAUDEMdByPhase エラーケース
+
+ファイル未発見エラーでは、指定されたclaudeMdPathが見つからない場合にerrorsに「CLAUDE.mdファイルが見つかりません」という内容を追加し、contentをundefinedとして返却する。環境変数CLAUDE_MD_PATHの確認を促すメッセージも含める。
+
+セクション未発見エラーでは、フェーズに対応するセクション見出しが1つも見つからなかった場合にerrorsに「該当セクションが見つかりませんでした」という内容を追加し、contentに簡潔なエラーメッセージを格納する。フェーズ名とセクション見出しパターンも併記する。
+
+パースエラーでは、Markdown解析中に予期しない形式を検出した場合にerrorsに「CLAUDE.mdの形式が不正です」という内容を追加し、contentに部分的な抽出結果またはエラーメッセージを格納する。見出し階層が深すぎる場合やエンコーディング問題を想定する。
+
+エンコーディングエラーでは、ファイルをUTF-8として読み込めなかった場合にerrorsに「ファイルのエンコーディングが不正です」という内容を追加し、contentをundefinedとして返却する。UTF-8以外のエンコーディング使用時を想定する。
+
+### workflow_create_subtask エラーケース
+
+親タスク未発見エラーでは、指定されたparentTaskIdに対応するタスクが見つからない場合にsuccessをfalseに設定し、messageに「親タスクが見つかりません」という内容を記述する。タスクIDの確認を促すメッセージも含める。
+
+サブタスク名長超過エラーでは、subtaskNameが100文字を超える場合にsuccessをfalseに設定し、messageに「サブタスク名は100文字以内で指定してください」という内容を記述する。現在の文字数も併記する。
+
+セッショントークン不正エラーでは、sessionTokenが指定されているが検証に失敗した場合にsuccessをfalseに設定し、messageに「セッショントークンが不正です」という内容を記述する。親タスクのセッションを確認するよう促す。
+
+ファイル保存エラーでは、親タスクまたは子タスクのTaskState保存に失敗した場合にsuccessをfalseに設定し、messageに「サブタスクの作成に失敗しました」という内容とエラー詳細を記述する。ディスク容量不足やアクセス権限エラーを想定する。
+
+タスクサイズ不正エラーでは、taskSizeがsmall、medium、large以外の値の場合にsuccessをfalseに設定し、messageに「タスクサイズはsmall、medium、largeのいずれかを指定してください」という内容を記述する。
+
+### workflow_link_tasks エラーケース
+
+親タスク未発見エラーでは、指定されたparentTaskIdに対応するタスクが見つからない場合にsuccessをfalseに設定し、messageに「親タスクが見つかりません」という内容を記述する。
+
+子タスク未発見エラーでは、指定されたchildTaskIdに対応するタスクが見つからない場合にsuccessをfalseに設定し、messageに「子タスクが見つかりません」という内容を記述する。
+
+自己参照エラーでは、parentTaskIdとchildTaskIdが同一の場合にsuccessをfalseに設定し、messageに「同一タスクを親子関係にすることはできません」という内容を記述する。
+
+循環参照エラーでは、子タスクの祖先に指定された親タスクが既に含まれている場合にsuccessをfalseに設定し、messageに「循環参照が検出されたためリンクできません」という内容を記述する。祖先チェーン情報も併記する。
+
+既存リンクエラーでは、親タスクのchildTaskIds配列に既に子タスクIDが含まれている場合にsuccessをfalseに設定し、messageに「既にリンク済みです」という内容を記述する。
+
+既存親エラーでは、子タスクのparentTaskIdが既に別のタスクIDを指している場合にsuccessをfalseに設定し、messageに「子タスクは既に他の親タスクにリンクされています」という内容を記述する。既存の親タスクIDも併記する。
+
+セッショントークン不正エラーでは、sessionTokenが指定されているが検証に失敗した場合にsuccessをfalseに設定し、messageに「セッショントークンが不正です」という内容を記述する。
+
+ファイル保存エラーでは、親タスクまたは子タスクのTaskState保存に失敗した場合にsuccessをfalseに設定し、messageに「タスクのリンクに失敗しました」という内容とエラー詳細を記述する。
+
+### task-index.json同期 エラーケース
+
+ファイル読み込みエラーでは、task-index.jsonの読み込みに失敗した場合に警告ログを出力し、空のインデックス構造として扱う。新規作成時と同様の処理フローに移行する。
+
+JSON解析エラーでは、task-index.jsonの内容が不正なJSON形式の場合に警告ログを出力し、既存ファイルをバックアップしてから新規インデックスとして再作成する。
+
+スキーマバージョン不整合エラーでは、schemaVersionがv2未満の場合に自動アップグレード処理を実行する。アップグレード中のエラーは警告ログを出力し、可能な範囲でデータを移行する。
+
+ファイル書き込みエラーでは、task-index.jsonの書き込みに失敗した場合に警告ログを出力するが、呼び出し元にはエラーを伝播せずフェーズ遷移処理を継続する。次回のupdateTaskIndexForSingleTask呼び出し時に再試行される。
+
+アクセス権限エラーでは、task-index.jsonへのアクセス権限が不足している場合に警告ログを出力し、ユーザーにファイルパーミッションの確認を促すメッセージを記録する。
+
+## 実装計画
+
+### Phase 1: 即座に実装可能（P1-3 + P0-1 + P0-3）
+
+**P1-3: task-index.json同期更新（推定30行）**
+workflow-plugin/mcp-server/src/tools/next.ts、complete-sub.ts、approve.ts、back.ts、reset.tsの5ファイルにupdateTaskIndexForSingleTask呼び出しを追加する。各ファイルでstateManager.saveState呼び出し直後にtry-catchで囲んだ呼び出しを挿入する。
+
+**P0-3: workflow_pre_validateツール（推定120行）**
+workflow-plugin/mcp-server/src/tools/pre-validate.tsを新規作成する。既存のartifact-validator.tsからvalidateArtifactQualityCore関数を呼び出す構成とし、PhaseGuide定義からrequiredSections、minLines、禁止パターンを取得して検証する。
+
+**P0-1: workflow_record_feedbackツール（推定100行）**
+workflow-plugin/mcp-server/src/tools/record-feedback.tsを新規作成する。workflow_set_scopeと同一のパターンでTaskState.userIntentフィールドを更新する。
+
+### Phase 2: 要件定義後に実装（P0-2 + P1-2）
+
+**P0-2: validateKeywordTraceability関数（推定200行）**
+workflow-plugin/mcp-server/src/validation/artifact-validator.tsにvalidateKeywordTraceability関数を追加する。キーワード抽出とカバレッジ計算ロジックを実装し、workflow-plugin/mcp-server/src/tools/next.ts内の適切なフェーズ遷移時に呼び出す。
+
+**P1-2: タスク親子関係（推定300行）**
+workflow-plugin/mcp-server/src/tools/create-subtask.tsとworkflow-plugin/mcp-server/src/tools/link-tasks.tsを新規作成する。workflow-plugin/mcp-server/src/state/types.tsのTaskStateインターフェースにparentTaskId、childTaskIds、taskTypeフィールドを追加する。
+
+### Phase 3: 設計レビュー後に実装（P1-1）
+
+**P1-1: CLAUDE.md分割配信（推定500行）**
+workflow-plugin/mcp-server/src/phases/claude-md-parser.tsとworkflow-plugin/mcp-server/src/phases/claude-md-sections.tsを新規作成する。workflow-plugin/mcp-server/src/phases/definitions.tsのresolvePhaseGuide関数を拡張し、PhaseGuideにcontentフィールドを追加する。
+
+## 変更対象ファイル
+
+変更対象は新規作成6ファイル、既存変更10ファイル、テスト6ファイルの合計22ファイルである。
+新規作成ファイルは全てworkflow-plugin/mcp-server/src/配下に配置され、推定合計820行のTypeScriptコードとなる。
+既存変更ファイルの推定変更量は合計390行であり、主にツール登録と呼び出し追加が中心となる。
+テストファイルはsrc/backend/tests/配下にユニットテストと統合テストを配置する。
+全体の推定実装量は約1250行であり、Phase 1からPhase 3の3段階で実装する。
+
+### 新規作成ファイル
+
+| ファイルパス | 機能 | 推定行数 |
+|-------------|------|---------|
+| workflow-plugin/mcp-server/src/tools/pre-validate.ts | 成果物事前検証ツール | 120 |
+| workflow-plugin/mcp-server/src/tools/record-feedback.ts | フィードバック記録ツール | 100 |
+| workflow-plugin/mcp-server/src/tools/create-subtask.ts | サブタスク作成ツール | 150 |
+| workflow-plugin/mcp-server/src/tools/link-tasks.ts | タスクリンクツール | 150 |
+| workflow-plugin/mcp-server/src/phases/claude-md-parser.ts | CLAUDE.mdパーサー | 200 |
+| workflow-plugin/mcp-server/src/phases/claude-md-sections.ts | セクションマッピング定義 | 100 |
+
+### 既存変更ファイル
+
+| ファイルパス | 変更内容 | 推定変更行数 |
+|-------------|---------|------------|
+| workflow-plugin/mcp-server/src/server.ts | TOOL_DEFINITIONS、TOOL_HANDLERS追加 | 40 |
+| workflow-plugin/mcp-server/src/state/types.ts | TaskState拡張、新Result型追加 | 50 |
+| workflow-plugin/mcp-server/src/tools/next.ts | updateTaskIndex呼び出し追加、キーワードトレース統合 | 30 |
+| workflow-plugin/mcp-server/src/tools/complete-sub.ts | updateTaskIndex呼び出し追加 | 10 |
+| workflow-plugin/mcp-server/src/tools/approve.ts | updateTaskIndex呼び出し追加 | 10 |
+| workflow-plugin/mcp-server/src/tools/back.ts | updateTaskIndex呼び出し追加 | 10 |
+| workflow-plugin/mcp-server/src/tools/reset.ts | updateTaskIndex呼び出し追加 | 10 |
+| workflow-plugin/mcp-server/src/validation/artifact-validator.ts | validateKeywordTraceability追加 | 200 |
+| workflow-plugin/mcp-server/src/phases/definitions.ts | resolvePhaseGuide拡張 | 30 |
+| workflow-plugin/mcp-server/src/tools/status.ts | PhaseGuide返却にcontent追加（自動反映） | 0 |
+
+### テストファイル
+
+| ファイルパス | テスト対象 |
+|-------------|----------|
+| src/backend/tests/unit/pre-validate.test.ts | workflow_pre_validate |
+| src/backend/tests/unit/record-feedback.test.ts | workflow_record_feedback |
+| src/backend/tests/unit/keyword-traceability.test.ts | validateKeywordTraceability |
+| src/backend/tests/unit/claude-md-parser.test.ts | parseCLAUDEMdByPhase |
+| src/backend/tests/integration/subtask.test.ts | workflow_create_subtask、workflow_link_tasks |
+| src/backend/tests/integration/task-index-sync.test.ts | task-index.json同期 |

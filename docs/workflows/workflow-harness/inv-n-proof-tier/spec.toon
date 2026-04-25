@@ -1,0 +1,67 @@
+taskName: inv-n-proof-tier
+phase: planning
+createdAt: 2026-03-07
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+
+decisions[8]{id,statement,rationale}:
+  PL-001, 実装はtypes定義→StateManager→MCPツール→DoDゲート→dogfoodingテストの5ステップ順序で進める, "型定義が全レイヤの基盤となるため最初に確定させ、StateManagerがMCPツールの前提、DoDゲートがStateManagerの前提という依存チェーンに沿って順序づける。dogfoodingテストは全機能が揃った後に実施することで手戻りを最小化する"
+  PL-002, types-invariant.tsを新規作成しInvariant型/InvariantStatus型/Zodスキーマを定義する（types-core.tsは189行で余裕11行のため分離必須）, "Invariant型(8行)+InvariantStatus(2行)+Zodスキーマ(5行)+import/export(5行)=約20行の追加はtypes-core.tsの200行制限を超過する。AcceptanceCriterionと並列構造の型としてtypes-invariant.tsに分離しtypes.tsのre-export経路に追加する構成が200行制限の設計原則に適合する"
+  PL-003, ProofTier列挙型はtypes-core.tsに定義する（2行追加で191行、200行制限内）, "ProofTierはInvariantとACの両方に付与可能な独立概念でありtypes-core.tsに置くのが適切。export type ProofTier = 'T1' | 'T2' | 'T3' | 'T4'の1行+AcceptanceCriterionへのproofTier?フィールド1行=計2行追加で191行に収まる"
+  PL-004, manager-invariant.tsを新規作成しaddInvariant/updateInvariantStatus/getInvariantsの3関数を定義する（manager.tsは200行上限到達済みで追加不可）, "manager.tsにメソッド追加は物理的に不可能。AC関連のadd/update/getパターンを踏襲した3関数をmanager-invariant.tsに約55行で定義し、StateManagerからthis経由で委譲呼出しする。manager.tsには委譲用の1行メソッド3個（計6行）を追加する必要があるため、既存コメント行の圧縮で捻出する"
+  PL-005, harness_add_invariantをdefs-a.ts（163行→約183行）にharness_update_invariant_statusをdefs-b.ts（158行→約176行）に配置する, "defs-a.tsは37行の余裕がありadd系ツール定義20行を収容可能。defs-b.tsは42行の余裕がありupdate系ツール定義18行を収容可能。いずれも200行制限内に収まるためdefs-c.ts新設は不要"
+  PL-006, handleHarnessAddInvariantをrecording.ts（121行→約155行）にhandleHarnessUpdateInvariantStatusをquery.ts（125行→約160行）に配置する, "recording.tsはadd系ハンドラ群（AC/RTM/proof）が集約されており同カテゴリのinvariant追加ハンドラを配置するのが自然。query.tsはstatus更新系ハンドラが集約されておりupdate操作を配置する"
+  PL-007, DoDゲートはcheckInvariantCompletenessをdod-l3.ts（155行→約175行）に追加しcheckInvariantFormatをdod-l4-requirements.ts（125行→約145行）に追加する, "checkACCompletenessパターンと対称な検証ロジックをdod-l3.tsに配置。requirementsフェーズでのINV-N最低1件検証はcheckACFormatと同一のdod-l4-requirements.tsに配置する。いずれも200行制限内"
+  PL-008, dogfoodingテストはvitest property-based testとして__tests__/invariant-dogfooding.test.tsに実装しINV-1からINV-4の4条件を検証する, "registry.tsのPHASE_ORDER/SIZE_SKIP_MAP/getNextPhaseから導出する4つの不変条件をfc.property()で全サイズ・全フェーズの組合せに対して検証する。T2(PropertyTest)レベルの証明としてProofTier枠組みのdogfoodingを兼ねる"
+
+implementationSteps[14]{order,target,action,detail}:
+  1, workflow-harness/mcp-server/src/state/types-core.ts, 型追加, "export type ProofTier = 'T1' | 'T2' | 'T3' | 'T4' を追加（1行）。AcceptanceCriterionにproofTier?: ProofTierフィールドを追加（1行）。計2行追加で191行"
+  2, workflow-harness/mcp-server/src/state/types-invariant.ts, 新規作成, "InvariantStatus型('open'|'held'|'violated')、Invariant型(id/description/status/proofTier?/verifiedAt?/evidence?)、InvariantSchema(Zod)を定義。約40行"
+  3, workflow-harness/mcp-server/src/state/types.ts, re-export追加, "types-invariant.tsからInvariant/InvariantStatus/InvariantSchemaをre-export。TaskStateにinvariants: Invariant[]フィールドを追加。約5行追加"
+  4, workflow-harness/mcp-server/src/state/manager-invariant.ts, 新規作成, "addInvariant(state,id,description,proofTier?)、updateInvariantStatus(state,id,status,evidence?)、getInvariants(state)の3関数。約55行"
+  5, workflow-harness/mcp-server/src/state/manager-write.ts, 関数追加, "applyAddInvariant、applyUpdateInvariantStatusの2関数を追加。refreshCheckpointTraceabilityにstate.checkpoint.invariants = [...state.invariants]の1行を追加。約25行追加"
+  6, workflow-harness/mcp-server/src/state/manager.ts, 委譲メソッド追加, "addInvariant/updateInvariantStatus/getInvariantsの委譲メソッドをmanager-invariant.tsの関数呼出しとして追加。既存コメント行の圧縮で行数を捻出"
+  7, workflow-harness/mcp-server/src/tools/defs-a.ts, ツール定義追加, "harness_add_invariantツール定義（id: INV-N形式, description: string, proofTier?: ProofTier, sessionToken: string）。約20行追加"
+  8, workflow-harness/mcp-server/src/tools/defs-b.ts, ツール定義追加, "harness_update_invariant_statusツール定義（id: string, status: InvariantStatus, evidence?: string, sessionToken: string）。約18行追加"
+  9, workflow-harness/mcp-server/src/tools/handlers/recording.ts, ハンドラ追加, "handleHarnessAddInvariant: sessionToken検証→INV-N形式バリデーション→addInvariant呼出し→proof記録→レスポンス返却。約30行追加"
+  10, workflow-harness/mcp-server/src/tools/handlers/query.ts, ハンドラ追加, "handleHarnessUpdateInvariantStatus: sessionToken検証→id存在確認→updateInvariantStatus呼出し→レスポンス返却。約30行追加"
+  11, workflow-harness/mcp-server/src/tools/handler.ts, case追加, "harness_add_invariant→handleHarnessAddInvariant、harness_update_invariant_status→handleHarnessUpdateInvariantStatusの2 case文を追加。2行追加"
+  12, workflow-harness/mcp-server/src/gates/dod-l3.ts, ゲート追加, "checkInvariantCompleteness: acceptance_verification/completedフェーズで全INV-Nのstatus=heldを検証。checkACCompletenessパターン踏襲。約20行追加"
+  13, workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, ゲート追加, "checkInvariantFormat: requirementsフェーズでINV-N最低1件存在を検証。checkACFormatパターン踏襲。約20行追加"
+  14, workflow-harness/mcp-server/src/__tests__/invariant-dogfooding.test.ts, 新規作成, "INV-1(test_before_impl順序)、INV-2(completed終端性)、INV-3(skip上位集合性)、INV-4(next_phase前進性)をfc.property()でproperty-based test。約80行"
+
+verificationSteps[6]{ac,command,expected}:
+  AC-1, "cd workflow-harness/mcp-server && npx tsc --noEmit", コンパイルエラーなし（exit code 0）
+  AC-2, "cd workflow-harness/mcp-server && npx tsc --noEmit && grep -c 'ProofTier' src/state/types-core.ts", 型定義が存在しコンパイル通過
+  AC-3, "MCPツールharness_add_invariantを呼出しstate.jsonにINV-1エントリが追加される", invariants配列にid=INV-1のエントリが存在
+  AC-4, "MCPツールharness_update_invariant_statusを呼出しINV-1のstatusがheldに更新される", status=heldかつevidence文字列が記録
+  AC-5, "acceptance_verificationフェーズでDoDゲート実行時にINV-Nのviolatedチェックが動作", violated存在時はブロック/全held時はパス
+  AC-6, "cd workflow-harness/mcp-server && npx vitest run __tests__/invariant-dogfooding.test.ts", 全4テスト(INV-1からINV-4)がパス
+
+fileChangeMatrix[16]{path,changeType,estimatedLines,ac}:
+  workflow-harness/mcp-server/src/state/types-core.ts, modify, "+2行(191行)", "AC-1, AC-2"
+  workflow-harness/mcp-server/src/state/types-invariant.ts, create, "~40行", AC-1
+  workflow-harness/mcp-server/src/state/types.ts, modify, "+5行(116行)", AC-1
+  workflow-harness/mcp-server/src/state/manager-invariant.ts, create, "~55行", "AC-3, AC-4"
+  workflow-harness/mcp-server/src/state/manager-write.ts, modify, "+25行(145行)", "AC-3, AC-4"
+  workflow-harness/mcp-server/src/state/manager.ts, modify, "+6行(~200行)", "AC-3, AC-4"
+  workflow-harness/mcp-server/src/tools/defs-a.ts, modify, "+20行(183行)", AC-3
+  workflow-harness/mcp-server/src/tools/defs-b.ts, modify, "+18行(176行)", AC-4
+  workflow-harness/mcp-server/src/tools/handlers/recording.ts, modify, "+30行(151行)", AC-3
+  workflow-harness/mcp-server/src/tools/handlers/query.ts, modify, "+30行(155行)", AC-4
+  workflow-harness/mcp-server/src/tools/handler.ts, modify, "+2行(56行)", "AC-3, AC-4"
+  workflow-harness/mcp-server/src/gates/dod-l3.ts, modify, "+20行(175行)", AC-5
+  workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts, modify, "+20行(145行)", AC-5
+  workflow-harness/mcp-server/src/gates/dod.ts, modify, "+1行(71行)", AC-5
+  workflow-harness/mcp-server/src/gates/dod-types.ts, modify, "+1行(18行)", AC-5
+  workflow-harness/mcp-server/src/__tests__/invariant-dogfooding.test.ts, create, "~80行", AC-6
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/spec.toon, spec, 実装仕様（本成果物）
+  docs/workflows/inv-n-proof-tier/threat-model.toon, report, 脅威分析チェックポイント
+  docs/workflows/inv-n-proof-tier/requirements.toon, spec, 要件定義（AC-1からAC-6）
+  docs/workflows/inv-n-proof-tier/research.toon, spec, 調査成果物（R-001からR-008の根拠）
+
+next:
+  criticalDecisions[3]: PL-001, PL-002, PL-004
+  readFiles[5]: workflow-harness/mcp-server/src/state/types-core.ts, workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/state/manager-write.ts, workflow-harness/mcp-server/src/tools/defs-a.ts, workflow-harness/mcp-server/src/gates/dod-l3.ts
+  warnings[3]: "manager.tsは200行上限到達済みのため委譲メソッド追加には既存コメント行の圧縮が必要", "types-core.tsは191行でProofTier追加後も200行制限内だが追加余裕は9行のみ", "Checkpoint型へのinvariants追加はoptionalフィールドとしてsha256ハッシュの後方互換性を維持すること"

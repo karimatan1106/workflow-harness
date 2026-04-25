@@ -1,0 +1,36 @@
+phase: test_impl
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "TDD Redフェーズ完了。test-design.toonの22テストケースのうち18件をユニットテストファイル、5件を統合テストファイルに実装(TC-AC1-03はビルド時型検証のため専用テスト不要、TC-AC6-01/02はnpm run build/testで直接実行)。境界値テストBE-1/BE-2/BE-7/BE-8もユニットテストに統合。buildDocCategories関数が未実装のためユニット14件・統合3件が失敗(Red)、既存動作確認の4件(行数制限3件+型フィールド列挙1件)と統合2件(フォールバック互換+projectTraits省略時undefined)が通過。全失敗はTypeError(buildDocCategories is not a function)またはAssertionError(projectTraits未定義)でランタイム失敗であり、TypeScriptコンパイルエラーは発生しない。"
+
+decisions[7]{id,statement,rationale}:
+  TD-I1, "buildDocCategoriesの取得にdynamic import+as anyキャストを使用", "未実装exportをimportするとコンパイルエラーになるため、dynamic importとanyキャストでランタイム失敗に変換しTDD Red要件を満たす"
+  TD-I2, "テストデータを6パターンの定数(ALL_FALSE/ALL_TRUE/UI_ONLY/API_ONLY/UI_API/UI_DS)で定義", "テストケース間でtraitsオブジェクトを共有し重複を排除。スプレッド演算子で部分上書きパターンも簡潔に表現"
+  TD-I3, "TC-AC1-01はProjectTraitsのnamed export存在をランタイムで検証する方式を採用", "TypeScript interfaceはランタイムに存在しないため、exportされた値としてのProjectTraitsの存在確認で代替。実装フェーズでconst型ガードまたはtype export確認に変更可能"
+  TD-I4, "TC-AC1-03(型拒否テスト)は独立テストケースを作成せずビルド検証(TC-AC6-01)に委譲", "TypeScriptの型チェックはnpm run buildで網羅的に検証される。ランタイムテストでinterface制約を検証する手段がない"
+  TD-I5, "統合テストでadvanceUntilPhase('scope_definition')を使用しharness_set_scopeの前提条件を整備", "harness_set_scopeはscope_definitionフェーズ以降で有効。テストセットアップで正しいフェーズまで自動遷移させる"
+  TD-I6, "BE-6(プレースホルダー展開)テストはTC-AC3-08の統合テストで暗黙的にカバー", "buildSubagentPromptの{docCategories}展開が正しければ統合テストでカテゴリが検出される。単独テスト不要"
+  TD-I7, "TC-AC2-03とTC-AC4-02は現行実装でも通過する正常系テスト", "projectTraits未設定時のフォールバック動作とprojectTraits省略時のundefined維持は既存実装で満たされるため、回帰防止テストとして機能する"
+
+testFiles[2]{path,tcIds,status}:
+  src/__tests__/handler-dynamic-categories-unit.test.ts, "TC-AC1-01/TC-AC1-02/TC-AC2-01/TC-AC2-02/TC-AC3-01/TC-AC3-02/TC-AC3-03/TC-AC3-04/TC-AC3-05/TC-AC3-06/TC-AC3-07/TC-AC5-01/TC-AC5-02/TC-AC5-03/BE-1/BE-2/BE-7/BE-8", "red(14 failed / 4 passed)"
+  src/__tests__/handler-dynamic-categories-integration.test.ts, "TC-AC2-03/TC-AC3-08/TC-AC4-01/TC-AC4-02/TC-AC4-03", "red(3 failed / 2 passed)"
+
+testResults:
+  unitFile: "18 tests: 14 failed (TypeError: buildDocCategories is not a function) + 4 passed (TC-AC1-02 field enumeration + TC-AC5-01/02/03 line-count checks). Duration 462ms"
+  integrationFile: "5 tests: 3 failed (TC-AC4-01 projectTraits not persisted / TC-AC4-03 flags not persisted / TC-AC3-08 dynamic categories not in template) + 2 passed (TC-AC2-03 fallback 5 items present + TC-AC4-02 omit returns undefined). Duration 864ms"
+  compileStatus: "clean — no TypeScript compilation errors"
+  unitFailurePattern: "All 14 failures are TypeError: buildDocCategories is not a function (runtime, not compile-time)"
+  integrationFailurePattern: "TC-AC4-01/03: AssertionError (projectTraits property missing from status). TC-AC3-08: AssertionError (docs/spec/screens/ not found in template)"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/test-impl.toon, output, "test_implフェーズ成果物TOON"
+  src/__tests__/handler-dynamic-categories-unit.test.ts, test, "buildDocCategories純粋関数テスト18件。フォールバック/動的選択/重複排除/境界値/行数制限を検証"
+  src/__tests__/handler-dynamic-categories-integration.test.ts, test, "projectTraits永続化フロー+docs_updateテンプレート動的カテゴリ注入の統合テスト5件"
+
+next:
+  criticalDecisions: "TD-I1(dynamic import+as any)はimplementationフェーズでbuildDocCategoriesがnamed exportされた時点で通常importに切り替える。TD-I3(ProjectTraits存在確認)は実装後にexport方式に合わせてアサーション修正が必要"
+  readFiles: "src/__tests__/handler-dynamic-categories-unit.test.ts, src/__tests__/handler-dynamic-categories-integration.test.ts, src/phases/definitions.ts(buildDocCategories実装先), src/state/types-core.ts(ProjectTraits定義先)"
+  warnings: "TC-AC1-01はTypeScript interfaceのランタイム検出に依存しており、実装がtype-onlyのexportの場合はテスト修正が必要。統合テストのadvanceUntilPhaseは最大15ステップ遷移するため実行時間が長い(約400ms/テスト)"

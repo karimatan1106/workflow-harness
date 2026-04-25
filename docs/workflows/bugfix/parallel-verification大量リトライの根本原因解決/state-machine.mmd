@@ -1,0 +1,90 @@
+stateDiagram-v2
+    state Start
+    state End
+
+    Start --> HeaderCheck: 行受付
+
+    HeaderCheck --> HorizontalRuleCheck: シャープ記号で始まらない
+    HeaderCheck --> StructuralLine: シャープ記号で始まる見出し行
+
+    HorizontalRuleCheck --> CodeFenceCheck: 水平線パターンでない
+    HorizontalRuleCheck --> StructuralLine: ハイフン・アスタリスク・アンダースコアが3文字以上連続
+
+    CodeFenceCheck --> TableSeparatorCheck: コードフェンス外
+    CodeFenceCheck --> StructuralLine: 3連バックティック境界行またはフェンス内行
+
+    TableSeparatorCheck --> TableDataCheck: テーブルセパレータでない
+    TableSeparatorCheck --> StructuralLine: パイプ区切りの空白・コロン・ハイフンのみ
+
+    TableDataCheck --> BoldLabelCheck: テーブルデータ行でない
+    TableDataCheck --> StructuralLine: パイプ区切り2列以上のデータ行
+
+    BoldLabelCheck --> ListBoldLabelCheck: 2連アスタリスク無し
+    BoldLabelCheck --> StructuralLine: 2連アスタリスクラベルのみで行末コロンと空白
+
+    ListBoldLabelCheck --> LabelLineCheck: リスト先頭太字ラベルでない
+    ListBoldLabelCheck --> StructuralLine: ハイフンまたはアスタリスクリスト記号の太字ラベルのみ行末コロン
+
+    LabelLineCheck --> ContentLine: 50文字超過または終端がコロン以外
+    LabelLineCheck --> StructuralLine: リスト記号（オプション）・50文字以内・終端コロンのラベル行
+
+    StructuralLine --> End: 重複カウント除外
+    ContentLine --> End: 重複カウント対象
+
+    note right of Start
+        入力: トリム後の行文字列
+        出力: boolean（true=構造的 false=コンテンツ）
+    end note
+
+    note right of HeaderCheck
+        ルール1: シャープ記号検査
+        条件: 行の先頭がシャープ記号で始まるか判定
+    end note
+
+    note right of HorizontalRuleCheck
+        ルール2: 水平線検査
+        条件: ハイフン3個以上、アスタリスク3個以上、アンダースコア3個以上のいずれかで行全体が構成
+    end note
+
+    note right of CodeFenceCheck
+        ルール3: コードフェンス検査
+        条件: 行が3個連続バックティックから始まるか、またはコードフェンス内フラグが立っているか
+    end note
+
+    note right of TableSeparatorCheck
+        ルール4: テーブルセパレータ検査
+        条件: パイプ記号で始まり、空白・コロン・ハイフンのみで構成され、パイプで終わる
+    end note
+
+    note right of TableDataCheck
+        ルール5: テーブルデータ検査
+        条件: パイプ記号で区切られた2列以上のデータを含む（データ内容は制限なし）
+    end note
+
+    note right of BoldLabelCheck
+        ルール6: 太字ラベル検査
+        条件: 2連アスタリスクで囲まれたテキストのみで構成され、行末がコロンと空白で終わる
+    end note
+
+    note right of ListBoldLabelCheck
+        ルール7: リスト太字ラベル検査
+        条件: ハイフンまたはアスタリスクリスト記号で始まり、その後2連アスタリスク囲みテキスト、行末コロン
+    end note
+
+    note right of LabelLineCheck
+        ルール8拡張: プレーンラベル検査
+        条件: リスト記号（ハイフンまたはアスタリスク）のあるなしを問わず、コロンで終わり50文字以内のラベル
+        変更点: リスト記号が省略可能な形式に対応
+    end note
+
+    note right of StructuralLine
+        マークダウン構造要素として判定
+        重複行カウント時に除外対象
+        バリデーションエラー回避に寄与
+    end note
+
+    note right of ContentLine
+        実質的なテキスト内容を含む行
+        重複カウント対象
+        3回以上同一行で検出エラーとなる
+    end note

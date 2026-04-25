@@ -1,0 +1,60 @@
+flowchart TD
+    Start([Start: Harness First Pass Improvement]) --> Step1[Step 1: Read coordinator.md]
+
+    %% FC-001: Locate Phase Output Rules section in coordinator documentation
+    Step1 --> S1A["Locate 'Phase Output Rules' section"]
+    S1A --> S1B["Extract rule definitions and constraints"]
+    S1B --> S1C["Insert rules into baseline documentation"]
+    S1C --> S1D["Verify line count &lt; 200"]
+
+    %% FC-002: Validate Phase Output Rules integration completeness
+    S1D --> Decision1{Phase Output Rules<br/>properly integrated?}
+    Decision1 -->|No| S1E["Review and revise rules"]
+    S1E --> S1D
+    Decision1 -->|Yes| Step2[Step 2: Read worker.md]
+
+    %% FC-003: Extract Edit Completeness rules from worker documentation
+    Step2 --> S2A["Locate 'Edit Completeness Rule' section"]
+    S2A --> S2B["Extract edit-auth.txt registration requirements"]
+    S2B --> S2C["Insert completion checklist into baseline"]
+    S2C --> S2D["Verify line count &lt; 200"]
+
+    %% FC-004: Ensure Edit Completeness validation chain is properly configured
+    S2D --> Decision2{Edit Completeness<br/>properly integrated?}
+    Decision2 -->|No| S2E["Review and revise rules"]
+    S2E --> S2D
+    Decision2 -->|Yes| Step3[Step 3: Read defs-stage4.ts]
+
+    %% FC-005: Validate baseline/RTM instruction insertion in code review template
+    Step3 --> S3A["Locate 'implementation/code_review' template"]
+    S3A --> S3B["Extract baseline/RTM procedures"]
+    S3B --> S3C["Insert RTM traceability instructions"]
+    S3C --> S3D["Verify TypeScript syntax &amp; line count &lt; 200"]
+    S3D --> S3E["Confirm @spec annotations present"]
+
+    Step4[Step 4: Run Test Suite] --> S4A["Execute 843 test cases"]
+    S4A --> S4B["Monitor test execution"]
+    S4B --> Decision3{All tests<br/>PASS?}
+
+    Decision3 -->|FAIL| S4C["Identify failing tests"]
+    S4C --> S4D["Review error logs"]
+    S4D --> S4E["Rollback problematic changes"]
+    S4E --> Step1
+
+    Decision3 -->|PASS| Step5[Step 5: Git Push to Remote]
+    Step5 --> S5A["Commit submodule changes"]
+    S5A --> S5B["Push submodule to origin/main"]
+    S5B --> S5C["Commit parent repository"]
+    S5C --> S5D["Push parent to origin/main"]
+    S5D --> End([Complete: Workflow Improved])
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style Decision1 fill:#FFE4B5
+    style Decision2 fill:#FFE4B5
+    style Decision3 fill:#FFE4B5
+    style Step1 fill:#87CEEB
+    style Step2 fill:#87CEEB
+    style Step3 fill:#87CEEB
+    style Step4 fill:#87CEEB
+    style Step5 fill:#87CEEB

@@ -1,0 +1,29 @@
+phase: scope_definition
+task: context-engineering-improvements
+status: complete
+summary: "InputFileMode型とrefinedIntentをtypes-core.tsに追加し、buildSubagentPromptでコンテキスト圧縮を実現する設計決定"
+scope: "workflow-harness/mcp-server/src/state/, workflow-harness/mcp-server/src/phases/, workflow-harness/mcp-server/src/tools/"
+approach: "型定義先行(types-core.ts)→buildSubagentPrompt改修(definitions.ts)→PHASE_REGISTRY設定(registry.ts)→refinedIntent生成(harness-approve.ts)の順で実装"
+
+decisions[8]{id,statement,rationale}:
+  SD-1, "InputFileMode型('full'|'summary'|'reference')をtypes-core.tsに追加し、PhaseConfigにinputFileModes?: Record<string, InputFileMode>をオプショナルで追加する", "types-core.tsは現在198行(200行制限)のため型定義1行+PhaseConfig拡張1行の計2行増加のみ許容。未指定ファイルはデフォルト'full'で既存動作を維持"
+  SD-2, "Checkpoint.refinedIntent?: stringをtypes-core.tsのCheckpointインターフェースに追加し、TaskState.refinedIntent?: stringをtypes.tsのTaskStateインターフェースに追加する", "refinedIntentはrequirementsフェーズ完了後にAC-N群から生成される精錬済み意図。checkpointへの格納によりセッション圧縮・復元後も意図が保持される。オプショナルにすることで既存タスク状態との後方互換性を維持"
+  SD-3, "buildSubagentPromptのuserIntent変数をrefinedIntent ?? userIntentに変更し、inputFilesのモード別ヘッダーをheader構築部で生成する", "definitions.tsのbuildSubagentPromptはすべてのフェーズのプロンプト生成の唯一の起点。この1箇所の変更で全フェーズのrefinedIntent伝播が達成される。モード別ヘッダーは'in:'行をinputFileModes値で拡張"
+  SD-4, "registry.tsのPHASE_REGISTRYで後半フェーズ(implementation/code_review/acceptance_verification)にinputFileModes設定を追加する", "後半フェーズはinputFilesが多く、大規模タスクでsubagentのコンテキスト圧迫が顕著。summaryモードで既読済みアーティファクトを参照扱いにし、full伝達が必要なファイルのみ完全展開する"
+  SD-5, "refreshCheckpointTraceabilityにrefinedIntentの反映ロジックを追加する: state.refinedIntentが存在する場合にcheckpoint.refinedIntentへコピーする", "manager-write.tsのrefreshCheckpointTraceabilityはAC追加・RTM追加・ACステータス更新の全3経路で呼ばれる。requirementsフェーズでAC-N追加時に自動的にrefinedIntentがcheckpointへ反映される"
+  SD-6, "definitions-shared.tsのSUMMARY_SECTION_RULEテンプレートにinputFileModes説明('full=全文/summary=要約ヘッダーのみ/reference=ファイルパスのみ')を追加する", "subagentがモード指定の意味を理解してファイル読み込み戦略を選択できるようにするため。テンプレートフラグメントへの追記はすべてのフェーズ定義に自動適用される"
+  SD-7, "types.tsのre-export一覧にInputFileModeを追加し、TaskStateのimport元types-core.tsリストにrefinedIntentが依存する型が揃っていることを確認する", "types.tsは集中re-exportポイント。InputFileModeをここに追加することでmcp-serverの全モジュールが一貫したimportパスを使用できる"
+  SD-8, "既存のTaskStateのZodスキーマ(TaskStateSchema)はpassthrough()設定済みのため、refinedIntent追加に対してスキーマ変更は不要とする", "TaskStateSchemのpassthrough()により未知フィールドはバリデーション通過する。スキーマ変更をゼロにすることで移行リスクを最小化"
+
+artifacts[6]{path,role,summary}:
+  workflow-harness/mcp-server/src/state/types-core.ts, spec, "InputFileMode型定義追加(1行)、PhaseConfig.inputFileModes?追加(1行)、Checkpoint.refinedIntent?追加(1行)。合計3行増で201行になるが既存コメント1行削除で200行制限を維持"
+  workflow-harness/mcp-server/src/state/types.ts, spec, "InputFileModeのre-export追加(types-core.jsから)、TaskState.refinedIntent?: string追加。既存passthrough()スキーマで後方互換性維持"
+  workflow-harness/mcp-server/src/phases/registry.ts, impl, "PHASE_REGISTRYのimplementation/code_review/acceptance_verificationエントリにinputFileModes: {'spec.toon': 'summary', 'requirements.toon': 'reference'}等を追加"
+  workflow-harness/mcp-server/src/phases/definitions.ts, impl, "buildSubagentPromptの(1)userIntentパラメータをrefinedIntent??userIntentで使用、(2)header構築でinputFilesのモード情報をin:行に付与"
+  workflow-harness/mcp-server/src/phases/definitions-shared.ts, spec, "SUMMARY_SECTION_RULEにinputFileModes説明3行追加。ARTIFACT_QUALITY_RULESは変更なし"
+  workflow-harness/mcp-server/src/state/manager-write.ts, impl, "refreshCheckpointTraceabilityにstate.refinedIntent→checkpoint.refinedIntentのコピー処理3行追加"
+
+next:
+  criticalDecisions: "types-core.tsの200行制限対応(3行追加→コメント削除で調整)、buildSubagentPromptシグネチャ変更方針(オプショナルパラメータ末尾追加が安全)、refinedIntent生成タイミング(harness_approveでrequirements承認時にAC-N群を集約)"
+  readFiles: "workflow-harness/mcp-server/src/tools/harness-next.ts, workflow-harness/mcp-server/src/tools/harness-approve.ts, workflow-harness/mcp-server/src/state/types-invariant.ts"
+  warnings: "types-core.tsは198行で3行追加すると201行になるため不要コメント削除が必要。PHASE_REGISTRYの1行形式エントリにinputFileModes追加で行長超過の可能性あり。buildSubagentPromptの全呼び出し元(推定3-5箇所)の引数更新が必要"

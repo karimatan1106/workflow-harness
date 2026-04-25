@@ -1,0 +1,26 @@
+flowchart TD
+    A[修正開始] --> B[問題1: test-n4テスト修正]
+    A --> C[問題2: 補助フックexit統一]
+
+    B --> B1[test-n4-enforce-workflow.test.tsを読み込み]
+    B1 --> B2[TARGET_FILEをphase-definitions.jsに変更]
+    B2 --> B3[N4-08のコメント検証対象をphase-definitions.jsに変更]
+    B3 --> B4[test-n4の8テスト全通過を確認]
+
+    C --> C1[check-test-first.js 32行目と37行目のexit変更]
+    C --> C2[check-spec.js 32行目と37行目のexit変更]
+    C --> C3[check-spec-sync.js 30行目と35行目のexit変更]
+    C --> C4[spec-first-guard.js 30行目と35行目と68行目と107行目のexit変更]
+    C --> C5[spec-guard-reset.js 26行目と31行目のexit変更]
+
+    C1 --> D[全フックファイルの構文チェック実行]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    B4 --> E[全テストスイート実行で回帰なし確認]
+    D --> E
+
+    E --> F[grep検索でexit1残存なし確認]
+    F --> G[修正完了]

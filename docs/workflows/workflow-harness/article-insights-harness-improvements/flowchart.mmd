@@ -1,0 +1,89 @@
+graph TD
+    Start([Article Insights Harness Improvements Start]) --> DefineGoal["Define improvement goals<br/>P3-P7: 5 improvements<br/>P3: AI slop, P4: code fence,<br/>P5: pivot, P6: AC count, P7: duplicate filter"]
+
+    DefineGoal --> PhaseA["Phase-A: W1 + W3 parallel"]
+
+    %% Phase-A: W1(P6-source) & W3(P3+P7) Parallel
+    PhaseA --> W1Start["W1: P6-source<br/>MIN_ACCEPTANCE_CRITERIA=5 definition<br/>7 source + 6 guidance updates"]
+    PhaseA --> W3Start["W3: P3 AI slop + P7 duplicate filter<br/>checkAiSlopPatterns in dod-helpers.ts<br/>isStructuralLine in dod-helpers.ts<br/>dod-l4-content.ts integration"]
+
+    W1Start --> W1Impl["W1 implementation:<br/>- dod-l4-requirements.ts: export const + refs<br/>- approval.ts: import + refs<br/>- 4 guidance files: 3 to 5 message updates<br/>- retry.ts: regex + message update"]
+    W1Impl --> W1Verify["W1 verify:<br/>grep 'minimum 3' = 0 hits<br/>grep '最低3件' = 0 hits<br/>dod-l4-requirements.ts: 167 lines<br/>approval.ts: 120 lines"]
+    W1Verify --> W1Check{"W1: all files<br/>within 200 lines?"}
+    W1Check -->|Yes| W1Done["W1 complete: P6-source done"]
+    W1Check -->|No| W1Fix["Fix line count excess"]
+    W1Fix --> W1Verify
+
+    W3Start --> W3Impl["W3 implementation:<br/>- dod-helpers.ts: AI_SLOP_PATTERNS +<br/>  checkAiSlopPatterns + isStructuralLine<br/>- dod-l4-content.ts: import + call integration<br/>- dod-extended.test.ts: test cases"]
+    W3Impl --> W3Verify["W3 verify:<br/>dod-helpers.ts: 158-168 lines<br/>dod-l4-content.ts: 91 lines<br/>vitest dod-extended.test.ts"]
+    W3Verify --> W3Check{"W3: all files<br/>within 200 lines?"}
+    W3Check -->|Yes| W3Done["W3 complete: P3+P7 done"]
+    W3Check -->|No| W3Fix["Fix line count excess"]
+    W3Fix --> W3Verify
+
+    W1Done --> PhaseB
+    W3Done --> PhaseB
+
+    %% Phase-B: W2(P6-test) & W4(P4) Parallel
+    PhaseB["Phase-B: W2 + W4 parallel<br/>(after W1 and W3 complete)"]
+
+    PhaseB --> W2Start["W2: P6-test<br/>4 test files, 13+ assertion updates<br/>acCount boundary values 2 to 4, 3 to 5"]
+    PhaseB --> W4Start["W4: P4 code fence<br/>noCodeFences flag in PhaseConfig<br/>planning phase definition<br/>dod-l4-content.ts fence detection"]
+
+    W2Start --> W2Impl["W2 implementation:<br/>- dod-l4-requirements.test.ts: 9 changes<br/>- handler-misc-ia2.test.ts: 2 changes<br/>- handler-parallel.test.ts: 3 to 5 calls<br/>- handler-approval.test.ts: 3 to 5 calls"]
+    W2Impl --> W2Test["W2 verify:<br/>vitest dod-l4-requirements.test.ts<br/>vitest handler tests<br/>all assertions pass"]
+    W2Test --> W2Check{"W2: all tests<br/>pass?"}
+    W2Check -->|Yes| W2Done["W2 complete: P6-test done"]
+    W2Check -->|No| W2Fix["Fix test failures"]
+    W2Fix --> W2Test
+
+    W4Start --> W4Impl["W4 implementation:<br/>- types-core.ts: +1 line (noCodeFences)<br/>- defs-stage2.ts: +1 line (planning def)<br/>- dod-l4-content.ts: +10 lines (fence check)<br/>- new test file: fence detection tests"]
+    W4Impl --> W4Verify["W4 verify:<br/>types-core.ts: 199 lines (CRITICAL)<br/>defs-stage2.ts: 176 lines<br/>dod-l4-content.ts: 99 lines<br/>vitest new test file"]
+    W4Verify --> W4Check{"W4: types-core.ts<br/>within 199 lines?"}
+    W4Check -->|Yes| W4Done["W4 complete: P4 done"]
+    W4Check -->|No| W4Fail["CRITICAL: types-core.ts exceeds 200<br/>Cannot add noCodeFences flag<br/>Replan required"]
+    W4Fail --> Failure1([End: W4 Failed])
+
+    W2Done --> PhaseC
+    W4Done --> PhaseC
+
+    %% Phase-C: W5(P5-pivot) Single
+    PhaseC["Phase-C: W5 single<br/>(after W2 and W4 complete)"]
+
+    PhaseC --> W5Start["W5: P5 pivot advisor<br/>pivot-advisor.ts new file<br/>lifecycle-next.ts +2 lines max"]
+
+    W5Start --> W5Impl["W5 implementation:<br/>- pivot-advisor.ts: new 60-80 lines<br/>  detectRepeatedPattern +<br/>  generatePivotSuggestion +<br/>  buildPivotResponse<br/>- lifecycle-next.ts: import + call (+2 lines)"]
+    W5Impl --> W5Verify["W5 verify:<br/>lifecycle-next.ts: 200 lines (CRITICAL)<br/>pivot-advisor.ts: 60-80 lines<br/>vitest pivot-advisor.test.ts"]
+    W5Verify --> W5Check{"W5: lifecycle-next.ts<br/>within 200 lines?"}
+    W5Check -->|Yes| W5TestAll["Run full test suite:<br/>vitest --run all tests<br/>wc -l all changed files"]
+    W5Check -->|No| W5Fix["Reduce lifecycle-next.ts integration<br/>Move more logic to pivot-advisor.ts"]
+    W5Fix --> W5Verify
+
+    W5TestAll --> W5Final{"All tests pass<br/>and all files<br/>within 200 lines?"}
+    W5Final -->|Yes| Success["SUCCESS: All 5 improvements complete<br/>P3: AI slop detection (W3)<br/>P4: Code fence exclusion (W4)<br/>P5: Pivot advisor (W5)<br/>P6: AC=5 requirement (W1+W2)<br/>P7: Duplicate filter (W3)"]
+    W5Final -->|No| W5Diagnose["Diagnose failure:<br/>identify affected Worker<br/>return to relevant Phase"]
+    W5Diagnose --> W5DiagnoseType{"Error source?"}
+    W5DiagnoseType -->|P6 related| PhaseB
+    W5DiagnoseType -->|P3/P7 related| PhaseB
+    W5DiagnoseType -->|P5 related| W5Fix
+
+    Success --> End([End: All Improvements Complete])
+    Failure1
+
+    %% Style definitions
+    classDef startEnd fill:#e1f5e1,stroke:#4caf50,stroke-width:3px,color:#000
+    classDef phase fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef worker fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#000
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef warning fill:#ffe0b2,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef failure fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
+    classDef decision fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#000
+
+    class Start,End startEnd
+    class PhaseA,PhaseB,PhaseC phase
+    class W1Start,W1Impl,W2Start,W2Impl,W3Start,W3Impl,W4Start,W4Impl,W5Start,W5Impl,W5TestAll worker
+    class W1Done,W2Done,W3Done,W4Done,Success success
+    class W1Check,W2Check,W3Check,W4Check,W5Check,W5Final,W5DiagnoseType decision
+    class W1Fix,W2Fix,W3Fix,W4Fail,W5Fix,W5Diagnose warning
+    class Failure1 failure
+    class DefineGoal,W1Verify,W2Test,W3Verify,W4Verify,W5Verify worker

@@ -1,0 +1,197 @@
+%% サマリー: ワークフロープラグイン大規模対応改修のフローチャート
+%% 目的: 各改修項目（B-1～D-3）の処理フローと検証ポイントを可視化
+%% 主要な決定事項: 多段階検証、bashバイパス検出、段階的リカバリ、パス正規化
+
+flowchart TD
+    Start([ワークフロー改修開始]) --> Entry{処理対象}
+
+    Entry -->|workflow_next呼び出し| FlowNext["フェーズ遷移処理"]
+    Entry -->|bashコマンド実行| FlowBash["bash検証処理"]
+    Entry -->|テスト結果提出| FlowTest["テスト真正性検証"]
+    Entry -->|差し戻し/リセット| FlowRecovery["リカバリ処理"]
+    Entry -->|ファイル操作| FlowPath["パス正規化処理"]
+
+    subgraph REQ_B1 ["REQ-B1: requirements承認ゲート追加"]
+        B1Start{フェーズは<br/>requirements?} -->|Yes| B1Check{承認<br/>フラグ確認}
+        B1Check -->|未承認| B1Error["エラー返却<br/>requirement承認が必要"]
+        B1Check -->|承認済| B1Pass["フェーズ遷移許可"]
+        B1Start -->|No| B1Skip["他フェーズ処理に続行"]
+    end %% B1承認ゲート
+
+    subgraph REQ_B2 ["REQ-B2: 意味的整合性チェック"]
+        B2Start["requirements.md<br/>キーワード抽出"] --> B2Extract["名詞・動詞抽出<br/>ストップワード除外"]
+        B2Extract --> B2Freq["出現頻度分析<br/>上位20キーワード"]
+        B2Freq --> B2Check{後続ファイル<br/>にキーワード<br/>含有?}
+        B2Check -->|1回以下| B2Error["警告: 未対応<br/>キーワード"]
+        B2Check -->|複数回| B2Pass["整合性OK"]
+    end %% B2整合性チェック
+
+    subgraph REQ_B3 ["REQ-B3: サブフェーズ依存関係"]
+        B3Start{parallel_analysis<br/>内サブフェーズ?} -->|planning完了| B3Dep{threat_modeling<br/>完了?}
+        B3Dep -->|未完了| B3Warn["警告表示<br/>推奨順序を通知"]
+        B3Dep -->|完了| B3Pass["処理続行許可"]
+        B3Start -->|その他| B3Skip["依存関係チェック<br/>スキップ"]
+    end %% B3依存関係
+
+    subgraph REQ_B4 ["REQ-B4: サブエージェント<br/>コンテキスト引き継ぎ"]
+        B4Start["サブエージェント<br/>起動"] --> B4Priority["入力ファイル<br/>重要度判定"]
+        B4Priority --> B4Full["重要度High<br/>全文読み込み"]
+        B4Full --> B4Summary["重要度Medium<br/>サマリーのみ"]
+        B4Summary --> B4Ref["重要度Low<br/>参照のみ"]
+        B4Ref --> B4Check["サマリー<br/>50行以内?"]
+        B4Check -->|Yes| B4Pass["コンテキスト<br/>引き継ぎOK"]
+        B4Check -->|No| B4Error["警告: サマリー<br/>超過"]
+    end %% B4コンテキスト
+
+    FlowNext --> REQ_B1
+    REQ_B1 -->|合格| REQ_B2
+    REQ_B2 -->|合格| REQ_B3
+    REQ_B3 -->|合格| ReqComplete1["requirements<br/>フェーズ検証完了"]
+
+    subgraph REQ_C1 ["REQ-C1: bashホワイトリスト<br/>バイパス検出強化"]
+        C1Start["bashコマンド受信"] --> C1Encode{エンコード関数<br/>検出?}
+        C1Encode -->|base64 -d検出| C1B64["base64デコード<br/>実施"]
+        C1Encode -->|printf検出| C1Printf["16進コード<br/>変換"]
+        C1Encode -->|echo -e検出| C1Echo["8進コード<br/>変換"]
+        C1B64 --> C1Exec{実行対象<br/>コマンド<br/>許可?}
+        C1Printf --> C1Exec
+        C1Echo --> C1Exec
+        C1Encode -->|検出なし| C1Direct{直接実行<br/>eval/sh -c等?}
+        C1Direct -->|検出| C1ExecDirect["引数部分<br/>ホワイトリスト照合"]
+        C1Direct -->|検出なし| C1Normal["通常のホワイトリスト<br/>チェック"]
+        C1ExecDirect --> C1Exec
+        C1Normal --> C1Exec
+        C1Exec -->|許可| C1Pass["実行許可"]
+        C1Exec -->|拒否| C1Block["コマンドブロック"]
+    end %% C1バイパス検出
+
+    subgraph REQ_C2 ["REQ-C2: テスト真正性<br/>検証強化"]
+        C2Start["テスト結果受信"] --> C2Time["実行時間計測<br/>startTime記録"]
+        C2Time --> C2Exec["コマンド実行<br/>endTime記録"]
+        C2Exec --> C2Duration["実行時間計算<br/>100ms以上?"]
+        C2Duration -->|100ms未満| C2FakeErr["エラー: 捏造検出"]
+        C2Duration -->|100ms以上| C2Hash["SHA-256<br/>ハッシュ計算"]
+        C2Hash --> C2DupCheck{ハッシュ<br/>重複?}
+        C2DupCheck -->|重複| C2DupErr["エラー: 使い回し検出"]
+        C2DupCheck -->|未重複| C2Record["testOutputHashes<br/>に記録"]
+        C2Record --> C2Pass["真正性確認OK"]
+    end %% C2真正性検証
+
+    subgraph REQ_C3 ["REQ-C3: 動的フェーズ<br/>スキップ機構"]
+        C3Start["タスク開始"] --> C3Scope["scope.files<br/>分析"]
+        C3Scope --> C3CheckCode{コード<br/>ファイル<br/>含有?}
+        C3CheckCode -->|含有| C3Full["全フェーズ<br/>実行"]
+        C3CheckCode -->|未含有| C3CheckDoc{ドキュメント<br/>のみ?}
+        C3CheckDoc -->|Yes| C3Skip["implementation<br/>以降スキップ"]
+        C3CheckDoc -->|test設計含む| C3Skip2["test_impl<br/>以降スキップ"]
+        C3Skip --> C3Record["phaseSkipReasons<br/>に記録"]
+        C3Skip2 --> C3Record
+        C3Record --> C3Log["ユーザー通知<br/>スキップ理由提示"]
+    end %% C3スキップ
+
+    subgraph REQ_C4 ["REQ-C4: 段階的<br/>リカバリ機構"]
+        C4Start{workflow_back<br/>呼び出し?} -->|Yes| C4Backup["バックアップ<br/>ディレクトリ作成<br/>backup_taskId_timestamp"]
+        C4Backup --> C4Move["差し戻し先以降の<br/>成果物を移動"]
+        C4Move --> C4Guidance["リカバリガイダンス<br/>生成"]
+        C4Guidance --> C4Notify["修正対象フェーズ<br/>と再実行手順を<br/>ユーザー通知"]
+        C4Start -->|workflow_reset| C4ResetAll["全成果物<br/>バックアップ"]
+        C4ResetAll --> C4Guidance
+        C4Notify --> C4Complete["リカバリ完了"]
+    end %% C4リカバリ
+
+    FlowBash --> REQ_C1
+    FlowTest --> REQ_C2
+    C1Block -->|承認フェーズ前| REQ_B1
+    C1Block -->|実装フェーズ後| C1Error["フック側で<br/>ブロック通知"]
+    C2Pass --> NextCheck["次フェーズ遷移<br/>判定"]
+    NextCheck --> REQ_C3
+
+    FlowPath --> PathFlow["パス正規化処理"]
+    subgraph REQ_D3 ["REQ-D3: Windowsパス<br/>正規化対応"]
+        D3Start["ファイルパス<br/>受信"] --> D3Back["バックスラッシュ<br/>スラッシュに統一"]
+        D3Back --> D3UTF["UTF-8正規化<br/>NFC形式"]
+        D3UTF --> D3Cmp["正規化パスで<br/>比較"]
+        D3Cmp --> D3Save["タスク状態に<br/>保存<br/>HMAC対象に含む"]
+        D3Save --> D3Pass["パス正規化<br/>完了"]
+    end %% D3パス正規化
+
+    FlowRecovery --> REQ_C4
+    PathFlow --> REQ_D3
+
+    subgraph REQ_D1 ["REQ-D1: HMACキー<br/>管理統一"]
+        D1Start["HMAC検証"] --> D1Load["hmac-keys.json<br/>読み込み"]
+        D1Load --> D1Multi["複数世代鍵<br/>配列に変換"]
+        D1Multi --> D1Loop["最新世代から<br/>順に検証試行"]
+        D1Loop --> D1Match{署名<br/>一致?}
+        D1Match -->|一致| D1Pass["署名検証OK<br/>世代鍵を記録"]
+        D1Match -->|不一致| D1Next["次世代鍵で<br/>試行"]
+        D1Next --> D1All{全世代<br/>試行済?}
+        D1All -->|No| D1Loop
+        D1All -->|Yes| D1Fail["検証失敗<br/>フック側ブロック"]
+    end %% D1鍵管理
+
+    subgraph REQ_D2 ["REQ-D2: 重複行誤検知<br/>修正"]
+        D2Start["重複行検出<br/>処理"] --> D2Struct["構造行判定"]
+        D2Struct --> D2Code{コード<br/>ブロック<br/>内?}
+        D2Code -->|Yes| D2CodeExcl["行をカウント<br/>除外"]
+        D2Code -->|No| D2Table{テーブル<br/>行?}
+        D2Table -->|データ行| D2TableExcl["行をカウント<br/>除外"]
+        D2Table -->|非テーブル| D2List{リスト<br/>項目?}
+        D2List -->|Yes| D2ListCount["行をカウント<br/>対象に含む"]
+        D2List -->|No| D2Content["本文行<br/>カウント対象"]
+        D2CodeExcl --> D2Check["実質行数<br/>確認"]
+        D2TableExcl --> D2Check
+        D2ListCount --> D2Check
+        D2Content --> D2Check
+        D2Check --> D2Dup{重複<br/>判定}
+        D2Dup -->|重複| D2DupErr["誤検知削減"]
+        D2Dup -->|非重複| D2Pass["通常処理続行"]
+    end %% D2誤検知修正
+
+    REQ_B4 --> SubAgentContext["サブエージェント<br/>コンテキスト<br/>引き継ぎ改善完了"]
+    D1Start --> HmacFlow["HMACキー検証"]
+    D2Start --> StructFlow["重複検出最適化"]
+
+    ReqComplete1 --> FlowJoin1{検証<br/>結果}
+    FlowJoin1 -->|合格| DeployReady["デプロイ準備<br/>完了"]
+    FlowJoin1 -->|失敗| RetryFlow["修正フェーズ<br/>に差し戻し"]
+    RetryFlow --> C4Complete
+    C4Complete --> LoopBack["修正実施後<br/>再実行"]
+    LoopBack --> FlowNext
+
+    HmacFlow --> HmacCheck{HMAC<br/>検証}
+    HmacCheck -->|成功| HmacOK["状態管理<br/>安全確認"]
+    HmacCheck -->|失敗| HmacFail["フック<br/>ブロック通知"]
+
+    StructFlow --> StructCheck{構造行<br/>判定精度}
+    StructCheck -->|向上| StructOK["誤検知削減<br/>完了"]
+    StructCheck -->|維持| StructWarn["監視継続"]
+
+    SubAgentContext --> ContextOK["引き継ぎ<br/>効率化完了"]
+
+    DeployReady --> ValidationComplete["全検証フロー<br/>完了"]
+    HmacOK --> ValidationComplete
+    StructOK --> ValidationComplete
+    ContextOK --> ValidationComplete
+    C3Full --> ValidationComplete
+    C3Skip --> ValidationComplete
+    C3Skip2 --> ValidationComplete
+    D3Pass --> ValidationComplete
+    B1Pass --> ValidationComplete
+    B3Pass --> ValidationComplete
+
+    ValidationComplete --> End([ワークフロー改修<br/>完了])
+
+    style REQ_B1 fill:#e1f5ff
+    style REQ_B2 fill:#e1f5ff
+    style REQ_B3 fill:#e1f5ff
+    style REQ_B4 fill:#e1f5ff
+    style REQ_C1 fill:#f3e5f5
+    style REQ_C2 fill:#f3e5f5
+    style REQ_C3 fill:#f3e5f5
+    style REQ_C4 fill:#f3e5f5
+    style REQ_D1 fill:#fff3e0
+    style REQ_D2 fill:#fff3e0
+    style REQ_D3 fill:#fff3e0
+    style Start fill:#c8e6c9
+    style End fill:#c8e6c9

@@ -1,0 +1,78 @@
+phase: research
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "docs_updateテンプレートの動的カテゴリ選択を実現するため、対象8ファイルを精査した。3層の変更(型定義→API受付→テンプレート注入)は後方互換で安全だが、buildSubagentPromptのシグネチャ変更が最大の波及点であり、呼び出し元2箇所(query.ts+テストファイル)の修正が必要。200行制限の余裕はtypes-core.ts(6行)・defs-stage6.ts(3行)・defs-stage1.ts(6行)で最も厳しい。"
+
+codebasePatterns[6]{id,pattern,evidence}:
+  R-PAT-1, "TaskState拡張はオプショナルフィールド追加パターン", "types.ts L96-120: approvals?/feedbackLog?/baseline?/testResults?等、全て?付きで後方互換"
+  R-PAT-2, "TaskStateSchema(Zod)はpassthrough()で未知フィールドを透過", "types-core.ts L194: .passthrough()によりprojectTraitsフィールド追加でバリデーション変更不要"
+  R-PAT-3, "buildSubagentPromptは{placeholder}文字列置換パターン", "definitions.ts L98-108: {taskName}/{docsDir}/{workflowDir}/{userIntent}/{taskId}/{phase}の6変数を.replace()で展開"
+  R-PAT-4, "StateManager.updateScopeはload→変更→signAndPersist→return booleanパターン", "manager.ts L129-138: loadTask→フィールド変更→signAndPersist(state,hmacKey)→true返却"
+  R-PAT-5, "defs-stage*.tsはPhaseDefinitionオブジェクトリテラルのRecord<string,PhaseDefinition>エクスポート", "defs-stage6.ts L9: export const DEFS_STAGE6: Record<string, PhaseDefinition>。テンプレート文字列はsubagentTemplateプロパティ"
+  R-PAT-6, "inputSchemaはJSON Schema形式でMCP Tool定義", "defs-a.ts L61-74: harness_set_scopeのpropertiesにtype/description付きフィールドを列挙"
+
+magicNumbers[4]{value,usage,rationale}:
+  200, "全ソースファイル行数上限", "CLAUDE.md Section 1: 200行制限。types-core.ts=194行、defs-stage1.ts=194行、defs-stage6.ts=197行で余裕極小"
+  6, "ProjectTraitsのbooleanフラグ数(hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystem)", "workflow-docs.md L27-31のカテゴリ(screens/api/database/events/i18n/design-system)に1対1対応"
+  30, "docs_update成果物のminLines", "defs-stage6.ts L76: minLines: 30。動的テンプレートでも最低行数は変わらない"
+  20, "userIntentの最小文字数", "types-core.ts L189: z.string().min(20)"
+
+dependencyVersions:
+  node: v22.15.0
+  typescript: 5.9.3
+  npm: 10.9.2
+  vitest: installed (npm test = vitest run)
+  zod: imported in types-core.ts
+
+fileAnalysis[9]{path,lines,headroom,finding}:
+  src/state/types-core.ts, 194, 6, "ProjectTraits interfaceを追加する場所はL77(RiskScore後)が最適。interface定義8行+空行1行=9行追加で200行超過。対策: RiskScore.factorsを1行に圧縮するか、PROOF_TIERS定数行を短縮して5行確保"
+  src/state/types.ts, 121, 79, "TaskState interfaceにprojectTraits?: ProjectTraits を1行追加。import文にProjectTraitsを追加。余裕十分"
+  src/tools/handlers/scope-nav.ts, 108, 92, "handleHarnessSetScope(L15-31)にprojectTraits抽出+sm.updateScopeへの受け渡しを追加。ただしupdateScope自体にprojectTraits引数追加が必要。代替案: sm.loadTask→直接フィールド設定→signAndPersistのヘルパーメソッド追加"
+  src/phases/definitions.ts, 136, 64, "buildSubagentPrompt(L79-136)に第7引数projectTraits?: Record追加。L107後に{projectTraits}プレースホルダー展開を1行追加。呼び出し元2箇所修正必要"
+  src/phases/defs-stage6.ts, 197, 3, "docs_updateテンプレート(L69-97)が主要変更対象。固定5項目リストを条件分岐テンプレートに置換。テンプレート文字列の行数増加が200行制限に直結。対策: 他のフェーズテンプレート(commit/push/ci_verification/deploy)の空行削減で10行程度確保可能"
+  src/phases/defs-stage1.ts, 194, 6, "scope_definitionテンプレート(L17-68)にStep 3.5としてプロジェクト性質判定ステップを追加。余裕6行で厳しい。対策: Step 0のSerenaチェック部分(L28-31)を2行に圧縮可能"
+  src/tools/defs-a.ts, 164, 36, "harness_set_scope(L61-74)のpropertiesにprojectTraitsオブジェクト型を追加。5行程度の追加"
+  src/tools/handlers/query.ts, 122, 78, "handleHarnessGetSubphaseTemplate(L45-65)でtaskからprojectTraitsを取得しbuildSubagentPromptに渡す。1行変更+1行追加"
+  .claude/skills/harness/workflow-docs.md, 137, read-only, "L27-31にカテゴリ定義: screens/api/events/database/messages + design-system/components/interactions/responsive/accessibility/wireframes + i18n/seo/sitemap。ProjectTraitsフラグ6個で網羅"
+
+buildSubagentPromptCallers[2]{file,line,currentCall}:
+  src/tools/handlers/query.ts, 58, "buildSubagentPrompt(phase, taskName, docsDir, workflowDir, userIntent, taskId)"
+  src/__tests__/handler-templates-s6-docs-integration.test.ts, 24-71, "間接呼び出し(harness_get_subphase_templateハンドラ経由)。テストコード自体の変更不要だがProjectTraits付きタスクのテストケース追加が望ましい"
+
+scopeNavUpdateFlow:
+  current: "handleHarnessSetScope→sm.updateScope(taskId, files, dirs, glob, addMode)→scopeFiles/scopeDirs/scopeGlob設定→signAndPersist"
+  proposed: "args.projectTraitsを抽出→sm.updateScope呼び出し後にprojectTraitsを別途保存。updateScopeシグネチャ変更を避けるため、scope-nav.ts内でsm.loadTask→task.projectTraits設定→直接永続化するヘルパーパターンを採用"
+  managerImpact: "StateManager.updateScopeシグネチャ変更(引数追加)が最もクリーンだが、manager.tsは196行で余裕4行。代替: handleHarnessSetScope内でsm.loadTask+直接フィールド設定の2段階処理"
+
+templateDynamicStrategy:
+  approach: "docs_updateテンプレート内で{projectTraits}プレースホルダーを展開し、条件分岐済みカテゴリリストを注入"
+  expansionPoint: "definitions.ts L107後に追加。projectTraitsがundefinedの場合はフォールバックとして現在の固定5項目を維持"
+  templateChange: "defs-stage6.ts docs_updateのsubagentTemplateで固定リストを{docCategories}プレースホルダーに置換。buildSubagentPrompt内でprojectTraitsからカテゴリリスト文字列を生成して注入"
+  fallback: "projectTraitsが未設定(既存タスク互換)の場合、現行の固定5項目をそのまま出力"
+
+lineConstraintMitigation[3]{file,strategy,savedLines}:
+  types-core.ts, "RiskScore.factorsの6プロパティを3行に圧縮(2プロパティ/行)。PROOF_TIERSをtype+constの1行統合", "4-6行確保"
+  defs-stage6.ts, "commit/push/ci_verification/deployテンプレートの不要な空行・コメント行を削減。各テンプレートから1-2行ずつ", "8-10行確保"
+  defs-stage1.ts, "Step 0 Serenaチェック部分のコードブロックを1行bashコマンド+1行説明に圧縮", "3-4行確保"
+
+decisions[8]{id,statement,rationale}:
+  R-1, "ProjectTraits型はtypes-core.tsのRiskScore直後(L77付近)に配置する", "型定義の論理グルーピング。RiskScoreもプロジェクト特性を表す型であり、ProjectTraitsと意味的に隣接"
+  R-2, "buildSubagentPromptに第7引数projectTraits?: Record<string,boolean>を追加する(オプショナル)", "既存呼び出し元はundefined渡しで動作継続。後方互換を維持しつつ新機能を追加"
+  R-3, "docs_updateテンプレート内の固定カテゴリリストを{docCategories}プレースホルダーに置換する", "buildSubagentPrompt内でprojectTraitsからカテゴリ文字列を生成して注入。テンプレート本体の行数増加を抑制"
+  R-4, "projectTraits未設定時は現行固定5項目をフォールバック出力する", "既存タスクとの後方互換性維持。scope_definitionを経由しない復旧シナリオでも動作保証"
+  R-5, "StateManager.updateScopeシグネチャは変更せず、scope-nav.ts内でprojectTraitsを別途永続化する", "manager.tsは196行で余裕4行のため引数追加が困難。handleHarnessSetScope内でsm.loadTask→フィールド設定→addProofの軽量パターンを使用"
+  R-6, "types-core.tsの200行制限対応として、RiskScore.factorsプロパティを圧縮する", "現在194行で6行余裕。ProjectTraits interface(6行)+export(1行)で7行必要。圧縮で余裕を確保"
+  R-7, "defs-stage6.tsの200行制限対応として、commit/push/ci_verificationテンプレートの空行を削減する", "現在197行で3行余裕。docs_updateテンプレート変更で純増する行数を相殺"
+  R-8, "カテゴリ生成ロジックはdefinitions.ts内のヘルパー関数buildDocCategories(traits)として分離する", "テンプレート文字列内に条件分岐を埋め込むと可読性が低下。ヘルパー関数で生成した文字列をプレースホルダーに注入"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/research.toon, report, "researchフェーズ成果物。8ファイルの精査結果、200行制限対策、buildSubagentPromptシグネチャ変更の波及分析"
+  docs/workflows/docs-update-dynamic-categories/init.sh, impl, "S1-10ビルド・テスト・セットアップスクリプト。npm install/build/test"
+  docs/workflows/docs-update-dynamic-categories/scope-definition.toon, spec, "前フェーズ成果物。7ファイル変更の影響範囲定義"
+
+next:
+  criticalDecisions: "R-2(buildSubagentPromptシグネチャ変更)とR-5(updateScope非変更によるscope-nav.ts内永続化)が設計の分岐点。R-6/R-7の行数圧縮が実装可能性の前提条件"
+  readFiles: "src/state/manager-write.ts(signAndPersistの引数確認), src/__tests__/handler-templates-s6-docs-integration.test.ts(既存テストの拡張方針), src/phases/registry.ts(PhaseConfig.inputFiles参照パターン)"
+  warnings: "types-core.ts(194行)とdefs-stage6.ts(197行)は200行制限に極めて近い。行数圧縮を先行実施しないとProjectTraits追加が物理的に不可能。defs-stage1.tsも194行で同様の制約あり"

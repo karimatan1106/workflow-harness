@@ -1,0 +1,9 @@
+success: true
+output: "parseToonKvテスト全4件GREEN + TypeScriptビルドエラーなし"
+test-file: "workflow-harness/mcp-server/src/__tests__/toon-helpers.test.ts"
+test-pass: 4
+test-fail: 0
+test-duration: "4ms"
+build-check: "npx tsc --noEmit → エラーなし"
+files-changed: ""
+timestamp: "2026-03-17T16:47:43"

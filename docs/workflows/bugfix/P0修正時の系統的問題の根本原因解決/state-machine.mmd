@@ -1,0 +1,30 @@
+stateDiagram-v2
+    Start --> ReadSpec: spec.md読み込み
+
+    ReadSpec --> FixRootCLAUDE: ルートCLAUDE.md修正開始
+
+    FixRootCLAUDE --> FixRootTable: security_scan/performance_test/e2e_test<br/>のsubagent_type修正<br/>(Bash→general-purpose)
+
+    FixRootTable --> FixPluginCLAUDE: workflow-plugin/CLAUDE.md修正開始
+
+    FixPluginCLAUDE --> FixPluginTable: security_scan/performance_test/e2e_test<br/>のsubagent_type修正<br/>(Bash→general-purpose)
+
+    FixPluginTable --> FixDefinitions: definitions.ts修正開始
+
+    FixDefinitions --> AddNotice: 禁止語転記防止注意書き追加
+
+    AddNotice --> AddExamples: 言い換え例3件以上追加
+
+    AddExamples --> VerifySync: 両CLAUDE.mdの整合性確認
+
+    VerifySync --> CompareRows: subagent_type列値<br/>完全一致確認
+
+    CompareRows --> BuildCheck: TypeScriptビルド実行
+
+    BuildCheck --> CheckSuccess: ビルド成功確認
+
+    CheckSuccess --> RestartMCP: MCPサーバー再起動
+
+    RestartMCP --> ValidateChanges: 修正内容最終検証
+
+    ValidateChanges --> End: タスク完了

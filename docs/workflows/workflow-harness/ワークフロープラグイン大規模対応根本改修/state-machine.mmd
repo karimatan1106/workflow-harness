@@ -1,0 +1,343 @@
+stateDiagram-v2
+    %% REQ-1: FAIL_OPEN除去 - Hook Error Handling States
+    [*] --> HookExecution
+
+    HookExecution --> ErrorOccurred: Exception raised
+    HookExecution --> NoError: All checks pass
+
+    ErrorOccurred --> CheckFailOpen: Check FAIL_OPEN flag
+    CheckFailOpen --> FailOpenEnabled: FAIL_OPEN=true
+    CheckFailOpen --> FailOpenDisabled: FAIL_OPEN not set/false
+
+    FailOpenEnabled --> PassThrough: (OLD: Exit 0)
+    PassThrough --> PermitOperation: DEPRECATED (REQ-1)
+
+    FailOpenDisabled --> Exit2: Exit with code 2
+    Exit2 --> BlockOperation: REJECT (secure)
+
+    %% REQ-1 enforced state
+    ErrorOccurred_REQ1 --> AlwaysExit2: Always exit(2)
+    AlwaysExit2 --> BlockOperation
+
+    NoError --> PermitOperation: (REQ-1: normal flow)
+    BlockOperation --> [*]
+    PermitOperation --> [*]
+
+    %% REQ-2: HMAC State File Integrity States
+    [*] --> WorkflowStateAccess
+
+    WorkflowStateAccess --> ReadStateFile: Load workflow-state.json
+
+    ReadStateFile --> StateFileFound: File exists
+    ReadStateFile --> StateFileNotFound: File not found
+
+    StateFileNotFound --> CreateNewState: Initialize new state
+    CreateNewState --> StateUnsigned: No signature (initial)
+
+    StateFileFound --> ParseJSON: Parse JSON content
+    ParseJSON --> JSONValid: Valid JSON
+    ParseJSON --> JSONInvalid: JSON parse error
+
+    JSONInvalid --> SignatureVerificationFailed: Corrupted file
+    SignatureVerificationFailed --> ReturnNull: Return null
+
+    JSONValid --> CheckSignatureField: Check stateIntegrity field
+
+    CheckSignatureField --> SignaturePresent: stateIntegrity exists
+    CheckSignatureField --> SignatureAbsent: No signature field
+
+    SignatureAbsent --> StateUnsigned: Legacy format (backward compat)
+    StateUnsigned --> AutoAddSignature: Add signature on first access
+    AutoAddSignature --> SignatureGenerated: HMAC-SHA256 computed
+
+    SignaturePresent --> VerifyHMAC: Validate signature
+    VerifyHMAC --> SignatureValid: HMAC matches
+    VerifyHMAC --> SignatureTampered: HMAC mismatch
+
+    SignatureTampered --> ReturnNull: Reject: file modified
+    SignatureValid --> StateIntact: State is trusted
+    SignatureGenerated --> StateIntact: State is trusted
+
+    StateIntact --> UpdateOperation: Can proceed
+    UpdateOperation --> WriteTaskState: Save updated state
+    WriteTaskState --> GenerateNewSignature: Compute HMAC
+    GenerateNewSignature --> StoreWithSignature: Save with signature
+    StoreWithSignature --> [*]
+
+    ReturnNull --> [*]
+
+    %% REQ-3: Scope Validation States
+    [*] --> ScopeDefinition
+
+    ScopeDefinition --> SetScopeOperation: workflowSetScope() called
+    SetScopeOperation --> ValidatePhase: Check current phase
+
+    ValidatePhase --> PhaseAllowed: research/requirements/planning
+    ValidatePhase --> PhaseNotAllowed: Other phase
+
+    PhaseNotAllowed --> RejectScope: Error: wrong phase
+    RejectScope --> [*]
+
+    PhaseAllowed --> CalculateScopeSize: Count files and dirs
+    CalculateScopeSize --> FileCountCheck: Compare file count
+
+    FileCountCheck --> FilesWithinLimit: files ≤ 200
+    FileCountCheck --> FileCountExceeded: files > 200
+
+    FileCountExceeded --> SuggestSplit: Recommend task split
+    SuggestSplit --> RejectScope
+
+    FilesWithinLimit --> DirectoryCountCheck: Compare dir count
+    DirectoryCountCheck --> DirsWithinLimit: dirs ≤ 20
+    DirectoryCountCheck --> DirCountExceeded: dirs > 20
+
+    DirCountExceeded --> SuggestSplit
+
+    DirsWithinLimit --> ScopeAccepted: Size within limits
+    ScopeAccepted --> SaveToTaskState: Store scope
+    SaveToTaskState --> [*]
+
+    %% Scope Validation on Phase Transition (parallel_analysis → parallel_design)
+    [*] --> NextPhaseExecution
+    NextPhaseExecution --> CheckCurrentPhase_Scope: Is parallel_analysis?
+
+    CheckCurrentPhase_Scope --> NotParallelAnalysis: Other phase
+    NotParallelAnalysis --> ContinueTransition: Proceed normally
+
+    CheckCurrentPhase_Scope --> IsParallelAnalysis: parallel_analysis phase
+    IsParallelAnalysis --> ValidateScopeOnTransition: Check scope size
+    ValidateScopeOnTransition --> ScopeValidOnTransition: Size OK
+    ValidateScopeOnTransition --> ScopeInvalidOnTransition: Size exceeded
+
+    ScopeInvalidOnTransition --> BlockTransition: Error: reconfigure scope
+    BlockTransition --> [*]
+
+    ScopeValidOnTransition --> ContinueTransition
+    ContinueTransition --> [*]
+
+    %% REQ-4: Bash Command Analysis States
+    [*] --> BashExecution
+
+    BashExecution --> AnalyzeBashCommand: analyzeBashCommand(cmd)
+    AnalyzeBashCommand --> SplitCommand: splitCompoundCommand()
+
+    SplitCommand --> CheckOperators: Find &&, ||, ;, |
+    CheckOperators --> NoCompoundOperators: Simple command
+    CheckOperators --> HasCompoundOperators: Multi-part command
+
+    NoCompoundOperators --> SinglePartArray: ['cmd']
+    SinglePartArray --> ProcessParts: Validate each part
+
+    HasCompoundOperators --> SplitMultipart: ['cmd1', 'cmd2', ...]
+    SplitMultipart --> ProcessParts
+
+    ProcessParts --> CheckPart1: Validate part 1
+    CheckPart1 --> Part1ReadOnly: Is read-only command
+    CheckPart1 --> Part1NotReadOnly: Not in whitelist
+
+    Part1ReadOnly --> AllowPart1: Continue to next part
+    AllowPart1 --> CheckPart2: Validate part 2
+
+    Part1NotReadOnly --> CheckFileModifying1: Check file modify patterns
+    CheckFileModifying1 --> Part1ModifiesFiles: Matches rm, sed, awk>, etc.
+    CheckFileModifying1 --> Part1NoModify: No file operations
+
+    Part1ModifiesFiles --> BlockCommand: Blocked: file modification
+    BlockCommand --> [*]
+
+    Part1NoModify --> AllowPart1
+
+    CheckPart2 --> Part2ReadOnly: Is read-only
+    CheckPart2 --> Part2NotReadOnly: Not in whitelist
+
+    Part2ReadOnly --> AllowPart2: Continue to part 3
+    AllowPart2 --> CheckPart3: Validate part 3
+
+    Part2NotReadOnly --> CheckFileModifying2: Check file modify patterns
+    CheckFileModifying2 --> Part2ModifiesFiles: Matches patterns
+    CheckFileModifying2 --> Part2NoModify: No file operations
+
+    Part2ModifiesFiles --> BlockCommand
+    Part2NoModify --> AllowPart2
+
+    CheckPart3 --> AllPartsProcessed: All parts validated
+    AllPartsProcessed --> AllPartsReadOnlyOrWhitelisted: All OK
+    AllPartsReadOnlyOrWhitelisted --> AllowExecution: Permit command
+    AllowExecution --> [*]
+
+    %% REQ-5: Artifact Validation States
+    [*] --> ArtifactCheck
+
+    ArtifactCheck --> GetPhaseArtifacts: Get required files for phase
+    GetPhaseArtifacts --> CheckFileExistence: Verify file exists
+
+    CheckFileExistence --> FileMissing: File not found
+    CheckFileExistence --> FileExists: File present
+
+    FileMissing --> AddToMissingList: Record missing file
+    AddToMissingList --> [*]
+
+    FileExists --> ReadFileContent: Load file content
+    ReadFileContent --> ContentReadSuccess: File readable
+    ReadFileContent --> ContentReadFailure: Read error
+
+    ContentReadFailure --> AddToInvalidList: Record read error
+    AddToInvalidList --> [*]
+
+    ContentReadSuccess --> ValidateSize: Check file size ≥ 200 bytes
+    ValidateSize --> SizeOK: Size sufficient
+    ValidateSize --> SizeTooSmall: Size < 200 bytes
+
+    SizeTooSmall --> AddSizeError: Record size error
+    AddSizeError --> [*]
+
+    SizeOK --> CheckRequiredSections: Look for mandatory sections
+    CheckRequiredSections --> SectionFound: Has required section
+    CheckRequiredSections --> SectionNotFound: Missing required section
+
+    SectionNotFound --> AddSectionError: Record section error
+    AddSectionError --> [*]
+
+    SectionFound --> CheckForbiddenPatterns: Detect stubs
+    CheckForbiddenPatterns --> ForbiddenFound: "TODO", "WIP", etc.
+    CheckForbiddenPatterns --> NoForbidden: No stubs detected
+
+    ForbiddenFound --> AddStubError: Record stub detection
+    AddStubError --> [*]
+
+    NoForbidden --> CheckHeaderOnly: Verify not headers-only
+    CheckHeaderOnly --> HasContent: Has actual content
+    CheckHeaderOnly --> OnlyHeaders: Only header lines
+
+    OnlyHeaders --> AddHeaderError: Record header-only error
+    AddHeaderError --> [*]
+
+    HasContent --> ArtifactValid: All validations pass
+    ArtifactValid --> AllArtifactsValid: Check all required files
+
+    AllArtifactsValid --> MissingOrInvalid: Have errors?
+    MissingOrInvalid --> YesErrors: missing.length > 0 OR invalid.length > 0
+    MissingOrInvalid --> NoErrors: All files valid
+
+    YesErrors --> BlockCommit: Block pre-commit hook
+    BlockCommit --> [*]
+
+    NoErrors --> AllowCommit: Permit operation
+    AllowCommit --> [*]
+
+    %% REQ-6: Design Validation States
+    [*] --> DesignValidation
+
+    DesignValidation --> CheckCurrentPhase_Design: Is parallel_design phase?
+    CheckCurrentPhase_Design --> NotDesignPhase: Other phase
+    NotDesignPhase --> SkipDesignValidation: Continue
+
+    CheckCurrentPhase_Design --> IsDesignPhase: parallel_design
+    IsDesignPhase --> TransitionTarget: Next phase is test_design?
+
+    TransitionTarget --> NotToTestDesign: No
+    NotToTestDesign --> SkipDesignValidation
+
+    TransitionTarget --> ToTestDesign: Yes, parallel_design → test_design
+    ToTestDesign --> EnforceValidation: REQ-6: Always validate
+
+    EnforceValidation --> CheckSkipEnvVar: Check SKIP_DESIGN_VALIDATION
+    CheckSkipEnvVar --> SkipEnvVarSet: Env var = 'true'
+    CheckSkipEnvVar --> SkipEnvVarNotSet: Env var not set
+
+    SkipEnvVarSet --> ValidateAnyway: REQ-6: Ignore env var
+    SkipEnvVarNotSet --> RunValidator: Execute validation
+    ValidateAnyway --> RunValidator
+
+    RunValidator --> GetScopeFiles: Get files in scope
+    GetScopeFiles --> IterateSourceFiles: Process each file
+
+    IterateSourceFiles --> CheckEmptyMethods: Pattern 1: method() {}
+    CheckEmptyMethods --> EmptyMethodFound: Found empty method
+    CheckEmptyMethods --> NoEmptyMethod: No empty methods
+
+    EmptyMethodFound --> RecordStub1: Add to stub list
+    RecordStub1 --> [*]
+
+    NoEmptyMethod --> CheckTODOComments: Pattern 2: TODO/FIXME/NotImplemented
+    CheckTODOComments --> TodoFound: Found TODO/FIXME
+    CheckTODOComments --> NoTodo: No stub comments
+
+    TodoFound --> RecordStub2: Add to stub list
+    RecordStub2 --> [*]
+
+    NoTodo --> CheckEmptyClasses: Pattern 3: class Foo {}
+    CheckEmptyClasses --> EmptyClassFound: Found empty class
+    CheckEmptyClasses --> NoEmptyClass: No empty classes
+
+    EmptyClassFound --> RecordStub3: Add to stub list
+    RecordStub3 --> [*]
+
+    NoEmptyClass --> CheckNotImplemented: Pattern 4: throw NotImplementedError
+    CheckNotImplemented --> NotImplFound: Found NotImplementedError
+    CheckNotImplemented --> NoNotImpl: No NotImplementedError
+
+    NotImplFound --> RecordStub4: Add to stub list
+    RecordStub4 --> [*]
+
+    NoNotImpl --> ProcessNextFile: Move to next source file
+    ProcessNextFile --> AllFilesProcessed: All files checked
+
+    AllFilesProcessed --> EvaluateResults: Assess stub findings
+    EvaluateResults --> StubsDetected: missingItems.length > 0
+    EvaluateResults --> NoStubsDetected: No stubs found
+
+    StubsDetected --> SetValidationFailed: passed = false
+    SetValidationFailed --> ReportStubs: Show detailed errors
+    ReportStubs --> BlockPhaseTransition: Cannot enter test_design
+    BlockPhaseTransition --> [*]
+
+    NoStubsDetected --> CheckExistingDesignDocs: Verify spec/diagrams
+    CheckExistingDesignDocs --> DesignDocsValid: All documents OK
+    CheckExistingDesignDocs --> DesignDocsMissing: Missing documents
+
+    DesignDocsMissing --> ReportMissing: Show missing docs
+    ReportMissing --> BlockPhaseTransition
+
+    DesignDocsValid --> SetValidationPassed: passed = true
+    SetValidationPassed --> AllowTransition: Permit test_design entry
+    AllowTransition --> SkipDesignValidation
+
+    SkipDesignValidation --> [*]
+
+    %% Notes and explanations
+    note right of ErrorOccurred
+        REQ-1: Hook error handling
+        All errors must exit(2)
+        FAIL_OPEN removed
+    end note
+
+    note right of SignatureTampered
+        REQ-2: HMAC verification failed
+        Indicates manual file edit
+        Reject state access
+    end note
+
+    note right of FileCountExceeded
+        REQ-3: Scope size exceeded
+        Max 200 files, 20 dirs
+        Recommend task split
+    end note
+
+    note right of Part1ModifiesFiles
+        REQ-4: Bash command analysis
+        Detect file modifications
+        in compound commands
+    end note
+
+    note right of SizeTooSmall
+        REQ-5: Artifact validation
+        Minimum 200 bytes
+        Must have required sections
+    end note
+
+    note right of StubsDetected
+        REQ-6: Design validation
+        Detect empty implementations
+        Block phase transition
+    end note

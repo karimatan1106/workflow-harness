@@ -1,0 +1,62 @@
+stateDiagram-v2
+    Start --> ScopeAnalysis: タスク開始
+    ScopeAnalysis --> FileCollection: スコープ解析
+    FileCollection --> EmptyCheckDecision: ファイルリスト確認
+    EmptyCheckDecision --> NoFilesState: ファイルなし
+    EmptyCheckDecision --> FileAnalysisState: ファイルあり
+
+    NoFilesState --> IntentKeywordCheck1: userIntent確認
+    IntentKeywordCheck1 --> TestIntentMatch1: テストキーワード検出
+    IntentKeywordCheck1 --> ImplIntentMatch1: 実装キーワード検出
+    IntentKeywordCheck1 --> DefaultSkipState: オーバーライドなし
+
+    TestIntentMatch1 --> SkipReasonRemove1: test_implスキップ削除
+    ImplIntentMatch1 --> SkipReasonRemove2: implementation/refactoring削除
+    SkipReasonRemove1 --> ReturnSkipReasons1
+    SkipReasonRemove2 --> ReturnSkipReasons1
+    DefaultSkipState --> ReturnSkipReasons1: 3フェーズスキップ
+
+    FileAnalysisState --> CodeFileCheck: コードファイル確認
+    FileAnalysisState --> TestFileCheck: テストファイル確認
+
+    CodeFileCheck --> HasCodeFiles: ts/tsx/js検出
+    CodeFileCheck --> NoCodeFiles: コードなし
+
+    TestFileCheck --> HasTestFiles: test/spec検出
+    TestFileCheck --> NoTestFiles: テストなし
+
+    HasCodeFiles --> HasTestFiles: 両ファイル確認
+    HasCodeFiles --> NoTestFiles: テストのみなし
+    HasTestFiles --> CodeTestCheck: コード確認済み
+    NoCodeFiles --> NoCodeTestState: コードなし
+
+    HasTestFiles --> SetTestImplSkip: skip追加なし
+    NoTestFiles --> SetTestImplSkip: test_implスキップ設定
+
+    NoCodeFiles --> SetImplRefSkip: implementation/refactoring設定
+    CodeTestCheck --> BothFilesPresent: 両ファイルあり
+    NoCodeTestState --> OnlyDocFiles: ドキュメントのみ
+
+    BothFilesPresent --> NoSkips: スキップなし
+    OnlyDocFiles --> SetTestingSkip: testing/regression_testスキップ
+    SetTestImplSkip --> IntentCheckPhase: userIntent確認
+    SetImplRefSkip --> IntentCheckPhase
+    SetTestingSkip --> IntentCheckPhase
+    NoSkips --> IntentCheckPhase
+
+    IntentCheckPhase --> TestKeywordDetection: テストキーワード確認
+    IntentCheckPhase --> ImplKeywordDetection: 実装キーワード確認
+    TestKeywordDetection --> TestKeywordMatches: マッチあり
+    TestKeywordDetection --> NoTestMatch: マッチなし
+    ImplKeywordDetection --> ImplKeywordMatches: マッチあり
+    ImplKeywordDetection --> NoImplMatch: マッチなし
+
+    TestKeywordMatches --> RemoveTestSkips: test_impl削除
+    ImplKeywordMatches --> RemoveImplSkips: implementation/refactoring削除
+    NoTestMatch --> NoImplMatch: キーワードなし
+    NoImplMatch --> FinalizeSkipReasons: スキップ理由確定
+    RemoveTestSkips --> FinalizeSkipReasons
+    RemoveImplSkips --> FinalizeSkipReasons
+
+    ReturnSkipReasons1 --> End: 完了
+    FinalizeSkipReasons --> End: 完了

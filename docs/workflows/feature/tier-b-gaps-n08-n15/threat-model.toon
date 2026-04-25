@@ -1,0 +1,32 @@
+task: tier-b-gaps-n08-n15
+phase: threat_modeling
+intent: Tier B devDependencyインストールと既存フック/archgate拡張の脅威分析
+riskScore: 3
+
+threatAnalysis:
+  scope: devDependency追加のみ。本番コードパスに影響なし。
+  attackSurface: npm install時のサプライチェーンリスクのみ。実行時はローカル開発環境限定。
+  mitigations: "lockfile固定、devDependencyのため本番バンドルに含まれない、graceful degradation設計"
+
+threats[3]{id,threat,likelihood,impact,mitigation}:
+  TM-1, "悪意あるnpmパッケージによるサプライチェーン攻撃", low, medium, "oxlint/biome/jscpdは大規模OSSプロジェクトでメンテナンス活発。npm audit --auditで検証。"
+  TM-2, "ast-grep napiバイナリにプラットフォーム固有の脆弱性", low, low, "@ast-grep/napiはRustコンパイル済みprebuiltバイナリ。メモリ安全性はRust言語保証。"
+  TM-3, "jscpd CLI実行時のコマンドインジェクション", low, medium, "archgate.tsからのexecSync呼び出しはハードコードされたパラメータのみ使用。ユーザー入力は渡さない。"
+
+decisions[5]{id,statement,rationale}:
+  TM-D1, "全ツールをdevDependencyとしてインストールし本番バンドルから除外する", "開発支援ツールが本番環境に影響を与えるリスクをゼロにする"
+  TM-D2, "graceful degradation設計でツール未インストール時もワークフロー継続可能にする", "ツール障害がCI/CDやワークフロー全体をブロックしない"
+  TM-D3, "jscpdのexecSync呼び出しにハードコードパラメータのみ使用する", "コマンドインジェクションの攻撃面をゼロにする"
+  TM-D4, "ast-grepはCLI呼び出しではなくnapi(Node API)経由で使用する", "シェル実行を回避しプロセス間通信の攻撃面を排除する"
+  TM-D5, "npm install後にnpm auditを実行し既知の脆弱性がないことを確認する", "サプライチェーンリスクをインストール時点で検出する"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/requirements.toon, input, 受入基準と機能/非機能要件
+  docs/workflows/tier-b-gaps-n08-n15/threat-model.toon, output, devDependency追加に対する脅威分析
+
+next:
+  criticalDecisions: "TM-D1(devDep限定)とTM-D3(ハードコードパラメータ)が実装時のセキュリティ制約を定義"
+  readFiles: "requirements.toon, archgate.ts, post-tool-lint.sh"
+  warnings: "npm audit結果に高severity脆弱性がある場合は該当パッケージのインストールを保留すること"
+
+result{phase,status,artifact,lines}: threat_modeling, complete, docs/workflows/tier-b-gaps-n08-n15/threat-model.toon, 38

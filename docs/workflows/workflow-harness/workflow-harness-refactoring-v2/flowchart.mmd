@@ -1,0 +1,84 @@
+graph TD
+    Start([Start Refactoring]) --> BatchA_Check{Batch A prerequisites met?}
+
+    %% Batch A: parallel areas
+    BatchA_Check -->|Yes| A1[Area 1: hooks split<br>tool-gate.js phase-config extraction<br>JSON.parse unification]
+    BatchA_Check -->|Yes| A4[Area 4: skills refs update<br>CLAUDE.md SecN to .claude/rules/]
+    BatchA_Check -->|Yes| A7[Area 7: forbidden word list<br>unify to forbidden-actions.md]
+    BatchA_Check -->|No| FixPrereq1[Fix missing prerequisites] --> BatchA_Check
+
+    A1 --> A1_Test{hook tests pass?}
+    A1_Test -->|Yes| BatchA_Done
+    A1_Test -->|No| A1_Fix[Fix exit code / parseHookInput] --> A1_Test
+
+    A4 --> A4_Grep{grep CLAUDE.md Sec = 0?}
+    A4_Grep -->|Yes| BatchA_Done
+    A4_Grep -->|No| A4_Fix[Fix remaining stale refs] --> A4_Grep
+
+    A7 --> A7_Diff{forbidden word superset confirmed?}
+    A7_Diff -->|Yes| BatchA_Done
+    A7_Diff -->|No| A7_Fix[Add missing words to forbidden-actions.md] --> A7_Diff
+
+    BatchA_Done([Batch A Complete]) --> BatchB_Start
+
+    %% Batch B: Area 2 indexer deletion
+    BatchB_Start --> A2_Pre{indexer/ exists?}
+    A2_Pre -->|Yes| A2[Area 2: delete indexer/<br>remove serena refs from defs-stage1.ts<br>update package.json postinstall]
+    A2_Pre -->|No| A2_Skip[Already deleted - skip] --> BatchB_Verify
+
+    A2 --> BatchB_Verify{tsc --noEmit passes?}
+    BatchB_Verify -->|Yes| A2_Commit[Commit: indexer deletion]
+    BatchB_Verify -->|No| A2_ImportFix[Fix broken serena imports] --> BatchB_Verify
+
+    A2_Commit --> BatchC_Start
+
+    %% Batch C: Area 3 mcp-server splits (serial, one file at a time)
+    BatchC_Start --> Split1[Split delegate-coordinator.ts<br>into 3 files]
+    Split1 --> Split1_TSC{tsc --noEmit?}
+    Split1_TSC -->|Pass| Split2[Split lifecycle.ts<br>into 2 files]
+    Split1_TSC -->|Fail| Split1_ImportFix[Fix import paths in handler.ts etc.] --> Split1_TSC
+
+    Split2 --> Split2_TSC{tsc --noEmit?}
+    Split2_TSC -->|Pass| Split3[Split dod-l1-l2.ts<br>extract dod-spec.ts]
+    Split2_TSC -->|Fail| Split2_ImportFix[Fix import paths in dod.ts] --> Split2_TSC
+
+    Split3 --> Split3_TSC{tsc --noEmit?}
+    Split3_TSC -->|Pass| Split4[Split defs-stage1.ts<br>extract defs-stage1a.ts templates]
+    Split3_TSC -->|Fail| Split3_ImportFix[Fix import paths in definitions.ts] --> Split3_TSC
+
+    Split4 --> Split4_TSC{tsc --noEmit?}
+    Split4_TSC -->|Pass| SizeCheck{All files < 200 lines?}
+    Split4_TSC -->|Fail| Split4_ImportFix[Fix import paths] --> Split4_TSC
+
+    SizeCheck -->|Yes| BatchC_Done([Batch C Complete])
+    SizeCheck -->|No| SplitMore[Further split oversized file] --> SizeCheck
+
+    %% Batch D: Area 5 approve separation (can run after Batch A)
+    BatchA_Done --> BatchD_Start
+    BatchD_Start --> A5[Area 5: Remove advancePhase<br>from approval.ts<br>Add nextAction field]
+    A5 --> A5_HarnessNext{harness_next still works<br>after advancePhase removal?}
+    A5_HarnessNext -->|Yes| A5_TestFix[Update approval.test.ts<br>+ lifecycle.test.ts expectations]
+    A5_HarnessNext -->|No| A5_Rollback[Restore advancePhase<br>Investigate lifecycle coupling] --> A5
+
+    A5_TestFix --> A5_TestRun{approve + lifecycle<br>tests pass?}
+    A5_TestRun -->|Yes| BatchD_Done([Batch D Complete])
+    A5_TestRun -->|No| A5_ExpFix[Fix test expectations:<br>no nextPhase, has nextAction] --> A5_TestRun
+
+    %% Final verification
+    BatchC_Done --> FinalGate
+    BatchD_Done --> FinalGate
+
+    FinalGate{All batches complete?} -->|Yes| Build[npm run build]
+    FinalGate -->|No - waiting| FinalGate
+
+    Build --> BuildResult{Build succeeds?}
+    BuildResult -->|Yes| TestRun[Run full test suite]
+    BuildResult -->|No| BuildFix[Fix import paths<br>and type errors] --> Build
+
+    TestRun --> TestResult{All tests pass?}
+    TestResult -->|Yes| ACVerify[Verify AC-1 through AC-9]
+    TestResult -->|No| TestFix[Fix test expectations<br>for changed interfaces] --> TestRun
+
+    ACVerify --> ACPass{All AC met?}
+    ACPass -->|Yes| Done([Refactoring Complete])
+    ACPass -->|No| ACRemediate[Fix failing acceptance criteria] --> ACVerify

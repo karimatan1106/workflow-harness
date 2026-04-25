@@ -1,0 +1,109 @@
+task: TOONパーサー実装 researchフェーズ分析結果
+phase: research
+analyst: coordinator
+date: 2026-03-17
+
+parse-functions-available:
+  function-1-name: unesc
+  function-1-signature: "unesc(s: string): string"
+  function-1-file: toon-helpers.ts
+  function-1-purpose: ダブルクォート囲みのアンエスケープ。KV値の取り出しに必須
+  function-1-usable-for-kv: true
+
+  function-2-name: parseCsvRow
+  function-2-signature: "parseCsvRow(line: string): string[]"
+  function-2-file: toon-helpers.ts
+  function-2-purpose: CSV行をダブルクォート対応でパース。テーブル行の分解に使う
+  function-2-usable-for-kv: false
+
+  function-3-name: fromSemiList
+  function-3-signature: "fromSemiList(s: string): string[]"
+  function-3-file: toon-helpers.ts
+  function-3-purpose: セミコロン区切り文字列を配列化。配列型KV値の展開に使う
+  function-3-usable-for-kv: true
+
+  function-4-name: parseTableBlock
+  function-4-signature: "parseTableBlock(lines: string[], startIdx: number): { cols: string[]; rows: string[][]; consumed: number }"
+  function-4-file: toon-helpers.ts
+  function-4-purpose: テーブル配列ブロック全体をパース。steps等の構造化リストに使う
+  function-4-usable-for-kv: false
+
+  function-5-name: esc
+  function-5-signature: "esc(v: unknown): string"
+  function-5-file: toon-helpers.ts
+  function-5-purpose: 値をTOONセル用にエスケープ。coordinator出力組み立て時のバグ修正に必要
+  function-5-usable-for-kv: false
+
+parse-state-kv-logic-location: state-toon-parse.ts L.20-38
+parse-state-kv-algorithm: "lines分割 → 空行/インデント行スキップ → テーブルヘッダースキップ → colonIdx=indexOf(: ) → key/valを分離してunesc適用"
+parse-state-is-reusable: true
+parse-state-problem: TaskState型に特化しすぎ。汎用KVパーサーとして再利用するには型依存を外す必要あり
+
+instruction-parse-step-1: parseToonKv関数を新規作成（toon-helpers.tsに追加）
+instruction-parse-step-1-logic: state-toon-parse.ts L.20-38のKVロジックをRecord<string,string>返却の汎用関数として抽出
+instruction-parse-step-2: "handleDelegateCoordinator内でinstruction文字列をparseToonKvに渡してkv取得"
+instruction-parse-step-3: "kvからtask/goal/steps等を抽出してfullInstructionを構造化テキストに再組み立て"
+instruction-parse-step-4: "stepsフィールドはfromSemiListでパースするか複数行テキストとしてそのまま展開"
+injection-strategy: systemPromptではなくfullInstructionに構造化テキストを追記注入（L.186-189の既存パターンを踏襲）
+
+current-bug-location: delegate-coordinator.ts L.269
+current-bug-reason: "バックスラッシュエスケープを使用。TOONルール「バックスラッシュ禁止」に違反"
+current-bug-line: "output: \"${resultText.trim().replace(/\"/g, '\\\"').replace(/\\n/g, '\\\\n')}\""
+fix-line: "output: ${esc(resultText.trim())}"
+fix-import-needed: esc を toon-helpers.js からimport追加
+
+coordinator-output-parse-step-1: extractResult(stdout)で生テキストを取得（既存実装を維持）
+coordinator-output-parse-step-2: resultTextをparseToonKvでパース
+coordinator-output-parse-step-3: "kv['success']でtrue/false判定"
+coordinator-output-parse-step-4: "kv['output']から実際の出力テキストを取得"
+coordinator-output-parse-step-5: "kv['files-changed']からファイルリストを取得"
+coordinator-output-parse-step-6: "取得したkv値でtoonResultを再組み立て（esc()使用）"
+
+fallback-case-1-trigger: parseToonKv失敗またはkvが空
+fallback-case-1-action: resultTextを全体としてoutputに格納。successはresultTextが空でなければtrue
+fallback-case-2-trigger: extractResultが(no extractable result)を返す
+fallback-case-2-action: "success: false / output: coordinator produced no output"
+fallback-case-3-trigger: "kv中にsuccess: falseが存在"
+fallback-case-3-action: "respondError呼び出し。kv['output']をエラーメッセージとして使用"
+fallback-case-4-trigger: files-changedキーなし
+fallback-case-4-action: args.filesにフォールバック（既存L.272の動作を維持）
+
+new-function-name: parseToonKv
+new-function-signature: "function parseToonKv(content: string): Record<string, string>"
+new-function-location: toon-helpers.ts（既存parseTableBlockの直後に追加）
+new-function-exports: export function parseToonKv
+new-function-lines-estimate: 15
+new-function-pseudo-code: "split by newline → skip blank/indent lines → skip table headers → colonIdx=indexOf(': ') → key=slice(0,colonIdx).trim() → val=unesc(slice(colonIdx+2)) → kv[key]=val → return kv"
+
+file-to-modify-1: workflow-harness/mcp-server/src/state/toon-helpers.ts
+file-to-modify-1-change: parseToonKv汎用関数を追加（export）
+
+file-to-modify-2: workflow-harness/mcp-server/src/tools/handlers/delegate-coordinator.ts
+file-to-modify-2-change-1: "esc と parseToonKv を toon-helpers.js からimport追加"
+file-to-modify-2-change-2: L.186付近にinstruction TOONパース処理を追加（kvからtask/goal/stepsを抽出してfullInstructionに注入）
+file-to-modify-2-change-3: L.269のバックスラッシュエスケープをesc()に置換
+file-to-modify-2-change-4: extractResult後にparseToonKvでcoordinator出力をパース（success/output/files-changedを抽出）
+
+implementation-priority-1: L.269バグ修正（TOONルール違反の即時修正）
+implementation-priority-2: parseToonKv追加（汎用KVパーサーの基盤）
+implementation-priority-3: coordinator出力パース（extractResult後の構造化処理）
+implementation-priority-4: instruction TOONパース注入（入力側の構造化）
+
+success: true
+output: "分析完了。parseToonKv新規実装 + L.269バグ修正 + coordinator出力パース設計を提案。実装優先度も定義済み"
+files-changed: "（この分析はread-onlyのため変更なし）"
+
+decisions[6]{id,statement,rationale}:
+  RD-1, parseToonKvを toon-helpers.ts に新規追加, 汎用KVパーサーが存在せずstate-toon-parse.tsはTaskState特化で再利用不可のため
+  RD-2, instructionパース失敗時は生文字列フォールバック, 後方互換性と非TOON形式のinstructionも受容するため
+  RD-3, coordinator出力パースにもparseToonKvを使用, 入出力で同一パーサーを使い一貫性を保つため
+  RD-4, L.269のバックスラッシュ使用をesc()に置換, TOONルール「バックスラッシュ禁止」違反の修正
+  RD-5, coordinatorからworkerへのファイル書き込みはBash HARNESS_LAYER=worker, Agent subagentはcoordinator権限を継承しdocs/workflows/書き込みが不可のため
+  RD-6, not-in-scope: toon-helpers.tsの既存関数変更, 影響範囲を最小に抑えるため
+
+artifacts[3]{id,path,description}:
+  A-1, workflow-harness/mcp-server/src/tools/handlers/delegate-coordinator.ts, instructionパース + 出力パース + L.269バグ修正
+  A-2, workflow-harness/mcp-server/src/state/toon-helpers.ts, parseToonKv関数の追加
+  A-3, workflow-harness/hooks/tool-gate.js, workerレイヤー書き込み許可（完了済み）
+
+next: planning

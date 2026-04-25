@@ -1,0 +1,52 @@
+flowchart TD
+    A(開始: parallel_verificationバリデーション失敗) --> B[問題分析: 角括弧検出パターン確認]
+    B --> C{修正対象ファイル\nを特定}
+
+    C -->|FR-A| D["CLAUDE.mdの角括弧\nプレースホルダー説明修正"]
+    C -->|FR-B| E["definitions.ts\nFR-3・FR-4ガイダンス修正"]
+    C -->|FR-C| F["buildSubagentTemplate関数\n角括弧説明修正"]
+    C -->|FR-D| G["サマリーセクション\n行数ガイダンス確認"]
+
+    D --> D1["削除: コードフェンス外の\n全角括弧禁止という誤記述"]
+    D1 --> D2["追記: ハッシュ記号付き形式\n [#xxx#] のみが禁止"]
+    D2 --> D3[修正完了]
+
+    E --> E1["e2e_test: 配列記法禁止を\n削除・正確な説明に置換"]
+    E1 --> E2["performance_test: 同様に\n禁止パターンを正確に記述"]
+    E2 --> E3[修正完了]
+
+    F --> F1["buildSubagentTemplate関数\nの行1150-1162を修正"]
+    F1 --> F2["buildRetryPrompt関数の\nエラーメッセージを修正"]
+    F2 --> F3[修正完了]
+
+    G --> G1["performance_test: コロン後\n無コンテンツ行の注意を確認"]
+    G1 --> G2["e2e_test: 実質行数5項目\nOK例の記述を確認"]
+    G2 --> G3[確認完了]
+
+    D3 --> H["全修正を統合"]
+    E3 --> H
+    F3 --> H
+    G3 --> H
+
+    H --> I["npm run build実行:\nTypeScriptをトランスパイル"]
+    I --> J{dist/*.jsファイル\n更新確認}
+    J -->|OK| K["MCPサーバーを再起動\nprocess kill &amp; restart"]
+    J -->|NG| L["ビルド失敗: エラー修正"]
+    L --> I
+
+    K --> M["テストスイート実行:\n945件の通過確認"]
+    M --> N{全テスト\n通過}
+    N -->|Yes| O["受入条件AC-1~AC-5\nの対応検証"]
+    N -->|No| P["失敗したテストを\n分析・修正"]
+    P --> M
+
+    O --> Q["AC-1: CLAUDE.md\n禁止形式の統一確認"]
+    Q --> R["AC-2: e2e_test・performance_test\nガイダンスの正確性確認"]
+    R --> S["AC-3: 945件テスト通過\n確認"]
+    S --> T["AC-4: コロン後無コンテンツ\n行の注意事項確認"]
+    T --> U["AC-5: 両ファイル間の\n角括弧形式統一確認"]
+
+    U --> V{全受入条件\n満たす}
+    V -->|Yes| W(完了: 根本原因修正完了)
+    V -->|No| X["修正漏れを特定・修正"]
+    X --> H

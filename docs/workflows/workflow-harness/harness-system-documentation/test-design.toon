@@ -1,0 +1,79 @@
+title: ハーネスシステム永続ドキュメント テスト設計
+phase: test_design
+taskName: harness-system-documentation
+intent: "ハーネスシステムの現状の要件、基本設計、アーキテクチャ、全30フェーズの仕様を永続ドキュメントとして作成し、各仕様がコードのどの部分(ファイル:行番号)と対応するかのトレーサビリティを含める"
+createdAt: 2026-03-08
+baseCommit: c01d68940cb06a2ae56de20f19491db6b4d9db48
+
+summary: "6成果物(FR-1〜FR-6)に対応するAC-1〜AC-7の検証テストケースを設計した。ドキュメント品質検証のため、各ACに対しファイル存在・必須セクション含有・行数制限(200行以下)・コード参照パターン(src/*.ts:NN-MM)含有の4軸チェックを定義。合計28テストケース(TC-AC1-01〜TC-AC7-04)をacTcMappingで全AC→TCの追跡可能性を確保。検証手段はファイルシステム操作+正規表現マッチングによる静的検証とし、自動実行可能な形式で記述した。"
+
+testStrategy:
+  approach: "各ACの成果物ファイルに対する静的品質検証。ファイル存在・セクション構造・行数制限・コード参照パターンの4軸で合否判定する"
+  verificationMethod: "ファイルシステム操作(存在確認・行数カウント)+ grep/正規表現マッチング(セクション含有・コード参照パターン)"
+  codeRefPattern: "src/[a-zA-Z_/-]+\\.ts:\\d+-\\d+"
+  lineLimit: 200
+  passCondition: "全28テストケースがpassであること"
+
+testCases[28]{id,ac,target,check,passCondition}:
+
+  TC-AC1-01, AC-1, "docs/architecture/overview.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC1-02, AC-1, "docs/architecture/overview.md", "必須セクション含有", "「システム概要」「モジュール構成」「依存」「MCP」「設計制約」の5語がすべて含まれる"
+  TC-AC1-03, AC-1, "docs/architecture/overview.md", "行数制限", "総行数が200行以下である"
+  TC-AC1-04, AC-1, "docs/architecture/overview.md", "コード参照パターン", "src/index.ts:のコード参照が1件以上存在する"
+
+  TC-AC2-01, AC-2, "docs/spec/features/phase-system.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC2-02, AC-2, "docs/spec/features/phase-system.md", "必須セクション含有", "「フェーズ」「ステージ」「並列」「サイジング」「リスク」の5語がすべて含まれる"
+  TC-AC2-03, AC-2, "docs/spec/features/phase-system.md", "行数制限", "総行数が200行以下である"
+  TC-AC2-04, AC-2, "docs/spec/features/phase-system.md", "コード参照パターン", "src/phases/registry.ts:のコード参照が1件以上存在する"
+
+  TC-AC3-01, AC-3, "docs/spec/features/gate-system.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC3-02, AC-3, "docs/spec/features/gate-system.md", "必須セクション含有", "「DoD」「承認」「IA-」「RTM」「L1」「L4」の6語がすべて含まれる"
+  TC-AC3-03, AC-3, "docs/spec/features/gate-system.md", "行数制限", "総行数が200行以下である"
+  TC-AC3-04, AC-3, "docs/spec/features/gate-system.md", "コード参照パターン", "src/gates/dod.ts:のコード参照が1件以上存在する"
+
+  TC-AC4-01, AC-4, "docs/spec/features/mcp-tools.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC4-02, AC-4, "docs/spec/features/mcp-tools.md", "必須セクション含有", "「ツール定義」「ハンドラ」「セッション」の3語がすべて含まれる"
+  TC-AC4-03, AC-4, "docs/spec/features/mcp-tools.md", "行数制限", "総行数が200行以下である"
+  TC-AC4-04, AC-4, "docs/spec/features/mcp-tools.md", "コード参照パターン", "src/tools/handler.ts:のコード参照が1件以上存在する"
+
+  TC-AC5-01, AC-5, "docs/architecture/modules/state-management.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC5-02, AC-5, "docs/architecture/modules/state-management.md", "必須セクション含有", "「TaskState」「HMAC」「Reflector」「Curator」「ACE」の5語がすべて含まれる"
+  TC-AC5-03, AC-5, "docs/architecture/modules/state-management.md", "行数制限", "総行数が200行以下である"
+  TC-AC5-04, AC-5, "docs/architecture/modules/state-management.md", "コード参照パターン", "src/state/manager.ts:のコード参照が1件以上存在する"
+
+  TC-AC6-01, AC-6, "docs/architecture/traceability-matrix.md", "ファイル存在", "ファイルが存在しサイズが0バイトより大きい"
+  TC-AC6-02, AC-6, "docs/architecture/traceability-matrix.md", "必須セクション含有", "「ソースファイル」「テストファイル」「カバレッジ」の3語がすべて含まれる"
+  TC-AC6-03, AC-6, "docs/architecture/traceability-matrix.md", "行数制限", "総行数が200行以下である"
+  TC-AC6-04, AC-6, "docs/architecture/traceability-matrix.md", "コード参照パターン", "src/のパス参照が5件以上存在する(3軸対応表のため多数のソースファイル参照が必須)"
+
+  TC-AC7-01, AC-7, "docs/architecture/overview.md", "横断コード参照", "src/.*\\.ts:\\d+-\\d+パターンが3件以上マッチする"
+  TC-AC7-02, AC-7, "docs/spec/features/phase-system.md", "横断コード参照", "src/.*\\.ts:\\d+-\\d+パターンが3件以上マッチする"
+  TC-AC7-03, AC-7, "docs/spec/features/gate-system.md", "横断コード参照", "src/.*\\.ts:\\d+-\\d+パターンが3件以上マッチする"
+  TC-AC7-04, AC-7, "docs/spec/features/mcp-tools.md", "横断コード参照", "src/.*\\.ts:\\d+-\\d+パターンが3件以上マッチする"
+
+acTcMapping[7]{ac,testCases,passCondition}:
+  AC-1, "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC7-01", "5件全pass"
+  AC-2, "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-04/TC-AC7-02", "5件全pass"
+  AC-3, "TC-AC3-01/TC-AC3-02/TC-AC3-03/TC-AC3-04/TC-AC7-03", "5件全pass"
+  AC-4, "TC-AC4-01/TC-AC4-02/TC-AC4-03/TC-AC4-04/TC-AC7-04", "5件全pass"
+  AC-5, "TC-AC5-01/TC-AC5-02/TC-AC5-03/TC-AC5-04", "4件全pass"
+  AC-6, "TC-AC6-01/TC-AC6-02/TC-AC6-03/TC-AC6-04", "4件全pass"
+  AC-7, "TC-AC7-01/TC-AC7-02/TC-AC7-03/TC-AC7-04", "4件全pass(AC-1〜AC-4の文書に対する横断検証)"
+
+decisions[6]{id,statement,rationale}:
+  TD-1, "ドキュメント品質検証を4軸(存在・セクション・行数・コード参照)で統一する", "ドキュメントタスクの成果物は全て同一形式(Markdownファイル)であり、品質基準を統一することで検証の一貫性と自動化可能性を確保するため"
+  TD-2, "必須セクション含有チェックはキーワードベースとし見出し文字列の完全一致は求めない", "Markdown見出しの表記揺れ(##/###、全角半角)に左右されない堅牢な検証のため。キーワード存在で内容の網羅性を間接検証する"
+  TD-3, "コード参照パターンはsrc/path/file.ts:NN-MM形式を正規表現で検証する", "spec.toonのcodeRefsで定義された参照形式と一致させ、AC-7の追跡可能性要件を機械的に検証するため"
+  TD-4, "AC-7のテストケースはAC-1〜AC-4の文書に対する横断チェックとして設計し、AC-5/AC-6は個別TC内のコード参照チェックで兼ねる", "AC-7は全文書横断の要件であるが、AC-5(state-management)とAC-6(traceability)は個別TC(-04)で既にコード参照を検証しており重複を避けるため"
+  TD-5, "TC-AC6-04はsrc/パス参照5件以上を要求する", "トレーサビリティマトリクスは3軸対応表であり、ソース・テスト・仕様の対応を記述するため最低でも5件のソースファイルパス参照が含まれる必要がある"
+  TD-6, "テストケースIDはTC-AC{N}-{NN}形式で統一し、acTcMappingで全AC→TCの追跡を保証する", "IA-4(acTcMapping存在)ゲート要件を満たし、AC単位での合否判定を明確にするため"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-system-documentation/test-design.toon, spec, "テスト設計: 7AC×4軸=28テストケース・acTcMapping・6設計決定"
+  docs/workflows/harness-system-documentation/spec.toon, input, "技術仕様書: 6文書の詳細セクション設計・コード参照マッピング(入力成果物)"
+  docs/workflows/harness-system-documentation/requirements.toon, input, "要件定義: 7AC・6FR・12設計決定(入力成果物)"
+
+next:
+  implementationStart: "FR-1(docs/architecture/overview.md)の実装から着手。TC-AC1-01〜TC-AC1-04の4テストケースが最初の検証対象となる"
+  verificationOrder: "実装順序(FR-1→FR-2→FR-3→FR-5→FR-4→FR-6)に従い、各文書完成後にその文書の対応TCを実行して合否確認する"
+  finalVerification: "全6文書完成後にTC-AC7-01〜TC-AC7-04の横断コード参照チェックを実行し、AC-7の充足を最終確認する"

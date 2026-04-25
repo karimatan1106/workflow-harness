@@ -1,0 +1,167 @@
+flowchart TD
+    A["workflow_next() 開始"] --> B["タスクID取得<br/>getTaskByIdOrError"]
+    B --> C{タスク取得<br/>成功?}
+    C -->|失敗| D["エラーを返却<br/>error in result"]
+    D --> Z1["終了"]
+
+    C -->|成功| E["currentPhase = taskState.phase"]
+    E --> F{currentPhase<br/>== 'completed'?}
+    F -->|Yes| G["TASK_ALREADY_COMPLETED<br/>エラー返却"]
+    G --> Z2["終了"]
+
+    F -->|No| H{requiresApproval<br/>currentPhase?}
+    H -->|Yes| I["レビュー承認が必要<br/>エラー返却"]
+    I --> Z3["終了"]
+
+    H -->|No| J{isParallelPhase<br/>currentPhase?}
+    J -->|Yes| K["getIncompleteSubPhases<br/>取得"]
+    K --> L{未完了<br/>サブフェーズ<br/>あり?}
+    L -->|Yes| M["未完了フェーズ一覧<br/>エラー返却"]
+    M --> Z4["終了"]
+
+    L -->|No| N["並列フェーズチェック<br/>OK"]
+    N --> O["スコープサイズ取得<br/>affectedFiles, directories"]
+
+    J -->|No| O
+    O --> P{currentPhase<br/>== 'parallel_analysis'?}
+    P -->|Yes| Q{スコープ<br/>設定済み?}
+    Q -->|No| R["スコープが設定されていない<br/>エラー返却"]
+    R --> Z5["終了"]
+    Q -->|Yes| S["スコープ必須チェック<br/>OK"]
+
+    P -->|No| S
+    S --> T{scopeFileCount<br/>> MAX_SCOPE_FILES<br/>OR<br/>scopeDirCount<br/>> MAX_SCOPE_DIRS?}
+    T -->|Yes| U["スコープが大きすぎる<br/>エラー返却"]
+    U --> Z6["終了"]
+
+    T -->|No| V{currentPhase<br/>== 'testing'?}
+    V -->|Yes| W["getLatestTestResult<br/>phase='testing'"]
+    W --> X{testResult<br/>存在?}
+    X -->|No| Y1["テスト結果が記録されていない<br/>エラー返却"]
+    Y1 --> Z7["終了"]
+
+    X -->|Yes| X1{testResult.exitCode<br/>== 0?}
+    X1 -->|No| X2["テストが失敗している<br/>exitCode!=0<br/>エラー返却"]
+    X2 --> Z8["終了"]
+
+    X1 -->|Yes| X3["testing フェーズチェック<br/>OK<br/>testBaseline設定"]
+    X3 --> AA{currentPhase<br/>== 'regression_test'?}
+
+    V -->|No| AA
+    AA -->|Yes| AB["getLatestTestResult<br/>phase='regression_test'"]
+    AB --> AC{testResult<br/>存在?}
+    AC -->|No| AD["リグレッションテスト結果<br/>記録なし<br/>エラー返却"]
+    AD --> Z9["終了"]
+
+    AC -->|Yes| AE{testResult.exitCode<br/>== 0?}
+    AE -->|No| AF["リグレッションテスト失敗<br/>エラー返却"]
+    AF --> Z10["終了"]
+
+    AE -->|Yes| AG["testBaseline必須チェック<br/>テスト数・パス数監視<br/>baseline未設定→ブロック<br/>テスト数減少→ブロック<br/>パス数減少→ブロック"]
+    AG --> AH{baseline検証<br/>OK?}
+    AH -->|No| AI["baseline比較エラー<br/>エラー返却"]
+    AI --> Z11["終了"]
+
+    AH -->|Yes| AJ["regression_test チェック<br/>OK"]
+    AJ --> AK{currentPhase<br/>== 'test_impl'?}
+
+    AA -->|No| AK
+    AK -->|Yes| AL["performDesignValidation<br/>実行"]
+    AL --> AM{設計検証<br/>成功?}
+    AM -->|No| AN["設計-実装整合性エラー<br/>エラー返却"]
+    AN --> Z12["終了"]
+
+    AM -->|Yes| AO["test_impl チェック<br/>OK"]
+    AO --> AP{currentPhase<br/>== 'refactoring'?}
+
+    AK -->|No| AP
+    AP -->|Yes| AQ["performDesignValidation<br/>実行"]
+    AQ --> AR{設計検証<br/>成功?}
+    AR -->|No| AS["設計-実装整合性エラー<br/>エラー返却"]
+    AS --> Z13["終了"]
+
+    AR -->|Yes| AT["refactoring チェック<br/>OK"]
+    AT --> AU{currentPhase<br/>== 'docs_update'?}
+
+    AP -->|No| AU
+    AU -->|Yes| AV["スコープ事後検証<br/>validateScopePostExecution<br/>git diff --name-only HEAD"]
+    AV --> AW{スコープ外ファイル<br/>編集あり?}
+    AW -->|Yes| AX{SCOPE_STRICT<br/>== true?}
+    AX -->|Yes| AY["スコープ外編集エラー<br/>ブロック<br/>エラー返却"]
+    AY --> Z14["終了"]
+
+    AX -->|No| AZ["スコープ外編集<br/>警告のみ<br/>続行"]
+    AZ --> BA
+
+    AW -->|No| BA["git diff 照合<br/>OK"]
+    BA --> BB{スコープが設定<br/>されている?}
+    BB -->|Yes| BC["スコープ宣言ファイル<br/>との照合"]
+    BC --> BD["docs_update チェック<br/>OK"]
+
+    BB -->|No| BD
+    BD --> BE{currentPhase<br/>== 'commit'?}
+
+    AU -->|No| BE
+    BE -->|Yes| BF["commit フェーズ<br/>チェック<br/>フェーズ遷移のみ"]
+    BF --> BG
+
+    BE -->|No| BG{currentPhase<br/>== 'push'?}
+    BG -->|Yes| BH["push フェーズ<br/>チェック<br/>フェーズ遷移のみ"]
+    BH --> BI
+
+    BG -->|No| BI["その他のフェーズ"]
+    BI --> BJ["成果物品質チェック<br/>checkPhaseArtifacts<br/>PHASE_TO_ARTIFACT"]
+    BJ --> BK{成果物品質<br/>OK?}
+    BK -->|No| BL["成果物に問題がある<br/>エラー返却"]
+    BL --> Z15["終了"]
+
+    BK -->|Yes| BM["全チェック完了<br/>OK"]
+    BM --> BN["taskSize取得<br/>デフォルト: large"]
+    BN --> BO["getNextPhase<br/>currentPhase, taskSize"]
+    BO --> BP{nextPhase<br/>取得成功?}
+    BP -->|No| BQ["CANNOT_PROCEED<br/>エラー返却"]
+    BQ --> Z16["終了"]
+
+    BP -->|Yes| BR["safeExecute<br/>'フェーズ遷移'"]
+    BR --> BS["stateManager.updateTaskPhase<br/>taskId, nextPhase"]
+    BS --> BT["成功レスポンス返却<br/>from: currentPhase<br/>to: nextPhase<br/>description<br/>workflow_context"]
+    BT --> Z17["終了"]
+
+    style A fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style D fill:#f44336,stroke:#c62828,color:#fff
+    style G fill:#f44336,stroke:#c62828,color:#fff
+    style I fill:#f44336,stroke:#c62828,color:#fff
+    style M fill:#f44336,stroke:#c62828,color:#fff
+    style R fill:#f44336,stroke:#c62828,color:#fff
+    style U fill:#f44336,stroke:#c62828,color:#fff
+    style Y1 fill:#f44336,stroke:#c62828,color:#fff
+    style X2 fill:#f44336,stroke:#c62828,color:#fff
+    style X3 fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style AD fill:#f44336,stroke:#c62828,color:#fff
+    style AF fill:#f44336,stroke:#c62828,color:#fff
+    style AI fill:#f44336,stroke:#c62828,color:#fff
+    style AN fill:#f44336,stroke:#c62828,color:#fff
+    style AS fill:#f44336,stroke:#c62828,color:#fff
+    style AY fill:#f44336,stroke:#c62828,color:#fff
+    style AZ fill:#FF9800,stroke:#F57C00,color:#fff
+    style BD fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style BL fill:#f44336,stroke:#c62828,color:#fff
+    style BM fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style BT fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Z1 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z2 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z3 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z4 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z5 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z6 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z7 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z8 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z9 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z10 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z11 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z12 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z13 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z14 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z15 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z16 fill:#2196F3,stroke:#1565C0,color:#fff
+    style Z17 fill:#2196F3,stroke:#1565C0,color:#fff

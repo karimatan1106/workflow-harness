@@ -1,0 +1,106 @@
+entries[3]:
+  - timestamp: "2026-04-24T05:42:05.897Z"
+    phase: hearing
+    retryCount: 1
+    errors[4]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L2] userResponse: key missing from hearing artifact"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\deprecate-task-index-json\\hearing.md",L1,null,null
+      input_files_exist,true,No input files required for this phase,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: hearing",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,false,"Missing required sections: decisions, artifacts, next. Add ## headings for each.",L3,"成果物に以下のMarkdownヘッダーを追加してください: ## decisions, ## artifacts, ## next",null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,false,"Missing required Markdown sections: decisions, artifacts, next",L4,必須セクション(## decisions/## artifacts/## next)を追加してください。,null
+      rtm_completeness,true,"RTM completeness check not required for phase: hearing",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: hearing",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: hearing",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: hearing",L3,null,null
+      ac_format,true,"ac_format check not required for phase: hearing",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: hearing",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: hearing",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: hearing",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: hearing",L3,null,null
+      artifact_freshness,true,No input files to check freshness for this phase,L3,null,null
+      delta_entry_format,false,"Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。",L4,## decisions セクションにリスト項目を追加してください。,"## decisions\n- D-001: 要件を明確化する (ユーザー意図との整合性確保のため)"
+      ac_design_mapping,true,"AC→design mapping check not required for phase: hearing",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: hearing",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: hearing",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: hearing",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: hearing",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: hearing",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: hearing",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: hearing",L2,null,null
+      hearing_user_response,false,"userResponse: key missing from hearing artifact",L2,"hearing.mdにuserResponse:キーがありません。AskUserQuestionツールでユーザーの意図を確認し、回答をuserResponse:キーとして記録してください。","userResponse: ユーザーからの回答内容をここに記載"
+      dead_references,true,"Dead reference check not required for phase: hearing",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-24T05:43:39.089Z"
+    phase: hearing
+    retryCount: 1
+    errors[1]: "[L2] userResponse: key missing from hearing artifact"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\deprecate-task-index-json\\hearing.md",L1,null,null
+      input_files_exist,true,No input files required for this phase,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: hearing",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,true,"Content validation passed: no forbidden patterns, placeholders, or duplicates",L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: hearing",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: hearing",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: hearing",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: hearing",L3,null,null
+      ac_format,true,"ac_format check not required for phase: hearing",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: hearing",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: hearing",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: hearing",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: hearing",L3,null,null
+      artifact_freshness,true,No input files to check freshness for this phase,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 7 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: hearing",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: hearing",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: hearing",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: hearing",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: hearing",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: hearing",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: hearing",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: hearing",L2,null,null
+      hearing_user_response,false,"userResponse: key missing from hearing artifact",L2,"hearing.mdにuserResponse:キーがありません。AskUserQuestionツールでユーザーの意図を確認し、回答をuserResponse:キーとして記録してください。","userResponse: ユーザーからの回答内容をここに記載"
+      dead_references,true,"Dead reference check not required for phase: hearing",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null
+  - timestamp: "2026-04-24T05:51:27.493Z"
+    phase: research
+    retryCount: 1
+    errors[1]: "[L4] Forbidden patterns found: サンプル"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\deprecate-task-index-json\\research.md",L1,null,null
+      input_files_exist,true,All 1 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: research",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,false,"Forbidden patterns found: サンプル",L4,指摘された禁止語を削除し、具体的な実例に置き換えてください。,null
+      rtm_completeness,true,"RTM completeness check not required for phase: research",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: research",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: research",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: research",L3,null,null
+      ac_format,true,"ac_format check not required for phase: research",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: research",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: research",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: research",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: research",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 5 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: research",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: research",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: research",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: research",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: research",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: research",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: research",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: research",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: research",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: research",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null

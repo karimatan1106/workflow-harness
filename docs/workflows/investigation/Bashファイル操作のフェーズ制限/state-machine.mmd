@@ -1,0 +1,67 @@
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> CheckAllowed: Bashコマンド受信
+
+    CheckAllowed --> Allow: 常に許可パターン<br/>(git, npm, docker等)
+    CheckAllowed --> CheckModifying: ファイル修正の可能性あり
+
+    CheckModifying --> Allow: 読み込み専用<br/>(git status, ls等)
+    CheckModifying --> CheckReadOnly: ファイル修正あり
+
+    CheckReadOnly --> Allow: idleフェーズ<br/>検査対象外
+    CheckReadOnly --> ExtractPath: read-write<br/>フェーズ確認必要
+
+    ExtractPath --> CheckFileType: パス解析完了
+
+    CheckFileType --> CheckPhaseRule: ファイルタイプ判定<br/>(code/test/docs/config)
+
+    CheckPhaseRule --> Allow: 現在フェーズで<br/>編集可能
+    CheckPhaseRule --> Block: フェーズ制限<br/>違反検出
+
+    Allow --> [*]
+    Block --> [*]
+
+    note right of CheckAllowed
+        常に許可パターン:
+        - git コマンド
+        - npm/pnpm/yarn コマンド
+        - docker コマンド
+        - node コマンド
+        - vitest/jest コマンド
+        - その他環境関連
+    end note
+
+    note right of CheckModifying
+        読み込み専用:
+        - cat, head, tail
+        - ls, find, grep
+        - git status, git diff
+        - npm list
+    end note
+
+    note right of ExtractPath
+        ファイルパス抽出戦略:
+        - コマンド引数から抽出
+        - リダイレクト対象を検出
+        - パイプライン中間ファイルを検出
+    end note
+
+    note right of CheckFileType
+        ファイルタイプ判定:
+        - .ts/.tsx/.js (code)
+        - .test.ts/.spec.ts (test)
+        - .md/.mdx (docs)
+        - .json/.yaml/.mmd (config)
+    end note
+
+    note right of CheckPhaseRule
+        フェーズ別編集可能ファイル:
+        - research: .md (読み取り中心)
+        - requirements: .md
+        - parallel_design: .md, .mmd
+        - test_impl: test files
+        - implementation: source code
+        - refactoring: all code
+        - docs_update: .md, .mdx
+    end note

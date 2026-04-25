@@ -1,0 +1,54 @@
+phase: research
+task: template-label-cleanup
+intent: テンプレート内の太字ラベル装飾を除去しプレーンテキストに統一する
+status: complete
+
+summary: 対象8ファイルのGrep調査で太字ラベル120箇所を確認。7分類に整理し置換戦略を決定。既存テストに太字検査なし。workflow-rules.md Section5が追加先
+
+boldLabelCount[8]{file,count}:
+  definitions-shared.ts, 5
+  definitions.ts, 1
+  defs-stage1.ts, 30
+  defs-stage2.ts, 20
+  defs-stage3.ts, 14
+  defs-stage4.ts, 21
+  defs-stage5.ts, 14
+  defs-stage6.ts, 15
+
+totalOccurrences: 120
+
+labelCategories[7]{id,pattern,count,replacement}:
+  CAT-1, セクションヘッダ(タスク情報/入力/作業内容/出力), 68, 二重アスタリスク除去のみ
+  CAT-2, ステップラベル(Step 0/1/2/3/3.5), 5, 二重アスタリスク除去のみ
+  CAT-3, ルール/制約ラベル(分岐係数ルール/収束チェック/depth/フォールバック), 12, 二重アスタリスク除去のみ
+  CAT-4, 必須マーカー(★必須:で始まるラベル), 5, 二重アスタリスク除去のみ(★は維持)
+  CAT-5, 共有定数(品質要件/TOON成果物/完了時の戻り値/作業順序/Bash制限/TOON入力), 6, 二重アスタリスク除去のみ
+  CAT-6, インライン強調(code quality/code efficiency/CLAUDE.md compliance/外部レビュアーの視点/タスク名), 6, 二重アスタリスク除去のみ
+  CAT-7, 固有ラベル(設計チェックリスト/レビュー姿勢/ドキュメント配置ルール), 3, 二重アスタリスク除去のみ
+
+replacePattern: 全カテゴリ共通で二重アスタリスク囲み(**text**)からtext部分のみ抽出。ロジック変更なし
+
+existingTestAnalysis: template-separator-cleanup.test.tsはSEP_RE(/^={3,}\s/gm)とHEADER_RE(/^#{2,}\s/gm)を検査。太字パターン(/\*\*[^*]+\*\*/gm)の検査は未実装
+
+rulesFileAnalysis: workflow-rules.md Section5(Artifact Quality)末尾が適切な追加位置。テンプレート文字列内でのMarkdown装飾文字使用禁止ルールを追加
+
+decisions[7]{id,statement,rationale}:
+  R-1, 全120箇所を同一パターンで機械的に置換する, 7分類すべて同じ置換操作(二重アスタリスク除去)であり分類ごとの特別処理不要
+  R-2, 置換正規表現は /\*\*([^*]+)\*\*/ で捕捉グループ$1に置換, 全パターンを単一正規表現でカバー可能。ネストなし
+  R-3, definitions-shared.tsの共有定数5箇所も同様に除去する, テンプレート展開後の最終出力に太字が残る経路を遮断
+  R-4, definitions.tsのbuildToonFirstSection内1箇所も除去する, TOON入力(ACE)ラベルが太字で出力される経路
+  R-5, workflow-rules.md Section5末尾にテンプレート装飾禁止ルールを追加する, 将来の装飾文字再導入を防止。既存の禁止語/プレースホルダー禁止と同列
+  R-6, 既存テストにBOLD_RE検査を追加する, template-separator-cleanup.test.tsのAC-3相当として太字パターン不在を検証
+  R-7, CAT-4の★記号は維持する, ★は太字装飾ではなく視覚的重要度マーカーであり除去対象外
+
+riskAssessment: 全置換が装飾除去のみでロジック変更なし。正規表現が単純で誤マッチリスク低。テストで除去完了を検証可能
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/template-label-cleanup/scope-definition.toon, spec, スコープ定義(9ファイル117箇所+ルール1件)
+  docs/workflows/template-label-cleanup/research.toon, research, 太字ラベル120箇所の7分類調査と置換戦略
+
+next:
+  criticalDecisions: R-1(全箇所同一パターン置換) R-5(ルール追加) R-6(テスト追加)
+  readFiles: definitions-shared.ts definitions.ts defs-stage1.ts defs-stage2.ts defs-stage3.ts defs-stage4.ts defs-stage5.ts defs-stage6.ts workflow-rules.md template-separator-cleanup.test.ts
+  warnings: scope-definitionの117箇所と実測120箇所に3箇所の差異あり(defs-stage4.tsが18ではなく21箇所)
+  implementationOrder: 1.共有定数(definitions-shared.ts) 2.definitions.ts 3.defs-stage1〜6.ts 4.workflow-rules.md 5.テスト更新

@@ -1,0 +1,93 @@
+task: harness-stale-task-cleanup-and-hmac-recovery
+phase: research
+status: complete
+created: 2026-03-11
+
+finding_1_id: R-01
+finding_1_title: listTasksFromDisk全件走査の構造的問題
+finding_1_detail: readdirSync→全92ディレクトリ走査→各readFileSync+JSON.parse+verifyStateWithRotation。completed89件もディスクI/O+HMAC検証を実行した後にphase!==completedでフィルタ。buildTaskIndexはフィルタすら無く全件返却
+finding_1_file: workflow-harness/mcp-server/src/state/manager-read.ts
+finding_1_lines: L42-63(listTasksFromDisk), L65-91(buildTaskIndex)
+finding_1_evidence: readdirSync→for loop→readFileSync→JSON.parse→verifyStateWithRotation→phase check。全件に対しHMAC計算(createHmac SHA256)が走る
+
+finding_2_id: R-02
+finding_2_title: handleHarnessStatus(taskId無し)の無制限応答
+finding_2_detail: lifecycle.ts L67でsm.listTasks()を呼び出し、返却値をそのままrespond()に渡す。listTasksはlistTasksFromDiskの結果(activeタスクのみ)だが、buildTaskIndex経由でwriteTaskIndexも全件走査する
+finding_2_file: workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts
+finding_2_lines: L47-68
+finding_2_evidence: respond({ tasks: sm.listTasks() })でactive3件のみ返却されるが、内部で92件分のI/O+HMAC検証が発生
+
+finding_3_id: R-03
+finding_3_title: loadHmacKeysレガシー配列形式でprevious欠落
+finding_3_detail: hmac-keys.jsonがレガシー配列形式[{generation,key,createdAt,expiresAt}]の場合、raw[raw.length-1].keyをcurrentとして返却するがpreviousは設定されない。verifyStateWithRotation L83のkeys.previous分岐が常にfalse
+finding_3_file: workflow-harness/mcp-server/src/utils/hmac.ts
+finding_3_lines: L26-50(loadHmacKeys), L78-87(verifyStateWithRotation)
+finding_3_evidence: レガシー配列→return { current: entry.key, rotatedAt: ... }。previousフィールド無し
+
+finding_4_id: R-04
+finding_4_title: ensureHmacKeysによるキー再生成シナリオ
+finding_4_detail: StateManagerコンストラクタ(manager.ts L26)がensureHmacKeys→loadHmacKeysを呼ぶ。hmac-keys.jsonが存在し正常な場合は既存キーを返す。しかしファイル破損やフォーマット不一致時はL43-48で新キーを生成しファイルを上書き。この場合既存タスクのstateIntegrityと不一致
+finding_4_file: workflow-harness/mcp-server/src/state/manager.ts
+finding_4_lines: L24-26
+finding_4_evidence: constructor() { this.hmacKey = ensureHmacKeys(STATE_DIR); }。loadHmacKeysのフォールバック(L40-48)で新キー生成+writeFileSync
+
+finding_5_id: R-05
+finding_5_title: writeTaskIndex全件走査の二重コスト
+finding_5_detail: manager-write.ts L35-41のwriteTaskIndexがbuildTaskIndex(STATE_DIR)を呼び、92件全ディレクトリを再走査。createTask/advancePhase/approveGate等の書き込み操作のたびに全件走査が発生
+finding_5_file: workflow-harness/mcp-server/src/state/manager-write.ts
+finding_5_lines: L35-41
+finding_5_evidence: writeTaskIndex→buildTaskIndex→readdirSync+readFileSync+JSON.parse×92件。advancePhase等で毎回呼ばれる
+
+finding_6_id: R-06
+finding_6_title: loadTaskFromDiskのHMAC失敗時null返却(再署名なし)
+finding_6_detail: manager-read.ts L32-35でverifyStateWithRotation失敗時にreturn null。タスクデータは正常に読めているのにHMAC不一致だけでアクセス不能になる。再署名フォールバックが存在しない
+finding_6_file: workflow-harness/mcp-server/src/state/manager-read.ts
+finding_6_lines: L22-39
+finding_6_evidence: if (verifyStateWithRotation(...)) return state; return null;
+
+finding_7_id: R-07
+finding_7_title: 現在のhmac-keys.jsonの状態確認
+finding_7_detail: レガシー配列形式、generation:1、キー1件のみ。expiresAt:2026-03-15で4日後に期限切れ。ローテーション機構は未実装のため期限切れ後も同じキーが使われるが、手動削除や破損時に再生成→全タスク検証失敗のリスク
+finding_7_file: .claude/state/hmac-keys.json
+finding_7_evidence: [{generation:1, key:"c1fcab61...", createdAt:"2026-02-13T23:01:15.377Z", expiresAt:"2026-03-15T23:01:15.377Z"}]
+
+pattern_1_id: R-PAT-01
+pattern_1_name: 全件走査パターン
+pattern_1_detail: listTasksFromDisk, buildTaskIndex, writeTaskIndexの3関数が同じreaddirSync+readFileSync+JSON.parseパターン。共通のイテレータ抽出が可能
+
+pattern_2_id: R-PAT-02
+pattern_2_name: HMAC検証パターン
+pattern_2_detail: verifyStateWithRotation→loadHmacKeys→verifyState(current)→verifyState(previous)。2段階フォールバックだがレガシー形式でprevious無効
+
+pattern_3_id: R-PAT-03
+pattern_3_name: signAndPersistパターン
+pattern_3_detail: StateManagerの全書き込みメソッドがloadTask→変更→signAndPersist→writeTaskIndexの流れ。writeTaskIndexが毎回全件走査
+
+implicit_constraints[3]{id,description,value}:
+  IC-01, "STATE_DIR環境変数デフォルト", ".claude/state"
+  IC-02, "ディレクトリ命名規則", "タイムスタンプ形式: YYYYMMDD_HHMMSS_タスク名"
+  IC-03, "HMAC署名対象", "stateIntegrity以外の全フィールドをキーソートしてJSON.stringify"
+
+dependency_versions[3]{tool,version}:
+  node, "v22.14.0"
+  npm, "10.9.2"
+  tsc, "5.7.3"
+
+magic_numbers[5]{value,usage,rationale}:
+  92, "現在のワークフローディレクトリ数", "completed:89 + research:3"
+  5000, "testResults.output切り詰め長(manager.ts L120)", "コンテキスト圧縮"
+  3000, "git status --porcelainタイムアウトms(lifecycle.ts L40)", "応答性確保"
+  5, "リトライ上限(lifecycle.ts L81)", "VDB-1検出閾値"
+  32, "HMACキー長bytes(hmac.ts L43)", "SHA-256推奨キー長"
+
+decisions[7]{id,statement,rationale}:
+  R-01, "listTasksFromDiskにディレクトリ名タイムスタンプによる事前フィルタを追加", "readFileSync+JSON.parse+HMAC検証の前にディレクトリ名からcompleted判定は不可能だが、maxAge日数でタイムスタンプ古いものをスキップ可能"
+  R-02, "buildTaskIndexにstatusフィルタパラメータを追加しcompletedを除外可能にする", "writeTaskIndexが全書き込み操作で呼ばれるため、completed除外で走査数を89件削減"
+  R-03, "loadHmacKeysのレガシー配列形式変換時にraw[0..N-2]のキーをpreviousとして保持", "配列に複数エントリがある場合のフォールバック対応。現在は1件のみだが将来のローテーション対応"
+  R-04, "loadHmacKeysでレガシー形式検出時に新形式(current+previous)で上書き保存する自動マイグレーション", "一度変換すれば以後のセッションでレガシー分岐不要"
+  R-05, "loadTaskFromDiskのHMAC検証失敗時にログ出力+再署名オプションを追加", "データは正常だがキー不一致の場合にタスク喪失を防止。セキュリティログで監査可能"
+  R-06, "task-index.jsonをキャッシュとして活用し、buildTaskIndexの全件走査を回避", "task-index.jsonは全書き込み時に更新済み。読み取り時はインデックスから取得しディスク走査不要"
+  R-07, "completedタスクのHMAC検証をスキップし、activeタスクのみ検証する軽量モード", "completed状態のタスクは改竄リスクが低く、一覧表示時のHMAC検証コストを削減"
+
+artifacts: research.toon
+next: design

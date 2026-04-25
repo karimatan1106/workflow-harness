@@ -1,0 +1,116 @@
+stateDiagram-v2
+    %% スコープ管理の3つの根本原因修正 - 状態遷移図
+
+    %% メインフロー
+    state "開始" as start_node
+    state "完了" as end_node
+
+    start_node --> workflow_start
+
+    %% workflow_start: preExistingChanges記録（FIX-1準備）
+    workflow_start --> create_scope: ワークフロー開始
+    create_scope --> record_preexisting: preExistingChanges<br/>配列を記録
+
+    %% FIX-1: preExistingChanges保持
+    record_preexisting --> workflow_set_scope: workflow_set_scope<br/>実行
+    workflow_set_scope --> preserve_check: preExistingChanges<br/>保持確認
+
+    preserve_check --> preserve_existing: 既存データを<br/>保持する
+    preserve_check --> default_empty: プロパティ不在<br/>→ 空配列設定
+
+    preserve_existing --> preserved_scope: scopeオブジェクト<br/>再構築
+    default_empty --> preserved_scope
+    preserved_scope --> scope_ready: スコープ準備完了
+
+    %% FIX-2: git追跡ディレクトリ許可
+    scope_ready --> validate_scope: validateScopeExists<br/>実行
+    validate_scope --> check_exist: fs.existsSync<br/>チェック
+
+    check_exist --> dir_exists: ディレクトリ<br/>存在する
+    check_exist --> dir_missing: ディレクトリ<br/>存在しない
+
+    dir_exists --> is_directory: isDirectory<br/>検証
+    is_directory --> valid_dir: 有効な<br/>ディレクトリ
+    is_directory --> invalid_dir: ファイルまたは<br/>エラー
+
+    %% FIX-2: git追跡状態確認フォールバック
+    dir_missing --> check_git_tracked: checkGitTracked<br/>関数実行
+    check_git_tracked --> normalize_path: パス<br/>正規化
+    normalize_path --> verify_project_root: プロジェクト<br/>ルート検証
+
+    verify_project_root --> is_in_project: ルート配下<br/>にある
+    verify_project_root --> out_of_project: ルート外に<br/>ある
+
+    is_in_project --> check_relative: 相対パスに<br/>変換
+    check_relative --> has_dotdot: ドットドット<br/>参照あり
+    check_relative --> no_dotdot: 正常な<br/>パス
+
+    has_dotdot --> reject_traversal: パストラバーサル<br/>拒否 (false)
+    no_dotdot --> spawn_git_ls: git ls-files<br/>実行
+    out_of_project --> reject_out: プロジェクト外<br/>拒否 (false)
+
+    spawn_git_ls --> git_command: spawnSync<br/>（引数配列形式）
+    git_command --> git_result: コマンド<br/>実行結果
+
+    git_result --> git_error: エラーまたは<br/>タイムアウト
+    git_result --> git_output: 標準出力<br/>取得
+
+    git_error --> git_false: git追跡確認<br/>失敗 (false)
+    git_output --> check_output: 出力内容<br/>確認
+
+    check_output --> has_files: ファイル<br/>あり
+    check_output --> no_files: ファイルなし<br/>（空出力）
+
+    has_files --> git_tracked: git追跡<br/>確認 (true)
+    no_files --> git_untracked: git未追跡<br/>(false)
+
+    %% スコープ検証結果
+    valid_dir --> scope_valid: スコープ有効
+    invalid_dir --> scope_invalid: スコープ無効
+    git_tracked --> scope_valid: git追跡<br/>→ 有効
+    git_untracked --> scope_invalid: 削除済み<br/>→ 無効
+    git_false --> scope_invalid: エラー<br/>→ 無効
+    reject_traversal --> scope_invalid: 不正パス<br/>→ 無効
+    reject_out --> scope_invalid: 越境<br/>→ 無効
+
+    %% docs_update → commit遷移
+    scope_valid --> apply_scope: スコープ<br/>適用
+    apply_scope --> docs_update_phase: docs_update<br/>フェーズ
+
+    docs_update_phase --> commit_phase_entry: commit<br/>フェーズ遷移
+
+    %% FIX-3: commitフェーズrm許可
+    commit_phase_entry --> validate_whitelist: Bashコマンド<br/>ホワイトリスト検証
+    validate_whitelist --> is_rm_command: rmコマンド<br/>か判定
+
+    is_rm_command --> check_category: gitカテゴリ<br/>確認
+    is_rm_command --> not_rm: 他の<br/>コマンド
+
+    check_category --> rm_allowed: rmが<br/>ホワイトリスト<br/>に含まれる
+    check_category --> rm_blocked_old: rmが未登録<br/>（旧仕様）
+
+    rm_allowed --> check_phase_guard: phase-edit-guard<br/>チェック
+    rm_blocked_old --> rm_denied: rm実行<br/>不可
+    not_rm --> execute_command: コマンド<br/>実行
+
+    %% rm実行チェーン
+    check_phase_guard --> is_allowed_delete: ファイル削除が<br/>許可対象か
+
+    is_allowed_delete --> temp_file: 一時ファイル<br/>（placeholder等）
+    is_allowed_delete --> important_file: 重要ファイル<br/>（ソース等）
+
+    temp_file --> rm_execute: rm実行<br/>許可
+    important_file --> rm_guard_deny: phase-edit-guard<br/>ブロック
+
+    rm_execute --> file_deleted: ファイル<br/>削除完了
+    rm_denied --> block_rm: 実行<br/>ブロック
+    rm_guard_deny --> block_rm
+
+    file_deleted --> git_commit: git commit<br/>実行
+    block_rm --> git_commit
+    execute_command --> git_commit
+
+    %% 最終状態
+    git_commit --> end_node: コミット<br/>完了
+
+    scope_invalid --> end_node: スコープ<br/>エラー

@@ -1,0 +1,107 @@
+phase: research
+task: lefthook-precommit
+intent: G-05 Lefthookプリコミットフック導入によるcommit時品質自動強制
+status: complete
+timestamp: 2026-03-10
+
+summary: lefthook v2.1.3をnpm devDependencyとしてインストールし親リポジトリルートのlefthook.ymlでpre-commitフックを定義する。tsc --noEmitを3プロジェクト（harness/mcp-server, plugin/mcp-server, src/frontend）で並列実行し、eslintをworkflow-plugin配下で実行する。--no-verifyブロックはClaude Code PreToolUseフック（Bashマッチャー）でgit commitコマンド中の--no-verifyフラグを正規表現検出しexit 2で拒否する
+
+environment:
+  nodeVersion: v22.15.0
+  npmVersion: 10.9.2
+  gitVersion: 2.49.0.windows.1
+  platform: MSYS_NT-10.0-26200 (Windows 10/11 with Git Bash)
+  tscVersionHarness: 5.9.3
+  tscVersionPlugin: 5.9.3
+  eslintVersion: 9.39.2
+  lefthookLatest: 2.1.3
+  gitHooksPath: default (.git/hooks/)
+  existingGitHooks: sample files only (no active hooks)
+
+typescriptProjects[3]{path,tsconfig,module,target,strict}:
+  workflow-harness/mcp-server, workflow-harness/mcp-server/tsconfig.json, Node16, ES2022, true
+  workflow-plugin/mcp-server, workflow-plugin/mcp-server/tsconfig.json, ESNext, ES2022, true
+  src/frontend, src/frontend/tsconfig.json, esnext, ES2022, true
+
+eslintProjects[1]{path,configFile,configFormat,parserOptions}:
+  workflow-plugin, workflow-plugin/eslint.config.js, flat config (ESM), project: ./mcp-server/tsconfig.json
+
+existingHooks:
+  postToolLint: .claude/hooks/post-tool-lint.sh (PostToolUse Write|Edit matcher)
+  preToolConfigGuard: .claude/hooks/pre-tool-config-guard.sh (PreToolUse Write|Edit matcher)
+  contextWatchdog: .claude/hooks/context-watchdog.sh (PreToolCall)
+  handoffReader: .claude/hooks/handoff-reader.sh (UserPromptSubmit)
+  sessionEndReminder: .claude/hooks/session-end-reminder.sh (UserPromptSubmit)
+  stopTestEnforcer: .claude/hooks/stop-test-enforcer.sh (Stop)
+
+lefthookResearch:
+  installMethod: npm install --save-dev lefthook
+  postinstallHook: npx lefthook install (registers .git/hooks/pre-commit)
+  configFile: lefthook.yml at repository root
+  hookRegistration: lefthook install writes a shell shim to .git/hooks/pre-commit that invokes lefthook run pre-commit
+  submoduleSupport: lefthook does not auto-recurse into submodules. Commands must use root_dir or explicit cd to reach submodule paths
+  parallelExecution: parallel: true at the pre-commit level runs all commands concurrently
+  globFiltering: glob option filters staged files per command. tsc --noEmit checks entire project regardless of staged files (project-wide type check)
+  excludeTagging: exclude_tags allows skipping commands selectively via LEFTHOOK_EXCLUDE env var
+  failFast: lefthook stops on first command failure by default (piped: false). piped: true runs commands sequentially and stops on failure
+  skipConditions: skip option supports file glob patterns and branch conditions
+  windowsCompatibility: lefthook v2.x has native Windows support via Go binary. npm package includes prebuilt binaries for win32-x64
+
+lefthookYmlDesign:
+  structure: single pre-commit hook with parallel: true containing 4 commands
+  command_tsc_harness: cd workflow-harness/mcp-server && npx tsc --noEmit
+  command_tsc_plugin: cd workflow-plugin/mcp-server && npx tsc --noEmit
+  command_tsc_frontend: cd src/frontend && npx tsc --noEmit
+  command_eslint_plugin: cd workflow-plugin && npx eslint .
+  nodeModulesGuard: each command uses run with a shell conditional to check node_modules existence before executing
+  timeoutPerCommand: 60 seconds (tsc on large projects can be slow on first run)
+
+noVerifyBlockDesign:
+  hookType: PreToolUse (Claude Code hook)
+  matcher: Bash
+  mechanism: shell script reads JSON input from stdin, extracts tool_input.command field, regex-matches git commit with --no-verify or -n flag
+  regex: git\s+commit\b.*--no-verify|git\s+commit\b.*\s-[a-zA-Z]*n
+  exitCode: exit 2 (blocks the tool call in Claude Code)
+  humanBypass: humans can still use --no-verify directly in terminal (hook only intercepts Claude Code Bash tool calls)
+  placement: .claude/hooks/pre-tool-no-verify-block.sh
+  settingsUpdate: add PreToolUse entry with Bash matcher to .claude/settings.json
+
+packageJsonDesign:
+  location: repository root (C:\ツール\Workflow\package.json)
+  name: workflow-monorepo
+  private: true
+  type: module
+  devDependencies: lefthook ^2.1.3
+  scripts_postinstall: npx lefthook install
+  scripts_prepare: npx lefthook install (alternative to postinstall for npm lifecycle)
+  minimalContent: only lefthook dependency and install hook, no other dependencies
+
+initShDesign:
+  purpose: one-shot setup script for first-time installation
+  steps: npm install in root, verify lefthook binary, run lefthook install, verify .git/hooks/pre-commit exists
+  idempotent: safe to run multiple times (npm install and lefthook install are idempotent)
+
+risks[3]{id,description,mitigation}:
+  R-01, tsc --noEmit on 3 projects may take 10-30 seconds total slowing commit experience, parallel: true runs all 3 tsc checks concurrently reducing wall-clock time. TypeScript incremental compilation via tsBuildInfoFile can cache results between runs
+  R-02, node_modules missing in submodules causes tsc/eslint command failure, each lefthook command wraps execution in a node_modules existence check and prints a warning instead of failing
+  R-03, --no-verify regex in PreToolUse hook may have false positives on commands containing the string in comments or echo statements, regex anchors on git commit command pattern specifically. False positive risk is minimal since Claude Code rarely echoes git commit --no-verify in non-git contexts
+
+decisions[7]{id,statement,rationale}:
+  R-01, lefthookをnpm devDependencyとして親リポジトリのpackage.jsonにインストールする, npx lefthook installでgitフック自動登録が可能。Go製バイナリがnpmパッケージに同梱されておりインストールが容易
+  R-02, lefthook.ymlでparallel: trueを設定し4コマンド（tsc x3 + eslint x1）を並列実行する, 各コマンドは独立しており並列実行で待ち時間を短縮。tscは型チェックのみ（--noEmit）で相互依存なし
+  R-03, src/frontendのtscチェックもpre-commitフック対象に含める, scope-definitionではharness+pluginのみ記載されていたがsrc/frontend/tsconfig.jsonも存在しNext.jsプロジェクトの型安全性も同時に確保すべき
+  R-04, 各コマンドにnode_modules存在チェックのガード条件を付与する, サブモジュールのnode_modulesが未インストール状態でもcommitをブロックしない。警告を出力してスキップすることで開発者体験を維持
+  R-05, --no-verifyブロックはPreToolUseフックでBashツールのコマンド文字列を正規表現検出する方式を採用する, Claude CodeのPreToolUseフックはexit 2でツール呼び出しを拒否可能。Bashマッチャーによりgit commitコマンドのみ対象となる
+  R-06, package.jsonのpostinstallスクリプトでlefthook installを自動実行する, npm install後に自動的に.git/hooks/pre-commitが登録される。新規クローン時もnpm installのみで環境構築が完了
+  R-07, lefthookコマンドのタイムアウトを60秒に設定する, tsc --noEmitは初回実行時にキャッシュ構築で時間がかかる場合がある。60秒あれば十分だが無限ハングは防止
+
+artifacts[4]{path,action,description}:
+  package.json, create, 親リポジトリ用。devDependenciesにlefthook ^2.1.3を追加しpostinstallでlefthook installを自動実行
+  lefthook.yml, create, pre-commitフック定義。tsc --noEmit 3プロジェクト + eslint 1プロジェクトを並列実行。各コマンドにnode_modulesガードとタイムアウト60秒を設定
+  .claude/hooks/pre-tool-no-verify-block.sh, create, PreToolUseフック。Bashツール呼び出し時にgit commit --no-verifyパターンを正規表現検出しexit 2で拒否
+  .claude/settings.json, modify, PreToolUseフックにBashマッチャーでpre-tool-no-verify-block.shを追加登録
+
+next:
+  criticalDecisions: R-01(package.json新規作成とlefthookインストール) R-02(lefthook.yml並列実行設計) R-05(--no-verifyブロック実装)
+  readFiles: scope-definition.toon research.toon
+  warnings: 親リポジトリにpackage.jsonが存在しないため新規作成が必要。src/frontendをスコープに追加（scope-definitionからの拡張）。harnessにESLint設定がないためtscのみ対象

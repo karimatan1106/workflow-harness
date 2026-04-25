@@ -1,0 +1,71 @@
+phase: scope_definition
+task: lefthook-precommit
+intent: G-05 Lefthookプリコミットフック導入によるcommit時品質自動強制
+status: complete
+timestamp: 2026-03-10
+
+summary: 親リポジトリにlefthook.ymlを配置しgit commit時にtsc型チェック+ESLint+フォーマットチェックを自動実行する。エージェントは--no-verifyを構造的に禁止されるため人間のみがスキップ可能
+
+currentState:
+  rootPackageJson: 不在（親リポジトリにpackage.jsonなし）
+  lefthookInstalled: false
+  lefthookConfig: 不在
+  gitHooks: デフォルトテンプレートのみ（.git/hooks/*.sample）
+  existingPostToolLintHook: .claude/hooks/post-tool-lint.sh でtsc --noEmitを実行中（Claude Code PostToolUse用）
+  submodules: workflow-harness, workflow-plugin（.gitmodulesで定義）
+  typescriptProjects: workflow-harness/mcp-server/tsconfig.json, workflow-plugin/mcp-server/tsconfig.json, src/frontend（Next.js）
+  eslintConfig: workflow-plugin/eslint.config.js（JS+TS対応 flat config）
+  eslintInHarness: 不在
+  formatter: 未導入（prettier/biome いずれもなし）
+  gitignore: docs/workflows/ は **/docs/workflows/ で除外済み
+
+inScope[5]{item}:
+  親リポジトリにpackage.jsonを新規作成しlefthookをdevDependenciesに追加
+  lefthook.ymlを親リポジトリルートに新規作成
+  pre-commitフック tsc --noEmit（各tsconfigプロジェクト）
+  pre-commitフック eslint（workflow-plugin配下）
+  --no-verifyブロック Claude Codeエージェントが--no-verifyを使用不可にする仕組み
+
+notInScope[4]{item,reason}:
+  フォーマッタ（prettier/biome）の新規導入,設定が存在しないため
+  サブモジュール内部への個別lefthook導入,親リポジトリで一元管理
+  CI/CDパイプライン設定,本タスクはローカルgitフックに限定
+  "src/frontend, src/backend のリント設定新規作成",既存設定がないため別タスク
+
+readFiles[11]{path,purpose}:
+  .gitmodules, サブモジュール構成確認
+  .gitignore, 除外パターン確認
+  .claude/settings.json, Claude Codeフック構成確認
+  .claude/hooks/post-tool-lint.sh, 既存tscフック実装確認
+  workflow-harness/package.json, harness依存関係確認
+  workflow-harness/mcp-server/package.json, harness MCP依存関係とtsc/vitest確認
+  workflow-harness/mcp-server/tsconfig.json, TypeScriptコンパイラ設定確認
+  workflow-plugin/package.json, plugin依存関係とスクリプト確認
+  workflow-plugin/mcp-server/package.json, plugin MCP依存関係確認
+  workflow-plugin/mcp-server/tsconfig.json, TypeScriptコンパイラ設定確認
+  workflow-plugin/eslint.config.js, ESLint flat config構成確認
+
+decisions[7]{id,statement,rationale}:
+  SD-01, 親リポジトリルートにpackage.jsonを新規作成する, lefthookはnpm devDependencyとしてインストールが最も安定。npx lefthook installでgitフックを自動登録できる
+  SD-02, lefthook.ymlをリポジトリルートに配置する, lefthookはルートのyml設定を読み取りpre-commitコマンドを定義。サブモジュール内のtsconfig.jsonを-pオプションで指定して各プロジェクトのtscを実行
+  SD-03, tsc --noEmitを各TypeScriptプロジェクト（harness/mcp-server + plugin/mcp-server）に対して実行する, 型エラーをcommit前に検出。既存のpost-tool-lint.shと補完関係（post-tool-lintは編集直後 / lefthookはcommit直前）
+  SD-04, ESLintはworkflow-plugin配下のみ対象とする, workflow-pluginのみeslint.config.jsが存在。harnessにはESLint設定が未導入のため対象外
+  SD-05, フォーマッタチェックは本タスクで導入しない, prettier/biome等のフォーマッタ設定がプロジェクトに存在しない。先にフォーマッタ導入タスクが必要
+  SD-06, --no-verifyブロックはClaude Code PreToolUseフックで実装する, Bashツール呼び出し時にgit commit.*--no-verifyパターンを検出しexit 2で拒否。エージェントは構造的にスキップ不可
+  SD-07, lefthookのパラレル実行を有効化する, tscとeslintは独立して実行可能。parallel: trueでcommit待ち時間を短縮
+
+artifacts[4]{path,action,description}:
+  package.json, create, 親リポジトリ用。devDependenciesにlefthookを追加しpostinstallでlefthook installを実行
+  lefthook.yml, create, pre-commitフック定義。tsc --noEmit（harness + plugin）とeslint実行を並列で定義
+  .claude/hooks/pre-tool-no-verify-block.sh, create, PreToolUseフック。git commit --no-verifyパターンを検出してexit 2で拒否
+  .claude/settings.json, modify, PreToolUseフックにpre-tool-no-verify-block.shを追加登録
+
+risks[3]{id,description,mitigation}:
+  R-01, tsc実行が遅くcommit体験が悪化する, lefthook.ymlでglob指定しステージファイルのみ対象化。タイムアウト設定を検討
+  R-02, サブモジュール内のnode_modulesが未インストールだとtsc/eslintが失敗する, lefthookコマンド内でnode_modules存在チェックを行いスキップ可能にする
+  R-03, 既存のpost-tool-lint.shとlefthookの責務重複, post-tool-lint.shは編集直後のリアルタイムフィードバック用。lefthookはcommit前の最終ゲート。両方維持が最適
+
+next:
+  criticalDecisions: SD-01(package.json新規作成) SD-02(lefthook.yml配置) SD-06(--no-verifyブロック)
+  readFiles: .gitmodules workflow-harness/mcp-server/tsconfig.json workflow-plugin/eslint.config.js
+  warnings: 親リポジトリにpackage.jsonが存在しないため新規作成が必要。harnessにESLint設定がないためtscのみ対象

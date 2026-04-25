@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> SubagentExecuting
+
+    SubagentExecuting --> ValidationCheck: subagent実行完了
+
+    ValidationCheck --> ValidationPassed: バリデーション成功
+    ValidationCheck --> RetryPromptCreation: バリデーション失敗検出
+
+    ValidationPassed --> NextPhase: 検証OK
+
+    RetryPromptCreation --> RetryExecution: リトライプロンプト準備完了
+
+    RetryExecution --> ValidationCheck: リトライ実行完了
+
+    RetryExecution --> RetryLimitCheck: リトライ回数確認
+
+    RetryLimitCheck --> Escalation: リトライ上限達成（3回目以降）
+    RetryLimitCheck --> RetryPromptCreation: リトライ回数未超過（1-2回目）
+
+    Escalation --> UserDecision: ユーザーへエスカレーション通知
+
+    UserDecision --> ManualFix: 選択肢A: 手動修正を選択
+    UserDecision --> RelaxValidation: 選択肢B: 要件緩和を選択
+    UserDecision --> TaskReset: 選択肢C: タスクリセットを選択
+
+    ManualFix --> SubagentExecuting: subagent再実行指示
+
+    RelaxValidation --> SubagentExecuting: 緩和後の検証で再実行
+
+    TaskReset --> [*]
+
+    NextPhase --> [*]

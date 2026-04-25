@@ -1,0 +1,98 @@
+flowchart TD
+    Start(("処理開始")) --> RequestType{リクエスト種別<br/>判定}
+
+    RequestType -->|workflow_next| NextFunc("workflow_next関数<br/>フェーズ遷移処理")
+    RequestType -->|workflow_complete_sub| CompleteSubFunc("workflow_complete_sub関数<br/>code_review完了処理")
+
+    %% ========== workflow_next フロー ==========
+    NextFunc --> GetCurrentPhase("currentPhaseを<br/>ワークフロー状態から取得")
+    GetCurrentPhase --> PhaseCheck{遷移元フェーズ<br/>は何か?}
+
+    %% parallel_quality → testing
+    PhaseCheck -->|parallel_quality→testing| RunDesignValidator1("design-validator<br/>実行")
+    RunDesignValidator1 --> CheckStrict1{"DESIGN_VALIDATION_STRICT<br/>== true?"}
+    CheckStrict1 -->|false<br/>警告モード| WarnDesign("設計-実装整合性<br/>警告をログ出力")
+    WarnDesign --> AllowTransition1("遷移を許可<br/>⚠ 警告含む")
+    CheckStrict1 -->|true<br/>厳格モード| DesignValid1{設計検証<br/>成功?}
+    DesignValid1 -->|NO| BlockTransition1("遷移をブロック<br/>エラーメッセージ返却")
+    DesignValid1 -->|YES| AllowTransition1
+
+    %% testing → regression_test
+    PhaseCheck -->|testing→regression_test| RunTestAuth1("test-authenticity<br/>実行")
+    RunTestAuth1 --> CheckTestStrict1{"TEST_AUTHENTICITY_STRICT<br/>== true?"}
+    CheckTestStrict1 -->|false<br/>警告モード| WarnTest1("テスト真正性<br/>警告をログ出力")
+    WarnTest1 --> AllowTransition2("遷移を許可<br/>⚠ 警告含む")
+    CheckTestStrict1 -->|true<br/>厳格モード| TestHashCheck1{テストハッシュ<br/>重複チェック}
+    TestHashCheck1 -->|重複検出| BlockTransition2("遷移をブロック<br/>エラーメッセージ返却")
+    TestHashCheck1 -->|OK| TestValid1{テスト真正性<br/>検証成功?}
+    TestValid1 -->|NO| BlockTransition2
+    TestValid1 -->|YES| AllowTransition2
+
+    %% regression_test → parallel_verification
+    PhaseCheck -->|regression_test→parallel_verification| RunTestAuth2("test-authenticity<br/>実行<br/>同上チェック")
+    RunTestAuth2 --> CheckTestStrict2{"TEST_AUTHENTICITY_STRICT<br/>== true?"}
+    CheckTestStrict2 -->|false| WarnTest2("テスト真正性<br/>警告をログ出力")
+    WarnTest2 --> AllowTransition3("遷移を許可<br/>⚠ 警告含む")
+    CheckTestStrict2 -->|true| TestHashCheck2{テストハッシュ<br/>重複チェック}
+    TestHashCheck2 -->|重複検出| BlockTransition3("遷移をブロック<br/>エラーメッセージ返却")
+    TestHashCheck2 -->|OK| TestValid2{テスト真正性<br/>検証成功?}
+    TestValid2 -->|NO| BlockTransition3
+    TestValid2 -->|YES| AllowTransition3
+
+    %% その他のフェーズ遷移
+    PhaseCheck -->|その他| AllowTransition4("通常の遷移<br/>バリデーションなし")
+
+    %% 共通: レスポンス生成
+    AllowTransition1 --> GenerateResponse("レスポンス生成")
+    AllowTransition2 --> GenerateResponse
+    AllowTransition3 --> GenerateResponse
+    AllowTransition4 --> GenerateResponse
+    BlockTransition1 --> GenerateErrorResponse("エラーレスポンス生成<br/>ブロック理由を含む")
+    BlockTransition2 --> GenerateErrorResponse
+    BlockTransition3 --> GenerateErrorResponse
+
+    GenerateResponse --> ResolveGuide("resolvePhaseGuide<br/>関数で次フェーズガイド取得")
+    ResolveGuide --> ReplaceSubagent("subagentTemplate内の<br/>プレースホルダーを置換<br/>タスク名・ユーザー意図<br/>タスクID・ドキュメントパス等")
+    ReplaceSubagent --> IncludeUserIntent("レスポンスメッセージに<br/>userIntentガイダンス挿入<br/>ユーザー意図を反映")
+    IncludeUserIntent --> RespondSuccess("成功レスポンス返却<br/>phaseGuide + メッセージ")
+
+    %% ========== workflow_complete_sub フロー ==========
+    CompleteSubFunc --> CheckSubPhase{サブフェーズ<br/>は何か?}
+
+    %% code_review完了時
+    CheckSubPhase -->|code_review| RunDesignValidator2("design-validator<br/>実行")
+    RunDesignValidator2 --> CheckStrict2{"DESIGN_VALIDATION_STRICT<br/>== true?"}
+    CheckStrict2 -->|false| WarnDesign2("設計-実装整合性<br/>警告をログ出力")
+    WarnDesign2 --> AllowComplete("サブフェーズ<br/>完了許可")
+    CheckStrict2 -->|true| DesignValid2{設計検証<br/>成功?}
+    DesignValid2 -->|NO| BlockComplete("サブフェーズ<br/>完了をブロック<br/>エラー返却")
+    DesignValid2 -->|YES| AllowComplete
+
+    %% その他のサブフェーズ
+    CheckSubPhase -->|その他| AllowComplete
+
+    AllowComplete --> CompleteSubResponse("完了レスポンス返却")
+    BlockComplete --> BlockSubResponse("エラーレスポンス返却")
+
+    RespondSuccess --> End(("処理終了"))
+    GenerateErrorResponse --> End
+    CompleteSubResponse --> End
+    BlockSubResponse --> End
+
+    style Start fill:#e1f5e1
+    style End fill:#e1f5e1
+    style RunDesignValidator1 fill:#fff3cd
+    style RunDesignValidator2 fill:#fff3cd
+    style RunTestAuth1 fill:#fff3cd
+    style RunTestAuth2 fill:#fff3cd
+    style BlockTransition1 fill:#f8d7da
+    style BlockTransition2 fill:#f8d7da
+    style BlockTransition3 fill:#f8d7da
+    style BlockComplete fill:#f8d7da
+    style AllowTransition1 fill:#d4edda
+    style AllowTransition2 fill:#d4edda
+    style AllowTransition3 fill:#d4edda
+    style AllowTransition4 fill:#d4edda
+    style AllowComplete fill:#d4edda
+    style IncludeUserIntent fill:#cce5ff
+    style ReplaceSubagent fill:#cce5ff

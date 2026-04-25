@@ -1,0 +1,57 @@
+stateDiagram-v2
+    Start --> UnfixedState
+
+    UnfixedState --> MockIncompleteState: FR-REQ-1検出<br/>mkdirSyncモック欠落
+    UnfixedState --> PatternMismatchState: FR-REQ-4検出<br/>フォールバック値が旧形式
+    UnfixedState --> RecordMissingState: FR-REQ-2,3検出<br/>実装記録欠落
+    UnfixedState --> SourceUnknownState: FR-REQ-5検出<br/>権威情報源不明記
+    UnfixedState --> ImplementedButMarkedState: FR-REQ-6検出<br/>FIX-1実装済みだが<br/>旧表記が残存
+
+    MockIncompleteState --> MockCompleteState: mkdirSync: vi.fn()<br/>追加実装
+    MockCompleteState --> VerifiedState: テスト実行<br/>警告削除確認
+
+    PatternMismatchState --> PatternUpdatedState: パターン更新<br/>/\[#[^\]]{0,50}#\]/g<br/>へ変更
+    PatternUpdatedState --> VerifiedState: ビルド・テスト実行<br/>912件以上全合格確認
+
+    RecordMissingState --> RecordAddedState: MEMORY.mdへ<br/>FR-22,FR-A〜FRD<br/>実装記録追記
+    RecordAddedState --> VerifiedState: 既存セクション確認
+
+    SourceUnknownState --> SourceDocumentedState: CLAUDE.mdへ<br/>bracketPlaceholderRegex<br/>権威情報源を明記
+    SourceDocumentedState --> VerifiedState: 保守ルール動作確認
+
+    ImplementedButMarkedState --> ImplementationMarkedState: MEMORY.mdの<br/>FIX-1セクション見出しを<br/>実装済みに更新
+    ImplementationMarkedState --> RootFixDocumentedState: Root fix行を<br/>実装確認済みに更新
+    RootFixDocumentedState --> VerifiedState: Workaround残存確認
+
+    VerifiedState --> AllFixesAppliedState: 全修正検証完了<br/>全ファイル確認
+    AllFixesAppliedState --> End
+
+    note right of UnfixedState
+        未修正の初期状態
+        6つの未解決問題が存在
+    end note
+
+    note right of MockCompleteState
+        テストモック完成
+        vi.mock内に4つのメソッド定義
+    end note
+
+    note right of PatternUpdatedState
+        フォールバック値が現行化
+        34-35行目を新パターンに更新
+    end note
+
+    note right of RecordAddedState
+        実装記録の完全性を確保
+        FR-22及びFR-A〜FRD記録
+    end note
+
+    note right of SourceDocumentedState
+        権威情報源が明記される
+        CLAUDE.mdに保守ルール追加
+    end note
+
+    note right of AllFixesAppliedState
+        修正プロセス完了
+        6つの問題が全て解決
+    end note

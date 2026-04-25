@@ -1,0 +1,99 @@
+flowchart TD
+    Start([Start: Refactoring Task])
+
+    Start --> Group1A["PL-01: Delete vscode-ext/\n(F-001, AC-1, Risk: low)"]
+    Start --> Group1B["PL-03: Delete hook backups\n4 individual files\n(F-002, AC-2, Risk: low)"]
+    Start --> Group1C["PL-04: Remove small/medium\nfrom defs-a.ts, registry.ts\n(F-006, AC-6, Risk: medium)"]
+    Start --> Group1D["PL-06: Serena MCP server\nUpdate .mcp.json, defs-stage1.ts\n(F-005, AC-5, Risk: medium)"]
+
+    Group1A --> V1A{"vscode-ext/\ndeleted?"}
+    V1A -->|Yes| PL02["PL-02: Remove vscode-ext refs\nfrom STRUCTURE_REPORT.md\n(F-001, AC-1, Risk: low)"]
+    V1A -->|No| Retry1["Retry: Remove vscode-ext/"]
+    Retry1 --> Group1A
+
+    Group1B --> V1B{"Backup files\nremoved?\n4 verified absent"}
+    V1B -->|Yes| CheckHooks["Verify 5 active hook files\nexist after deletion"]
+    V1B -->|No| Retry2["Retry: Delete backup files\nindividually"]
+    Retry2 --> Group1B
+    CheckHooks --> HooksOK{"All 5 hooks\nverified?"}
+    HooksOK -->|Yes| PL03Done["PL-03 Complete"]
+    HooksOK -->|No| Retry3["Retry: Verify hook files"]
+    Retry3 --> Group1B
+
+    Group1C --> V1C{"small/medium\nremoved?"}
+    V1C -->|Yes| Grep1["grep -r small|medium\ndefs-a.ts registry.ts\nfor residual refs"]
+    V1C -->|No| Retry4["Retry: Remove small/medium\nfrom code"]
+    Retry4 --> Group1C
+    Grep1 --> GrepOK{"No residual\nreferences?"}
+    GrepOK -->|Yes| PL04Done["PL-04 Complete"]
+    GrepOK -->|No| Retry5["Retry: grep verify refs"]
+    Retry5 --> Group1C
+
+    Group1D --> V1D{"MCP config &\ntemplate updated?"}
+    V1D -->|Yes| V1D2{"defs-stage1.ts\nle 200 lines?"}
+    V1D2 -->|Yes| PL06Done["PL-06 Complete"]
+    V1D2 -->|No| Split1["Split: Extract MCP refs\nto separate file"]
+    Split1 --> V1D2
+    V1D -->|No| Retry6["Retry: Update .mcp.json\nand defs-stage1.ts"]
+    Retry6 --> Group1D
+
+    PL02 --> V2{"vscode-ext refs\nerased completely?"}
+    V2 -->|Yes| PL02Done["PL-02 Complete"]
+    V2 -->|No| Retry7["Retry: Remove all refs\nfrom STRUCTURE_REPORT.md"]
+    Retry7 --> PL02
+
+    PL03Done --> PL05Start["PL-05: Add hearing dodChecks\nregistry.ts userResponse check\n(F-004, Risk: medium)"]
+    PL04Done --> PL05Start
+    PL06Done --> PL07Start
+
+    PL05Start --> V3{"dodChecks inline\nfunction added?"}
+    V3 -->|Yes| V3B["npm run build"]
+    V3 -->|No| Retry8["Retry: Add dodChecks\nto registry.ts"]
+    Retry8 --> PL05Start
+
+    V3B -->|Build Success| V3C["vitest pass?"]
+    V3B -->|Build Fail| Retry9["Retry: Debug build errors"]
+    Retry9 --> V3B
+
+    V3C -->|Pass| PL05Done["PL-05 Complete"]
+    V3C -->|Fail| Retry10["Retry: Fix test failures"]
+    Retry10 --> V3B
+
+    PL02Done --> PL07Start["PL-07: Update skill docs\nworkflow-orchestrator.md,\nworkflow-execution.md\n(F-003, AC-8, Risk: low)"]
+
+    PL07Start --> V4{"Coordinator direct-get\ndocumented?"}
+    V4 -->|Yes| PL07Done["PL-07 Complete"]
+    V4 -->|No| Retry11["Retry: Update skill docs\nwith coordinator reference"]
+    Retry11 --> PL07Start
+
+    PL07Done --> PL08["PL-08: Verify query/registration\nMCP tools subagent access\ntool-gate.js L48-L56\n(F-003, AC-7, Risk: low)"]
+
+    PL08 --> V5{"tool-gate permits\ncoordinator MCP calls?"}
+    V5 -->|Yes| PL08Done["PL-08 Complete"]
+    V5 -->|No| Alert1["Alert: tool-gate.js\naccess control issue"]
+    Alert1 --> V5
+
+    PL05Done --> PL09["PL-09: Build verification\nnpm run build\n(NF-001, AC-3)"]
+    PL08Done --> PL09
+
+    PL09 --> V6{"Build\nSuccessful?"}
+    V6 -->|No| BuildFail["Build Failure:\nDebug and fix errors"]
+    BuildFail --> Retry12["Retry: npm run build"]
+    Retry12 --> PL09
+    V6 -->|Yes| PL10["PL-10: Test execution\nvitest pass rate 100%\n(NF-002, AC-4)"]
+
+    PL10 --> V7{"All Tests\nPass?"}
+    V7 -->|No| TestFail["Test Failure:\nReview failures and fix"]
+    TestFail --> Retry13["Retry: vitest"]
+    Retry13 --> PL10
+    V7 -->|Yes| Success([Success: All steps complete])
+
+    style Start fill:#90EE90
+    style Success fill:#90EE90
+    style Group1A fill:#87CEEB
+    style Group1B fill:#87CEEB
+    style Group1C fill:#87CEEB
+    style Group1D fill:#87CEEB
+    style BuildFail fill:#FFB6C6
+    style TestFail fill:#FFB6C6
+    style Alert1 fill:#FFD700

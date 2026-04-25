@@ -1,0 +1,55 @@
+phase: research
+taskName: tier-a-gaps-n26-n32
+summary: N-26〜N-32の7項目について実装先ファイルの既存コード構造と変更箇所を特定。全項目がコードレベルの定数追加・関数追加・設定変更で完結する。
+
+retryTsAnalysis: 189行。buildRetryPrompt(L45-L89)内でretryCount>=3の場合にsuggestedModel=sonnetに切替(L72)。classifyComplexityはplanner.tsで定義されtrivial/moderate/criticalを返す。buildRetryPromptにcomplexityパラメータを追加しモデル切替ロジックを拡張する余地あり。
+archgateTsAnalysis: 186行。ArchCheckType型はexisting_file/no_circular_dep/import_boundary/max_file_lines/naming_convention/test_coverageの6種。union拡張でghost_fileを追加可能。FEEDBACK_SPEED_LAYERSは型定義直後に配置可能。
+dodHelpersTsAnalysis: 73行。FORBIDDEN_PATTERNS定数(L5-L12)とcheckForbiddenPatterns関数(L14-L30)が既存。checkFileLineLimit関数とcheckBrokenPointers関数を追加しても200行以下に収まる。
+postToolLintShAnalysis: 87行。oxlintブロック(L34-L52)に--deny no-explicit-anyを追加可能。既存ルールは--deny no-unused-varsと--deny no-console。
+classifyComplexityLocation: workflow-harness/mcp-server/src/tools/handlers/planner.tsのL23-L45に定義。戻り値はtrivial/moderate/criticalの3値。
+errorAdrMapDesign: retry.tsにERROR_ADR_MAP定数を追加。キーはエラーパターン文字列(正規表現)で値はADR ID(ADR-001等)。buildRetryPromptで該当ADRを優先表示する。
+ghostFileDesign: archgate.tsのrunArchCheck関数内にghost_file分岐を追加。同名ファイルが異なるディレクトリに存在する場合を検出しwarningを返す。
+
+magicNumbers[5]{name, value, location}:
+  ARCH_CHECK_TYPES_COUNT, 6, archgate.ts ArchCheckType union
+  DOD_HELPERS_CURRENT_LINES, 73, dod-helpers.ts
+  RETRY_TS_CURRENT_LINES, 189, retry.ts
+  ARCHGATE_CURRENT_LINES, 186, archgate.ts
+  POST_TOOL_LINT_CURRENT_LINES, 87, post-tool-lint.sh
+
+existingPatterns[4]{pattern, file, description}:
+  FORBIDDEN_PATTERNS, dod-helpers.ts, 禁止パターン定数配列でcheckForbiddenPatternsから参照
+  ArchCheckType, archgate.ts, union型でrunArchCheckのswitch文で分岐
+  buildRetryPrompt, retry.ts, retryCount条件でsuggestedModelを決定する関数
+  oxlint --deny, post-tool-lint.sh, oxlintブロック内で--denyフラグにルール名を指定
+
+implementationPlan[7]{gapId, file, change}:
+  N-26, retry.ts, buildRetryPromptにcomplexityパラメータ追加しtrivial→haiku/moderate→sonnet/critical→opusのモデル切替ロジック実装
+  N-27, archgate.ts, FEEDBACK_SPEED_LAYERS定数を4層(ms/s/min/h)で定義しexport
+  N-28, retry.ts, ERROR_ADR_MAP定数追加しbuildRetryPrompt内で該当ADRを優先表示
+  N-29, dod-helpers.ts, checkFileLineLimit関数追加し200行超過ファイルをDoD L4チェックとして報告
+  N-30, dod-helpers.ts, checkBrokenPointers関数追加しTOON artifacts[]パスの存在検証
+  N-31, post-tool-lint.sh, oxlintブロックに--deny no-explicit-any追加
+  N-32, archgate.ts, ArchCheckType unionにghost_file追加しrunArchCheckにcase分岐実装
+
+decisions[6]{id, statement, rationale}:
+  R-1, classifyComplexityの戻り値をbuildRetryPromptの引数として渡す設計にする, retry.tsからplanner.tsを直接importするよりも呼び出し元から注入する方が依存方向が単純になる
+  R-2, FEEDBACK_SPEED_LAYERSはReadonly配列ではなくas constオブジェクトで定義する, 層名をキーとしms値を値とすることで型安全なアクセスが可能になる
+  R-3, ERROR_ADR_MAPはRecord型で実装する, エラーパターン文字列をキーとしADR IDを値とするシンプルな対応表で保守性が高い
+  R-4, checkFileLimitのデフォルト上限は200行とするが引数で変更可能にする, CLAUDE.mdは200行だがテストファイル等で異なる上限を適用する場合に対応できる
+  R-5, checkBrokenPointersはfs.existsSyncで同期的にパス存在を確認する, DoD チェックは同期実行でありasync化の必要がない
+  R-6, ghost_fileチェックはディレクトリ横断でbasename一致を検出する, path.basenameで比較しdirname が異なる場合にwarningを出す設計
+
+risks[3]{id, description, mitigation}:
+  RISK-1, retry.tsのbuildRetryPrompt引数変更で既存呼び出し元が壊れる, complexityパラメータはオプショナルにしデフォルトはmoderate(現行動作維持)
+  RISK-2, archgate.tsが186行でghost_file追加後に200行を超える可能性, FEEDBACK_SPEED_LAYERSは定数のみで10行程度でありghost_fileのcase分岐も15行程度で合計200行以下に収まる
+  RISK-3, post-tool-lint.shの--deny追加で既存コードにno-explicit-any違反がある場合ビルドが壊れる, 事前にoxlint --deny no-explicit-anyを手動実行し違反箇所を確認してから適用する
+
+artifacts[2]{path, role, summary}:
+  docs/workflows/tier-a-gaps-n26-n32/research.toon, report, 実装先ファイルと既存コード構造の調査結果
+  docs/workflows/tier-a-gaps-n26-n32/scope-definition.toon, reference, スコープ定義(前フェーズ成果物)
+
+next:
+  criticalDecisions[2]: R-1, R-5
+  readFiles[4]: workflow-harness/mcp-server/src/tools/handlers/retry.ts, workflow-harness/mcp-server/src/gates/archgate.ts, workflow-harness/mcp-server/src/gates/dod-helpers.ts, workflow-harness/mcp-server/src/hooks/post-tool-lint.sh
+  warnings[2]: retry.tsのbuildRetryPrompt引数変更は既存呼び出し元との互換性を維持すること, archgate.tsの行数が200行を超えないよう実装を簡潔にすること

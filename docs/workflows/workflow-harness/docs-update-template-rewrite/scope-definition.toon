@@ -1,0 +1,59 @@
+phase: scope_definition
+taskName: docs-update-template-rewrite
+intent: "docs_updateフェーズテンプレートをworkflow-docs.mdのドキュメント構造(docs/spec/features/, docs/architecture/等)に基づいて改修し、永続的なコードドキュメント生成を可能にする"
+riskScore: 4
+taskSize: medium
+
+entryPoints[2]{file,symbol,role}:
+  src/phases/defs-stage6.ts, docs_update(PhaseDefinition), "docs_updateテンプレート定義の本体。subagentTemplateが改修対象"
+  .claude/skills/harness/workflow-docs.md, "Section 3: docs_update", "永続ドキュメント構造の権威仕様。テンプレート改修の参照元"
+
+scopeFiles[12]{path,changeType,rationale}:
+  src/phases/defs-stage6.ts, modify, "docs_updateのsubagentTemplate/model/inputFiles/outputFile/requiredSectionsを改修"
+  src/phases/registry.ts, modify, "docs_updateのinputFiles/outputFile/allowedExtensions/bashCategoriesを更新"
+  src/phases/definitions.ts, read-only, "buildSubagentPromptのテンプレート展開ロジック確認。OUTPUT_FILE_TO_PHASEマッピング追加の可能性"
+  src/phases/definitions-shared.ts, read-only, "SUMMARY_SECTION_RULE/EXIT_CODE_RULEの参照確認。IDプレフィックスDUは現時点で存在しない"
+  .claude/skills/harness/workflow-docs.md, read-only, "docs/spec/features/,docs/architecture/等の永続パス構造が改修仕様の根拠"
+  .claude/skills/harness/workflow-phases.md, read-only, "docs_updateフェーズの作業定義。永続ドキュメント更新対象の確認"
+  .claude/skills/harness/workflow-execution.md, read-only, "フェーズ別Bash許可カテゴリとファイル編集制約の確認"
+  src/tools/handler-shared.ts, read-only, "PHASE_SKILL_FILESのdocs_updateエントリ確認。変更不要"
+  src/gates/dod.ts, read-only, "DoD検証パイプラインの確認。docs_updateにoutputFile追加時のL1/L3影響"
+  src/gates/dod-l1-l2.ts, read-only, "L1ファイル存在チェックがoutputFile追加時に適用されるか確認"
+  src/gates/dod-l3.ts, read-only, "L3品質チェックがrequiredSections追加時に適用されるか確認"
+  src/gates/dod-l4-content.ts, read-only, "L4コンテンツ検証の禁止語・密度チェックの適用範囲確認"
+
+scopeDirs[3]{path,role}:
+  src/phases, "フェーズ定義とレジストリの格納先"
+  src/gates, "DoD検証ゲートの格納先"
+  .claude/skills/harness, "ワークフロースキル文書の格納先"
+
+decisions[6]{id,statement,rationale}:
+  SD-1, "defs-stage6.tsのdocs_update.subagentTemplateを全面改修する", "現テンプレートは3行の汎用指示のみで永続ドキュメントパスへの誘導が皆無。workflow-docs.mdのSection3に定義された具体的パス(docs/spec/features/,docs/architecture/overview.md等)を反映する必要がある"
+  SD-2, "registry.tsのdocs_update.inputFilesに先行フェーズ成果物を追加する", "現在inputFiles=[]だが、docs_updateは実装結果を反映するためspec.toon,requirements.toon,code-review.toon等の参照が必要"
+  SD-3, "registry.tsのdocs_update.outputFileにdocs-update.toonを設定する", "現在outputFile=nullでDoD検証が実質スキップされている。成果物品質を保証するためTOON出力を必須化する"
+  SD-4, "docs_updateのmodelをhaikuからsonnetに昇格する", "永続ドキュメント生成は仕様理解と構造化が必要。haiku では workflow-docs.md の複雑なディレクトリ構造を正確に適用できない"
+  SD-5, "registry.tsのdocs_update.bashCategoriesにimplementationを追加する", "永続ドキュメントファイル(docs/spec/,docs/architecture/)の作成・更新にはWrite/Edit以外にmkdirが必要な場合がある。ただしallowedExtensionsで.md/.toon制約済み"
+  SD-6, "definitions.tsのOUTPUT_FILE_TO_PHASEにdocs-update.toonマッピングを追加する", "ACE TOON-firstセクションで後続フェーズがdocs_update成果物を参照できるようにする"
+
+artifacts[5]{path,role,summary}:
+  src/phases/defs-stage6.ts, impl, "docs_updateのPhaseDefinition改修。subagentTemplateにworkflow-docs.md準拠の永続パス指示を含む詳細テンプレートを記述"
+  src/phases/registry.ts, impl, "docs_updateのPhaseConfig更新。inputFiles/outputFile/requiredSections/model/bashCategories変更"
+  src/phases/definitions.ts, impl, "OUTPUT_FILE_TO_PHASEにdocs-update.toonエントリ追加"
+  docs/workflows/docs-update-template-rewrite/scope-definition.toon, report, "本スコープ定義成果物"
+  .claude/skills/harness/workflow-docs.md, spec, "改修仕様の参照元。変更対象外"
+
+outOfScope[4]{item,reason}:
+  "workflow-docs.mdのディレクトリ構造定義自体の変更", "本タスクはテンプレート側をドキュメント構造に合わせる改修であり構造定義の変更ではない"
+  "他フェーズ(commit/push/deploy等)のテンプレート改修", "docs_updateフェーズのみが対象"
+  "DoD検証ロジック(dod-l1-l2.ts等)の変更", "既存のL1/L3/L4チェックはoutputFile設定により自動適用される。検証ロジック自体の変更は不要"
+  "workflow-phases.mdやworkflow-execution.mdスキル文書の更新", "テンプレート改修後に別タスクで整合性を取る"
+
+riskAnalysis[3]{factor,score,mitigation}:
+  "subagentTemplate文字列の大幅変更", 2, "既存テスト(handler-templates-s1.test.ts等)でテンプレート展開を検証"
+  "registry.tsの設定変更によるフェーズ遷移への影響", 1, "inputFiles/outputFile変更はDoD検証にのみ影響。フェーズ遷移ロジックは変更なし"
+  "model昇格(haiku→sonnet)によるコスト増", 1, "docs_updateは全タスクで1回のみ実行。コスト影響は軽微"
+
+next:
+  criticalDecisions: "SD-1(テンプレート全面改修),SD-3(outputFile必須化),SD-4(model昇格)が設計・実装の方向性を決定"
+  readFiles: "src/phases/defs-stage6.ts, src/phases/registry.ts, src/phases/definitions.ts, .claude/skills/harness/workflow-docs.md"
+  warnings: "defs-stage6.tsは200行制限あり。docs_updateテンプレート拡充時に他フェーズ定義との合計行数に注意"

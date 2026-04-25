@@ -1,0 +1,210 @@
+stateDiagram-v2
+    [*] --> CommandReceived
+
+    %% ============================================
+    %% Bashコマンド検証フロー
+    %% ============================================
+
+    CommandReceived --> CheckSkipFlag: コマンド受信
+
+    CheckSkipFlag --> Allowed: SKIP_PHASE_GUARD=true
+    CheckSkipFlag --> CheckToolName: スキップフラグなし
+
+    CheckToolName --> AllowedTool: Edit/Write/Bash
+    CheckToolName --> Allowed: その他のツール
+
+    AllowedTool --> AnalyzeBashCommand: Bashツール
+    AllowedTool --> ExtractFilePath: Edit/Writeツール
+
+    %% Bashコマンド分析フロー
+    AnalyzeBashCommand --> CheckExplicitlyAllowed: コマンド解析
+
+    CheckExplicitlyAllowed --> Allowed: 常に許可パターン\n(ls, cat, grep等)
+    CheckExplicitlyAllowed --> IsFileModifying: 許可パターンなし
+
+    IsFileModifying --> ExtractBashFilePath: ファイル修正コマンド\n(sed -i, tee, echo >等)
+    IsFileModifying --> CheckReadOnlyPhase: ファイル修正なし
+
+    ExtractBashFilePath --> CheckReadOnlyPhase: ファイルパス抽出
+
+    CheckReadOnlyPhase --> Blocked: 読み取り専用フェーズ
+    CheckReadOnlyPhase --> ExtractFilePath: 非読み取り専用
+
+    %% ============================================
+    %% ファイルパス検証フロー
+    %% ============================================
+
+    ExtractFilePath --> ValidateFilePath: ファイルパス取得
+
+    ValidateFilePath --> Allowed: ファイルパスなし
+    ValidateFilePath --> CheckAlwaysAllowed: ファイルパスあり
+
+    CheckAlwaysAllowed --> Allowed: ワークフロー状態ファイル\n(.claude-*.json等)
+    CheckAlwaysAllowed --> FindWorkflowState: 通常ファイル
+
+    %% ============================================
+    %% ワークフロー状態取得フロー
+    %% ============================================
+
+    FindWorkflowState --> WorkflowStateFound: ワークフロー開始済み
+    FindWorkflowState --> Allowed: ワークフロー未開始
+
+    WorkflowStateFound --> DetermineFileType: フェーズ取得
+
+    %% ============================================
+    %% ファイルタイプ判定フロー（優先度順）
+    %% ============================================
+
+    DetermineFileType --> IsTestFile: ファイルタイプ判定\n(優先度順)
+
+    IsTestFile --> FileTypeTest: .test., .spec.,\n__tests__, /tests/
+    IsTestFile --> IsDiagramFile: テストファイルなし
+
+    IsDiagramFile --> FileTypeDiagram: *.mmd
+    IsDiagramFile --> IsSpecFile: Mermaidファイルなし
+
+    IsSpecFile --> FileTypeSpec: *.md
+    IsSpecFile --> IsSourceCode: Markdownなし
+
+    IsSourceCode --> IsConfigFile: コード拡張子\n(.ts, .tsx等)
+    IsSourceCode --> IsEnvFile: コードなし
+
+    IsConfigFile --> FileTypeConfig: package.json, tsconfig等
+    IsConfigFile --> FileTypeCode: コードファイル
+
+    IsEnvFile --> FileTypeEnv: .env, .env.xxx
+    IsEnvFile --> FileTypeOther: 環境変数なし
+
+    %% ============================================
+    %% 設定・環境変数の即座許可
+    %% ============================================
+
+    FileTypeConfig --> Allowed: 全フェーズで許可
+    FileTypeEnv --> Allowed: 全フェーズで許可
+
+    %% ============================================
+    %% フェーズルール取得と検証
+    %% ============================================
+
+    FileTypeTest --> GetPhaseRule: ファイルタイプ決定
+    FileTypeDiagram --> GetPhaseRule
+    FileTypeSpec --> GetPhaseRule
+    FileTypeCode --> GetPhaseRule
+    FileTypeOther --> GetPhaseRule
+
+    GetPhaseRule --> IsParallelPhase: フェーズルール取得
+
+    IsParallelPhase --> HandleParallelPhase: 並列フェーズ\n(parallel_*)
+    IsParallelPhase --> GetDirectRule: 単一フェーズ
+
+    %% ============================================
+    %% 並列フェーズ処理
+    %% ============================================
+
+    HandleParallelPhase --> IdentifyActiveSubPhase: サブフェーズ特定\n(subPhaseUpdates/subPhases)
+
+    IdentifyActiveSubPhase --> SubPhaseFound: アクティブ\nサブフェーズ発見
+    IdentifyActiveSubPhase --> CombineSubPhaseRules: サブフェーズ不明
+
+    SubPhaseFound --> ApplySubPhaseRule: サブフェーズルール\n適用
+    CombineSubPhaseRules --> ApplySubPhaseRule: 合算ルール\n適用
+
+    ApplySubPhaseRule --> CheckEditPermission: フェーズルール確定
+
+    %% ============================================
+    %% フェーズ別編集許可判定
+    %% ============================================
+
+    GetDirectRule --> CheckEditPermission
+
+    CheckEditPermission --> IsAllowed: allowed配列に\n該当ファイルタイプ?
+
+    IsAllowed --> Allowed: YES
+    IsAllowed --> IsBlocked: NO
+
+    IsBlocked --> Blocked: blocked配列に\n該当ファイルタイプ?
+    IsBlocked --> Allowed: NO (安全側)
+
+    %% ============================================
+    %% implementationフェーズでのスコープ検証
+    %% ============================================
+
+    CheckEditPermission --> IsImplementationPhase: 実装フェーズ?
+
+    IsImplementationPhase --> CheckScope: YES
+    IsImplementationPhase --> CheckEditPermission: NO
+
+    CheckScope --> IsDocs: docs配下?
+
+    IsDocs --> Allowed: YES (常に許可)
+    IsDocs --> IsSrc: NO
+
+    IsSrc --> CheckAffectedFiles: src配下?
+    IsSrc --> Allowed: NO (src外は許可)
+
+    CheckAffectedFiles --> FileInScope: affectedFilesに\n含まれる?
+
+    FileInScope --> Allowed: YES
+    FileInScope --> CheckAffectedDirs: NO
+
+    CheckAffectedDirs --> DirInScope: affectedDirsに\n プレフィックス\nマッチ?
+
+    DirInScope --> Allowed: YES
+    DirInScope --> ScopeBlocked: NO
+
+    %% ============================================
+    %% ブロック状態
+    %% ============================================
+
+    ScopeBlocked --> Blocked: スコープ違反
+    Blocked --> BlockMessage: ブロックメッセージ\n表示\n(フェーズ名、理由、\n許可ファイル、次フェーズ)
+    BlockMessage --> [*]
+
+    %% ============================================
+    %% 許可状態
+    %% ============================================
+
+    Allowed --> LogCheck: 許可
+    LogCheck --> [*]
+
+    %% ============================================
+    %% スタイル定義
+    %% ============================================
+
+    note right of CheckSkipFlag
+        環境変数SKIP_PHASE_GUARD
+        による事前チェック
+    end note
+
+    note right of IsFileModifying
+        FILE_MODIFYING_COMMANDS
+        パターンマッチング
+    end note
+
+    note right of DetermineFileType
+        優先度:
+        1. テストファイル
+        2. 図式ファイル(.mmd)
+        3. 仕様書(.md)
+        4. ソースコード
+        5. 設定ファイル
+        6. 環境変数ファイル
+        7. その他
+    end note
+
+    note right of GetPhaseRule
+        並列フェーズは
+        handleParallelPhase()
+        で処理
+    end note
+
+    note right of CheckEditPermission
+        allowed配列で許可判定
+        blocked配列で禁止判定
+    end note
+
+    note right of CheckScope
+        REQ-1:
+        implementationフェーズの
+        スコープチェック
+    end note

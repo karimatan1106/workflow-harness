@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> Idle: workflow_next呼び出し
+
+    Idle --> LoadingDesign: フェーズ遷移要求
+
+    LoadingDesign --> ParsingSpec: spec.md読み込み
+    LoadingDesign --> ParsingError: ファイル不存在
+
+    ParsingSpec --> ParsingStateMachine: spec解析完了
+    ParsingStateMachine --> ParsingFlowchart: stateMachine解析完了
+    ParsingFlowchart --> ParsingRequirements: flowchart解析完了
+    ParsingRequirements --> Validating: 全ファイル解析完了
+
+    ParsingError --> ValidationSkipped: スキップ設定あり
+    ParsingError --> ValidationFailed: スキップ設定なし
+
+    Validating --> CheckingImplementation: 設計項目抽出完了
+    CheckingImplementation --> GeneratingReport: 照合完了
+
+    GeneratingReport --> ValidationPassed: 全項目実装済み
+    GeneratingReport --> ValidationFailed: 未実装項目あり
+
+    ValidationPassed --> PhaseTransition: 検証成功
+    ValidationFailed --> Blocked: 厳格モード
+    ValidationFailed --> WarningOnly: 警告モード
+
+    WarningOnly --> PhaseTransition: 警告出力後
+
+    ValidationSkipped --> PhaseTransition: スキップログ出力
+
+    PhaseTransition --> [*]: 次フェーズへ
+    Blocked --> [*]: エラー返却

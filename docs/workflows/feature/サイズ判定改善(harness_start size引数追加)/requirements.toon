@@ -1,0 +1,49 @@
+phase: requirements
+task: サイズ判定改善(harness_start size引数追加)
+status: complete
+inputArtifact: docs/workflows/サイズ判定改善(harness_start size引数追加)/research.toon
+
+functionalRequirements[5]{id,description,source,priority}:
+  F-001, "harness_start MCPツールがオプショナルsize引数(small/medium/large)を受け取る", SD-1/SD-4/EP-5, must
+  F-002, "size未指定時はlargeをデフォルトとして適用する", SD-1/R-04, must
+  F-003, "createTaskState()がオプショナルsize引数を受け取り、指定された値をそのまま使用する", R-03/IC-5, must
+  F-004, "createTaskState()からrisk-classifierのanalyzeScope/calculateRiskScore/classifySizeの呼び出しとimport文を除去する", R-06/SD-6, must
+  F-005, "defs-a.tsのharness_start inputSchemaにsizeプロパティをenum制約付きで追加する", R-01/SD-4, must
+
+nonFunctionalRequirements[4]{id,category,description,threshold}:
+  NF-001, 後方互換性, "size引数はオプショナルであり既存の呼び出し元はコード変更なしで動作する", 既存テスト全件パス
+  NF-002, スキーマ互換性, "riskScoreフィールドはsizeから固定マッピング(small=2/medium=5/large=8)で設定しTaskState型制約を満たす", RiskScore型の必須フィールドが全て存在する
+  NF-003, 安全性, "デフォルトlargeにより未指定時は全フェーズ実行となり設計書スキップによる品質低下を防ぐ", size未指定時にSIZE_SKIP_MAPのlarge(空配列)が適用される
+  NF-004, 保守性, "risk-classifier.tsは削除せず残置し将来の再利用可能性を維持する", ファイルが存在し続けること
+
+acceptanceCriteria[4]{id,description,verificationMethod}:
+  AC-1, "harness_startにsize='small'を指定した場合、生成されるTaskStateのsizeが'small'であること", ユニットテスト
+  AC-2, "harness_startにsize未指定の場合、生成されるTaskStateのsizeが'large'であること", ユニットテスト
+  AC-3, "既存の全テストが変更後も全件パスすること", vitest実行による回帰テスト
+  AC-4, "defs-a.tsのharness_start inputSchemaにsizeプロパティがenum: ['small','medium','large']で定義されていること", コードレビュー
+
+notInScope[3]{item,reason}:
+  "userIntentからのLLMベースサイズ推定", オーケストレーターの判断ロジックはハーネス外の責務であり本タスクの対象外
+  risk-classifier.tsの削除, 9件のテストファイルが参照しており削除は別タスクとする(R-07)
+  UI変更, 本タスクはMCPツールのスキーマ変更のみを対象とする
+
+openQuestions[0]{id,question,impact}:
+
+decisions[7]{id,statement,rationale}:
+  REQ-01, "size引数はdefs-a.ts/lifecycle.ts/manager.ts/manager-write.tsの4ファイルを貫通して伝搬する", scope-definitionのdependencyAnalysisで確認済みの呼び出しチェーンに従う
+  REQ-02, "size引数はcreateTask()の5番目/createTaskState()の6番目のオプショナル引数として追加する", 既存引数の末尾に追加することで後方互換性を維持する(IC-5)
+  REQ-03, "riskScoreはsizeから固定マッピングで生成する(small={total:2,factors:{}}/medium={total:5,factors:{}}/large={total:8,factors:{}})", classifySize()の閾値(small<=3/medium<=7/large>=8)と整合する代表値を設定しスキーマ互換性を維持する(IC-1/R-05)
+  REQ-04, "lifecycle.tsではargs.sizeをTaskSize型として取得しundefinedの場合はそのまま渡す(デフォルト適用はcreateTaskState側)", EP-6の既存パターンに従いデフォルト値の責務を一箇所に集約する(R-02)
+  REQ-05, "manager-write.tsからrisk-classifierのimport文を3関数とも除去する", 呼び出し除去とimport除去を同時に行いデッドコード警告を防ぐ(R-06/SD-6)
+  REQ-06, "defs-a.tsのsizeプロパティはJSON Schema enum制約を使用しランタイムバリデーションを不要にする", MCPプロトコルレベルで不正値を排除する(R-01/SD-4)
+  REQ-07, "risk-classifier.tsは残置し将来のサイズ推定ヒントとしての再利用可能性を維持する", テスト影響の最小化と段階的リファクタリングを優先する(R-07/SD-2)
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/scope-definition.toon, 入力, スコープ定義成果物
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/research.toon, 入力, リサーチ成果物
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/requirements.toon, 出力, 要件定義成果物(本ファイル)
+
+next:
+  criticalDecisions: "変更対象4ファイル(defs-a.ts/lifecycle.ts/manager.ts/manager-write.ts)の呼び出しチェーンでsizeを伝搬する。riskScoreはsize固定マッピングで生成する。デフォルトlargeの適用はcreateTaskState内で行う"
+  readFiles: "mcp-server/src/tools/defs-a.ts, mcp-server/src/tools/handlers/lifecycle.ts, mcp-server/src/state/manager.ts, mcp-server/src/state/manager-write.ts"
+  warnings: "manager-core.test.tsがcreateTask()を呼び出している場合、シグネチャ変更の影響で修正が必要になる可能性がある。既存テスト実行による回帰確認が必須"

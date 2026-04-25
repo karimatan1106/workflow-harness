@@ -1,0 +1,53 @@
+taskName: smallタスクDoD最適化(FB#2-#8)
+phase: planning
+date: 2026-03-22
+size: medium
+
+implementationPlan[6]{id,fbRef,targetFile,changeType,description}:
+  IP-1, FB#3, "workflow-harness/mcp-server/src/phases/registry.ts", modify, "SIZE_SKIP_MAP.small配列にresearchとplanningの2要素を追加。現在19要素のskipリストが21要素になりアクティブフェーズが12から10に削減される"
+  IP-2, FB#5, "workflow-harness/mcp-server/src/gates/dod-l4-delta.ts", modify, "DELTA_ENTRY_MIN_COUNT定数をDELTA_ENTRY_MIN_MAP: Record<TaskSize number>に変更(small:3/medium:5/large:5)。checkDeltaEntryFormat引数にsize: TaskSizeを追加。dod.tsの呼び出し元でstate.sizeを渡す"
+  IP-3, FB#4, "workflow-harness/mcp-server/src/gates/dod-l1-l2.ts", modify, "checkTDDRedEvidence冒頭(L80-81間)にdodExemptionsチェック3行追加。PHASE_REGISTRY[phase].dodExemptions?.includes(tdd_red_evidence)ならpassed:trueで即時return"
+  IP-4, FB#7, "workflow-harness/mcp-server/src/tools/handler-shared.ts", modify, "PHASE_APPROVAL_GATESのexportを維持しつつshouldRequireApproval(phase: string, size: TaskSize, state: TaskState): booleanを新設。small+requirements時はAC>=3かつopenQuestions空なら自動承認(false返却)"
+  IP-5, FB#8, "workflow-harness/mcp-server/src/phases/registry.ts", modify, "SIZE_MINLINES_FACTOR: Record<TaskSize number>定数追加(small:0.6/medium:1.0/large:1.0)。getPhaseConfig(phase, size?)にオプショナルsize引数追加。size指定時はminLines = Math.max(20, Math.floor(base * factor))を返す"
+  IP-6, FB#2, "workflow-harness/mcp-server/src/phases/definitions-shared.ts", modify, "SUMMARY_SECTION_RULEの33行目付近に禁止記法の明示リスト追加: ##ヘッダー/###ヘッダー/**太字**/```コードブロック の4種を列挙"
+
+fileChanges[8]{file,line,before,after}:
+  registry.ts, 92-112, "small配列に19フェーズ", "small配列に21フェーズ(research/planning追加)"
+  registry.ts, 166-170, "getPhaseConfig(phase: PhaseName): PhaseConfig", "getPhaseConfig(phase: PhaseName, size?: TaskSize): PhaseConfig。size指定時minLines調整"
+  registry.ts, 170後, "-", "SIZE_MINLINES_FACTOR定数追加: small:0.6/medium:1.0/large:1.0"
+  dod-l4-delta.ts, 13, "const DELTA_ENTRY_MIN_COUNT = 5", "const DELTA_ENTRY_MIN_MAP: Record<TaskSize number> = { small: 3, medium: 5, large: 5 }"
+  dod-l4-delta.ts, 21, "checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string)", "checkDeltaEntryFormat(phase: string, docsDir: string, workflowDir: string, size: TaskSize = 'medium')"
+  dod-l1-l2.ts, 80-81, "phase !== test_implで即return", "dodExemptionsチェック3行挿入後に既存ロジック維持"
+  handler-shared.ts, 19-25, "PHASE_APPROVAL_GATES定数のみ", "shouldRequireApproval関数を追加export"
+  definitions-shared.ts, 33, "★ JSON形式で書かないこと...## ヘッダーも禁止。", "禁止記法リスト4種を明示的に列挙した文に拡張"
+
+executionOrder[3]{step,tasks,parallel,rationale}:
+  1, "IP-1(registry skip) + IP-5(registry minLines) + IP-6(definitions-shared TOON rule)", true, "IP-1とIP-5は同ファイルだが変更箇所が離れており競合しない。IP-6は別ファイル"
+  2, "IP-2(delta count) + IP-3(TDD exemption) + IP-4(approval gate)", true, "3ファイルとも独立。IP-2はdod-l4-delta.ts+dod.ts、IP-3はdod-l1-l2.ts、IP-4はhandler-shared.ts+lifecycle.ts"
+  3, "全6件のユニットテスト実装", false, "実装完了後にテスト作成。test_implフェーズで実施"
+
+callerUpdates[2]{file,change,reason}:
+  "workflow-harness/mcp-server/src/gates/dod.ts", "checkDeltaEntryFormat呼び出し(L54)にstate.sizeを第4引数として追加", "IP-2のシグネチャ変更に伴う呼び出し元修正"
+  "workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts", "L132-136のapproval判定をshouldRequireApproval(task.phase, task.size, task)に置換", "IP-4のapproval関数化に伴う呼び出し元修正"
+
+riskAssessment[3]{risk,probability,impact,mitigation}:
+  "getPhaseConfig引数変更による既存呼び出し元破壊", low, medium, "size引数はオプショナル(デフォルトundefined)。未指定時は既存動作を維持"
+  "checkDeltaEntryFormat引数追加による既存テスト破壊", low, low, "デフォルト値medium設定により既存呼び出しは動作維持"
+  "shouldRequireApproval自動承認によるsmallタスクの品質低下", low, medium, "AC>=3かつopenQuestions空の条件付き。条件未達時は従来通り承認要求"
+
+decisions[6]{id,statement,rationale}:
+  PL-1, "実装は2ステップ並列実行で最短化する", "6件のFBは3ファイルグループに分離可能で各グループ内の変更箇所が競合しない"
+  PL-2, "getPhaseConfigのsize引数はオプショナルとし後方互換を維持する", "既存の全呼び出し元(dod-l3.ts/dod-l4系)を一括修正する必要がなくなる"
+  PL-3, "DELTA_ENTRY_MIN_COUNTはMapに置換しcheckDeltaEntryFormatにはデフォルト値mediumを設定する", "dod.ts以外の呼び出し元(テスト等)が引数なしで動作を維持できる"
+  PL-4, "shouldRequireApprovalはPHASE_APPROVAL_GATESを内部参照し既存定数を廃止しない", "PHASE_APPROVAL_GATESを参照する他コード(lifecycle.tsのimport等)への影響を最小化"
+  PL-5, "SUMMARY_SECTION_RULEの禁止リストは事前防止として機能しdod-l3.tsの事後検出と二重防御になる", "LLMはテンプレート内の明示的禁止事項に従いやすい。事後検出のみでは修正コストが高い"
+  PL-6, "FB#3でresearch/planningをskipしてもmedium以上では残るためFB#8のminLines調整は必要", "smallでは冗長フェーズ削除で解決するがmediumのresearch.minLines:50は別途最適化が必要"
+
+artifacts[4]{id,path,format}:
+  A-1, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/scope-definition.toon", toon
+  A-2, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/research.toon", toon
+  A-3, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/requirements.toon", toon
+  A-4, "docs/workflows/smallタスクDoD最適化(FB#2-#8)/planning.toon", toon
+
+next: test_design
+nextAction: 6件のACに対応するテストケースをtest-design.toonに定義する。各ACのverificationMethodに基づきユニットテストの入力/期待値/境界条件を設計する

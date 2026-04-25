@@ -1,0 +1,107 @@
+traceVersion: 1
+taskId: 9f107b12-d444-43c1-9b28-cf969e579d56
+createdAt: 2026-03-25T18:01:05.441Z
+timestamp: 2026-03-25T18:01:45.739Z, axis: phase-time, layer: system, event: phase-enter, detail: hearing
+timestamp: 2026-03-25T18:01:45.763Z, axis: phase-time, layer: system, event: phase-exit, detail: hearing
+timestamp: 2026-03-25T18:01:53.938Z, axis: phase-time, layer: system, event: phase-enter, detail: scope_definition
+timestamp: 2026-03-25T18:01:53.972Z, axis: phase-time, layer: system, event: phase-exit, detail: scope_definition
+timestamp: 2026-03-25T18:01:58.615Z, axis: phase-time, layer: system, event: phase-enter, detail: research
+timestamp: 2026-03-25T18:01:58.629Z, axis: phase-time, layer: system, event: phase-exit, detail: research
+timestamp: 2026-03-25T18:02:02.723Z, axis: phase-time, layer: system, event: phase-enter, detail: impact_analysis
+timestamp: 2026-03-25T18:02:02.754Z, axis: phase-time, layer: system, event: phase-exit, detail: impact_analysis
+timestamp: 2026-03-25T18:02:43.937Z, axis: phase-time, layer: system, event: phase-enter, detail: requirements
+timestamp: 2026-03-25T18:02:43.987Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: output_file_exists, passed: true, message: File exists: C:\ツール\Workflow\docs\workflows\harness-analytics-improvement\requirements.md
+timestamp: 2026-03-25T18:02:43.988Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: input_files_exist, passed: true, message: All 2 input files exist
+timestamp: 2026-03-25T18:02:43.988Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: spec_paths_exist, passed: true, message: @spec path check not required for phase: requirements
+timestamp: 2026-03-25T18:02:43.989Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: exit_code_zero, passed: true, message: No L2 proof required for this phase
+timestamp: 2026-03-25T18:02:43.989Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_quality, passed: true, message: Markdown section check passed
+timestamp: 2026-03-25T18:02:43.990Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: toon_safety, passed: true, message: TOON pre-parse safety OK
+timestamp: 2026-03-25T18:02:43.991Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: content_validation, passed: true, message: Content validation passed: no forbidden patterns, placeholders, or duplicates
+timestamp: 2026-03-25T18:02:43.991Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_completeness, passed: true, message: RTM completeness check not required for phase: requirements
+timestamp: 2026-03-25T18:02:43.992Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_required, passed: true, message: 6 RTM entries with AC-N references present
+timestamp: 2026-03-25T18:02:43.992Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_completeness, passed: true, message: AC completeness check not required for phase: requirements
+timestamp: 2026-03-25T18:02:43.993Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: invariant_completeness, passed: true, message: Invariant completeness check not required for phase: requirements
+timestamp: 2026-03-25T18:02:43.993Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_format, passed: true, message: requirements.md contains 5 acceptanceCriteria entries (minimum 3 met)
+timestamp: 2026-03-25T18:02:43.994Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: not_in_scope_section, passed: true, message: notInScope section found in requirements.md
+timestamp: 2026-03-25T18:02:43.994Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: open_questions_section, passed: true, message: openQuestions section found in requirements.md with no open items
+timestamp: 2026-03-25T18:02:43.995Z, axis: dod-retry, layer: system, event: FAIL, detail: retry:1 checkId: intent_consistency, passed: false, message: 意図整合性警告: 3語が requirements.md に未反映: 4軸:, topFailure精度(count降順ソート), tdd_red_evidenceアドバイスルール
+修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。
+timestamp: 2026-03-25T18:02:43.996Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: baseline_required, passed: true, message: Baseline check not required for phase: requirements
+timestamp: 2026-03-25T18:02:43.996Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_freshness, passed: true, message: All input artifacts are fresh
+timestamp: 2026-03-25T18:02:43.997Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: delta_entry_format, passed: true, message: Delta Entry format OK: 8 decision items in Markdown artifact
+timestamp: 2026-03-25T18:02:43.999Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_design_mapping, passed: true, message: AC→design mapping check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.000Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_tc_mapping, passed: true, message: AC→TC traceability check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.002Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_achievement_table, passed: true, message: AC Achievement Status check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.002Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: tc_coverage, passed: true, message: TC coverage check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.003Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_drift, passed: true, message: Artifact drift check not applicable for phase: requirements
+timestamp: 2026-03-25T18:02:44.003Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: package_lock_sync, passed: true, message: Package lock sync check only applicable for commit phase
+timestamp: 2026-03-25T18:02:44.004Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: tdd_red_evidence, passed: true, message: TDD Red evidence check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.005Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_results_exist, passed: true, message: Test results check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.005Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_regression_gate, passed: true, message: Regression gate not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.006Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: hearing_user_response, passed: true, message: userResponse check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.006Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dead_references, passed: true, message: Dead reference check not required for phase: requirements
+timestamp: 2026-03-25T18:02:44.007Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dci_validation, passed: true, message: skip: not a DCI phase
+timestamp: 2026-03-25T18:03:00.628Z, axis: phase-time, layer: system, event: phase-enter, detail: requirements
+timestamp: 2026-03-25T18:03:00.655Z, axis: phase-time, layer: system, event: phase-exit, detail: requirements
+timestamp: 2026-03-25T18:03:05.477Z, axis: phase-time, layer: system, event: phase-enter, detail: threat_modeling
+timestamp: 2026-03-25T18:03:05.552Z, axis: phase-time, layer: system, event: phase-exit, detail: threat_modeling
+timestamp: 2026-03-25T18:03:09.865Z, axis: phase-time, layer: system, event: phase-enter, detail: planning
+timestamp: 2026-03-25T18:03:09.879Z, axis: phase-time, layer: system, event: phase-exit, detail: planning
+timestamp: 2026-03-25T18:03:14.068Z, axis: phase-time, layer: system, event: phase-enter, detail: state_machine
+timestamp: 2026-03-25T18:03:14.088Z, axis: phase-time, layer: system, event: phase-exit, detail: state_machine
+timestamp: 2026-03-25T18:03:18.567Z, axis: phase-time, layer: system, event: phase-enter, detail: flowchart
+timestamp: 2026-03-25T18:03:18.580Z, axis: phase-time, layer: system, event: phase-exit, detail: flowchart
+timestamp: 2026-03-25T18:03:23.163Z, axis: phase-time, layer: system, event: phase-enter, detail: ui_design
+timestamp: 2026-03-25T18:03:23.184Z, axis: phase-time, layer: system, event: phase-exit, detail: ui_design
+timestamp: 2026-03-25T18:03:33.004Z, axis: phase-time, layer: system, event: phase-enter, detail: design_review
+timestamp: 2026-03-25T18:03:33.017Z, axis: phase-time, layer: system, event: phase-exit, detail: design_review
+timestamp: 2026-03-25T18:03:41.581Z, axis: phase-time, layer: system, event: phase-enter, detail: test_design
+timestamp: 2026-03-25T18:03:41.613Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: output_file_exists, passed: true, message: File exists: C:\ツール\Workflow\docs\workflows\harness-analytics-improvement\test-design.md
+timestamp: 2026-03-25T18:03:41.614Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: input_files_exist, passed: true, message: All 3 input files exist
+timestamp: 2026-03-25T18:03:41.614Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: spec_paths_exist, passed: true, message: @spec path check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.615Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: exit_code_zero, passed: true, message: No L2 proof required for this phase
+timestamp: 2026-03-25T18:03:41.615Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_quality, passed: true, message: Markdown section check passed
+timestamp: 2026-03-25T18:03:41.616Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: toon_safety, passed: true, message: TOON pre-parse safety OK
+timestamp: 2026-03-25T18:03:41.617Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: content_validation, passed: true, message: Content validation passed: no forbidden patterns, placeholders, or duplicates
+timestamp: 2026-03-25T18:03:41.617Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_completeness, passed: true, message: RTM completeness check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.618Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_required, passed: true, message: RTM required check not applicable for phase: test_design
+timestamp: 2026-03-25T18:03:41.618Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_completeness, passed: true, message: AC completeness check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.619Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: invariant_completeness, passed: true, message: Invariant completeness check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.619Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_format, passed: true, message: AC format check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.620Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: not_in_scope_section, passed: true, message: NOT_IN_SCOPE check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.620Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: open_questions_section, passed: true, message: OPEN_QUESTIONS check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.621Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: intent_consistency, passed: true, message: Intent consistency check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.621Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: baseline_required, passed: true, message: Baseline check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.622Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_freshness, passed: true, message: All input artifacts are fresh
+timestamp: 2026-03-25T18:03:41.622Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: delta_entry_format, passed: true, message: Delta Entry format OK: 6 decision items in Markdown artifact
+timestamp: 2026-03-25T18:03:41.623Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_design_mapping, passed: true, message: AC→design mapping check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.623Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_tc_mapping, passed: true, message: AC→TC traceability section present in test-design.md (IA-4)
+timestamp: 2026-03-25T18:03:41.623Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_achievement_table, passed: true, message: AC Achievement Status check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.624Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: tc_coverage, passed: true, message: TC coverage OK: 13 unique TC entries for 5 ACs (CRV-1)
+timestamp: 2026-03-25T18:03:41.624Z, axis: dod-retry, layer: system, event: FAIL, detail: retry:1 checkId: artifact_drift, passed: false, message: Approved artifacts modified since approval: requirements.md (ART-1)
+修正方法: 変更を元に戻すか harness_approve で再承認してください。
+timestamp: 2026-03-25T18:03:41.625Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: package_lock_sync, passed: true, message: Package lock sync check only applicable for commit phase
+timestamp: 2026-03-25T18:03:41.625Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: tdd_red_evidence, passed: true, message: TDD Red evidence check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.626Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_results_exist, passed: true, message: Test results check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.626Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_regression_gate, passed: true, message: Regression gate not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.627Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: hearing_user_response, passed: true, message: userResponse check not required for phase: test_design
+timestamp: 2026-03-25T18:03:41.627Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dead_references, passed: true, message: No dead references detected in artifact (DRV-1)
+timestamp: 2026-03-25T18:03:41.627Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dci_validation, passed: true, message: skip: not a DCI phase
+timestamp: 2026-03-25T18:03:59.865Z, axis: phase-time, layer: system, event: phase-enter, detail: requirements
+timestamp: 2026-03-25T18:03:59.880Z, axis: phase-time, layer: system, event: phase-exit, detail: requirements
+timestamp: 2026-03-25T18:04:04.267Z, axis: phase-time, layer: system, event: phase-enter, detail: threat_modeling
+timestamp: 2026-03-25T18:04:04.281Z, axis: phase-time, layer: system, event: phase-exit, detail: threat_modeling
+timestamp: 2026-03-25T18:04:16.688Z, axis: phase-time, layer: system, event: phase-enter, detail: planning
+timestamp: 2026-03-25T18:04:16.708Z, axis: phase-time, layer: system, event: phase-exit, detail: planning
+timestamp: 2026-03-25T18:04:25.744Z, axis: phase-time, layer: system, event: phase-enter, detail: state_machine
+timestamp: 2026-03-25T18:04:25.761Z, axis: phase-time, layer: system, event: phase-exit, detail: state_machine
+timestamp: 2026-03-25T18:04:29.633Z, axis: phase-time, layer: system, event: phase-enter, detail: flowchart
+timestamp: 2026-03-25T18:04:29.661Z, axis: phase-time, layer: system, event: phase-exit, detail: flowchart
+timestamp: 2026-03-25T18:04:33.477Z, axis: phase-time, layer: system, event: phase-enter, detail: ui_design
+timestamp: 2026-03-25T18:04:33.493Z, axis: phase-time, layer: system, event: phase-exit, detail: ui_design
+timestamp: 2026-03-25T18:04:41.610Z, axis: phase-time, layer: system, event: phase-enter, detail: design_review
+timestamp: 2026-03-25T18:04:41.626Z, axis: phase-time, layer: system, event: phase-exit, detail: design_review
+timestamp: 2026-03-25T18:04:51.139Z, axis: phase-time, layer: system, event: phase-enter, detail: test_design
+timestamp: 2026-03-25T18:04:51.153Z, axis: phase-time, layer: system, event: phase-exit, detail: test_design
+timestamp: 2026-03-25T18:04:54.963Z, axis: phase-time, layer: system, event: phase-enter, detail: test_selection
+timestamp: 2026-03-25T18:04:54.978Z, axis: phase-time, layer: system, event: phase-exit, detail: test_selection

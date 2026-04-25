@@ -1,0 +1,94 @@
+flowchart TD
+    subgraph PreValidate("P0-3: 成果物事前検証フロー")
+        PV1(Orchestratorがsubagent完了を検知) --> PV2{workflow_pre_validate呼び出し}
+        PV2 --> PV3(ファイル存在確認)
+        PV3 -->|存在しない| PV_ERR(エラー応答でファイル未発見を通知)
+        PV3 -->|存在する| PV4(PhaseGuide定義取得)
+        PV4 --> PV5(requiredSections検証)
+        PV5 --> PV6(禁止パターン検証)
+        PV6 --> PV7(最低行数検証)
+        PV7 --> PV8(重複行検証)
+        PV8 --> PV9{errors配列が空か}
+        PV9 -->|空| PV_OK(passed true で返却)
+        PV9 -->|非空| PV_FAIL(passed false と errors で返却)
+        PV_OK --> PV10(workflow_next呼び出しへ進む)
+        PV_FAIL --> PV11(修正指示を出して再検証)
+        PV11 --> PV2
+    end
+
+    subgraph Feedback("P0-1: フィードバック記録フロー")
+        FB1(ユーザーがフィードバック入力) --> FB2(workflow_record_feedback呼び出し)
+        FB2 --> FB3{セッショントークン検証}
+        FB3 -->|不正| FB_ERR(エラー応答でトークン不正を通知)
+        FB3 -->|正常| FB4{appendMode確認}
+        FB4 -->|false| FB5(userIntentを置換)
+        FB4 -->|true| FB6(userIntentに追記)
+        FB5 --> FB7(HMAC再計算して保存)
+        FB6 --> FB7
+        FB7 --> FB8(updatedUserIntentを返却)
+    end
+
+    subgraph Keyword("P0-2: キーワードトレーサビリティフロー")
+        KW1(workflow_nextでフェーズ遷移要求) --> KW2{対象フェーズ判定}
+        KW2 -->|requirements終了後| KW3(requirements.mdからキーワード抽出)
+        KW2 -->|test_design終了後| KW4(spec.mdからキーワード抽出)
+        KW2 -->|implementation終了後| KW5(test-design.mdからキーワード抽出)
+        KW2 -->|その他| KW_SKIP(トレーサビリティ検証スキップ)
+        KW3 --> KW6(ターゲット文書でキーワード検索)
+        KW4 --> KW6
+        KW5 --> KW6
+        KW6 --> KW7(カバレッジスコア計算)
+        KW7 --> KW8{カバレッジが閾値以上か}
+        KW8 -->|はい| KW_OK(passed trueで返却)
+        KW8 -->|いいえ| KW9{SEMANTIC_TRACE_STRICT設定}
+        KW9 -->|true| KW_FAIL(passed falseとerrorsで返却)
+        KW9 -->|false| KW_WARN(passed trueとwarningsで返却)
+    end
+
+    subgraph CLAUDEParse("P1-1: CLAUDE.md分割配信フロー")
+        CP1(resolvePhaseGuide呼び出し) --> CP2{メモリキャッシュ確認}
+        CP2 -->|ヒット| CP7(キャッシュからcontent取得)
+        CP2 -->|ミス| CP3(CLAUDE.mdファイル読み込み)
+        CP3 -->|ファイル未発見| CP_ERR(contentを空値で設定)
+        CP3 -->|読み込み成功| CP4(フェーズ別セクションマッピング取得)
+        CP4 --> CP5(正規表現で見出しマッチング)
+        CP5 --> CP6(該当セクション本文を抽出連結)
+        CP6 --> CP7_SAVE(メモリキャッシュに保存)
+        CP7_SAVE --> CP7
+        CP7 --> CP8(PhaseGuideのcontentフィールドに設定)
+        CP8 --> CP9(workflow_statusとworkflow_nextで返却)
+    end
+
+    subgraph Subtask("P1-2: タスク親子関係フロー")
+        ST1{操作種別} -->|新規作成| ST2(workflow_create_subtask)
+        ST1 -->|既存リンク| ST3(workflow_link_tasks)
+        ST2 --> ST4(親タスク存在確認)
+        ST4 -->|存在しない| ST_ERR1(エラー応答で親タスク未発見)
+        ST4 -->|存在する| ST5(セッショントークン検証)
+        ST5 --> ST6(新規TaskState作成)
+        ST6 --> ST7(parentTaskIdとtaskType childを設定)
+        ST7 --> ST8(親のchildTaskIdsとtaskType parentを更新)
+        ST8 --> ST9(親子両方をHMAC署名付きで保存)
+
+        ST3 --> ST10(親子両タスク存在確認)
+        ST10 -->|一方が存在しない| ST_ERR2(エラー応答でタスク未発見)
+        ST10 -->|両方存在| ST11(循環参照チェック)
+        ST11 -->|循環検出| ST_ERR3(エラー応答で循環参照を通知)
+        ST11 -->|循環なし| ST12(既存リンク確認)
+        ST12 -->|リンク済み| ST_ERR4(エラー応答で既にリンク済みを通知)
+        ST12 -->|未リンク| ST8
+    end
+
+    subgraph IndexSync("P1-3: task-index.json同期フロー")
+        IS1(フェーズ遷移APIを実行) --> IS2(stateManager.saveStateが完了)
+        IS2 --> IS3(updateTaskIndexForSingleTask呼び出し)
+        IS3 --> IS4(task-index.json読み込み)
+        IS4 -->|読み込みエラー| IS_WARN(警告ログ出力して処理継続)
+        IS4 -->|読み込み成功| IS5{既存エントリ検索}
+        IS5 -->|存在する| IS6(エントリ更新)
+        IS5 -->|存在しない| IS7(エントリ追加)
+        IS6 --> IS8(task-index.json書き込み)
+        IS7 --> IS8
+        IS8 -->|書き込みエラー| IS_WARN
+        IS8 -->|書き込み成功| IS9(Hook側キャッシュが最新を参照可能)
+    end

@@ -1,0 +1,144 @@
+phase: metrics
+taskName: harness-first-pass-improvement
+startedAt: "2026-03-29T09:25:02.009Z"
+completedAt: "2026-03-29T12:07:46.337Z"
+totalRetries: 10
+totalDoDFailures: 10
+phases:
+  hearing:
+    durationSec: 3739
+    retries: 1
+    dodFailures: 4
+  scope_definition:
+    durationSec: 4
+    retries: 1
+    dodFailures: 3
+  research:
+    durationSec: 3
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 7
+    retries: 1
+    dodFailures: 2
+  threat_modeling:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 3
+    retries: 1
+    dodFailures: 1
+  state_machine:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 3
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 3
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 8
+    retries: 0
+    dodFailures: 0
+  test_design:
+    durationSec: 218
+    retries: 3
+    dodFailures: 6
+  test_selection:
+    durationSec: 86
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 244
+    retries: 0
+    dodFailures: 0
+  implementation:
+    durationSec: 954
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 1118
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 153
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 1506
+    retries: 1
+    dodFailures: 1
+  testing:
+    durationSec: 696
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 131
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 123
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 143
+    retries: 1
+    dodFailures: 1
+  security_scan:
+    durationSec: 92
+    retries: 0
+    dodFailures: 0
+  performance_test:
+    durationSec: 72
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 137
+    retries: 1
+    dodFailures: 1
+  docs_update:
+    durationSec: 58
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 68
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 11
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 14
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 11
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 146
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  hearing[4]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L2] userResponse: key missing from hearing artifact"
+  scope_definition[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  requirements[2]: "[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5","[L4] 意図整合性警告: 5語が requirements.md に未反映: ハーネスの1発通過率を改善する, coordinator委譲テンプレートにフェーズ別必須出力ルール(decisions, 5件以上等)を追加, edit部分適用問題の回避ルール追加, baseline/RTM手順漏れ防止をフェーズテンプレートに組み込む\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+  planning[1]: "[L4] Forbidden patterns found: TODO, TBD, WIP [WARN] [WARN] Code fences found in planning.md: at line 23, line 26, line 29, line 40, line 47, line 50, line 53, line 61, line 68, line 74, line 77, line 87, line 94, line 98, line 101, line 109"
+  test_design[6]: "[L4] Duplicate lines (3+ times): \"- 対応: AC-1, F-001...\" (4x); \"- 期待値: 1...\" (7x); \"- 対応: AC-2, F-002...\" (3x)","[L4] test-design.md is missing acTcMapping section (IA-4)\n修正方法: test-design.md に ## acTcMapping セクションを追加し、AC-N → TC-{AC#}-{連番} の対応を列挙してください。","[L3] TC coverage insufficient: 0 TC entries < 5 ACs (CRV-1)\n修正方法: test-design.md に各AC-Nに対して TC-ACN-01 形式のテストケースを追加してください。","[L4] Approved artifacts modified since approval: hearing.md, requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。","[L4] Duplicate lines (3+ times): \"- 対応AC: AC-1, F-001...\" (4x); \"- 対応AC: AC-2, F-002...\" (3x); \"- 対応AC: AC-4, F-004...\" (3x)","[L4] Approved artifacts modified since approval: test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  code_review[1]: "[L3] RTM entries not at required status: F-005 (pending), F-006 (pending), F-007 (pending)"
+  manual_test[1]: "[L4] Duplicate lines (3+ times): \"判定: PASS...\" (9x)"
+  e2e_test[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"

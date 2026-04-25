@@ -1,0 +1,67 @@
+task: skill-files-compression
+phase: scope_definition
+status: complete
+timestamp: 2026-03-07T19:00:00+09:00
+scope: .claude/skills/harness/ 配下11ファイル(1640行)をCLAUDE.md重複排除とテンプレート削除で圧縮
+sourceDir: workflow-harness/.claude/skills/harness/
+copyTarget: .claude/skills/harness/
+authoritySpec: workflow-harness/CLAUDE.md (151行, 常時ロード)
+currentState: 11files/1640lines, 5files over 200-line target
+fileInventory[11]{file,lines}:
+  SKILL.md, 88
+  workflow-phases.md, 154
+  workflow-orchestrator.md, 159
+  workflow-gates.md, 155
+  workflow-rules.md, 123
+  workflow-subagent.md, 186
+  workflow-operations.md, 122
+  workflow-project-structure.md, 117
+  workflow-api-standards.md, 152
+  workflow-docs-structure.md, 186
+  workflow-docs-phases.md, 198
+parentRepoDiff: SKILL.mdのみ差異あり(3-axis intent analysis + Orchestrator Direct Edit Policy追加)
+overlapSummary: CLAUDE.mdとの重複12箇所(OV-01~12), スキルファイル間重複8箇所(SF-01~08), MCP提供で不要3箇所(MT-01~03). 主要重複はphase表/bash categories/retry protocol/sessionToken/IA-1~7が各2~3箇所に分散
+dependencyGraph: SKILL.md=entry point→全10ファイル参照. workflow-phases.md=standalone. workflow-orchestrator.md←workflow-rules.md. workflow-gates.md←standalone. workflow-subagent.md→phases+orchestrator+rules. docs-structure↔docs-phases相互参照. api-standards→project-structure. operations=standalone
+decisions[9]{id,statement,rationale}:
+  SD-01, CLAUDE.mdを権威仕様として維持しスキルファイルから重複情報を全削除する, CLAUDE.mdは常時ロードされる権威仕様(151行)でありスキルファイルはオンデマンドロードのため重複はトークン浪費であり不整合リスクも生む. CLAUDE.md Sec1-12の内容と一致する記述をスキルファイルから除去することで平均30%の行数削減が見込める
+  SD-02, workflow-subagent.mdからテンプレート例96行を全削除しsubagent設定表とedit制限のみ残す, MCPサーバーのharness_get_subphase_templateが実行時にテンプレートを提供するため手動テンプレートは冗長. startup template(36行)とretry template(48行)とparallel例(12行)は全てサーバー側で動的生成されており静的コピーは更新漏れの原因
+  SD-03, bash定義とmodel escalationとretryをworkflow-rules.mdに一元化する, workflow-subagent.mdとworkflow-rules.mdの両方にbash categories(24行重複)とretry protocol(48行重複)が存在. 単一ソース原則に従いworkflow-rules.mdを正とし他ファイルからは参照のみとする
+  SD-04, workflow-subagent.mdをworkflow-execution.mdにリネームしsubagent type表とphase-edit制限のみに絞る, テンプレート/bash/retry/context handoff/parallel例を除くとsubagent固有情報は2つの表(type/model表とedit制限表)のみ約56行. ファイル名もsubagentよりexecutionが実態に合う
+  SD-05, workflow-docs-structure.mdとworkflow-docs-phases.mdを1ファイルworkflow-docs.mdに統合する, 両ファイルは密結合(docs-phasesがdocs-structureのディレクトリ構造を前提)で合計384行中重複例示が約100行. 統合により相互参照が不要になり200行以内に収まる
+  SD-06, workflow-operations.mdのMCPキャッシュ情報をCLAUDE.md参照に置換し具体手順のみ残す, CLAUDE.md Sec12にコアモジュール変更後再起動必須の権威記述あり. スキルファイルには4ステップ手順(キャッシュクリア→再起動→検証→確認)のみ保持
+  SD-07, workflow-api-standardsとworkflow-project-structureはプロジェクト固有のため圧縮のみで維持する, ハーネスのワークフロー制御とは独立した標準定義であり他ファイルとの重複は軽微. コード例の簡潔化と説明文圧縮で各ファイル20-30行削減
+  SD-08, 全ファイルで説明的散文を箇条書きに変換し1行あたり情報密度を高める, LLMは箇条書きの方が散文より正確に指示を取得できる(認知研究LLM-COG参照). 各ファイルで5-15行の削減効果
+  SD-09, 圧縮後に全ファイルのクロスリファレンス整合性を検証する, ファイル統合やリネームにより既存の参照パス(SKILL.mdのindex等)が壊れるリスクあり. SKILL.mdのファイルリストとactual filesの一致を最終チェックで確認必須
+acceptanceCriteria[6]{id,criterion,verificationMethod}:
+  AC-01, 全スキルファイルが200行以下であること, wc -l で各ファイルの行数を計測
+  AC-02, CLAUDE.mdとの重複記述が全て排除されていること, OV-01~12の各箇所が削除または参照に置換されていることを目視確認
+  AC-03, スキルファイル間の重複が解消されていること, SF-01~08の各箇所について単一ソースに一元化されていることを確認
+  AC-04, MCPテンプレートと重複する静的テンプレートが削除されていること, MT-01~03の該当行が存在しないことをgrep確認
+  AC-05, SKILL.mdのファイルインデックスが圧縮後のファイル構成と一致すること, ls結果とSKILL.md内のリストを突合
+  AC-06, 圧縮後の総行数が1000行以下(40%以上削減)であること, wc -l 合計で確認
+functionalRequirements[4]{id,requirement}:
+  FR-01, workflow-subagent.md→workflow-execution.mdリネームとテンプレート96行削除
+  FR-02, workflow-docs-structure.md+workflow-docs-phases.md→workflow-docs.md統合
+  FR-03, OV-01~12の重複箇所をCLAUDE.md参照に置換または削除
+  FR-04, SF-01~08のスキルファイル間重複を単一ソースに一元化
+nonFunctionalRequirements[3]{id,requirement}:
+  NFR-01, 圧縮によりハーネスの動作が変わらないこと(情報の削除ではなく重複の排除)
+  NFR-02, 各ファイルの冒頭コメントでCLAUDE.mdの該当セクション番号を参照すること
+  NFR-03, 圧縮後のファイルがMarkdown形式を維持すること(TOON変換は対象外)
+openQuestions[2]{id,question,impact}:
+  OQ-01, 親リポのSKILL.md差分(3-axis intent analysis + Direct Edit Policy)をサブモジュールにバックポートするタイミング, 圧縮作業と同時にやるか別タスクにするかで作業量が変わる. 本タスクではOOS-04として除外済みだが圧縮後のコピー時にマージが必要
+  OQ-02, workflow-operations.mdの内容が圧縮後に50行以下になる場合workflow-rules.mdに吸収すべきか, 独立ファイルとして維持する最小行数の閾値が設定されていない. 現時点では独立維持とし実装フェーズで判断
+artifacts[3]{path,role,summary}:
+  docs/workflows/skill-files-compression/scope-definition.toon, spec, 11ファイル1640行のスキルファイル群の重複分析結果と9つの設計決定および42%圧縮計画
+  .claude/skills/harness/workflow-execution.md, deliverable, workflow-subagent.mdをリネームしsubagent type表とedit制限のみに絞った実行設定ファイル
+  .claude/skills/harness/workflow-docs.md, deliverable, docs-structure+docs-phasesを統合したドキュメント規約ファイル
+notInScope[3]{id,item}:
+  OOS-01, CLAUDE.md自体の編集
+  OOS-02, MCPサーバーコード変更
+  OOS-03, スキルファイルのTOON形式変換
+next:
+  criticalDecisions[3]: SD-01(CLAUDE.md重複全削除), SD-02(テンプレート96行削除), SD-05(docs2ファイル統合)
+  readFiles[4]: workflow-harness/CLAUDE.md, .claude/skills/harness/workflow-subagent.md, .claude/skills/harness/workflow-docs-structure.md, .claude/skills/harness/workflow-docs-phases.md
+  implementationOrder[3]: 1.workflow-subagent.md→execution.mdリネーム+削減, 2.docs統合, 3.全ファイルCLAUDE.md重複排除
+  warnings[1]: 親リポSKILL.mdに3-axis intent analysis追加あり(サブモジュール未反映) — 圧縮後コピー時に差分マージ必要
+  riskMitigation[2]: 各ファイル編集前にgit diffで変更量を確認し200行超過時は追加圧縮を実施, SKILL.mdのインデックス更新を最終ステップで実施しファイル名不整合を防止

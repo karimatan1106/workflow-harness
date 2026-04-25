@@ -1,0 +1,36 @@
+stateDiagram-v2
+    [*] --> FrameworkDetection: parseTestResult(exitCode, output, summary)
+
+    FrameworkDetection --> StructurePatternMatch: フレームワーク判定成功
+    FrameworkDetection --> Error1: フレームワーク判定失敗
+
+    StructurePatternMatch --> ExtractTestCount: 構造パターン一致
+    StructurePatternMatch --> SummaryFallbackCheck: 構造パターン未一致
+
+    ExtractTestCount --> MinLengthCheck: 件数抽出成功
+
+    SummaryFallbackCheck --> SummaryAnalysis: summary存在 AND output>=50文字
+    SummaryFallbackCheck --> Error2: summaryなし OR output<50文字
+
+    SummaryAnalysis --> ExtractFromSummary: summaryテキスト解析開始
+
+    ExtractFromSummary --> SummaryCountFound: テスト件数パターン一致
+    ExtractFromSummary --> SummaryCountNotFound: テスト件数パターン未一致
+
+    SummaryCountFound --> RecordCustomResult1: totalTests/passedTests/failedTests決定
+
+    SummaryCountNotFound --> RecordCustomResult2: totalTests=0でマーク
+
+    RecordCustomResult1 --> RecordToState: TestResult保存
+    RecordCustomResult2 --> RecordToState: TestResult保存
+
+    MinLengthCheck --> MinLengthValid: output>=50文字
+    MinLengthCheck --> Error3: output<50文字
+
+    MinLengthValid --> RecordToState: 既存フロー継続
+
+    RecordToState --> [*]: ワークフロー状態に記録完了
+
+    Error1 --> [*]: テストフレームワーク判定失敗
+    Error2 --> [*]: 構造パターンなし、summaryフォールバック条件不合致
+    Error3 --> [*]: output最小文字数チェック失敗

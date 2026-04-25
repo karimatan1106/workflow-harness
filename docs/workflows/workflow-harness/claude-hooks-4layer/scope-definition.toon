@@ -1,0 +1,75 @@
+phase: scope_definition
+task: claude-hooks-4layer
+intent: "Claude Code Hooks 4種(PostToolUse/PreToolUse/Stop/PreCompact)を実装し、ms単位フィードバック層を確立する"
+riskScore: 3
+riskRationale: "シェルスクリプト4本と設定JSON1件の追加。既存フック4本との共存が必要だが、独立イベント種別のため干渉リスクは低い"
+
+entryPoints[2]{path,role}:
+  .claude/settings.json,フック登録の設定ファイル。hooks配下にイベント種別ごとの配列を持つ
+  .claude/hooks/,フックスクリプト格納ディレクトリ。既存4本に新規4本を追加する
+
+existingHooks[4]{file,event,purpose}:
+  context-watchdog.sh,PreToolCall,"定期記憶再注入・重複読み込み検出・チェックポイント強制・ピットフォール検出"
+  handoff-reader.sh,UserPromptSubmit,セッション開始時にHANDOFF.mdを強制注入する
+  handoff-validator.sh,(helper),handoff-reader.shから呼ばれるバリデータ
+  session-end-reminder.sh,UserPromptSubmit,終了系キーワード検出でhandoff促進
+
+newHooks[4]{id,file,event,matcher,purpose}:
+  G-01,post-tool-lint.sh,PostToolUse,"Write|Edit","Write/Edit完了直後にリンター(tsc --noEmit等)を自動実行し、構文エラーを即座にフィードバック"
+  G-02,pre-tool-config-guard.sh,PreToolUse,"Write|Edit","設定ファイル(.eslintrc/.mcp.json/tsconfig.json等)への書き込みをブロックし、意図確認を強制"
+  G-03,stop-test-enforcer.sh,Stop,,"完了宣言時にvitestテスト実行を強制し、テスト未通過での完了を防止"
+  G-04,pre-compact-context-save.sh,Notification,compact,"コンテキスト圧縮前にAC/phase/scopeFiles/decisionsを.agent/checkpoint.toonへ退避"
+
+scopeFiles[8]{path,action,rationale}:
+  .claude/settings.json,modify,"PostToolUse/PreToolUse/Stop/Notification 4イベントのフック登録エントリを追加"
+  .claude/hooks/post-tool-lint.sh,create,G-01実装。Write/Edit後にtsc --noEmitを対象ファイルパスで実行
+  .claude/hooks/pre-tool-config-guard.sh,create,"G-02実装。保護対象パターンマッチでexit 2(ブロック)を返す"
+  .claude/hooks/stop-test-enforcer.sh,create,G-03実装。vitest --runまたはnpm test実行を強制
+  .claude/hooks/pre-compact-context-save.sh,create,"G-04実装。.agent/checkpoint.toon/.agent/CRITICAL.toonへの退避ロジック"
+  .claude/hooks/context-watchdog.sh,readonly,"既存PreToolCallフック。G-02との機能境界を確認(PreToolCall vs PreToolUse)"
+  .agent/CRITICAL.toon,readonly,G-04の退避先の現行フォーマット確認
+  .agent/checkpoint.toon,modify,G-04によるコンテキスト退避データの書き込み先
+
+configProtectionTargets[6]{pattern,reason}:
+  .eslintrc*,リンター設定の意図しない変更を防止
+  tsconfig*.json,TypeScriptコンパイラ設定の保護
+  .mcp.json,MCPサーバー設定の保護
+  package.json,依存関係・スクリプトの保護
+  .claude/settings.json,フック設定自体の保護(実装フェーズでのみ一時解除)
+  .gitignore,追跡対象設定の保護
+
+eventModelAnalysis[4]{event,stdinSchema,exitCodes,timing}:
+  PostToolUse,"tool_name/file_path含むJSON","0=pass/2=show-message","ツール実行完了直後。リンター結果をstdoutで返す"
+  PreToolUse,"tool_name/input含むJSON","0=allow/1=skip-silently/2=block-with-message","ツール実行前。exit 2で操作をブロック"
+  Stop,"stop_reason/summary含むJSON","0=pass/2=block-completion","LLM完了宣言時。exit 2で完了をブロック"
+  Notification,"type=compact/content含むJSON","0=pass(通知のみ)","コンパクト実行直前。exit codeでブロック不可"
+
+overlapAnalysis[2]{pair,risk,mitigation}:
+  "G-02 vs context-watchdog.sh","イベント種別が異なる(PreToolUse vs PreToolCall)ため実行パスは独立。機能的に一部重複(Write/Edit検出)","G-02は設定ファイル保護に特化。watchdogはカウンター/チェックポイント。責務分離で共存可能"
+  "G-04 vs watchdog checkpoint","watchdogのチェックポイント強制(EDIT_THRESHOLD=10)とG-04のcompact前退避は補完関係","G-04はcompactイベント限定。watchdogは編集回数ベース。両方が.agent/checkpoint.toonに書く場合はフォーマット統一が必要"
+
+outOfScope[5]{item,reason}:
+  既存フック4本の改修,本タスクは新規4本の追加に限定。既存フックとの整合性は確認のみ
+  MCPサーバーコード変更,フックはシェルスクリプトでありMCPサーバーとは独立
+  フロントエンド/バックエンドのsrc/変更,フックはClaude Code実行層で完結
+  vitest設定ファイルの新規作成,G-03はプロジェクトに既存のテストランナーを利用
+  .agent/CRITICAL.toonのフォーマット変更,G-04は既存フォーマットを維持して追記する
+
+decisions[7]{id,statement,rationale}:
+  SD-01,"フックスクリプトはbash(#!/bin/bash)で実装する","既存4本がすべてbashスクリプト。同一言語で統一することで保守性を確保"
+  SD-02,"イベント種別はPostToolUse/PreToolUse/Stop/Notificationの4種を使用する","Claude Code公式フックAPIの4イベント種別に1対1対応。PreToolCallは既存watchdogが占有"
+  SD-03,"G-02の保護対象は正規表現パターンマッチで定義し、スクリプト内にハードコードする","外部設定ファイル参照はフック実行速度(ms単位)に影響。パターン変更頻度は低く直接記述で十分"
+  SD-04,"G-01のリンターはtsc --noEmit --pretty falseを使用する","TypeScriptプロジェクトの構文チェックとして最も軽量。eslintは実行時間が長くms単位フィードバックに不適"
+  SD-05,"G-04のコンテキスト退避先は.agent/checkpoint.toonとし、watchdogと同一ファイルを共用する","退避データの一元管理。フォーマットはwatchdogが既に定義済みのTOON形式を踏襲"
+  SD-06,"G-03はvitest --run実行結果のexit codeで完了可否を判定する","テスト全件パスのexit 0以外はexit 2を返して完了をブロック。テストファイルの有無も事前チェック"
+  SD-07,"settings.jsonへのフック登録はmatcherフィールドでツール名フィルタを適用する","PostToolUse/PreToolUseはWrite/Editのみ対象。不要なツール呼び出しでのフック実行を回避"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/claude-hooks-4layer/scope-definition.toon,spec,スコープ定義。変更対象8ファイルと影響範囲の特定結果
+  .claude/settings.json,impl,フック設定登録先。4イベント種別のエントリ追加が必要
+  .claude/hooks/,impl,フックスクリプト格納先。新規4本のシェルスクリプトを追加
+
+next:
+  criticalDecisions: SD-01(bash統一) SD-02(4イベント種別) SD-04(tsc --noEmit) SD-07(matcherフィルタ)
+  readFiles: .claude/settings.json .claude/hooks/context-watchdog.sh .agent/CRITICAL.toon
+  warnings: G-02とwatchdogのcheckpoint.toon共用時のフォーマット競合に注意

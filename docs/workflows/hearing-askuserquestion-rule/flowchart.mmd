@@ -1,0 +1,44 @@
+flowchart TD
+    Start([Start: flowchart phase]) --> ReadPhases[Read workflow-phases.md]
+    ReadPhases --> CheckL11{L11 is scope_definition?}
+    CheckL11 -->|Yes| CountCurrentLines[Count current line total]
+    CheckL11 -->|No| FindInsertPoint[Locate scope_definition line]
+    FindInsertPoint --> CountCurrentLines
+    CountCurrentLines --> PrepareContent[Prepare 3-line hearing section]
+    PrepareContent --> InsertSection[Insert at line before scope_definition]
+    InsertSection --> PostCountLines[Count post-insertion lines]
+    PostCountLines --> CheckUnder200{Total lines <= 200?}
+    CheckUnder200 -->|Yes| ValidateHeading{Heading matches pattern?}
+    CheckUnder200 -->|No| ReduceContent[Reduce content to fit limit]
+    ReduceContent --> PostCountLines
+    ValidateHeading -->|Yes| ValidateOutput{Output field present?}
+    ValidateHeading -->|No| FixHeading[Fix heading format]
+    FixHeading --> ValidateHeading
+    ValidateOutput -->|Yes| ValidateDoD{DoD field present?}
+    ValidateOutput -->|No| FixOutput[Add Output field]
+    FixOutput --> ValidateOutput
+    ValidateDoD -->|Yes| CheckAgentRef{hearing-worker mentioned?}
+    ValidateDoD -->|No| FixDoD[Add DoD field]
+    FixDoD --> ValidateDoD
+    CheckAgentRef -->|Yes| CheckToolRef{AskUserQuestion mentioned?}
+    CheckAgentRef -->|No| AddAgentRef[Add hearing-worker reference]
+    AddAgentRef --> CheckAgentRef
+    CheckToolRef -->|Yes| VerifyScopeShift[Verify scope_definition shifted correctly]
+    CheckToolRef -->|No| AddToolRef[Add AskUserQuestion reference]
+    AddToolRef --> CheckToolRef
+    VerifyScopeShift --> VerifyStageNumbers[Verify Stage numbers unchanged]
+    VerifyStageNumbers --> VerifyPhaseSetsDef[Verify Phase sets line intact]
+    VerifyPhaseSetsDef --> AllValid{All validations passed?}
+    AllValid -->|Yes| Done([Done: flowchart complete])
+    AllValid -->|No| ReportError[Report validation failure]
+    ReportError --> Start
+
+## decisions
+
+- D-001: Start node reads workflow-phases.md first because the insertion point must be confirmed before any modification, preventing structural corruption.
+- D-002: Line count check (<=200) is placed immediately after insertion because it is a hard constraint from core-constraints.md that gates all subsequent validation.
+- D-003: Format validation is decomposed into 5 sequential checks (heading, Output, DoD, agent, tool) to provide precise error localization when a check fails.
+- D-004: Each validation failure loops back to a fix node rather than aborting, enabling incremental correction without restarting the entire flow.
+- D-005: Post-insertion verification of existing sections (scope_definition shift, Stage numbers, Phase sets) is a separate branch to isolate collateral-damage detection from content validation.
+- D-006: The ReduceContent loop on line count failure ensures the 200-line constraint is always satisfied before format validation begins.
+- D-007: Final AllValid gate aggregates all validation results; failure routes back to Start for a clean retry rather than partial re-execution.

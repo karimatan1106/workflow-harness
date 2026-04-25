@@ -1,0 +1,47 @@
+flowchart TD
+    A[workflow_next 呼び出し] --> B{検証対象フェーズ?}
+
+    B -->|No| Z[通常のフェーズ遷移]
+    B -->|Yes| C{SKIP_DESIGN_VALIDATION?}
+
+    C -->|true| D[スキップログ出力]
+    D --> Z
+
+    C -->|false| E[設計書読み込み]
+
+    subgraph 設計書パース
+        E --> F[spec.md パース]
+        F --> G[state-machine.mmd パース]
+        G --> H[flowchart.mmd パース]
+        H --> I[requirements.md パース]
+    end
+
+    I --> J{パースエラー?}
+    J -->|Yes| K[エラーログ出力]
+    K --> L{厳格モード?}
+
+    J -->|No| M[設計項目抽出]
+
+    subgraph 実装照合
+        M --> N[ファイル存在チェック]
+        N --> O[クラス存在チェック]
+        O --> P[メソッド存在チェック]
+    end
+
+    P --> Q{未実装項目あり?}
+
+    Q -->|No| R[ValidationResult: passed=true]
+    R --> Z
+
+    Q -->|Yes| S[未実装リスト生成]
+    S --> L
+
+    L -->|Yes| T[エラーメッセージ生成]
+    T --> U[フェーズ遷移ブロック]
+    U --> V[エラー返却]
+
+    L -->|No| W[警告メッセージ出力]
+    W --> Z
+
+    Z --> X[stateManager.updateTaskPhase]
+    X --> Y[成功レスポンス返却]

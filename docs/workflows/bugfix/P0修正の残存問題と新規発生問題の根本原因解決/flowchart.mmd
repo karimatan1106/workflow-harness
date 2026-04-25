@@ -1,0 +1,39 @@
+flowchart TD
+    Start(("実装フェーズ開始")) --> ReadSpec(("spec.mdから修正計画を確認<br/>FR-1:workflow-plugin/CLAUDE.md 330行<br/>FR-2:ルートCLAUDE.md 182行<br/>FR-3:ルートCLAUDE.md 176行"))
+
+    ReadSpec --> FR3Start(("FR-3: test_impl行を2行に分割"))
+    FR3Start --> FR3Edit(("Edit ツール実行<br/>対象:ルートCLAUDE.md<br/>変更:1行を2行に分割<br/>test_impl行=readonly,testing<br/>impl/refactoring行=readonly,testing,implementation"))
+    FR3Edit --> FR3Verify(("Read ツールで検証<br/>test_impl行で implementation が消えたか確認<br/>2行に正しく分割されたか確認"))
+    FR3Verify --> FR3Check{FR-3検証<br/>成功?}
+    FR3Check -->|不成功| FR3Edit
+    FR3Check -->|成功| FR2Start
+
+    FR2Start(("FR-2: deploy行の許可カテゴリを修正")) --> FR2Edit(("Edit ツール実行<br/>対象:ルートCLAUDE.md<br/>変更:許可カテゴリを readonly のみに<br/>用途説明を修正"))
+    FR2Edit --> FR2Verify(("Read ツールで検証<br/>deployment行から implementation が消えたか確認<br/>deploy カテゴリが消えたか確認"))
+    FR2Verify --> FR2Check{FR-2検証<br/>成功?}
+    FR2Check -->|不成功| FR2Edit
+    FR2Check -->|成功| FR1Start
+
+    FR1Start(("FR-1: workflow-plugin/CLAUDE.md で<br/>subagent_type を修正")) --> FR1Edit(("Edit ツール実行<br/>対象:workflow-plugin/CLAUDE.md 330行<br/>変更:subagent_type Plan<br/>を subagent_type general-purpose に"))
+    FR1Edit --> FR1Verify(("Read ツールで検証<br/>Planning行が general-purpose に統一されたか確認<br/>Plan という文字列が消えたか確認"))
+    FR1Verify --> FR1Check{FR-1検証<br/>成功?}
+    FR1Check -->|不成功| FR1Edit
+    FR1Check -->|成功| FinalVerify
+
+    FinalVerify(("最終検証:両ファイルの整合性確認")) --> CheckRoot(("ルートCLAUDE.md の<br/>フェーズ別Bashカテゴリテーブル確認<br/>FR-2:deploy=readonly のみ<br/>FR-3:test_impl=readonly,testing のみ"))
+    CheckRoot --> CheckPlugin(("workflow-plugin/CLAUDE.md の<br/>並列フェーズ例示コード確認<br/>FR-1:planning=general-purpose"))
+    CheckPlugin --> CheckDef(("definitions.ts との照合確認<br/>subagentType=全フェーズgeneral-purpose<br/>allowedBashCategories=各フェーズ設定一致"))
+    CheckDef --> CheckConsistency{全修正と検証<br/>一致確認?}
+    CheckConsistency -->|不一致あり| IssueReview(("修正項目を再検討<br/>段階的に修正を適用"))
+    IssueReview --> FR3Start
+    CheckConsistency -->|完全一致| Complete(("実装フェーズ完了<br/>全3件の修正が完了<br/>ドキュメント整合性が回復"))
+
+    Complete --> End(("ワークフロー次フェーズへ"))
+
+    style Start fill:#c8e6c9
+    style End fill:#c8e6c9
+    style FR3Start fill:#bbdefb
+    style FR2Start fill:#bbdefb
+    style FR1Start fill:#bbdefb
+    style FinalVerify fill:#fff9c4
+    style Complete fill:#c8e6c9

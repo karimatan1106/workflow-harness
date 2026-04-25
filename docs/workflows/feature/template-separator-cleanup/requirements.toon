@@ -1,0 +1,48 @@
+phase: requirements
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内の===セパレーターを全て除去し、サブエージェントがTOON成果物に===を模倣する根本原因を排除する
+status: complete
+idPrefix: REQ
+
+functionalRequirements[4]{id,requirement,source,priority}:
+  REQ-FR1, definitions-shared.tsの静的===セパレーター5箇所(R-S1〜R-S5)を**太字ラベル**形式に置換する, R-SRC1/R-RS1, must
+  REQ-FR2, definitions.ts line77の静的===セパレーター1箇所(R-S7)とdefs-stage6.ts line84の1箇所(R-S6)を**太字ラベル**形式に置換する, R-SRC1/R-RS1, must
+  REQ-FR3, definitions.ts line182-184の動的##→===変換ロジック(コメント2行+replace1行)を完全削除する, R-SRC2/R-RS2, must
+  REQ-FR4, defs-stage1〜6テンプレート内の残存##ヘッダー(動的変換削除後に露出する約80箇所)を**太字ラベル**に置換する, R-RS3/R-TC2, must
+
+nonFunctionalRequirements[3]{id,requirement,rationale}:
+  REQ-NF1, 置換後のプロンプト出力にセパレーター文字列(行頭===)が一切含まれないこと, TOON成果物への===混入を完全に防止する
+  REQ-NF2, 置換後のプロンプト出力にMarkdownヘッダー(行頭##)が一切含まれないこと, サブエージェントが##を模倣しTOON内に書く二次汚染を防止する
+  REQ-NF3, registry.tsのJavaScript厳密等価演算子(===)を変更しないこと, プログラム構文でありセパレーターではない(R-NT1/R-NT2)
+
+acceptanceCriteria[4]{id,criterion,verificationMethod}:
+  AC-1, definitions-shared.ts/definitions.ts/defs-stage6.tsの静的===セパレーター全7箇所が太字ラベルに置換されていること, grep -c で対象3ファイルに行頭===が0件であることを確認
+  AC-2, definitions.ts line182-184の動的変換ロジック3行が完全に削除されていること, definitions.tsにreplaceAll##パターンが存在しないことをgrepで確認
+  AC-3, defs-stage1〜6テンプレート内の残存##ヘッダーが全て太字ラベルに置換されbuildSubagentPrompt出力に===も##も含まれないこと, 全テンプレートファイルのsubagentTemplate内に行頭##が0件であることをgrepで確認
+  AC-4, registry.tsのJavaScript厳密等価演算子が変更されていないこと, git diffでregistry.tsに差分がないことを確認
+
+decisions[6]{id,statement,rationale}:
+  REQ-D1, ===セパレーターの置換先は**太字ラベル**形式とする, LLMはMarkdown太字を視覚的区切りとして認識しつつTOON出力に混入しない。トークン効率も===より良い
+  REQ-D2, 動的変換ロジック(line182-184)は修正ではなく完全削除とする, ===生成の根本原因を断つ。変換先を変えても将来の汚染リスクが残る
+  REQ-D3, テンプレート内##ヘッダーは動的変換削除と同時に太字置換する, 動的変換削除のみでは##がプロンプトに露出し二次汚染(R-TC2)を引き起こす
+  REQ-D4, strip処理(lines143-146)は変更しない, タスク情報/入力/出力のstrip処理は正しく機能しておりヘッダー除去に貢献している(R-D4)
+  REQ-D5, 変更は全て機械的な文字列置換であり関数ロジックの変更は行わない, 置換対象はリテラル文字列のみであり実行パスやデータフローへの影響がない
+  REQ-D6, 対象ファイルはdefinitions-shared.ts/definitions.ts/defs-stage1.ts〜defs-stage6.tsの8ファイルに限定する, Grepで網羅的に特定済み(R-S1〜R-S7/R-CV1〜R-CV6)
+
+notInScope[4]{item,reason}:
+  テンプレートの作業指示内容やフェーズロジックの変更, 本タスクはセパレーター記号の置換のみを対象とする
+  TOONパーサーの修正, パーサーは===を正しく拒否しており修正不要
+  他のフォーマット記号(---や***)の変更, ===と##のみがTOON汚染の原因であり他の記号は問題なし
+  registry.tsの変更, JavaScript厳密等価演算子でありセパレーターではない(R-NT1〜R-NT3)
+
+openQuestions[0]{id,question,impact}:
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/template-separator-cleanup/scope-definition.toon, spec, スコープ定義(静的7箇所+動的変換1箇所の初期見積もり)
+  docs/workflows/template-separator-cleanup/research.toon, report, 汚染2系統(静的===7箇所+動的変換1箇所)と残存##約80箇所の調査結果
+  docs/workflows/template-separator-cleanup/requirements.toon, spec, 機能要件4件+非機能要件3件+AC4件の要件定義
+
+next:
+  criticalDecisions: REQ-D2(動的変換ロジック完全削除) REQ-D3(##太字置換で二次汚染防止)
+  readFiles: src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts src/phases/defs-stage6.ts
+  warnings: スコープがsmallからmediumに拡大する可能性あり(テンプレート内##の約80箇所が追加対象だが全て機械的置換)

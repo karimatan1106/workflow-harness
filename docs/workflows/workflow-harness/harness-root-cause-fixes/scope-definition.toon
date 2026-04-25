@@ -1,0 +1,26 @@
+phase: scope_definition
+task: harness-root-cause-fixes
+status: complete
+generatedAt: 2026-03-12T00:00:00.000Z
+summary: "ハーネス根本原因3件を修正し再発防止。RC-1: PhaseConfig.dodExemptions追加でハードコード排除。RC-2: skippedPhases回帰テスト追加。RC-3: HmacKeysバージョニング追加とマイグレーションチェーン設置。"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "checkL2ExitCodeのtest_implハードコードをPhaseConfig.dodExemptions配列駆動に置き換える", "if文リテラルは新フェーズ追加時に見落としを招くためconfig駆動にする"
+  SD-2, "PhaseConfigにdodExemptions?: Array型フィールドを追加する", "型限定でdodExemptionsに不正文字列が混入するリスクを排除する"
+  SD-3, "test_implのdodExemptionsにexit_code_zeroを設定しtdd_red_evidenceは免除しない", "exit_code_zeroのみ例外対象でtdd_red_evidenceはtest_implへの積極的制約である"
+  SD-4, "skippedPhasesがSIZE_SKIP_MAP[size]と一致する回帰テストを追加する", "createTaskStateは修正済みのため回帰テストで再発防止する"
+  SD-5, "HmacKeysにversion: 1を追加しloadHmacKeysでversionフィールドを自動付与する", "レガシー形式にversion:1を付与し将来のformat変更をversion分岐で対応可能にする"
+  SD-6, "loadTaskFromDisk内にstate.versionチェック分岐の入口を設置する", "マイグレーションチェーン入口を先行設置して将来のv5追加コストを下げる"
+  SD-7, "dod-l4-art.tsのtest_implハードコードリストは本タスクスコープ外とする", "アーティファクトドリフト除外はdodExemptionsと独立した概念でありデグレリスクを避ける"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/harness-root-cause-fixes/scope-definition.toon, report, "スコープ定義成果物で影響範囲と決定事項を定義"
+  workflow-harness/mcp-server/src/state/types.ts, spec, "PhaseConfigインターフェースにdodExemptions追加対象"
+  workflow-harness/mcp-server/src/phases/registry.ts, spec, "PHASE_REGISTRYにdodExemptions値設定対象"
+  workflow-harness/mcp-server/src/gates/dod-l1-l2.ts, impl, "checkL2ExitCodeのconfig駆動化対象"
+  workflow-harness/mcp-server/src/utils/hmac.ts, impl, "HmacKeysバージョニング追加とマイグレーション処理拡張対象"
+
+next:
+  criticalDecisions: "types.ts型定義先行→registry.ts値設定→dod-l1-l2.tsロジック変更の順序。hmac.tsは並列可能"
+  readFiles: "workflow-harness/mcp-server/src/gates/dod-runner.ts, workflow-harness/mcp-server/src/__tests__/dod-tdd.test.ts, workflow-harness/mcp-server/src/__tests__/hmac.test.ts"
+  warnings: "dod-l4-art.tsのハードコードはSD-7によりスコープ外。HmacKeys.version追加はレガシー配列形式マイグレーション済みの前提を維持すること"

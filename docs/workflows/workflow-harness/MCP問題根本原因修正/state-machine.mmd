@@ -1,0 +1,92 @@
+stateDiagram-v2
+    note right of [*]
+        MCP問題根本原因修正タスク
+        6件の根本原因を修正するプロセス
+    end note
+
+    %% === BUG-2: 密度計算フロー ===
+    state "密度チェック開始" as DensityStart
+    state "セクション内容解析" as AnalyzeSection
+    state "構造行をカウント" as CountStructural
+    state "有効行数を算出" as CalcEffective
+    state "密度を計算" as CalcDensity
+    state "密度判定処理" as EvaluateDensity
+    state "密度チェック完了" as DensityEnd
+
+    DensityStart --> AnalyzeSection: コンテンツ取得
+    AnalyzeSection --> CountStructural: 各行を確認
+    CountStructural --> CalcEffective: 構造行を除外
+    CalcEffective --> CalcDensity: 新しい計算式
+    CalcDensity --> EvaluateDensity: 密度が基準値以上か
+    EvaluateDensity --> DensityEnd: 判定完了
+
+    %% === BUG-3: mkdirパス検証フロー ===
+    state "mkdirコマンド受信" as MkdirReceive
+    state "パス文字列を抽出" as ExtractPath
+    state "パス正規化処理" as NormalizePath
+    state "許可プレフィックス照合" as MatchPrefix
+    state "許可判定" as EvaluatePath
+    state "mkdir実行許可" as AllowMkdir
+
+    MkdirReceive --> ExtractPath: コマンド解析
+    ExtractPath --> NormalizePath: パス変換
+    NormalizePath --> MatchPrefix: docs/workflows/と比較
+    MatchPrefix --> EvaluatePath: マッチしたか
+    EvaluatePath --> AllowMkdir: 許可決定
+
+    %% === SEC-ENV-1: インライン環境変数検出フロー ===
+    state "コマンド文字列受信" as CmdReceive
+    state "正規表現でパターン抽出" as ExtractPattern
+    state "環境変数リストと比較" as CheckSecurityVars
+    state "危険な変数検出" as DetectDangerousVar
+    state "コマンドブロック" as BlockCommand
+
+    CmdReceive --> ExtractPattern: VAR=value検索
+    ExtractPattern --> CheckSecurityVars: NODE_OPTIONSなど確認
+    CheckSecurityVars --> DetectDangerousVar: セキュリティ変数か
+    DetectDangerousVar --> BlockCommand: ブロック処理
+
+    %% === SEC-TIME-1: トークン検証フロー ===
+    state "セッショントークン受信" as TokenReceive
+    state "トークン長チェック" as CheckTokenLength
+    state "Bufferに変換" as ConvertBuffer
+    state "timingSafeEqual実行" as CompareTiming
+    state "タイミング安全な比較完了" as TokenCompareEnd
+
+    TokenReceive --> CheckTokenLength: 長さ確認
+    CheckTokenLength --> ConvertBuffer: UTF-8バッファ化
+    ConvertBuffer --> CompareTiming: 定時間比較
+    CompareTiming --> TokenCompareEnd: 結果返却
+
+    %% === SEC-LOG-1: ログマスキング処理フロー ===
+    state "ログ記録実行" as LogRecord
+    state "コマンド文字列取得" as GetCommand
+    state "機密パターン検索" as SearchPattern
+    state "パスワード置換" as ReplacePassword
+    state "APIキー置換" as ReplaceAPIKey
+    state "マスキング完了" as MaskComplete
+
+    LogRecord --> GetCommand: コマンド取得
+    GetCommand --> SearchPattern: 正規表現マッチ
+    SearchPattern --> ReplacePassword: --password=***
+    ReplacePassword --> ReplaceAPIKey: API_KEY=***
+    ReplaceAPIKey --> MaskComplete: ログ記録
+
+    %% === 全体フロー ===
+    state "修正開始" as Start
+    state "修正実行中" as Running
+    state "修正検証" as Verification
+    state "修正完了" as Complete
+
+    Start --> Running: 全6件の修正
+    Running --> DensityStart: BUG-2開始
+    Running --> MkdirReceive: BUG-3開始
+    Running --> CmdReceive: SEC-ENV-1開始
+    Running --> TokenReceive: SEC-TIME-1開始
+    Running --> LogRecord: SEC-LOG-1開始
+    DensityEnd --> Verification: BUG-2完了
+    AllowMkdir --> Verification: BUG-3完了
+    BlockCommand --> Verification: SEC-ENV-1完了
+    TokenCompareEnd --> Verification: SEC-TIME-1完了
+    MaskComplete --> Verification: SEC-LOG-1完了
+    Verification --> Complete: 全修正検証完了

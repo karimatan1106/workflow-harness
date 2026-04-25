@@ -1,0 +1,97 @@
+phase: planning
+taskName: docs-update-template-rewrite
+intent: "docs_updateフェーズテンプレートをworkflow-docs.mdのドキュメント構造(docs/spec/features/, docs/architecture/等)に基づいて改修し、永続的なコードドキュメント生成を可能にする"
+riskScore: 4
+
+architectureDecisions[3]{id,decision,alternatives,tradeoff}:
+  PL-AD-1, "テンプレートは=== 区切り形式で直接記述しbuildSubagentPromptの## ヘッダー自動除去と重複しない設計とする", "旧形式(## headers)を維持して自動変換に依存する方式", "旧形式は## タスク情報/## 入力/## 出力ブロックが正規表現で完全除去されるため情報損失リスクがある。=== 形式は除去対象外であり安全に残る"
+  PL-AD-2, "defs-stage6.tsの200行制限をcommit/push/ci_verification/deployテンプレートの圧縮で吸収する", "テンプレート外部化(別ファイル分割)、テンプレート文字列の極端な短縮", "commit/push/ci_verification/deployの4テンプレートは## タスク情報ブロックがbuildSubagentPromptで除去されるため冗長。これら4テンプレートを各2-4行圧縮することで合計12-16行の余裕を確保できる。ファイル分割は既存アーキテクチャの変更が大きすぎる"
+  PL-AD-3, "registry.tsのdocs_update設定変更のみでDoD検証パイプラインを有効化し検証ロジック自体は変更しない", "dod-l1-l2.ts等にdocs_update固有の検証ロジックを追加する方式", "既存のL1/L3/L4チェックはoutputFile設定の有無で自動的にスキップ/有効化される設計。outputFileを設定するだけで全レベルの検証が適用されるためコード変更は不要"
+
+lineBudgetAnalysis:
+  currentTotal: 201
+  targetMax: 200
+  docsUpdateCurrent: 22
+  docsUpdateProposed: 35
+  deltaNeeded: -14
+  commitCompression: -5
+  pushCompression: -4
+  ciVerificationCompression: -3
+  deployCompression: -3
+  totalCompression: -15
+  finalEstimate: 198
+
+implementationPlan[6]{id,description,file,changeType,dependencies,rtmId}:
+  IMPL-1, "commit/push/ci_verification/deployテンプレートを圧縮する。## タスク情報ブロック(buildSubagentPromptが除去する冗長部分)を削除し、## 作業内容のみ残す。commit: 22行を17行に、push: 19行を15行に、ci_verification: 18行を15行に、deploy: 18行を15行に圧縮", src/phases/defs-stage6.ts, modify, "なし(先行作業)", "なし(行数確保のための前提作業)"
+  IMPL-2, "docs_updateのsubagentTemplateをworkflow-docs.md Section3準拠の詳細テンプレートに全面改修する。5項目を具体的パスで列挙: (1)docs/architecture/overview.md更新、(2)docs/operations/配下(environments/deployment/monitoring/runbooks)更新、(3)CHANGELOG.md更新、(4)README.md更新、(5)docs/workflows/は一時的で永続パスにのみ反映する注意。model/outputFile/requiredSections/minLines/bashCategoriesもPhaseDefinition側で更新", src/phases/defs-stage6.ts, modify, IMPL-1, F-001
+  IMPL-3, "registry.tsのdocs_update PhaseConfigを更新する。model: sonnet、inputFiles: [spec.toon/requirements.toon/code-review.toon]、outputFile: docs-update.toon、requiredSections: [decisions/artifacts/next]、minLines: 30、bashCategories: [readonly/implementation]", src/phases/registry.ts, modify, "なし", "F-002/F-003/F-005/F-006"
+  IMPL-4, "definitions.tsのOUTPUT_FILE_TO_PHASEオブジェクトにdocs-update.toon: docs_updateエントリを追加する。既存のe2e-test.toonエントリの直後に1行追加", src/phases/definitions.ts, modify, "なし", F-004
+  IMPL-5, "defs-stage6.tsの最終行数をwc -lで検証し200行以内であることを確認する", src/phases/defs-stage6.ts, verify, "IMPL-1/IMPL-2", "REQ-NFR-1/AC-4"
+  IMPL-6, "テンプレート内に## タスク情報/## 入力/## 出力パターンが存在しないことをgrepで検証する", src/phases/defs-stage6.ts, verify, IMPL-2, "REQ-NFR-3/AC-5"
+
+fileChanges[3]{path,changeType,currentLines,estimatedLines,changeDescription}:
+  src/phases/defs-stage6.ts, modify, 201, 198, "docs_updateテンプレート全面改修(22行を35行に拡大) + commit/push/ci_verification/deployテンプレート圧縮(合計77行を62行に削減)"
+  src/phases/registry.ts, modify, 171, 172, "docs_update PhaseConfig行を更新(model/inputFiles/outputFile/requiredSections/minLines/bashCategories追加)"
+  src/phases/definitions.ts, modify, 136, 137, "OUTPUT_FILE_TO_PHASEにdocs-update.toonエントリ1行追加"
+
+templateDesign:
+  format: "=== 区切り形式。## headersは使用しない(buildSubagentPromptの除去対象を回避)"
+  sections: "作業内容(5項目の永続ドキュメント更新指示) + ドキュメント配置ルール(永続パスvs一時パス) + 命名規則(kebab-case、ターゲット名)"
+  fragments: "SUMMARY_SECTION + BASH_CATEGORIES + ARTIFACT_QUALITY + EXIT_CODE_RULE の4フラグメントを使用"
+  autoHeader: "buildSubagentPromptがcompact header(task:/in:/out:)を自動付与するため、テンプレート内にタスク情報/入力/出力セクションは不要"
+  inputFilesEffect: "inputFiles設定により、compact headerのin:行にspec.toon/requirements.toon/code-review.toonが自動列挙される"
+  outputFileEffect: "outputFile設定により、compact headerのout:行にdocs-update.toonが表示され、L1/L3/L4チェックが自動有効化される"
+
+templateContent:
+  item1: "docs/architecture/overview.md — システム概要の更新。実装で追加/変更されたモジュール、依存関係、設計判断を反映する"
+  item2: "docs/operations/ — 運用ドキュメントの更新。environments/deployment/monitoring/runbooks配下に該当する変更があれば反映する"
+  item3: "CHANGELOG.md — 変更履歴の追記。Conventional Changelog形式で今回の変更内容を記録する"
+  item4: "README.md — プロジェクト概要の更新。新機能の説明、使用方法、設定変更があれば反映する"
+  item5: "docs/workflows/は.gitignore対象の一時作業フォルダ。ここに生成された成果物を永続パス(docs/architecture/、docs/operations/等)に反映すること"
+
+commitPushCompression:
+  commitBefore: "# commitフェーズ + ## タスク情報(3行) + 空行 + ## 作業内容(4行) + 空行 + fragments(2行) = 合計13テンプレート行"
+  commitAfter: "# commitフェーズ + ## 作業内容(3行) + fragments(2行) = 合計7テンプレート行。## タスク情報ブロックはcompact headerと重複するため削除"
+  pushBefore: "# pushフェーズ + ## タスク情報(3行) + 空行 + ## 作業内容(1行) + 空行 + fragments(2行) = 合計9テンプレート行"
+  pushAfter: "# pushフェーズ + ## 作業内容(1行) + fragments(2行) = 合計5テンプレート行"
+  ciVerificationBefore: "# ci_verificationフェーズ + ## タスク名(1行) + 空行 + ## 作業内容(1行) + 空行 + fragments(2行) = 合計7テンプレート行"
+  ciVerificationAfter: "# ci_verificationフェーズ + ## 作業内容(1行) + fragments(2行) = 合計5テンプレート行"
+  deployBefore: "# deployフェーズ + ## タスク名(1行) + 空行 + ## 作業内容(1行) + 空行 + fragments(2行) = 合計7テンプレート行"
+  deployAfter: "# deployフェーズ + ## 作業内容(1行) + fragments(2行) = 合計5テンプレート行"
+
+dependencyOrder:
+  step1: "IMPL-1(commit/push/ci_verification/deploy圧縮) — 行数余裕を確保"
+  step2: "IMPL-2(docs_updateテンプレート改修) — IMPL-1で確保した余裕内でテンプレート拡充"
+  step3: "IMPL-3(registry.ts更新) + IMPL-4(definitions.ts更新) — 並行実施可能"
+  step4: "IMPL-5(行数検証) + IMPL-6(ヘッダー検証) — 全変更完了後に実施"
+
+dodValidationChain:
+  l1Effect: "outputFile='{docsDir}/docs-update.toon'設定によりcheckL1FileExistsがファイル存在を検証する(現在はoutputFile=nullでスキップ中)"
+  l3Effect: "outputFile設定によりcheckL3QualityがTOONパース可能性を検証する(現在はスキップ中)"
+  l4Effect: "requiredSections=[decisions,artifacts,next]設定によりcheckL4ContentValidationが必須キー存在/禁止語/密度を検証する(現在はスキップ中)"
+  noCodeChange: "検証ロジック(dod-l1-l2.ts/dod-l3.ts/dod-l4-content.ts)自体の変更は不要。registry設定だけで自動有効化される"
+
+riskMitigation[3]{risk,probability,impact,mitigation}:
+  "テンプレート圧縮により既存commit/push/ci_verification/deployフェーズの動作が変化する", low, low, "圧縮対象は## タスク情報ブロックのみ。このブロックはbuildSubagentPromptのL94正規表現で完全除去されるため、最終プロンプトに影響しない。圧縮前後でbuildSubagentPrompt出力が同一であることをテストで検証可能"
+  "docs_updateテンプレート拡充後のdefs-stage6.tsが200行を超過する", medium, high, "lineBudgetAnalysisで事前計算済み(推定198行)。IMPL-1(圧縮)をIMPL-2(拡充)より先に実施し、各ステップでwc -lを確認する段階的アプローチ"
+  "inputFiles追加によりファイル不在時のサブエージェント動作に影響する", low, low, "buildSubagentPromptはinputFilesをcompact headerのin:行に列挙するのみ。ファイル不在時はサブエージェントがRead失敗として扱うが、エラー停止はしない(research.toon OQ-2で確認済み)"
+
+decisions[7]{id,statement,rationale}:
+  PL-1, "テンプレートは=== 区切り形式で記述し## ヘッダーを使用しない", "buildSubagentPromptのL94-96で## タスク情報/## 入力/## 出力が正規表現除去される。=== 形式はL132で## から変換される形式であり除去対象外。新規設計では変換後の形式に直接合わせることで情報損失リスクを排除する"
+  PL-2, "commit/push/ci_verification/deployテンプレートを圧縮して200行制限内の余裕を確保する", "4テンプレートの## タスク情報ブロックはbuildSubagentPromptで完全除去されるため冗長。削除しても最終プロンプトは変化しない。合計15行の削減によりdocs_updateテンプレート拡充(+13行)を吸収可能"
+  PL-3, "registry.ts設定変更のみでDoD検証パイプラインを有効化し検証ロジックの変更は行わない", "dod-l1-l2.ts L13のif (!config.outputFile)条件、dod-l3.ts L15の同条件により、outputFile=null時は全チェックがスキップされる。outputFileを設定するだけで全レベルの検証が自動適用される既存設計を活用"
+  PL-4, "テンプレートにworkflow-docs.md Section3 docs_updateの5項目を具体的パスで列挙する", "現テンプレートは3行の汎用指示のみで永続ドキュメントパスへの誘導がない。サブエージェントがworkflow-docs.mdを参照可能(PHASE_SKILL_FILES設定済み)だが、テンプレート内に具体的パスを明示することで出力精度を向上させる"
+  PL-5, "IMPL-1(圧縮)をIMPL-2(拡充)より先に実施する段階的アプローチを採用する", "200行制限超過リスクの軽減策。先に行数余裕を確保してからテンプレート拡充を行うことで、各ステップで行数を検証できる"
+  PL-6, "inputFilesにspec.toon/requirements.toon/code-review.toonの3ファイルを設定する", "docs_updateは実装完了後のドキュメント反映フェーズ。仕様(spec)で設計内容を、要件(requirements)でAC/スコープを、コードレビュー(code-review)で実装品質を参照し、正確なドキュメント更新を行うために3成果物が必要"
+  PL-7, "OUTPUT_FILE_TO_PHASEにdocs-update.toonエントリを追加してACE TOON-first連携を完成させる", "後続フェーズ(commit等)がinputFilesにdocs-update.toonを含む場合、buildToonFirstSectionがTOON入力セクションを自動生成する。現時点ではcommitのinputFilesは空だが、将来の拡張時に自動連携が機能する基盤を構築"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/docs-update-template-rewrite/spec.toon, spec, "本技術仕様書。アーキテクチャ決定3件、実装計画6ステップ、行数バジェット分析、テンプレート設計、リスク軽減策を記録"
+  src/phases/defs-stage6.ts, impl, "docs_updateテンプレート全面改修 + commit/push/ci_verification/deployテンプレート圧縮。現201行を推定198行に調整"
+  src/phases/registry.ts, impl, "docs_update PhaseConfig更新。model/inputFiles/outputFile/requiredSections/minLines/bashCategories変更"
+  src/phases/definitions.ts, impl, "OUTPUT_FILE_TO_PHASEにdocs-update.toonエントリ追加(1行)"
+
+next:
+  criticalDecisions: "IMPL-1のテンプレート圧縮量が十分かの確認が最優先。commit/push/ci_verification/deployの圧縮後行数を正確に計測し、docs_updateテンプレート拡充の余裕が13行以上あることを確認してからIMPL-2に着手する"
+  readFiles: "src/phases/defs-stage6.ts, src/phases/registry.ts, src/phases/definitions.ts, .claude/skills/harness/workflow-docs.md"
+  warnings: "テンプレート文字列内の各改行が1行としてカウントされる。テンプレートリテラル(バッククォート)内の改行もwc -lで1行扱い。圧縮量の見積もりは正確だが、実装時にwc -lで実測すること"

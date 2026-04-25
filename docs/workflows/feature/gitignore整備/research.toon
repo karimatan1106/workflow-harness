@@ -1,0 +1,19 @@
+phase: research
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+taskName: gitignore整備
+ts: "2026-03-02T07:30:00+09:00"
+decisions[8]{id,category,statement}:
+  R-001,finding,親リポジトリで .claude-phase-guard-log.json が追跡済み(git ls-files確認)。git rm --cached と .gitignore 追記の両方が必要
+  R-002,finding,".claude/generated-files.json と .claude/settings.local.json は未追跡(??)状態。.gitignore 追記のみで対応可能"
+  R-003,finding,"workflow-harness サブモジュール内で mcp-server/dist/ 配下に 192 ファイルが追跡済み。git rm -r --cached で一括 untrack が必要"
+  R-004,finding,"mcp-server/.claude/state/ に hmac-keys.json, reflector-log.json, task-index.json の 3 ファイルが追跡済み。HMAC 秘密鍵を含むためセキュリティリスク最高"
+  R-005,finding,"workflow-harness/.gitignore に dist/ と mcp-server/.claude/state/ が既に記載済み。untrack 後は gitignore が有効になる"
+  R-006,risk,hmac-keys.json の秘密鍵は Git 履歴に残存する。今回は untrack のみ実施し完全削除は別タスクとして分離
+  R-007,constraint,.gitignore へのパターン追加のみでは既追跡ファイルへの効果なし。git rm --cached が必須前提条件
+  R-008,environment,"Node.js v22.15.0, npm 10.9.2 で動作確認済み"
+artifacts[2]{path,role,summary}:
+  docs/workflows/gitignore整備/research.toon,report,調査結果チェックポイント
+  docs/workflows/gitignore整備/init.sh,impl,ビルド・テスト用初期化スクリプト
+next:
+  readFiles[2]: .gitignore,workflow-harness/.gitignore
+  warnings[1]: hmac-keys.json のセキュリティリスクを requirements フェーズで AC として記録すること

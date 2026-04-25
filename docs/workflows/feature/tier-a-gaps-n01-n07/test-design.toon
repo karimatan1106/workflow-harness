@@ -1,0 +1,46 @@
+task: tier-a-gaps-n01-n07
+phase: test_design
+intent: Tier A 7項目のテスト設計。TDD Redフェーズの前提となるテストケース定義。
+
+testFiles[2]{path,target,description}:
+  workflow-harness/mcp-server/src/__tests__/reflector-quality.test.ts, reflector.ts, N-07品質フィルタの単体テスト。閾値境界値・harmful優勢除外・新規レッスン通過を検証。
+  workflow-harness/mcp-server/src/__tests__/retry-adr.test.ts, retry.ts, N-02 ADRリンク付加の単体テスト。ADR存在時プロンプト含有・非存在時従来動作を検証。
+
+testCases[12]{id,file,description,expectedBehavior}:
+  TC-01, reflector-quality.test.ts, qualityScore 0.3未満のレッスンが除外される, helpful=0 harmful=5のレッスンはgetLessonsForPhaseの結果に含まれない
+  TC-02, reflector-quality.test.ts, qualityScore 0.3以上のレッスンは保持される, helpful=2 harmful=1のレッスンはgetLessonsForPhaseの結果に含まれる
+  TC-03, reflector-quality.test.ts, 新規レッスン(helpful=0 harmful=0)はスコア0.5で通過, 新しく追加されたレッスンがフィルタで除外されない
+  TC-04, reflector-quality.test.ts, 境界値テスト: スコアちょうど0.3のレッスンは保持される, helpful=1 harmful=2のレッスン(score=1/4=0.25)は除外。helpful=2 harmful=3(score=2/6=0.33)は保持。
+  TC-05, reflector-quality.test.ts, formatLessonsForPromptも品質フィルタを適用する, harmful優勢レッスンがプロンプト文字列に含まれない
+  TC-06, reflector-quality.test.ts, MIN_QUALITY_SCOREがexport constとして定義されている, テストからimportして値が0.3であることを確認
+  TC-07, retry-adr.test.ts, ADR存在時にリトライプロンプトにADR根拠が含まれる, buildRetryPromptの結果にADR statementが含まれる
+  TC-08, retry-adr.test.ts, ADR非存在時は従来通りのプロンプトが返される, getActiveADRsが空配列を返す場合もbuildRetryPromptは正常動作
+  TC-09, retry-adr.test.ts, 最大3件のADRのみ含まれる, 5件のactive ADRがある場合でもプロンプトに含まれるのは3件
+  TC-10, retry-adr.test.ts, ADR store読み込みエラー時も正常動作する, try-catch内でエラー発生してもリトライプロンプトは生成される
+  TC-11, retry-adr.test.ts, ADRのstatementとrationaleのみがプロンプトに含まれる, context/taskId等の内部情報は含まれない
+  TC-12, reflector-quality.test.ts, 全レッスンが品質閾値以下の場合は空配列が返される, getLessonsForPhaseが空配列を返しformatLessonsForPromptが空文字列を返す
+
+acToTcMapping[7]{acId,tcIds}:
+  AC-1, シェル実行で検証（自動テスト対象外）
+  AC-2, TC-07/TC-08/TC-09/TC-10/TC-11
+  AC-3, ファイル存在で検証（自動テスト対象外）
+  AC-4, シェル実行で検証（自動テスト対象外）
+  AC-5, シェル実行で検証（自動テスト対象外）
+  AC-6, TC-01/TC-02/TC-03/TC-04/TC-05/TC-06/TC-12
+  AC-7, シェル実行で検証（自動テスト対象外）
+
+decisions[5]{id,statement,rationale}:
+  TD-1, シェルスクリプト(N-01/N-04/N-05/N-06)のテストはvitest対象外とする, bash動作はNode.jsテストで検証困難。手動確認+コードレビューで品質保証。
+  TD-2, reflector.tsのloadStoreをvi.mockでモック化する, ファイルI/Oを避けテストの独立性を確保。fsモジュールをモック。
+  TD-3, retry.tsのgetActiveADRsをvi.mockでモック化する, ADR storeファイルへの依存を排除。モックで任意のADRリストを注入。
+  TD-4, 境界値テストはqualityScore計算式の特性を利用する, score = helpful/(helpful+harmful+1)の分母特性でhelpful/harmfulの組み合わせを決定。
+  TD-5, テストは既存テストファイルと同じディレクトリに配置する, __tests__ディレクトリの慣例に従う。命名はreflector-quality.test.tsとretry-adr.test.ts。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/test-design.toon, test, テスト設計
+  docs/workflows/tier-a-gaps-n01-n07/spec.toon, design, 前フェーズ成果物
+
+next:
+  criticalDecisions: TD-2/TD-3のモック戦略がテスト実装を決定
+  readFiles: workflow-phases.md, workflow-execution.md, workflow-gates.md
+  warnings: TC-04の境界値計算に注意。score=helpful/(helpful+harmful+1)なので0.3ちょうどにはならない。

@@ -1,0 +1,64 @@
+flowchart TD
+    Start(ワークフロープロセス改善実装開始) --> FR1Check(FR-1: requirements承認必須化の確認)
+    FR1Check --> NextTS(next.ts lines 222-229を検証)
+    NextTS --> REQApprovalCheck{requirements承認フラグが<br/>検査されているか?}
+    REQApprovalCheck -->|YES<br/>実装済み| FR1Complete(FR-1: 文書化のみで完了<br/>コード変更不要)
+    REQApprovalCheck -->|NO| FR1Error(エラー: 実装確認が必要)
+
+    FR1Complete --> FR2Start(FR-2: ユーザー意図整合性チェック追加)
+    FR2Error --> End1(エラーで中断)
+
+    FR2Start --> ValidatorChange(artifact-validator.ts の修正)
+    ValidatorChange --> ValidatorEdit1(code-review.md の<br/>requiredSections確認<br/>Line 246-249)
+    ValidatorEdit1 --> ValidatorEdit2(「ユーザー意図との整合性」を<br/>requiredSections配列に追加)
+    ValidatorEdit2 --> DefinitionsChange(definitions.ts の修正)
+
+    DefinitionsChange --> DefinitionsEdit1(code_review.requiredSections<br/>確認・追加)
+    DefinitionsEdit1 --> DefinitionsEdit2(「ユーザー意図との整合性」セクション<br/>を requiredSections配列に追加)
+    DefinitionsEdit2 --> DefinitionsEdit3(code_review.subagentTemplate<br/>にガイダンスを追加)
+
+    DefinitionsEdit3 --> GuidanceAdd1(ガイダンス挿入位置:<br/>「出力」セクション直前)
+    GuidanceAdd1 --> GuidanceAdd2(5つの観点ガイダンスを追加:<br/>1. userIntentの要約<br/>2. 合致判定の記述<br/>3. 乖離がある場合の説明<br/>4. 追加実装の妥当性<br/>5. 総合判定)
+
+    GuidanceAdd2 --> FR3Start(FR-3: 並列フェーズ<br/>クロスチェック追加)
+
+    FR3Start --> FR3Edit(definitions.ts の<br/>code_review.subagentTemplate修正)
+    FR3Edit --> FR3Location(修正位置: 既存の<br/>設計-実装整合性ガイダンス末尾)
+    FR3Location --> FR3Content(threat-model.md との<br/>整合性確認ガイダンスを追加)
+
+    FR3Content --> BuildCheck(npm run build実行)
+    BuildCheck --> BuildVerify{dist/ファイルが<br/>更新されたか?}
+    BuildVerify -->|YES<br/>成功| ServerRestart(MCPサーバー再起動)
+    BuildVerify -->|NO<br/>失敗| BuildError(ビルドエラー対応)
+
+    BuildError --> End2(エラーで中断)
+
+    ServerRestart --> StatusCheck(workflow_status実行)
+    StatusCheck --> PhaseVerify{フェーズ情報が<br/>正常に返却されるか?}
+    PhaseVerify -->|YES<br/>成功| FunctionalTest(既存タスクで<br/>workflow_next実行テスト)
+    PhaseVerify -->|NO<br/>失敗| RestartError(サーバー再起動エラー)
+
+    RestartError --> End3(エラーで中断)
+
+    FunctionalTest --> FuncVerify{code-review.md<br/>バリデーション動作<br/>は正常か?}
+    FuncVerify -->|YES<br/>すべて成功| Complete(実装完了)
+    FuncVerify -->|NO| FuncError(機能テストエラー)
+
+    FuncError --> End4(エラーで中断)
+
+    Complete --> Output(成果物: flowchart.mmd 完成)
+    Output --> End5(フローチャート作成完了)
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style End5 fill:#90EE90
+    style FR1Complete fill:#87CEEB
+    style FR2Start fill:#87CEEB
+    style FR3Start fill:#87CEEB
+    style BuildCheck fill:#FFD700
+    style ServerRestart fill:#FFD700
+    style FunctionalTest fill:#FFD700
+    style End1 fill:#FF6B6B
+    style End2 fill:#FF6B6B
+    style End3 fill:#FF6B6B
+    style End4 fill:#FF6B6B

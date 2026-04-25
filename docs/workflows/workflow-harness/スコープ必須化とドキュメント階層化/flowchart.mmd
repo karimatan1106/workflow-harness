@@ -1,0 +1,51 @@
+flowchart TD
+    Start("workflow_next 呼び出し") --> GetPhase("現在のフェーズを取得")
+    GetPhase --> CheckPhase{フェーズは何か?}
+
+    CheckPhase -->|research| ResearchWarning("スコープ未設定を確認<br/>情報メッセージ出力")
+    CheckPhase -->|requirements| RequirementsWarning("スコープが未設定か?")
+    CheckPhase -->|parallel_analysis| AnalysisBlock("スコープが未設定か?")
+    CheckPhase -->|その他| OtherPhase("スコープチェック<br/>なし")
+
+    ResearchWarning --> ResearchProc("推奨メッセージ出力<br/>遷移は成功")
+    ResearchProc --> Success1("success: true")
+
+    RequirementsWarning -->|未設定| ReqWarn("requirements→parallel_analysis<br/>遷移前警告を追加")
+    RequirementsWarning -->|設定済み| Success2("success: true")
+    ReqWarn --> ReqWarning("warnings 配列に警告<br/>遷移フラグに影響なし")
+    ReqWarning --> Success2
+
+    AnalysisBlock -->|未設定| Block("エラーメッセージ<br/>遷移をブロック")
+    AnalysisBlock -->|設定済み| Success3("success: true")
+    Block --> Fail("success: false")
+
+    OtherPhase --> Success4("success: true")
+
+    Success1 --> ResolveGuide("resolvePhaseGuide を呼び出し<br/>moduleName を渡す")
+    Success2 --> ResolveGuide
+    Success3 --> ResolveGuide
+    Success4 --> ResolveGuide
+
+    ResolveGuide --> ExpandModule{moduleName は<br/>設定されているか?}
+    ExpandModule -->|はい| CalcModuleDir("moduleDir = docsDir/modules/moduleName")
+    ExpandModule -->|いいえ| FallbackDir("moduleDir = docsDir")
+
+    CalcModuleDir --> ReplaceOutputFile("outputFile の {moduleDir} を<br/>展開済みパスに置換")
+    FallbackDir --> ReplaceOutputFile
+
+    ReplaceOutputFile --> ReplaceInputFiles("inputFiles の {moduleDir} も<br/>同様に置換")
+    ReplaceInputFiles --> Return("フェーズガイドを返す")
+
+    Fail --> End("workflow_next 終了")
+    Return --> End
+
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style Success1 fill:#c8e6c9
+    style Success2 fill:#c8e6c9
+    style Success3 fill:#c8e6c9
+    style Success4 fill:#c8e6c9
+    style Fail fill:#ffcdd2
+    style ResearchWarning fill:#fff9c4
+    style RequirementsWarning fill:#fff9c4
+    style AnalysisBlock fill:#ffccbc

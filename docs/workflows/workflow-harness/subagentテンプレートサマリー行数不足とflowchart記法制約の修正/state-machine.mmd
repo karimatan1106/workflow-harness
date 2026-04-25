@@ -1,0 +1,187 @@
+## サマリー
+
+本ステートマシン図は3つの段階的修正とその検証フローを表現する。
+修正1はサマリーテンプレートを3項目から5項目に拡張してバリデーション要件を満たす仕様である。
+修正2はflowchartノード記法を丸括弧形式に統一して角括弧プレースホルダーの誤検出を防ぐ仕様である。
+修正3はWORKFLOW_CONFIG_PATTERNSにmemory/パターンを追加してゼロタスク状態でのMEMORY.md編集を許可する仕様である。
+このステートマシン図により、各修正の依存関係と全修正完了後のバリデーション通過確認が可能になる。
+
+## 状態遷移図
+
+```mermaid
+stateDiagram-v2
+    Start --> TemplatePlanning: 修正計画開始
+
+    TemplatePlanning --> Template3Items: 現在の構成確認\n（3項目テンプレート）
+    note right of TemplatePlanning
+        修正対象:
+        definitions.ts行1251
+    end note
+
+    Template3Items --> TemplateValidationFail: バリデーション失敗\n（実質行4行）
+    note right of Template3Items
+        目的、主要な決定事項\n次フェーズで必要な情報
+        合計4実質行で要件不足
+    end note
+
+    TemplateValidationFail --> TemplateExpand: テンプレート拡張実行
+    TemplateExpand --> Template5Items: 拡張構成\n（5項目テンプレート）
+    note right of Template5Items
+        目的、評価スコープ\n主要な決定事項\n検証状況\n次フェーズで必要な情報
+        合計6実質行で要件充足
+    end note
+
+    Template5Items --> Template5Pass: テンプレート検証通過
+    note right of Template5Pass
+        minSectionLines=5を満たす
+    end note
+
+    Template5Pass --> FlowchartPlanning: flowchart記法制約\n検討開始
+
+    FlowchartPlanning --> FlowchartCurrentState: 現在の状態確認\n（丸括弧/角括弧混在）
+    note right of FlowchartPlanning
+        修正対象:
+        definitions.ts行1182の後
+        CLAUDE.md例示
+    end note
+
+    FlowchartCurrentState --> FlowchartBracketRisk: 角括弧形式の\nリスク確認\n（NodeID[text]）
+    note right of FlowchartBracketRisk
+        .mmdファイルはコードフェンス外\nバリデーター誤検出リスク高
+    end note
+
+    FlowchartBracketRisk --> FlowchartConstraintAdd: flowchart記法制約\n行を追加
+    FlowchartConstraintAdd --> FlowchartRoundBracket: 丸括弧形式\n統一完了\n（NodeID(text)）
+    note right of FlowchartRoundBracket
+        Mermaid仕様で\n角丸四角形描画\n視覚的区別を維持
+    end note
+
+    FlowchartRoundBracket --> FlowchartPass: flowchart検証通過
+
+    FlowchartPass --> ConfigPlanning: WORKFLOW_CONFIG_PATTERNS\n拡張開始
+
+    ConfigPlanning --> ConfigCurrentPatterns: 現在のパターン\n確認\n（4パターン）
+    note right of ConfigPlanning
+        修正対象:
+        enforce-workflow.js行219-224
+    end note
+
+    ConfigCurrentPatterns --> ConfigMemoryGap: memory/パターン\n漏れを確認
+    note right of ConfigMemoryGap
+        ゼロタスク状態で\nMEMORY.md編集がブロック
+        パターン欠落の原因
+    end note
+
+    ConfigMemoryGap --> ConfigPatternAdd: memory/パターン\nを追加\n（5番目のエントリ）
+    note right of ConfigPatternAdd
+        /\.claude[\/\\]projects[\/\\]\nプロジェクト名[\/\\]memory[\/\\]/i
+    end note
+
+    ConfigPatternAdd --> ConfigMemoryAllow: memory/配下\nファイル許可状態
+    note right of ConfigMemoryAllow
+        MEMORY.md編集が\nisWorkflowConfigFile\nで許可される
+    end note
+
+    ConfigMemoryAllow --> ConfigPass: config検証通過
+
+    ConfigPass --> BuildCompile: TypeScriptコンパイル\n実行\n（修正1,2a対応）
+    note right of BuildCompile
+        npm run build\n（definitions.ts）
+    end note
+
+    BuildCompile --> BuildSuccess: コンパイル\n成功
+
+    BuildSuccess --> MCPRestart: MCPサーバー\n再起動\n（モジュールキャッシュ更新）
+    note right of MCPRestart
+        Node.jsモジュール\nキャッシュを反映
+        enforce-workflow.js\n修正3も即時反映
+    end note
+
+    MCPRestart --> HookReload: hook再読み込み\n完了
+
+    HookReload --> FinalValidation: 全修正\n統合検証
+    note right of FinalValidation
+        修正1: サマリー行数\n修正2a: definitions記法\n修正2b,c: CLAUDE.md例示\n修正3: memory許可\n全項目確認
+    end note
+
+    FinalValidation --> ValidationSuccess: 全修正\n検証通過
+
+    ValidationSuccess --> End: 修正実装完了
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style TemplatePlanning fill:#E0E0FF
+    style Template3Items fill:#FFE0E0
+    style TemplateValidationFail fill:#FFB6B6
+    style TemplateExpand fill:#E0FFE0
+    style Template5Items fill:#E0FFE0
+    style Template5Pass fill:#B6FFB6
+    style FlowchartPlanning fill:#E0E0FF
+    style FlowchartCurrentState fill:#FFE0E0
+    style FlowchartBracketRisk fill:#FFB6B6
+    style FlowchartConstraintAdd fill:#E0FFE0
+    style FlowchartRoundBracket fill:#E0FFE0
+    style FlowchartPass fill:#B6FFB6
+    style ConfigPlanning fill:#E0E0FF
+    style ConfigCurrentPatterns fill:#FFE0E0
+    style ConfigMemoryGap fill:#FFB6B6
+    style ConfigPatternAdd fill:#E0FFE0
+    style ConfigMemoryAllow fill:#E0FFE0
+    style ConfigPass fill:#B6FFB6
+    style BuildCompile fill:#E0E0FF
+    style BuildSuccess fill:#E0FFE0
+    style MCPRestart fill:#E0FFE0
+    style HookReload fill:#E0FFE0
+    style FinalValidation fill:#FFE0E0
+    style ValidationSuccess fill:#B6FFB6
+```
+
+## 修正フローの詳細
+
+### フェーズ1: サマリーテンプレート拡張（修正1）
+
+サマリーテンプレートが現在の3項目構成（目的、主要な決定事項、次フェーズで必要な情報）では、バリデーターの最小実質行数要件5を1行下回ることが確認された。
+
+テンプレートを5項目構成に拡張することにより、「評価スコープ」と「検証状況」の2項目を新たに追加し、実質行数を6行に増加させてバリデーション要件を超過達成する仕様である。
+
+この修正により、以降のsubagent全フェーズにおいてテンプレート例示の最小要件が自動的に満たされるようになる。
+
+### フェーズ2: flowchart記法制約の明示（修正2）
+
+flowchartノード記法において、角括弧形式（NodeID[text]）の使用がバリデーターの角括弧プレースホルダー検出に誤検出される潜在的リスクが存在する。
+
+.mmdファイルはコードフェンス外の記法のため、全行がバリデーター対象となることが確認されている。
+
+記法制約を丸括弧形式（NodeID(text)）に統一することにより、Mermaid仕様の角丸四角形描画を保持しながらプレースホルダー誤検出を完全に排除する。
+
+このフェーズは修正2aのdefinitions.ts行追加、修正2bと修正2cのCLAUDE.md例示変更を含む。
+
+### フェーズ3: memory/パターン追加（修正3）
+
+enforce-workflow.jsのWORKFLOW_CONFIG_PATTERNS配列が、現在の4パターンではmemory/ディレクトリを許可していないため、ゼロタスク状態でのMEMORY.md編集がhookにブロックされる問題が発生していた。
+
+パターンを5番目のエントリとして追加することにより、`.claude/projects/{projectName}/memory/`配下の全ファイルアクセスを許可する仕様である。
+
+isWorkflowConfigFileチェックがゼロタスクブロックより前に実行される実装フローにより、このパターン追加だけで主要な問題経路が解消される。
+
+### フェーズ4: 統合検証とビルド
+
+TypeScriptコンパイル（修正1, 2a対応）を実行し、MCPサーバーを再起動してNode.jsモジュールキャッシュを更新する。
+
+enforce-workflow.js（修正3）はビルド不要であり、MCPサーバー再起動と同期して即時反映される。
+
+全修正項目が検証通過することにより、バリデーション失敗リスク、flowchart誤検出リスク、memory編集ブロックの3つの問題が完全に解消される。
+
+## 検証ポイント
+
+各フェーズの検証項目は以下のとおり。
+
+修正1はサマリーセクション内の実質行数が5行以上であることを確認する。
+
+修正2aはdefinitions.tsのqualitySectionに記述された行が出力されることを確認する。
+
+修正2b,cはCLAUDE.mdのflowchart例示が全て丸括弧形式に変更されていることを確認する。
+
+修正3はWORKFLOW_CONFIG_PATTERNSの5番目要素がmemory/パターンに一致することを確認する。
+
+統合検証ではコンパイルエラーがないこと、MCPサーバー再起動が完了すること、hook再読み込みが完了することを確認する。

@@ -1,0 +1,143 @@
+phase: metrics
+taskName: fix-failing-quality-rule-tests
+startedAt: "2026-04-09T06:30:09.239Z"
+completedAt: "2026-04-09T07:27:56.829Z"
+totalRetries: 10
+totalDoDFailures: 10
+phases:
+  hearing:
+    durationSec: 328
+    retries: 2
+    dodFailures: 5
+  scope_definition:
+    durationSec: 141
+    retries: 1
+    dodFailures: 1
+  research:
+    durationSec: 80
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 57
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 430
+    retries: 2
+    dodFailures: 4
+  threat_modeling:
+    durationSec: 77
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 115
+    retries: 1
+    dodFailures: 1
+  state_machine:
+    durationSec: 56
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 53
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 51
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 192
+    retries: 1
+    dodFailures: 2
+  test_design:
+    durationSec: 283
+    retries: 2
+    dodFailures: 3
+  test_selection:
+    durationSec: 105
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 76
+    retries: 0
+    dodFailures: 0
+  implementation:
+    durationSec: 303
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 26
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 105
+    retries: 0
+    dodFailures: 0
+  testing:
+    durationSec: 11
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 46
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 313
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 77
+    retries: 0
+    dodFailures: 0
+  security_scan:
+    durationSec: 130
+    retries: 1
+    dodFailures: 1
+  performance_test:
+    durationSec: 110
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 102
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 58
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 57
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 67
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  hearing[5]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Duplicate lines (3+ times): \"-  にマッチするルール...\" (4x); Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L2] userResponse: key missing from hearing artifact","[L4] Duplicate lines (3+ times): \"-  にマッチするルールが記載されていない...\" (4x)"
+  scope_definition[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  requirements[4]: "[L3] RTM entries do not reference these ACs: AC-4, AC-5","[L4] requirements.md contains only 3 acceptanceCriteria entries (minimum 5 required)\n修正方法: acceptanceCriteriaセクションにAC項目を2件追加してください。","[L4] 意図整合性警告: 8語が requirements.md に未反映: 既存テスト失敗10件を修正:, first-pass-improvement, ts(7件)のcoordinator, md/worker, md品質ルール不足\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。","[L4] 意図整合性警告: 6語が requirements.md に未反映: 既存テスト失敗10件を修正:, ts(7件)のcoordinator, md/worker, md品質ルール不足, ts(3件)のAskUserQuestion品質ルール不足\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+  planning[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  design_review[2]: "[L4] Duplicate lines (3+ times): \"-  (レビュー対象: 承認)...\" (5x)","[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-review.md に ## acDesignMapping セクションを追加し、各AC-Nと対応する設計要素を列挙してください。"
+  test_design[3]: "[L4] Duplicate lines (3+ times): \"- Requirement: F-001...\" (3x); \"- File: first-pass-improvement.test.ts...\" (6x); \"- Expected: PASS...\" (9x)","[L4] Approved artifacts modified since approval: hearing.md, requirements.md, design-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。","[L4] Approved artifacts modified since approval: test-design.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  security_scan[1]: "[L4] Duplicate lines (3+ times): \"Severity: Not Applicable...\" (6x)"

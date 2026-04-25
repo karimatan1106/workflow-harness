@@ -1,0 +1,70 @@
+flowchart TD
+    Start("開始: 全フェーズへの禁止指示追加計画")
+
+    Analyze("FR-19分析: フェーズ分類と対応テキストの確認")
+    Analyze --> CheckExisting("既存禁止指示の確認<br/>test_impl/testing/regression_test/docs_update")
+
+    CheckExisting --> FR19-1("FR-19-1: 直線フェーズ6つ<br/>研究/要件/実装/リファクタリング/CI検証/デプロイ")
+    CheckExisting --> FR19-3("FR-19-3: 承認フェーズ2つ<br/>設計レビュー/テスト設計")
+    CheckExisting --> FR19-4("FR-19-4: git操作フェーズ2つ<br/>コミット/プッシュ")
+    CheckExisting --> FR19-2("FR-19-2: 並列サブフェーズ11個<br/>脅威/計画/状態/フロー/UI/ビルド/コード/手動/セキュリティ/性能/E2E")
+
+    FR19-1 --> AddTemplate1("禁止指示テキストを<br/>definitions.tsに追加")
+    FR19-3 --> AddTemplate1
+    FR19-4 --> AddTemplate1
+    FR19-2 --> AddTemplate1
+
+    AddTemplate1 --> BuildTS("npm run build実行<br/>workflow-plugin/mcp-server")
+    BuildTS --> BuildCheck{ビルド成功?}
+
+    BuildCheck -->|失敗| FixBuild("ビルドエラー修正")
+    FixBuild --> BuildTS
+
+    BuildCheck -->|成功| RunTest("テストスイート実行<br/>npm test または npm run test")
+
+    RunTest --> TestResult{945件以上<br/>パス?}
+
+    TestResult -->|失敗| AnalyzeTest("テスト失敗の原因分析")
+    AnalyzeTest --> CheckTemplate("禁止指示テキストの<br/>タイプミスを確認")
+    CheckTemplate --> FixTest("テストエラーに対応した修正")
+    FixTest --> BuildTS
+
+    TestResult -->|成功| VerifyGrep("Grep検証: 全フェーズの<br/>禁止指示セクション確認")
+    VerifyGrep --> GrepCheck{"## ★ワークフロー制御<br/>ツール禁止★が<br/>全25フェーズに<br/>存在?"}
+
+    GrepCheck -->|未検出| CheckPhases("欠落フェーズの特定")
+    CheckPhases --> AddMissing("欠落フェーズの禁止指示を追加")
+    AddMissing --> BuildTS
+
+    GrepCheck -->|確認済み| VerifyExisting("既存4フェーズの禁止指示が<br/>変更されていないか確認")
+
+    VerifyExisting --> CompareTest("test_impl/testing/<br/>regression_test/docs_update<br/>の禁止指示を比較")
+    CompareTest --> ExistingCheck{既存フェーズが<br/>変更されていない?}
+
+    ExistingCheck -->|変更あり| Rollback("変更をロールバック")
+    Rollback --> BuildTS
+
+    ExistingCheck -->|未変更| CoverageCheck("カバレッジ確認:<br/>直線フェーズ6+並列11+承認2+git2=21フェーズ")
+
+    CoverageCheck --> Coverage{全21フェーズ<br/>に追加完了?}
+
+    Coverage -->|未完了| IdentifyMissing("未追加フェーズを検出")
+    IdentifyMissing --> AddRemaining("残りフェーズへの追加")
+    AddRemaining --> BuildTS
+
+    Coverage -->|完了| Complete("✅ 実装完了")
+    Complete --> End("終了: 全フェーズへの禁止指示追加完了")
+
+    style Start fill:#90EE90
+    style End fill:#90EE90
+    style BuildCheck fill:#FFB6C1
+    style TestResult fill:#FFB6C1
+    style GrepCheck fill:#FFB6C1
+    style ExistingCheck fill:#FFB6C1
+    style Coverage fill:#FFB6C1
+    style AddTemplate1 fill:#87CEEB
+    style BuildTS fill:#87CEEB
+    style RunTest fill:#87CEEB
+    style VerifyGrep fill:#87CEEB
+    style VerifyExisting fill:#87CEEB
+    style Complete fill:#87CEEB

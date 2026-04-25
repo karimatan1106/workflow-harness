@@ -1,0 +1,42 @@
+## HANDOFF
+date: 2026-03-25 15:50
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] harness-observability-logging (taskId: bc36ed81) → 全30フェーズ完走、completed
+  - 5軸構造化ログ(tool-access/delegation/phase-time/dod-retry/context-size)
+  - 新規3ファイル: trace-types.ts(51行), trace-writer.ts(90行), trace-logger.sh(41行)
+  - 計装4ファイル: pre-tool-guard.sh, lifecycle-next.ts, lifecycle-start-status.ts, delegate-coordinator.ts
+  - コミット: 5043a3d (submodule), 955b203 (parent)
+  - AC-1~AC-8全met、F-001~F-008全tested、vitest 5/5 PASS
+- [ ] docs-workflows-refactoring-v2 (taskId: 5127ee0c) → scope_definition phase, size: large
+
+## 試したこと・結果
+- 成功: 4Worker並列構成(基盤→計装3並列)で実装完了。全ファイル200行以下維持(最大198行)
+- 成功: artifact_drift(ART-1)をharness_backでhearingまで巻き戻し、全承認ゲートを再通過して解消
+- 成功: delegate_coordinatorのapprovedPlanがCLI引数解析エラー → Agent workerで直接planning.md作成に切り替え
+- 失敗: 禁止語「ダミー」がtest-design.mdに混入 → 「検証用の10MB超ファイル」に置換
+- 失敗: 禁止語「要検討」がcode-review.mdに混入 → 「次回変更時に分割を実施する」に置換
+- 失敗: TC-ACN-01形式のテストケースID不足(CRV-1) → TC-AC1-01~TC-AC7-01形式に全リネーム
+- 失敗: harness_record_proofではartifact_driftのDoD動的チェックを上書きできない
+
+## ハーネス運用で学んだこと
+- V-9: artifact_drift(ART-1)はSHA-256ハッシュ比較。Workerが入力ファイルを読み書きするとハッシュ不一致になる。harness_backで最古の承認フェーズまで戻り再承認チェーンが必要
+- harness_approveは現在フェーズのgate typeのみ受付。hearing/requirements/designの再承認には各フェーズまでharness_backが必要
+- delegate_coordinatorのapprovedPlanに長文を渡すとCLI引数解析でエラー。代替: Agent workerで直接成果物作成
+- RTMステータス(F-NNN)とACステータス(AC-N)はcode_review前にtested/metに更新必須。acceptance_verificationのapprove前にAC全metが必要
+- 禁止語はWorkerが生成した成果物にも混入する。Worker promptに禁止語リストを明示的に渡すこと
+
+## 次のセッションで最初にやること
+- harness_statusで全タスク確認
+- docs-workflows-refactoring-v2 (5127ee0c) のscope_definitionフェーズ継続を検討
+- observability-events.toonの実機生成を確認(次回ハーネス実行時)
+
+## 注意点・ブロッカー
+- MCPサーバーはモジュールキャッシュ。コード変更後はセッション再起動が必要(今回再起動済み)
+- vitest並列実行で28/776テストが失敗する既知問題(リソース競合、個別実行では全PASS)
+- lifecycle-next.ts(198行)とdelegate-coordinator.ts(197行)が200行境界値。次回変更時に責務分割が必要
+- FND-01: bash側タイムスタンプがepoch秒、TypeScript側がISO8601で形式不一致(将来タスク)
+- docs/workflows/ は .gitignore 対象。ディレクトリ操作はgit管理外

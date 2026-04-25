@@ -1,0 +1,125 @@
+phase: analytics
+task: docs-workflows-refactoring
+taskId: 0963bf20-4201-494c-ad1b-32e6b476e97e
+generatedAt: "2026-03-24T15:17:30.770Z"
+totalElapsed: 5750s
+phaseTimings:
+  hearing:
+    duration: 123s
+    current: false
+  scope_definition:
+    duration: 317s
+    current: false
+  research:
+    duration: 452s
+    current: false
+  impact_analysis:
+    duration: 185s
+    current: false
+  requirements:
+    duration: 539s
+    current: false
+  threat_modeling:
+    duration: 88s
+    current: false
+  planning:
+    duration: 221s
+    current: false
+  state_machine:
+    duration: 76s
+    current: false
+  flowchart:
+    duration: 53s
+    current: false
+  ui_design:
+    duration: 115s
+    current: false
+  design_review:
+    duration: 354s
+    current: false
+  test_design:
+    duration: 474s
+    current: false
+  test_selection:
+    duration: 85s
+    current: false
+  test_impl:
+    duration: 39s
+    current: false
+  implementation:
+    duration: 601s
+    current: false
+  refactoring:
+    duration: 14s
+    current: false
+  build_check:
+    duration: 24s
+    current: false
+  code_review:
+    duration: 150s
+    current: false
+  testing:
+    duration: 184s
+    current: false
+  regression_test:
+    duration: 149s
+    current: false
+  acceptance_verification:
+    duration: 515s
+    current: false
+  manual_test:
+    duration: 186s
+    current: false
+  security_scan:
+    duration: 97s
+    current: false
+  performance_test:
+    duration: 145s
+    current: false
+  e2e_test:
+    duration: 183s
+    current: false
+  docs_update:
+    duration: 95s
+    current: false
+  commit:
+    duration: 159s
+    current: false
+  push:
+    duration: 14s
+    current: false
+  ci_verification:
+    duration: 11s
+    current: false
+  deploy:
+    duration: 13s
+    current: false
+  health_observation:
+    duration: 90s
+    current: false
+  completed:
+    duration: 0s
+    current: true
+errorAnalysis[17]{phase,retries,topFailure}:
+  commit,4,output_file_exists(L1) x4
+  test_design,3,output_file_exists(L1) x3
+  research,2,output_file_exists(L1) x2
+  requirements,2,output_file_exists(L1) x2
+  hearing,1,output_file_exists(L1) x1
+  scope_definition,1,output_file_exists(L1) x1
+  impact_analysis,1,output_file_exists(L1) x1
+  planning,1,output_file_exists(L1) x1
+  design_review,1,output_file_exists(L1) x1
+  test_impl,1,output_file_exists(L1) x1
+  code_review,1,output_file_exists(L1) x1
+  testing,1,output_file_exists(L1) x1
+  regression_test,1,output_file_exists(L1) x1
+  manual_test,1,output_file_exists(L1) x1
+  e2e_test,1,output_file_exists(L1) x1
+  health_observation,1,output_file_exists(L1) x1
+  implementation,1,none
+bottlenecks:
+  slowestPhase: implementation (601s)
+  mostRetriedPhase: commit (4 retries)
+  mostFailedCheck: tdd_red_evidence (24 failures)
+advice[8]: TOONスケルトンのフィールド定義を確認,Bashコマンドの事前検証,requirements作成時にF-NNNエントリを同時登録,AC-N形式の最低3件を確認,"テンプレートの改善が必要: commit (4回リトライ)","テンプレートの改善が必要: test_design (3回リトライ)","フェーズ分割またはスコープ縮小を検討: implementation (601s)","タスクサイズの見直しを推奨 (総所要時間: 5750s)"

@@ -1,0 +1,53 @@
+stateDiagram-v2
+    Start --> LoadDefinitions: 初期化
+
+    LoadDefinitions --> ParseError1: import失敗
+    LoadDefinitions --> ValidateFlatArray: PHASE_GUIDESの読み込み成功
+
+    ValidateFlatArray --> ExtractSubphases: subPhases再帰展開開始
+    ExtractSubphases --> GenerateFlatArray: 並列フェーズのサブフェーズを展開\ntreat_modeling, planning, state_machine等を含む
+    GenerateFlatArray --> ParseRootSubagent: フラット配列生成完了\n(計25フェーズ)
+
+    ParseRootSubagent --> ParseError2: テーブル未発見
+    ParseRootSubagent --> ExtractRootSubagent: ルートCLAUDE.mdのサブエージェント設定テーブル解析
+    ExtractRootSubagent --> ParseRootBash: フェーズ別subagent_type, modelを抽出
+
+    ParseRootBash --> ParseError3: Bashカテゴリテーブル未発見
+    ParseRootBash --> ExtractRootBash: ルートCLAUDE.mdのBashコマンド許可カテゴリテーブル解析
+    ExtractRootBash --> ParsePlugin: フェーズ別許可カテゴリを抽出
+
+    ParsePlugin --> ParseError4: workflow-pluginCLAUDE.mdテーブル未発見
+    ParsePlugin --> ExtractPluginSubagent: プラグインCLAUDE.mdのサブエージェント設定テーブル解析\n(6列構成に対応)
+    ExtractPluginSubagent --> ValidateCount: フェーズ別subagent_type, modelを抽出
+
+    ValidateCount --> CountError: フェーズ数不足\n(25未満でエラー)
+    ValidateCount --> Compare: 抽出フェーズ数が25以上であることを確認
+
+    Compare --> MatchSubagentType: subagentType値の照合開始
+    MatchSubagentType --> MatchModel: definitions.tsとルート/プラグイン\nCLAUDE.mdのsubagentTypeを比較
+    MatchModel --> MatchBashCategories: modelフィールドの値を比較
+    MatchBashCategories --> ComparisonResult: allowedBashCategoriesの要素一致を確認\n(順序不問、網羅性で判定)
+
+    ComparisonResult --> ReportOK: 全フェーズで3フィールド一致
+    ComparisonResult --> ReportNG: 1件以上の不一致を検出
+
+    ReportOK --> OutputOK: OK: 各フェーズ - 全フィールド一致\nを25行出力
+    ReportNG --> OutputNG: NG: 各フェーズ - 不一致フィールド詳細\nを出力
+
+    OutputOK --> SummaryOK: サマリー: 25フェーズ中0件の不一致
+    OutputNG --> SummaryNG: サマリー: 25フェーズ中N件の不一致
+
+    SummaryOK --> ExitCode0: 終了コード0\n(完全同期状態)
+    SummaryNG --> ExitCode1: 終了コード1\n(不一致検出)
+
+    ParseError1 --> ErrorStackTrace: スタックトレース出力
+    ParseError2 --> ErrorStackTrace: (標準エラー)
+    ParseError3 --> ErrorStackTrace
+    ParseError4 --> ErrorStackTrace
+    CountError --> ErrorStackTrace: 抽出フェーズ数不足の詳細
+
+    ErrorStackTrace --> ExitCode2: 終了コード2\n(実行エラー)
+
+    ExitCode0 --> End
+    ExitCode1 --> End
+    ExitCode2 --> End

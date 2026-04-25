@@ -1,0 +1,18 @@
+phase: threat_modeling
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T08:30:00+09:00"
+decisions[5]{id,statement,rationale}:
+  TM-001,HMAC秘密鍵の履歴残存はスコープ外として分離する,BFG等による履歴浄化は破壊的操作のため別タスクで計画する
+  TM-002,git rm --cachedは対象パスを明示的に指定して個別実行する,誤操作による意図しないファイル除去を防止する
+  TM-003,サブモジュールコミットを親コミットより先に実行する順序を強制する,親リポジトリのサブモジュール参照が古いまま残るリスクを排除する
+  TM-004,各操作後にgit statusで結果を確認する手順を含める,操作ミスの早期検出を可能にする
+  TM-005,プライベートリポジトリのため外部露出リスクは低いと判定する,hmac-keys.jsonの履歴残存の実質的影響度を限定的と評価する
+threats[3]{id,description,impact,mitigation,residualRisk}:
+  T-001,HMAC秘密鍵の履歴残存,hmac-keys.jsonがGit履歴に残りクローン時に取得可能,別タスクでBFG等による履歴浄化を実施,中
+  T-002,git rm --cachedの誤操作,意図しないファイルが追跡対象から除去される,ディレクトリ単位で個別実行し各操作後にgit statusで確認,低
+  T-003,サブモジュールコミット忘れ,親リポジトリのサブモジュール参照が古いまま,実装手順でサブモジュール内コミットを親コミットより先に定義,低
+artifacts[2]{path,role,summary}:
+  docs/workflows/gitignore整備/threat-model.toon,report,脅威分析チェックポイント
+  docs/workflows/gitignore整備/threat-model.md,report,脅威分析詳細
+next:
+  readFiles[1]: docs/workflows/gitignore整備/requirements.toon

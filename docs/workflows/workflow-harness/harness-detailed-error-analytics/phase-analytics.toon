@@ -1,0 +1,120 @@
+phase: analytics
+task: harness-detailed-error-analytics
+taskId: 2c4adf0b-b9c5-4b7f-905d-b3fc213a0eee
+generatedAt: "2026-03-25T12:18:43.865Z"
+totalElapsed: 6970s
+phaseTimings:
+  hearing:
+    duration: 399s
+    current: false
+  scope_definition:
+    duration: 4s
+    current: false
+  research:
+    duration: 5s
+    current: false
+  impact_analysis:
+    duration: 4s
+    current: false
+  requirements:
+    duration: 8s
+    current: false
+  threat_modeling:
+    duration: 4s
+    current: false
+  planning:
+    duration: 4s
+    current: false
+  state_machine:
+    duration: 4s
+    current: false
+  flowchart:
+    duration: 4s
+    current: false
+  ui_design:
+    duration: 4s
+    current: false
+  design_review:
+    duration: 8s
+    current: false
+  test_design:
+    duration: 8s
+    current: false
+  test_selection:
+    duration: 253s
+    current: false
+  test_impl:
+    duration: 461s
+    current: false
+  implementation:
+    duration: 364s
+    current: false
+  refactoring:
+    duration: 175s
+    current: false
+  build_check:
+    duration: 209s
+    current: false
+  code_review:
+    duration: 250s
+    current: false
+  testing:
+    duration: 152s
+    current: false
+  regression_test:
+    duration: 130s
+    current: false
+  acceptance_verification:
+    duration: 180s
+    current: false
+  manual_test:
+    duration: 251s
+    current: false
+  security_scan:
+    duration: 215s
+    current: false
+  performance_test:
+    duration: 132s
+    current: false
+  e2e_test:
+    duration: 156s
+    current: false
+  docs_update:
+    duration: 158s
+    current: false
+  commit:
+    duration: 113s
+    current: false
+  push:
+    duration: 19s
+    current: false
+  ci_verification:
+    duration: 12s
+    current: false
+  deploy:
+    duration: 11s
+    current: false
+  health_observation:
+    duration: 305s
+    current: false
+  completed:
+    duration: 0s
+    current: true
+errorAnalysis[12]{phase,retries,topFailure}:
+  requirements,3,output_file_exists(L1) x3
+  hearing,1,output_file_exists(L1) x1
+  threat_modeling,0,output_file_exists(L1) x1
+  planning,0,output_file_exists(L1) x2
+  flowchart,0,output_file_exists(L1) x1
+  design_review,0,output_file_exists(L1) x1
+  test_design,0,output_file_exists(L1) x1
+  test_impl,0,output_file_exists(L1) x2
+  code_review,0,output_file_exists(L1) x2
+  regression_test,0,output_file_exists(L1) x1
+  manual_test,0,output_file_exists(L1) x1
+  docs_update,0,output_file_exists(L1) x1
+bottlenecks:
+  slowestPhase: test_impl (461s)
+  mostRetriedPhase: requirements (3 retries)
+  mostFailedCheck: output_file_exists (17 failures)
+advice[6]: TOONスケルトンのフィールド定義を確認,Bashコマンドの事前検証,requirements作成時にF-NNNエントリを同時登録,AC-N形式の最低3件を確認,"テンプレートの改善が必要: requirements (3回リトライ)","タスクサイズの見直しを推奨 (総所要時間: 6970s)"

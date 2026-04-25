@@ -1,0 +1,132 @@
+stateDiagram-v2
+    Start --> ReadErrors: Open phase-errors.toon
+
+    ReadErrors --> CheckDataEmpty: Validate toonErrors\nlength > 0?
+
+    CheckDataEmpty --> BuildErrorAnalysis: Yes - Iterate entries
+    CheckDataEmpty --> HandleEmptyData: No - Empty data\npath
+
+    BuildErrorAnalysis --> SortFailures: Aggregate checks\nto failures map
+
+    SortFailures --> CountSort: Sort failures\nby count DESC\n+ L1 to end
+
+    CountSort --> DetectOutliers: Extract timings\nfrom task context
+
+    DetectOutliers --> CheckMinDataPoints: Validate\ndata points >= 4?
+
+    CheckMinDataPoints --> CalculateIQR: Yes - Sort timings\nby seconds
+
+    CheckMinDataPoints --> SkipOutliers: No - Skip\noutlier detection
+
+    CalculateIQR --> FindOutliers: Calculate Q1, Q3,\nIQR, upperFence
+
+    FindOutliers --> FilterOutliers: Filter seconds >\nupper fence
+
+    FilterOutliers --> CheckOutliersFound: Outliers\ndetected?
+
+    CheckOutliersFound --> ClassifyErrors: Yes - Add to\nBottleneckResult
+    CheckOutliersFound --> ClassifyErrors: No - Continue\nwithout outliers
+
+    SkipOutliers --> ClassifyErrors: (empty outlierPhases)
+
+    ClassifyErrors --> GroupChecksByPhase: Build checkPhases\nMap per failure
+
+    GroupChecksByPhase --> FindRecurring: Filter checks\nwith phases >= 3
+
+    FindRecurring --> FindCascading: Extract phase\nnumbers & sort
+
+    FindCascading --> DetectChains: Find consecutive\nphase sequences
+
+    DetectChains --> FindOneOff: Check chain\nlength >= 2?
+
+    FindOneOff --> ClassifyResult: Categorize\nremaining as\none-off
+
+    ClassifyResult --> GenerateAdvice: Build advice array
+
+    GenerateAdvice --> ApplyAdviceRules: Check ADVICE_RULES\nfor pattern matches
+
+    ApplyAdviceRules --> ApplyThreshold: Check failures\ncount >= 5?
+
+    ApplyThreshold --> CheckTddRedFlag: Yes - Add threshold\nadvice
+
+    ApplyThreshold --> SkipThreshold: No - Skip\nthreshold check
+
+    CheckTddRedFlag --> GenerateOutlierAdvice: Check\noutlierPhases\nlength > 0?
+
+    SkipThreshold --> GenerateOutlierAdvice: (proceed)
+
+    GenerateOutlierAdvice --> AddOutlierAdvice: Yes - Add session\ninterruption warning\nfor each outlier
+
+    GenerateOutlierAdvice --> SkipOutlierAdvice: No - Skip\noutlier advice
+
+    AddOutlierAdvice --> BuildAnalytics: (advice complete)
+
+    SkipOutlierAdvice --> BuildAnalytics: (advice complete)
+
+    HandleEmptyData --> BuildAnalytics: (empty collections)
+
+    BuildAnalytics --> IntegrateResults: Merge:\nerrorAnalysis +\nerrorHistory +\nbottlenecks +\nadvice +\nerrorClassification
+
+    IntegrateResults --> WriteToon: Call writeAnalyticsToon()\nwith full AnalyticsResult
+
+    WriteToon --> WriteTopFailure: Parallel writes:\ntopFailure[] +\nerrorHistory[]
+
+    WriteToon --> WriteOutliers: Parallel writes:\noutlierPhases[]?\n(optional)
+
+    WriteToon --> WriteClassification: Parallel writes:\nerrorClassification?\n(optional)
+
+    WriteTopFailure --> FlushToon: Merge sections\ninto analytics-toon\noutput
+
+    WriteOutliers --> FlushToon: (continue)
+
+    WriteClassification --> FlushToon: (continue)
+
+    FlushToon --> ValidateToon: Validate TOON\nstructure
+
+    ValidateToon --> CheckValidation: Valid?
+
+    CheckValidation --> End: Yes - Write\nanalytics-toon\ncomplete
+
+    CheckValidation --> Error: No - Schema\nviolation
+
+    Error --> [*]: Failed
+
+    End --> [*]: Success
+
+
+%% DECISIONS
+%% --------
+%% D1: Empty data handling path (CheckDataEmpty state)
+%%     Rationale: phase-errors.toon may be missing/empty in early sessions
+%%     Fallback: Return empty errorAnalysis + empty advice + no outliers
+%%     Ensures robust handling without crashing
+%%
+%% D2: IQR calculation guard (CheckMinDataPoints state)
+%%     Threshold: 4 data points minimum (statistical necessity for Q1/Q3)
+%%     Rationale: Fewer than 4 points cannot reliably compute quartiles
+%%     Fallback: SkipOutliers path returns empty OutlierResult[]
+%%
+%% D3: Outlier decision branching (CheckOutliersFound state)
+%%     Route A: outliers detected -> add to BottleneckResult.outlierPhases
+%%     Route B: no outliers -> continue with empty/undefined outlierPhases
+%%     Allows downstream systems to check existence vs. assume presence
+%%
+%% D4: Cascading detection for consecutive phases (DetectChains state)
+%%     Pattern: Same check fails in sequential phase numbers (e.g., P8, P9, P10)
+%%     Regex: Extract trailing digits (\d+$) from phase names
+%%     Requires: minimum 2 consecutive numbers to qualify as cascading
+%%
+%% D5: Threshold rule for recurring advice (ApplyThreshold state)
+%%     Criterion: count >= 5 for same failure name
+%%     Rationale: Identifies systematic failures worthy of design review
+%%     Message: "テンプレート改善を推奨: {check} ({count}回失敗)"
+%%
+%% D6: Optional output sections (WriteOutliers, WriteClassification)
+%%     Implementation: Conditional output via spread operator
+%%     Benefit: Avoids cluttering TOON with empty arrays/objects
+%%     Spec: D-RQ-6 (omit empty sections)
+%%
+%% D7: Parallel write execution (WriteTopFailure, WriteOutliers, WriteClassification)
+%%     Note: Shown as parallel for conceptual clarity; actual implementation
+%%     is single pass through analytics-toon.ts writeAnalyticsToon() function
+%%     Justification: Independent section construction with shared output buffer

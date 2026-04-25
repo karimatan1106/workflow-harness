@@ -1,0 +1,14 @@
+phase: planning
+taskId: c17eeac4-7e5c-4b57-a1ac-16744ac776bb
+ts: "2026-03-02T10:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  PL-001,resetTask に state.retryCount = {} を追加する,リセット後に全フェーズのリトライカウンターを確実にクリアするため
+  PL-002,goBack に state.retryCount = {} を追加する,ロールバック後にリトライカウンターをクリアしてクリーンな状態で再開するため
+  PL-003,manager-lifecycle.test.ts に resetTask 後の retryCount クリア検証テストを追加する,リグレッション防止のため
+  PL-004,manager-lifecycle.test.ts に goBack 後の retryCount クリア検証テストを追加する,リグレッション防止のため
+  PL-005,型定義の変更は行わない,既存の Record<string number> 型は空オブジェクト代入と互換しており変更不要なため
+artifacts[2]{path,role,summary}:
+  docs/workflows/VDB-1 retryCount reset修正/spec.md,spec,実装計画と変更対象ファイル詳細
+  docs/workflows/VDB-1 retryCount reset修正/planning.toon,report,TOONチェックポイント
+next:
+  readFiles[2]: workflow-harness/mcp-server/src/state/manager.ts,workflow-harness/mcp-server/src/__tests__/manager-lifecycle.test.ts

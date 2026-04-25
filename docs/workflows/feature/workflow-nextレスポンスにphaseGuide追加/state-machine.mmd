@@ -1,0 +1,51 @@
+stateDiagram-v2
+    Start --> Idle
+
+    state "ワークフロー実行中" as ExecutingWorkflow {
+        EntryPoint --> AwaitingPhaseTransition
+
+        state "フェーズ遷移待機" as AwaitingPhaseTransition
+        state "次フェーズ決定" as DeterminingNextPhase
+        state "idle/completed判定" as IdleCompletedCheck
+        state "phaseGuideスキップ" as SkipPhaseGuide
+        state "クライアントへレスポンス" as RespondToClient
+        state "statusレスポンス処理" as HandleStatusResponse
+
+        AwaitingPhaseTransition --> CallingWorkflowNext: workflow_next呼び出し
+        AwaitingPhaseTransition --> CallingWorkflowStatus: workflow_status呼び出し
+
+        CallingWorkflowNext --> DeterminingNextPhase
+        DeterminingNextPhase --> IdleCompletedCheck
+
+        state "phaseGuide生成フロー" as GeneratePhaseGuide {
+            PhaseGuideStart --> GetPhaseDefinition
+            GetPhaseDefinition --> ResolveDocsDirPath
+            ResolveDocsDirPath --> ExpandParallelSubphases
+            ExpandParallelSubphases --> ValidatePhaseGuide
+            ValidatePhaseGuide --> BuildResponseWithGuide
+            BuildResponseWithGuide --> PhaseGuideEnd
+
+            state "フェーズ定義取得" as GetPhaseDefinition
+            state "docsDir解決" as ResolveDocsDirPath
+            state "並列フェーズsubPhases展開" as ExpandParallelSubphases
+            state "phaseGuide検証" as ValidatePhaseGuide
+            state "レスポンス構築" as BuildResponseWithGuide
+        }
+
+        IdleCompletedCheck --> SkipPhaseGuide: idle or completed
+        IdleCompletedCheck --> GeneratePhaseGuide: 通常フェーズ
+
+        SkipPhaseGuide --> RespondToClient
+        GeneratePhaseGuide --> RespondToClient
+
+        CallingWorkflowStatus --> HandleStatusResponse
+        HandleStatusResponse --> RespondToClient
+
+        RespondToClient --> AwaitingPhaseTransition
+    }
+
+    Idle --> ExecutingWorkflow: workflow start taskName
+    ExecutingWorkflow --> Completed: 全フェーズ完了
+
+    Idle --> End
+    Completed --> End

@@ -1,0 +1,50 @@
+stateDiagram-v2
+    %% SEC-1: 環境変数保護追加フロー
+    [*] --> SEC1_Vulnerable
+    SEC1_Vulnerable --> SEC1_Patching: SECURITY_ENV_VARS配列に<br/>SPEC_FIRST_TTL_MS追加
+    SEC1_Patching --> SEC1_EnvVarProtected: export/unsetコマンドで<br/>保護ロジック適用
+    SEC1_EnvVarProtected --> SEC1_Verified: 既存テスト実行<br/>（環境変数7→8要素）
+
+    %% SEC-2: Unicode空白判定フロー
+    [*] --> SEC2_Vulnerable
+    SEC2_Vulnerable --> SEC2_Patching: nextChar条件式を<br/>/\s/.test(nextChar)に変更
+    SEC2_Patching --> SEC2_WhitespaceDetection: ASCII空白+タブ+<br/>Unicode空白を認識
+    SEC2_WhitespaceDetection --> SEC2_Verified: 境界判定テスト実行<br/>（U+00A0, U+3000等対応）
+
+    %% SEC-3: シンボリックリンク解決フロー
+    [*] --> SEC3_Vulnerable
+    SEC3_Vulnerable --> SEC3_Patching: path.resolve()を<br/>fs.realpathSync()に置換
+    SEC3_Patching --> SEC3_SymlinkResolution: シンボリックリンク<br/>チェーンを辿る
+    SEC3_SymlinkResolution --> SEC3_Verified: 通常ファイルと<br/>symlink動作確認
+
+    %% 統合検証フロー
+    SEC1_Verified --> Integration_Test: 全3修正適用
+    SEC2_Verified --> Integration_Test
+    SEC3_Verified --> Integration_Test
+    Integration_Test --> ExistingTests: 既存42件テスト<br/>スイート実行
+    ExistingTests --> NoRegression: 回帰なし確認
+    NoRegression --> SecurityScan: セキュリティスキャン<br/>再実行
+    SecurityScan --> AllFixesVerified: 3件指摘全て<br/>解消確認
+    AllFixesVerified --> [*]
+
+    %% スタイル定義
+    style SEC1_Vulnerable fill:#ff6b6b
+    style SEC1_Patching fill:#ffd93d
+    style SEC1_EnvVarProtected fill:#6bcf7f
+    style SEC1_Verified fill:#2ecc71
+
+    style SEC2_Vulnerable fill:#ff6b6b
+    style SEC2_Patching fill:#ffd93d
+    style SEC2_WhitespaceDetection fill:#6bcf7f
+    style SEC2_Verified fill:#2ecc71
+
+    style SEC3_Vulnerable fill:#ff6b6b
+    style SEC3_Patching fill:#ffd93d
+    style SEC3_SymlinkResolution fill:#6bcf7f
+    style SEC3_Verified fill:#2ecc71
+
+    style Integration_Test fill:#87ceeb
+    style ExistingTests fill:#87ceeb
+    style NoRegression fill:#2ecc71
+    style SecurityScan fill:#87ceeb
+    style AllFixesVerified fill:#2ecc71

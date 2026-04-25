@@ -1,0 +1,46 @@
+→purpose: DCIテスト設計
+→task: dci-design-code-index
+
+## テストケース
+
+→test_cases[12]{id,ac,description,method}:
+  TC-AC1-01,AC-1,@specコメントのあるファイルからcodeToDesignマッピングが生成される,ユニットテスト(temp dir)
+  TC-AC1-02,AC-1,複数@specコメントがあるファイルから複数specsが生成される,ユニットテスト
+  TC-AC1-03,AC-1,designToCodeの逆引きマップも同時に生成される,ユニットテスト
+  TC-AC2-01,AC-2,queryDocsForFileがcodeToDesignから正しいspecsを返す,ユニットテスト
+  TC-AC2-02,AC-2,存在しないファイルパスに対して空結果を返す,ユニットテスト
+  TC-AC3-01,AC-3,queryFilesForDocがdesignToCodeから正しいimplementedByを返す,ユニットテスト
+  TC-AC3-02,AC-3,存在しない設計書パスに対して空結果を返す,ユニットテスト
+  TC-AC4-01,AC-4,validateIndexが存在しないspecパスをbrokenLinksに含める,ユニットテスト
+  TC-AC4-02,AC-4,validateIndexがorphans(code/spec)を正しく報告する,ユニットテスト
+  TC-AC5-01,AC-5,@specなしの.tsファイルがorphans.codeWithoutSpecに含まれる,ユニットテスト
+  TC-AC5-02,AC-5,テストファイル(*.test.ts)はorphansに含まれない,ユニットテスト
+  TC-AC6-01,AC-6,既存テストスイートが全て通過する,フルスイート実行
+
+## テストファイル
+
+→test_files[1]{path,cases}:
+  workflow-harness/mcp-server/src/__tests__/dci.test.ts,"TC-AC1-01〜TC-AC5-02 (11件)"
+
+## テスト用fixture
+
+→fixtures[1]{id,description}:
+  fixture-1,"temp dirに@specコメント付き.tsファイル3件、@specなし.tsファイル1件、.test.tsファイル1件、docsに設計書2件を配置"
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,temp dirでファイルシステムベースのテスト,実際のファイルスキャンを検証するため
+  D-2,1テストファイルに集約,DCIは単一機能のため分散不要
+  D-3,統合テスト(MCPツール経由)は別タスクに分離,本タスクはコアロジックのユニットテストに集中
+  D-4,TC-AC6-01はvitest run全実行,既存テストへの影響なしを保証
+  D-5,テストファイルはorphansから除外することを明示的にテスト,テストと実装の区別が正しいことを保証
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/dci-design-code-index/test-design.toon,created
+
+## next
+
+→next: test_impl

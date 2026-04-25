@@ -1,0 +1,38 @@
+phase: scope_definition
+task: fix-skipped-phase-input-validation
+status: complete
+
+intent: スキップされたフェーズの出力ファイルがL1 input_files_existチェックで必須扱いされる問題を修正する。checkInputFilesExistにOUTPUT_FILE_TO_PHASEマッピングを渡してスキップフェーズの出力を除外する。
+
+investigation_result: ALREADY_IMPLEMENTED
+  summary: 調査の結果、問題の修正はすでに実装済みであることが判明した。
+  dod_ts_line_36: "push(checkInputFilesExist(phase, docsDir, workflowDir, state.skippedPhases ?? [], OUTPUT_FILE_TO_PHASE), 'L1');"
+  test_status: 10m-resilience-p1.test.ts の5テスト全てがPASS（vitest実行確認済み）
+  last_relevant_commit: "fb83b7d fix: populate skippedPhases from SIZE_SKIP_MAP and skip exit_code_zero in TDD Red"
+
+root_cause_analysis:
+  original_bug: checkInputFilesExistの呼び出し元がfileToPhaseMapを空{}で渡していたため、スキップフェーズの出力ファイルを除外できずL1エラーになっていた
+  fix_location: workflow-harness/mcp-server/src/gates/dod.ts:36
+  fix_applied: OUTPUT_FILE_TO_PHASEをimportしてcheckInputFilesExistの第5引数に渡す変更がcommit fb83b7dで実施済み
+  function_signature: "checkInputFilesExist(phase, docsDir, workflowDir, skippedPhases=[], fileToPhaseMap={})"
+  skip_logic: "const sourcePhase = fileToPhaseMap[basename]; if (sourcePhase && skippedPhases.includes(sourcePhase)) continue;"
+
+artifacts[6]{path,role,summary}:
+  workflow-harness/mcp-server/src/gates/dod-l1-l2.ts, primary, checkInputFilesExist関数の定義。skippedPhasesとfileToPhaseMapの両パラメータを受け取り、スキップフェーズ由来のファイルをループ内でcontinueする実装が完成している
+  workflow-harness/mcp-server/src/gates/dod.ts, primary, runDoDChecks内でcheckInputFilesExistを呼び出す唯一の本番呼び出し元。state.skippedPhases??[]とOUTPUT_FILE_TO_PHASEを正しく渡している
+  workflow-harness/mcp-server/src/phases/definitions.ts, reference, OUTPUT_FILE_TO_PHASEマッピングの権威定義。18エントリ（scope-definition.toon→scope_definition等）を保持し、dod.tsがimportして使用する
+  workflow-harness/mcp-server/src/phases/registry.ts, reference, SIZE_SKIP_MAPを定義。smallは19フェーズをスキップ（threat_modeling,test_selection等を含む）。TaskState.skippedPhasesの初期値の源泉
+  workflow-harness/mcp-server/src/state/manager-write.ts, reference, createTaskState内でSIZE_SKIP_MAP[size]をskippedPhasesに設定。タスク作成時に正しく初期化される
+  workflow-harness/mcp-server/src/__tests__/10m-resilience-p1.test.ts, test, P1検証テスト5件。全てPASS確認済み。TC-AC1-01〜05がcheckInputFilesExistのskippedPhases/fileToPhaseMap動作を網羅的に検証
+
+decisions[5]{id,statement,rationale}:
+  SD-1, 本タスクは実装作業不要——修正は既に完了している, commit fb83b7dがdod.tsの呼び出し元を修正済みで、5つのテストが全てパスしている。新たなコード変更は不要
+  SD-2, テスト検証は10m-resilience-p1.test.tsで十分カバーされている, TC-AC1-01（スキップ時パス）・TC-AC1-02（空時失敗）・TC-AC1-03（全Stage4スキップ）・TC-AC1-04（マップ未指定時失敗）・TC-AC1-05（inputFiles空時パス）の5ケースが実挙動を確認済み
+  SD-3, OUTPUT_FILE_TO_PHASEの参照先はdefinitions.ts一箇所に集約する, dod.tsはdefinitions.tsからimportするため、マッピング追加時の変更箇所が一か所に限定される。テストファイルのローカルコピーは独立性のため維持する
+  SD-4, skippedPhasesはTaskState永続フィールドとして管理し呼び出し元で再計算しない, manager-write.tsがcreateTask時にSIZE_SKIP_MAP[size]を設定。runDoDChecksはstate.skippedPhasesをそのまま使用するため、タスクサイズ変更後も一貫性が保たれる
+  SD-5, ファイルbasename比較でフルパスの差異を吸収する, inputFile.split('/').pop()でbasenameを取得してfileToPhaseMapと照合することで、{docsDir}プレースホルダの解決前後に関わらずマッピングが機能する
+
+next:
+  criticalDecisions: "SD-1確認——本タスクに実装フェーズは不要。既存実装の品質確認と、テストカバレッジに欠落がないかのレビューのみ実施する"
+  readFiles: "workflow-harness/mcp-server/src/phases/registry.ts（inputFilesの全フェーズ定義を確認してOUTPUT_FILE_TO_PHASEとの整合を検証）"
+  warnings: "10m-resilience-p1.test.tsのコメントに「not yet implemented」と記載されているが実態は実装済み。コメントを修正して誤解を防ぐことを推奨する"

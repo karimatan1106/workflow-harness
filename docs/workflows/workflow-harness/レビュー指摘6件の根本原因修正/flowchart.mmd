@@ -1,0 +1,126 @@
+flowchart TD
+    Start([ワークフロー処理開始]) --> REQ1{REQ-FIX-1<br/>userIntent伝搬}
+
+    %% REQ-FIX-1: userIntent伝搬フロー
+    subgraph REQFIX1["REQ-FIX-1: userIntent伝搬フロー"]
+        A1["workflow_startで<br/>userIntentを受け取る"] --> A2["TaskStateに<br/>userIntentを保存"]
+        A2 --> A3["CLAUDE.mdテンプレートで<br/>userIntent置換"]
+        A3 --> A4["subagent起動時に<br/>テンプレートリテラル<br/>で埋込"]
+        A4 --> A5["成果物に<br/>ユーザーの意図<br/>セクション追加"]
+    end
+
+    REQ1 -->|完了| REQ2{REQ-FIX-2<br/>フェーズスキップ判定}
+
+    %% REQ-FIX-2: フェーズスキップ判定フロー
+    subgraph REQFIX2["REQ-FIX-2: ユーザー意図優先のスキップ判定フロー"]
+        B1["next.tsで<br/>calculatePhaseSkips()呼び出し"] --> B2["userIntentを<br/>引数に渡す"]
+        B2 --> B3{userIntentに<br/>キーワード検出?}
+        B3 -->|テスト関連| B4["test_impl<br/>スキップ判定解除"]
+        B3 -->|実装関連| B5["implementation<br/>スキップ判定解除"]
+        B3 -->|なし| B6["スコープベース判定<br/>にフォールバック"]
+        B4 --> B7["スキップ理由を<br/>記録"]
+        B5 --> B7
+        B6 --> B7
+    end
+
+    REQ2 -->|完了| REQ3{REQ-FIX-3<br/>AST解析キャッシュ}
+
+    %% REQ-FIX-3: AST解析キャッシュフロー
+    subgraph REQFIX3["REQ-FIX-3: AST解析キャッシュフロー"]
+        C1["design-validatorで<br/>ファイルハッシュ計算"] --> C2{キャッシュ<br/>ヒット?}
+        C2 -->|Yes| C3["キャッシュから<br/>AST結果を返却"]
+        C3 --> C4["実行時間: <1ms"]
+        C2 -->|No| C5["新規AST解析<br/>実施"]
+        C5 --> C6["MD5ハッシュ<br/>を計算"]
+        C6 --> C7["メモリキャッシュ<br/>に保存"]
+        C7 --> C8["永続化キャッシュ<br/>に保存"]
+        C8 --> C9{期限切れ<br/>キャッシュ<br/>があるか?}
+        C9 -->|Yes| C10["expiredキャッシュ<br/>を削除"]
+        C9 -->|No| C11["完了"]
+        C4 --> C11
+        C10 --> C11
+    end
+
+    REQ3 -->|完了| REQ4{REQ-FIX-4<br/>BFS依存解析}
+
+    %% REQ-FIX-4: BFS依存解析フロー
+    subgraph REQFIX4["REQ-FIX-4: BFS依存解析の非同期化フロー"]
+        D1["trackDependencies()を<br/>async化"] --> D2["キューを<br/>初期化"]
+        D2 --> D3["バッチサイズ<br/>分割(default: 10)"]
+        D3 --> D4["queue.splice()で<br/>バッチ取得"]
+        D4 --> D5["Promise.all()で<br/>バッチ並列処理"]
+        D5 --> D6{ファイル<br/>読込成功?}
+        D6 -->|Yes| D7["fs.promises.readFile<br/>非同期読み込み"]
+        D7 --> D8["extractImportsWithCache()<br/>でimport抽出"]
+        D6 -->|No| D9["ファイルスキップ<br/>他ファイル続行"]
+        D8 --> D10["import結果を<br/>キャッシュ保存"]
+        D10 --> D11["MD5ハッシュで<br/>キャッシュキー生成"]
+        D11 --> D12{キャッシュサイズ<br/>超過?}
+        D12 -->|Yes| D13["LRU削除"]
+        D12 -->|No| D14["完了"]
+        D13 --> D14
+        D9 --> D14
+    end
+
+    REQ4 -->|完了| REQ5{REQ-FIX-5<br/>タスクインデックス}
+
+    %% REQ-FIX-5: タスクインデックスフロー
+    subgraph REQFIX5["REQ-FIX-5: タスクインデックスフロー"]
+        E1["getTaskById()で<br/>taskIdを受け取る"] --> E2["task-index.jsonを<br/>読み込み"]
+        E2 --> E3{インデックスに<br/>エントリ<br/>存在?}
+        E3 -->|Yes| E4["relativePath<br/>を直接取得"]
+        E4 --> E5["taskPathから<br/>workflow-state.json<br/>を読み込み"]
+        E5 --> E6{ファイル<br/>存在確認}
+        E6 -->|Yes| E7["TaskStateを<br/>返却"]
+        E6 -->|No| E8["インデックスから<br/>削除"]
+        E3 -->|No| E9["discoverTasks()<br/>で全スキャン"]
+        E9 --> E10{タスク<br/>見つかった?}
+        E10 -->|Yes| E11["インデックスに<br/>追加"]
+        E10 -->|No| E12["null返却"]
+        E11 --> E7
+        E8 --> E12
+        E7 --> E13["完了(O(1))"]
+        E12 --> E13
+    end
+
+    REQ5 -->|完了| REQ6{REQ-FIX-6<br/>fail-closed統一}
+
+    %% REQ-FIX-6: fail-closed判定フロー
+    subgraph REQFIX6["REQ-FIX-6: fail-closed判定フロー"]
+        F1["フック処理開始"] --> F2["入力を検証"]
+        F2 --> F3{入力<br/>有効?}
+        F3 -->|No| F4["logError()で<br/>記録"]
+        F4 --> F5["exit2で<br/>ブロック"]
+        F3 -->|Yes| F6["ツール名判定"]
+        F6 --> F7{Edit/Write<br/>ツール?}
+        F7 -->|No| F8["exit0で許可"]
+        F7 -->|Yes| F9["ファイルパス<br/>検証"]
+        F9 --> F10{パス<br/>有効?}
+        F10 -->|No| F11["logError()で<br/>記録"]
+        F11 --> F5
+        F10 -->|Yes| F12{ループ<br/>検出?}
+        F12 -->|Yes| F13["logError()で<br/>記録"]
+        F13 --> F5
+        F12 -->|No| F14["exit0で許可"]
+        F5 --> F15["hook-errors.log<br/>に記録"]
+        F15 --> End
+        F8 --> End
+        F14 --> End
+    end
+
+    REQ6 -->|完了| End([処理完了])
+
+    %% スタイル定義
+    classDef req1 fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef req2 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef req3 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef req4 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef req5 fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef req6 fill:#ede7f6,stroke:#311b92,stroke-width:2px
+
+    class REQFIX1 req1
+    class REQFIX2 req2
+    class REQFIX3 req3
+    class REQFIX4 req4
+    class REQFIX5 req5
+    class REQFIX6 req6

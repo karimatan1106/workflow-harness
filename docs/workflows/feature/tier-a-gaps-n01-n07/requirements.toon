@@ -1,0 +1,45 @@
+task: tier-a-gaps-n01-n07
+phase: requirements
+intent: Tier A 7項目の受入基準・RTM・スコープ外定義
+
+acceptanceCriteria[7]{id,description,verificationMethod}:
+  AC-1, PostToolUseフックがbiome checkを実行しbiome未インストール時はサイレントスキップ, フック実行ログにbiome出力が含まれることを確認。biome未インストール環境でexit 0を確認。
+  AC-2, buildRetryPromptがactiveなADRエントリの根拠をリトライプロンプトに含める, retry.test.tsでADR存在時/非存在時の両方をテスト。
+  AC-3, AGENTS.mdがプロジェクトルートに存在しツール一覧と構造を記述, ファイル存在確認と内容検証。
+  AC-4, Config Guardがbiome.json/vitest.config.*/lefthook.yml等をブロック, 各パターンに対してexit code 2を確認するテスト。
+  AC-5, Stop Hookがgit diff変更ファイルからvitest --relatedで関連テスト先行実行, フックスクリプトの論理フロー確認。
+  AC-6, getLessonsForPhaseがqualityScore 0.3未満のレッスンを除外, reflector-quality.test.tsでharmful率の高いレッスンが除外されることを確認。
+  AC-7, handoff-reader.shが起動時に4ステップチェックを実行, フック出力に各ステップの結果が含まれることを確認。
+
+rtmEntries[7]{id,requirement,acRef}:
+  F-001, PostToolUseフックにBiome check統合（graceful degradation）, AC-1
+  F-002, DoDエラーリトライプロンプトにADRリンク付加, AC-2
+  F-003, AGENTS.mdクロスプラットフォーム発見性ファイル作成, AC-3
+  F-004, Config Guard保護対象を15パターン以上に拡張, AC-4
+  F-005, 起動ルーチン4ステップチェック（git/依存/テスト/進捗）, AC-7
+  F-006, Stop Hookのgit diff範囲検出によるテスト最適化, AC-5
+  F-007, Reflectorレッスン品質スコアフィルタ（閾値0.3）, AC-6
+
+notInScope[4]{item,reason}:
+  Biomeのnpm install, 環境依存。N-01はインストール済み環境のみ動作する設計。
+  Tier B/C gaps, 別タスクで実装。外部ツール・アーキテクチャ変更が必要。
+  既存フック(context-watchdog等)の変更, 今回のスコープ外。既存フックの動作に影響を与えない。
+  テストフレームワーク変更, vitestを継続使用。新フレームワーク導入なし。
+
+openQuestions: なし。全項目の設計方針はresearchフェーズで確定済み。
+
+decisions[5]{id,statement,rationale}:
+  REQ-1, AC-2のテストではADR storeをモック化する, retry.tsのテストでファイルI/Oを避けるためvi.mockで制御。
+  REQ-2, AC-6のテストではhelpfulCount=0かつharmfulCount=5のレッスンを用意する, qualityScore=0/(0+5+1)=0でフィルタ対象であることを確認。
+  REQ-3, シェルスクリプトのテストはbash実行による統合テストで行う, vitest単体テストではシェル動作を検証できないため。
+  REQ-4, AGENTS.mdの内容はMCPツール23個の完全リストを含む, handler.tsのツール登録と一致することを保証。
+  REQ-5, N-05起動ルーチンの各ステップは非ブロッキング, 1ステップ失敗しても残りは実行。警告メッセージで通知。
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/requirements.toon, spec, 要件定義
+  docs/workflows/tier-a-gaps-n01-n07/research.toon, report, 前フェーズ成果物
+
+next:
+  criticalDecisions: REQ-1(ADRモック)がテスト設計の基盤。REQ-3(シェルテスト方式)が検証戦略を決定。
+  readFiles: workflow-phases.md, workflow-execution.md
+  warnings: シェルスクリプトの自動テストは環境依存性が高い。CI環境での再現性に注意。

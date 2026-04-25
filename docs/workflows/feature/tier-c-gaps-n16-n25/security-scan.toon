@@ -1,0 +1,41 @@
+task: tier-c-gaps-n16-n25
+phase: security_scan
+intent: Tier C実装のセキュリティスキャン
+
+scanScope[4]{file,securityRelevance,finding}:
+  manager-write.ts(sanitizeTaskName), high, "パストラバーサル/XSS/SQLi/特殊文字/長さ制限の5防御実装。OWASP A03:2021(Injection)対応。"
+  retry.ts(classifyComplexity), low, "純粋関数。外部入力を直接処理しない。DoDCheckResult経由のみ。"
+  linter-runner.ts(countCommentLines), low, "純粋関数。文字列パース。外部I/Oなし。"
+  archgate.ts(comment_ratio型追加), none, "型定義のみ。実行時影響なし。"
+
+vulnerabilityChecks[5]{id,category,owasp,result,detail}:
+  SEC-1, "Path Traversal", "A01:2021 Broken Access Control", pass, "sanitizeTaskNameが../と/と\\を除去。safety.test.ts TC-AC6-01で検証済み。"
+  SEC-2, "XSS Injection", "A03:2021 Injection", pass, "sanitizeTaskNameが<>を除去。TC-AC6-04で<script>タグ無害化確認。"
+  SEC-3, "SQL Injection", "A03:2021 Injection", pass, "sanitizeTaskNameが';を除去。TC-AC6-05でDROP TABLE無害化確認。"
+  SEC-4, "Input Length DoS", "A05:2021 Security Misconfiguration", pass, "10000文字上限でthrow。TC-AC6-03で検証済み。"
+  SEC-5, "ReDoS", "A03:2021 Injection", pass, "sanitizeTaskNameのregexは固定パターン。バックトラッキング爆発なし。"
+
+threatModelValidation[5]{tmId,mitigationStatus,evidence}:
+  TM-1, "mitigated", "sanitizeTaskName実装+safety.test.ts 5テストで検証"
+  TM-2, "mitigated", "Zodスキーマ+sanitizeTaskNameの10000文字上限"
+  TM-3, "accepted", "archgateQuickCheckはスコープ外(N-18将来実装)"
+  TM-4, "accepted", "comment_ratio型定義のみ。実行分岐は将来実装"
+  TM-5, "mitigated", "e2e-mcp-chain.test.tsは実tmpdir使用。fsモック不要"
+
+decisions[5]{id,statement,rationale}:
+  SEC-D1, "sanitizeTaskNameのセキュリティ実装を承認", "OWASP Top10の主要3カテゴリ(A01/A03/A05)に対応"
+  SEC-D2, "既存MCPツール入力のZodスキーマに依存した長さ制限を承認", "sanitizeTaskName自体の10000文字制限+Zodの二重防御"
+  SEC-D3, "TM-3/TM-4は将来N-18完全実装時に再検証が必要", "現時点ではスコープ外のため受容リスクとして記録"
+  SEC-D4, "sanitizeTaskNameのregex方式はReDoS耐性がある", "固定パターンのみ使用しバックトラッキング爆発なし"
+  SEC-D5, "classifyComplexityとcountCommentLinesはセキュリティリスクなし", "純粋関数で外部入力を直接処理しないためインジェクション攻撃面なし"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/security-scan.toon, output, セキュリティスキャン結果(5脆弱性チェック全パス)
+  docs/workflows/tier-c-gaps-n16-n25/threat-model.toon, input, 脅威モデル(5脅威定義)
+
+next:
+  criticalDecisions: "SEC-D1(sanitizeTaskName承認)によりN-25セキュリティ要件達成"
+  readFiles: "なし"
+  warnings: "TM-3(ReDoSタイムアウト)とTM-4(巨大ファイルスキップ)はN-18実装時に再検証すること"
+
+result{phase,status,artifact,lines}: security_scan, complete, docs/workflows/tier-c-gaps-n16-n25/security-scan.toon, 38

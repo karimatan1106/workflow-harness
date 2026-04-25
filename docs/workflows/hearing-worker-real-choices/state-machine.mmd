@@ -1,0 +1,25 @@
+---
+phase: state_machine
+task: hearing-worker-real-choices
+taskId: 47bc7d35-75db-4c52-a5a8-1b42edf9f83e
+---
+
+stateDiagram-v2
+    [*] --> HearingStart: hearingフェーズ開始
+    HearingStart --> AnalyzeIntent: ユーザー意図を分析
+    AnalyzeIntent --> GenerateQuestions: 質問を生成
+    GenerateQuestions --> ValidateOptions: 選択肢品質チェック
+    ValidateOptions --> AskUser: 品質基準合格(2案以上+トレードオフ明記)
+    ValidateOptions --> RegenerateOptions: 品質基準不合格(確認形式/1択)
+    RegenerateOptions --> ValidateOptions: 選択肢を再生成
+    AskUser --> RecordResponse: ユーザー回答を記録
+    RecordResponse --> WriteHearing: hearing.mdを出力
+    WriteHearing --> [*]: hearingフェーズ完了
+
+## decisions
+
+- SM-001: hearing-workerの質問生成フローに品質検証ステップを追加。現状はGenerateQuestions→AskUserの直接遷移だが、ValidateOptionsを挟むことで確認形式を防止。
+- SM-002: ValidateOptionsは概念的なチェックポイント。実装はLLMの指示遵守に依存するが、エージェント定義とテンプレートの二重制約で確実性を高める。
+- SM-003: RegenerateOptionsループは無限ループ防止のため、エージェント定義側で具体例を提示しLLMが一発で正しい形式を出せるよう誘導する。
+- SM-004: RecordResponseはuserResponseキー(前回FIX-1で追加済み)にAskUserQuestion回答を記録する既存フロー。
+- SM-005: 状態遷移の変更はなく、既存フロー内の品質基準を強化するのみ。新しい状態の追加は不要。

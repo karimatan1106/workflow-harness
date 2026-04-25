@@ -1,0 +1,24 @@
+stateDiagram-v2
+    [*] --> CommandReceived
+
+    CommandReceived --> ZeroWidthSanitized: コマンド受信しゼロ幅文字除去開始
+
+    ZeroWidthSanitized --> CommandSplit: U+200B/200C/200D/FEFF除去完了(NEW-SEC-1)
+
+    CommandSplit --> EncodingCheck: splitCommandPartsでコマンド分割完了
+
+    EncodingCheck --> DecodeAttempted: エンコード検出(Base64/PrintfHex/EchoOctal)
+    EncodingCheck --> WhitelistChecked: エンコード未検出で直接ホワイトリスト検証
+
+    DecodeAttempted --> DecodeSuccess: デコード成功し有効な文字列を取得
+    DecodeAttempted --> DecodeFailed: デコード失敗で無効なエンコード検出
+
+    DecodeFailed --> Blocked: Fail-Closed原則によりallowed:falseを返却(NEW-SEC-2)
+
+    DecodeSuccess --> WhitelistChecked: デコード結果をホワイトリストで検証
+
+    WhitelistChecked --> Allowed: コマンドがホワイトリストに一致し許可
+    WhitelistChecked --> Blocked: コマンドがホワイトリスト不一致で拒否
+
+    Blocked --> [*]
+    Allowed --> [*]

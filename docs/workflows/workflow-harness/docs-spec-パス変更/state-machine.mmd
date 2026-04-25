@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> 未変更: 開始
+
+    未変更 --> フック変更中: hooks/置換開始
+    フック変更中 --> MCP変更中: hooks/完了
+    MCP変更中 --> フェーズガイド変更中: mcp-server/完了
+    フェーズガイド変更中 --> 設定変更中: workflow-phases/完了
+    設定変更中 --> CLAUDE変更中: settings/完了
+    CLAUDE変更中 --> README変更中: CLAUDE.md完了
+    README変更中 --> 検証中: README完了
+    検証中 --> 変更完了: 検証OK
+    検証中 --> エラー: 検証NG
+
+    エラー --> 未変更: リセット
+
+    変更完了 --> [*]

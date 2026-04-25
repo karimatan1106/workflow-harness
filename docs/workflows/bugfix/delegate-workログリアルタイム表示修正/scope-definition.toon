@@ -1,0 +1,22 @@
+task-name: delegate-workログリアルタイム表示修正
+user-intent: delegate-work.tsのspawnAsyncでstderrもlogFileに追記しWorker実行中のリアルタイムログ表示を実現
+problem: "claude -p --printはstdoutに最終結果のみ出力。stderrに進捗情報が出るが, logFileに追記されていない"
+root-cause: "spawnAsync内のchild.stderr onDataハンドラがstderr変数に蓄積するのみで, appendFileSync(logFile)を呼んでいない"
+solution: "spawnAsyncのstderrハンドラ(130行目)にもappendFileSync(logFile, text)を追加し, stdoutと同様にlogFileへリアルタイム書き込みする"
+scope-files: workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts
+change-type: bug-fix
+change-detail: "130行目 child.stderr?.on('data') コールバック内にlogFile追記処理を追加"
+risk: low
+risk-reason: stderr追記のみの単純変更。既存stdout処理と同パターン
+size: small
+lines-affected: 1-3
+test-plan: "delegate-workでclaude -p実行時にlogFileにstderr進捗が出力されることを確認"
+acceptance-criteria: "Worker実行中に.agent/delegate-work.logにリアルタイムで進捗表示される"
+decisions[5]{id,statement,rationale}:
+  SD-1, "stderrもlogFileに追記する", "claude CLIはstderrに進捗情報を出力するため"
+  SD-2, "stdoutの既存追記ロジックは変更しない", "最終結果の記録は維持するため"
+  SD-3, "appendFileSyncを使用する", "既存パターンと統一するため"
+  SD-4, "ログファイルのフォーマットは混在許容", "stdout/stderrの区別は不要でリアルタイム性を優先するため"
+  SD-5, "変更はspawnAsync関数内の1箇所のみ", "影響範囲を最小限にするため"
+artifacts: "scope-definition.toon, delegate-work.ts(修正後)"
+next: "implementation フェーズへ引き継ぎ。scope-files記載の1ファイルに対しchange-detail記載の修正を実施"

@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Start
+    Start --> ReadSpec : spec.mdを読み込み実装計画を確認
+    ReadSpec --> ExtractTemplateLocations : テンプレート挿入位置を特定
+    ExtractTemplateLocations --> FR11Addition : FR-11のガイダンスを作成
+    FR11Addition --> FR12Addition : FR-12のガイダンスを作成
+    FR12Addition --> ValidateGuidanceFormat : ガイダンス形式を検証
+    ValidateGuidanceFormat --> InsertFR11 : definitions.tsのmanual_testに総合評価ガイダンスを挿入
+    InsertFR11 --> InsertFR12 : definitions.tsのsecurity_scanに行数確保ガイダンスを挿入
+    InsertFR12 --> CompileAndValidate : npm run buildで変更をコンパイル
+    CompileAndValidate --> AddTestCases : definitions-subagent-template.test.tsにテストケースを追加
+    AddTestCases --> RunTests : 新規テストケースを実行して検証
+    RunTests --> VerifyBuild : dist/*.jsの更新を確認
+    VerifyBuild --> RestartMCPServer : MCPサーバーを再起動
+    RestartMCPServer --> ConfirmPhase : workflow_statusで現在のフェーズを確認
+    ConfirmPhase --> End
+    End --> [*]

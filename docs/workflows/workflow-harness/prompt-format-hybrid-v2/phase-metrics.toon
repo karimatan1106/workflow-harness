@@ -1,0 +1,139 @@
+phase: metrics
+taskName: prompt-format-hybrid-v2
+startedAt: "2026-03-28T12:23:41.948Z"
+completedAt: "2026-03-28T13:03:50.337Z"
+totalRetries: 4
+totalDoDFailures: 4
+phases:
+  hearing:
+    durationSec: 98
+    retries: 1
+    dodFailures: 1
+  scope_definition:
+    durationSec: 102
+    retries: 0
+    dodFailures: 0
+  research:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 578
+    retries: 1
+    dodFailures: 4
+  threat_modeling:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  state_machine:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 6
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 9
+    retries: 0
+    dodFailures: 0
+  test_design:
+    durationSec: 17
+    retries: 2
+    dodFailures: 1
+  test_selection:
+    durationSec: 58
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 31
+    retries: 0
+    dodFailures: 0
+  implementation:
+    durationSec: 132
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 132
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 13
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 121
+    retries: 0
+    dodFailures: 0
+  testing:
+    durationSec: 21
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 10
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 77
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 146
+    retries: 0
+    dodFailures: 0
+  security_scan:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  performance_test:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 675
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 31
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 25
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 18
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 10
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 57
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  hearing[1]: "[L2] userResponse: key missing from hearing artifact"
+  requirements[4]: "[L4] Duplicate lines (3+ times): \"- 検証レベル: L2(文字列パターン一致)...\" (4x)","[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5","[L4] openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。","[L4] 意図整合性警告: 5語が requirements.md に未反映: mdにPrompt, Rulesセクションを追加し, トップレベルTOON+中身Markdownのハイブリッド形式ルールを定義する, Agent委譲とMCPパラメータの両方を対象とし, 出力形式伝染を防止する\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+  test_design[1]: "[L4] Approved artifacts modified since approval: requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"

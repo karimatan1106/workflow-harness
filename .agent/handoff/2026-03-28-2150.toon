@@ -1,0 +1,50 @@
+## HANDOFF
+date: 2026-03-28 21:50
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] prompt-format-hybrid-v2 (taskId: cef1bb7a-cdfb-4d3c-a4d7-1b3c04bdec08) → completed
+  - workflow-delegation.mdに## Prompt Format Rulesセクション追加(+10行, 計135行)
+  - Agent委譲: TOONトップ+Markdown中身、MCP短パラメータ: プレーンテキスト、MCP長パラメータ: ハイブリッド
+  - /simplifyで冗長な伝染防止ルール重複を解消(cross-reference化)
+  - コミット: 83e75c5, pushed to origin/feature/v2-workflow-overhaul
+  - AC-1~AC-5全met, F-001~F-006全tested
+- [x] harness-first-pass-improvement (taskId: ce320677-d107-4cc9-ad90-978291c61666) → state_machine phase, completed
+  - Task 1: state-machine.mmd 生成（64行、SM-001~SM-008 decisions）
+  - Task 2: coordinator.md に Phase Output Rules セクション追加
+  - Task 3: worker.md に Edit Completeness Rule セクション追加
+  - Task 4: defs-stage4.ts に baseline/RTM 2セクション追加（196行、≤200行）
+  - テスト結果: 785 PASS / 31 FAIL（失敗は既存バグ・scope外、Diagnosis レポート参照）
+  - コミット: 25db124, pushed to origin/feature/v2-workflow-overhaul
+- [ ] prompt-format-hybrid-rule (taskId: f40dd84a) → 状態破損、新タスク(cef1bb7a)で代替完了
+- [ ] docs-workflows-refactoring-v2 (taskId: 5127ee0c) → scope_definition phase, size: large
+
+## 試したこと・結果
+- 成功: harness_backでrequirementsフェーズに戻り再承認することでartifact_drift解消
+- 成功: harness_pre_validateで承認前にDoD事前検証し、test_designフェーズを一発通過
+- 成功: /simplifyで3並列レビューAgent→冗長性発見→cross-reference化で品質改善
+- 失敗: 旧タスク(f40dd84a)でstate file直接編集→HMAC整合性破壊→write operations blocked
+- 失敗: harness_resetでAC重複(5→10)発生→TC coverage不足(7<10)→新タスク作成で対応
+- 失敗: harness_record_proofでartifact_driftチェック上書き不可(deterministic L4チェックはproof無視)
+- 失敗: 承認後のファイル修正でartifact_drift発生→harness_approve APIは現フェーズゲートのみ対応
+
+## ハーネス運用で学んだこと
+- V-9改: artifact_drift防止の正しい順序: ファイル作成→pre_validate→修正→approve→next
+- V-12: harness_resetはAC消去しない。reset後のadd_acでAC重複(requirementCount倍増)
+- V-13: harness_delegate_coordinatorがinput filesをfiles-changedとして報告しartifact_driftを誘発
+- harness_backは過去フェーズへの巻き戻しが可能。artifact_drift時に承認フェーズまで戻り再承認チェーンで解消
+- state file(.toon)の直接編集はHMAC破壊。harness_backが安全な代替手段
+
+## 次のセッションで最初にやること
+- harness_statusで全タスク確認
+- docs-workflows-refactoring-v2 (5127ee0c) のscope_definitionフェーズ継続を検討
+- 旧タスクprompt-format-hybrid-rule(f40dd84a)は状態破損のため無視して良い
+- [重要] テスト失敗(reflector Windows path mismatch)は priority が低い既存バグ。別タスク化推奨
+
+## 注意点・ブロッカー
+- types-core.ts(199行)とlifecycle-next.ts(198行)が200行境界値。次回変更時に責務分割が必要
+- docs/workflows/ は .gitignore 対象。ワークフロー成果物はgit管理外
+- vitest並列実行で既知のリソース競合問題あり(個別実行では全PASS)
+- subagentプロンプトのTOON+MDハイブリッド形式ルールはworkflow-delegation.mdに明文化済み(83e75c5)

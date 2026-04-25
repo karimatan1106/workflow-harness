@@ -1,0 +1,113 @@
+## サマリー
+
+本テストではP0-P1構造的問題修正の6機能を手動検証しました。
+対象はフィードバック記録、キーワード追跡検証、成果物事前検証、CLAUDE.mdパーサー、タスク親子リンク、task-index同期です。
+全31シナリオで正常動作を確認し、入力バリデーション・セッショントークン認証・エラーハンドリングが適切に機能しています。
+特に循環参照検出のBFS走査、キャッシュ一貫性、フォールバック処理の堅牢性を重点的に検証しました。
+テスト実施日は2026年2月16日、全シナリオが合格判定です。
+
+---
+
+## テストシナリオ
+
+### P0-1: workflow_record_feedback
+
+record-feedback.tsの5つのシナリオを設計しました。初期記録では空のuserIntentにフィードバックを書き込み、返却メッセージとファイル永続化を確認します。追記モードではappendMode=trueで既存テキストへの結合と改行挿入を検証します。文字数超過テストでは10000文字上限を超える入力に対するバリデーションエラーを確認します。認証テストでは不正トークンによるリクエスト拒否を検証します。空入力テストではundefined値に対する必須パラメータチェックを確認します。
+
+### P0-2: validateKeywordTraceability
+
+artifact-validator.ts内のキーワード追跡検証の5シナリオです。高カバレッジテストではspec.mdから抽出した15キーワード中13個がrequirements.mdに存在し、86.7%で閾値80%をクリアする成功判定を確認します。低カバレッジテストでは20%（10個中2個）の場合にmissingKeywordsリストが正確に8個を記録することを検証します。ファイル未検出テストでは非存在パスでのグレースフル処理を確認します。キーワード空抽出テストではsourceからキーワードが得られない場合のwarning出力を検証します。環境変数テストではSEMANTIC_TRACE_STRICT=falseで警告モードに切り替わることを確認します。
+
+### P0-3: workflow_pre_validate
+
+pre-validate.tsの5シナリオです。必須セクション成功テストではspec.mdの全必須ヘッダーが存在する場合のpassed=true判定を確認します。必須セクション不足テストではtest-design.mdから「テストケース」セクションが欠落した場合のエラー報告を検証します。ファイル存在確認テストでは非存在パスに対するcheckedRulesへのfile_exists追加を確認します。PHASE_ARTIFACT_REQUIREMENTS統合テストではmanual_testフェーズの複合検証ルール（required_sections、min_lines、duplicate_lines）が連携動作することを検証します。PhaseGuideフォールバックテストでは定義外フェーズでPhaseGuideのrequiredSectionsを使用した代替検証が機能することを確認します。
+
+### P1-1: parseCLAUDEMdByPhase
+
+claude-md-parser.tsの5シナリオです。正常解析テストではrequirementsフェーズに関連するCLAUDE.mdセクションが正確に抽出され、contentに有効なMarkdownが含まれることを確認します。キャッシュテストでは同一パス・フェーズの2回目呼び出しがメモリキャッシュから返却され、内容が1回目と完全一致することを検証します。ファイル未検出テストでは非存在パスに対するエラーハンドリングとundefined戻り値を確認します。サポート外フェーズテストではSectionPatternsが空の場合のエラー報告を検証します。セクション分割テストでは複数レベルの見出し（##、###、####）を含むMarkdownの階層解析精度を確認します。
+
+### P1-2: workflow_create_subtask / workflow_link_tasks
+
+create-subtask.tsとlink-tasks.tsの6シナリオです。サブタスク作成テストでは親タスク下に子タスクが作成され、双方向リンク（childTaskIds/parentTaskId）が完成することを確認します。循環参照テストでは3階層（A→B→C）でC→Aリンクを試みた場合のBFS検出を検証します。自己参照テストでは同一タスクIDの親子指定が拒否されることを確認します。既存リンクテストでは重複リンク作成の防止を検証します。複数親テストでは既に別の親を持つタスクへの新規親設定の拒否を確認します。トークン検証テストでは不正セッショントークンでのリンク作成拒否を検証します。
+
+### P1-3: syncTaskIndex
+
+manager.tsのsyncTaskIndexメソッドの5シナリオです。フェーズ遷移同期テストではimplementation→refactoring遷移時にtask-index.jsonのphaseフィールドが更新されることを確認します。複数タスク共存テストではTask2のフェーズ変更がTask1・Task3に影響しないことを検証します。サブフェーズ反映テストではparallel_qualityのbuild_check/code_review各状態がsubPhasesフィールドに保存されることを確認します。userIntent反映テストでは500文字のuserIntentがtask-index.jsonに完全保存されることを検証します。キャッシュ一貫性テストでは複数タスクの立て続けsyncTaskIndex呼び出しでキャッシュとディスクが一致することを確認します。
+
+---
+
+## テスト結果
+
+### P0-1: workflow_record_feedback 検証結果
+
+初期記録テストでは、新規タスクのuserIntentフィールドにフィードバックが正確に記録されました。返却メッセージが期待値「フィードバックを記録しました」と一致し、タスク状態ファイルが適切に更新されています。
+
+追記モードテストでは、appendMode=trueで既存のuserIntentに新しいフィードバックが追記されました。複数行結合が正確に実装されており、改行文字が正しく挿入されています。updatedUserIntentは「既存テキスト\n\n新規テキスト」の形式で完全一致しました。
+
+文字数超過テストでは、10000文字を超えるフィードバック入力に対してエラーが正しく返却されました。エラーメッセージに文字数超過の理由と実際の文字数が記録され、バリデーション後のタスク状態は変更されていません。
+
+トークン検証テストでは、不正なセッショントークンを使用した呼び出しがエラーで拒否されました。成功フラグがfalseに設定され、タスク状態の更新が防止されています。
+
+空入力テストでは、空文字列またはundefined値のフィードバックパラメータに対して「feedbackは必須です」のバリデーションエラーが正しく返却されました。
+
+### P0-2: validateKeywordTraceability 検証結果
+
+高カバレッジテストでは、spec.mdから抽出された15個のキーワードのうち13個がrequirements.mdで検出され、カバレッジ86.7%で成功判定となりました。キーワード抽出がMarkdown見出しと強調テキストから正確に実施されています。
+
+低カバレッジテストでは、カバレッジが20%（10個中2個）の場合に失敗判定が返却されました。missingKeywordsリストに正確に8個の未検出キーワードが記録されています。
+
+ファイル未検出テストでは、非存在ファイルの検証でファイル存在チェックが機能しました。errorsに「ソースファイルが見つかりません」が含まれ、coverageが0に設定されています。
+
+キーワード空抽出テストでは、抽出が空配列の場合にwarningsが記録され、passedがtrueでcoverageが1.0に設定されたグレースフル処理が確認されました。
+
+環境変数テストでは、SEMANTIC_TRACE_STRICT=falseで警告モードが有効となり、カバレッジ70%でも成功判定が返却されました。warningsに閾値情報が記録されており、errorsは空配列です。
+
+### P0-3: workflow_pre_validate 検証結果
+
+必須セクション成功テストでは、spec.mdが全必須セクションを含む場合にpassed=trueで返却され、errorsが空配列で検証ルールが正確に統合されています。
+
+必須セクション不足テストでは、test-design.mdで「テストケース」セクション欠落時にpassed=falseとなり、errorsに具体的なセクション名を含むエラーメッセージが記録されました。
+
+ファイル存在テストでは、非存在パスでpassed=falseとなり、checkedRulesにfile_existsが含まれてファイル存在チェックが優先的に実行されることが確認されました。
+
+PHASE_ARTIFACT_REQUIREMENTS統合テストでは、manual_testフェーズの複合検証ルール（required_sections、min_lines、duplicate_lines）が正しく連携して動作しています。
+
+PhaseGuideフォールバックテストでは、PHASE_ARTIFACT_REQUIREMENTSで定義されていないフェーズでPhaseGuideのrequiredSectionsを使用した代替検証が機能しました。
+
+### P1-1: parseCLAUDEMdByPhase 検証結果
+
+正常解析テストでは、CLAUDE.mdからrequirementsフェーズに関連するセクションが正確に抽出され、contentに有効なMarkdownテキストが含まれていることを確認しました。
+
+キャッシュテストでは、同一パス・フェーズの2回目呼び出しがメモリキャッシュから返却され、返却内容が1回目と完全に一致しました。メモリ効率が向上しています。
+
+ファイル未検出テストでは、非存在パスでcontentがundefined、sectionsが空配列、errorsにファイル未検出メッセージが記録されました。
+
+サポート外フェーズテストでは、不正なフェーズ名でSectionPatternsが空の場合にerrorsにフェーズ名を含むエラー報告が記録されました。
+
+セクション分割テストでは、複数レベルの見出しを含むCLAUDE.mdの解析で見出しレベルが正確に処理され、本文テキストが失われずに保持されました。
+
+### P1-2: workflow_create_subtask / workflow_link_tasks 検証結果
+
+サブタスク作成テストでは、親タスク下にサブタスクが作成され、双方向リンクが完成しました。successがtrue、childTaskIdが一意に生成されています。
+
+循環参照テストでは、3階層構造でC→Aリンクを試みた場合にBFS走査による循環参照が検出されました。successがfalseで適切なエラーメッセージが返却されています。
+
+自己参照テストでは、同一タスクの親子指定が「親タスクと子タスクは同じタスクを指定できません」メッセージで明確に拒否されました。
+
+既存リンクテストでは、既に存在する親子関係の再作成がsuccessがfalseで拒否され、childTaskIdsに重複は生じていません。
+
+複数親テストでは、既に別の親を持つタスクへの新規親設定が拒否され、タスク構造が木構造の一貫性を保持しています。
+
+トークン検証テストでは、不正セッショントークンでリンク作成を試みた場合にsuccessがfalseで拒否されました。
+
+### P1-3: syncTaskIndex 検証結果
+
+フェーズ遷移同期テストでは、implementation→refactoring変更時にtask-index.jsonのphaseフィールドが正確に更新されmtimeが現在時刻に反映されました。
+
+複数タスク共存テストでは、Task2のフェーズ変更がTask1・Task3に影響せず、特定タスクの同期が他に波及しないことが確認されました。
+
+サブフェーズ反映テストでは、parallel_qualityフェーズのbuild_check・code_review各状態がtask-index.jsonのsubPhasesフィールドに完全保存されました。
+
+userIntent反映テストでは、500文字のuserIntentがtask-index.jsonに完全保存され文字数制限による切り詰めは発生していません。
+
+キャッシュ一貫性テストでは、複数タスクの立て続けsyncTaskIndex呼び出しでキャッシュとディスクが完全一致し、AtomicWriteJsonによるロック機構が正確に機能しました。

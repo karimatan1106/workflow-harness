@@ -1,0 +1,9 @@
+flowchart TD
+    A[resetTask called] --> B[Clear completedPhases]
+    B --> C[Clear subPhaseStatus]
+    C --> D[Clear retryCount - NEW]
+    D --> E[Set phase to targetPhase]
+
+    F[goBack called] --> G[Slice completedPhases]
+    G --> H[Clear retryCount - NEW]
+    H --> I[Set phase to targetPhase]

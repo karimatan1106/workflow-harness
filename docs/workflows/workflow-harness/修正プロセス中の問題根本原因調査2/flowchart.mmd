@@ -1,0 +1,32 @@
+flowchart TD
+    Start((修正プロセス開始)) --> ReviewSpec(spec.mdで修正対象確認)
+    ReviewSpec --> ParseFR(FR-A～FR-Eの修正内容解析)
+    ParseFR --> DecidePath{修正対象の\nファイルを特定}
+
+    DecidePath -->|FR-A,B,C| ModifyDef[definitions.tsの<br/>テンプレート更新]
+    DecidePath -->|FR-D| ModifyMD[CLAUDE.mdの<br/>厳命23番更新]
+    DecidePath -->|FR-E| VerifyFR(FR-REQ修正確認)
+
+    ModifyDef --> FR_A(FR-A: manual_test<br/>MT-N形式ガイダンス追加)
+    FR_A --> FR_B(FR-B: performance_test<br/>任意セクション警告追加)
+    FR_B --> FR_C(FR-C: e2e_test<br/>禁止語警告と総合評価<br/>セクション指針追加)
+
+    FR_C --> BuildCheck(npm run buildで<br/>ビルド検証)
+    BuildCheck --> BuildSuccess{ビルド<br/>成功?}
+    BuildSuccess -->|Yes| MCPRestart(MCPサーバー再起動)
+    BuildSuccess -->|No| FixError(ビルドエラー修正)
+    FixError --> BuildCheck
+
+    ModifyMD --> UpdateCLAUDE(CLAUDE.md行721～725<br/>taskId指定必須に更新)
+    UpdateCLAUDE --> VerifyMDSyntax(ドキュメント構文確認)
+    VerifyMDSyntax --> VerifyFR
+
+    MCPRestart --> TestPhase(テスト実行確認)
+    TestPhase --> TestResult{テスト<br/>全通過?}
+    TestResult -->|Yes| Complete((修正プロセス完了))
+    TestResult -->|No| TestDebug(テストエラー調査)
+    TestDebug --> BuildCheck
+
+    VerifyFR --> CheckGit[commit 153587aで<br/>修正確認]
+    CheckGit --> ConfirmFR(FR-REQ-1/FR-REQ-4<br/>修正済み確認)
+    ConfirmFR --> Complete

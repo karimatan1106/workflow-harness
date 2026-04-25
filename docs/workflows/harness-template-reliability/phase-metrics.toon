@@ -1,0 +1,140 @@
+phase: metrics
+taskName: harness-template-reliability
+startedAt: "2026-03-29T02:41:28.490Z"
+completedAt: "2026-03-29T05:09:58.119Z"
+totalRetries: 5
+totalDoDFailures: 5
+phases:
+  hearing:
+    durationSec: 242
+    retries: 0
+    dodFailures: 0
+  scope_definition:
+    durationSec: 151
+    retries: 0
+    dodFailures: 0
+  research:
+    durationSec: 217
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 172
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 294
+    retries: 0
+    dodFailures: 0
+  threat_modeling:
+    durationSec: 81
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 180
+    retries: 0
+    dodFailures: 0
+  state_machine:
+    durationSec: 62
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 58
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 214
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 156
+    retries: 0
+    dodFailures: 0
+  test_design:
+    durationSec: 5019
+    retries: 0
+    dodFailures: 0
+  test_selection:
+    durationSec: 47
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 236
+    retries: 1
+    dodFailures: 1
+  implementation:
+    durationSec: 531
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 139
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 19
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 197
+    retries: 2
+    dodFailures: 7
+  testing:
+    durationSec: 19
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 9
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 111
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 120
+    retries: 0
+    dodFailures: 0
+  security_scan:
+    durationSec: 172
+    retries: 1
+    dodFailures: 3
+  performance_test:
+    durationSec: 149
+    retries: 1
+    dodFailures: 3
+  e2e_test:
+    durationSec: 100
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 58
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 51
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 29
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 10
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 12
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 53
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  test_impl[1]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+  code_review[7]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] テーブル配列 \"acVerification\" の行4: フィールド数 6 != 宣言数 5; テーブル配列 \"acVerification\" の行10: フィールド数 9 != 宣言数 5; テーブル配列 \"decisions\" の行4: フィールド数 2 != 宣言数 3","[L4] Missing required Markdown sections: decisions, artifacts, next","[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending), F-009 (pending), F-010 (pending), F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending), F-009 (pending), F-010 (pending)","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L4] code-review.md is missing acAchievementStatus section (IA-5)\n修正方法: code-review.md に ## acAchievementStatus セクションを追加し、各AC-Nのpass/fail状態を記入してください。","[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  security_scan[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Duplicate lines (3+ times): \"securityImpact: none...\" (4x); Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  performance_test[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"

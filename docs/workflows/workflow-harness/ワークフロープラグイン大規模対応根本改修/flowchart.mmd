@@ -1,0 +1,165 @@
+flowchart TD
+    Start([Start]) --> CheckREQ{Which REQ?}
+
+    %% REQ-1: Hook Error Handling Flow
+    CheckREQ -->|REQ-1| REQ1Start["REQ-1: Hook Error Handling<br/>(FAIL_OPEN Removal)"]
+    REQ1Start --> REQ1Error["Error Occurs<br/>(uncaught, unhandled, stdin, JSON, main)"]
+    REQ1Error --> REQ1Check{FAIL_OPEN<br/>env set?}
+    REQ1Check -->|No| REQ1Block1["Log Error<br/>process.exit2"]
+    REQ1Check -->|Yes| REQ1Block2["FAIL_OPEN<br/>ignored<br/>process.exit2"]
+    REQ1Block1 --> REQ1Result["Result: Always BLOCK<br/>No bypass possible"]
+    REQ1Block2 --> REQ1Result
+
+    %% REQ-2: HMAC Signing Flow
+    CheckREQ -->|REQ-2| REQ2Start["REQ-2: HMAC Signing<br/>(State File Integrity)"]
+
+    %% REQ-2: Write Path
+    REQ2Start --> REQ2Write["WRITE PATH"]
+    REQ2Write --> REQ2WriteStart["writeTaskState<br/>(Called)"]
+    REQ2WriteStart --> REQ2GenKey["generateSignatureKey<br/>hostname + username<br/>+ PBKDF2 100k iterations"]
+    REQ2GenKey --> REQ2GenHmac["generateStateHmac<br/>stateIntegrity excluded<br/>JSON sorted<br/>HMAC-SHA256"]
+    REQ2GenHmac --> REQ2SaveSig["Attach signature to state<br/>stateIntegrity field"]
+    REQ2SaveSig --> REQ2SaveFile["Save to<br/>workflow-state.json"]
+
+    %% REQ-2: Read Path
+    REQ2Start --> REQ2Read["READ PATH"]
+    REQ2Read --> REQ2ReadStart["readTaskState<br/>(Called)"]
+    REQ2ReadStart --> REQ2LoadFile["Load workflow-state.json"]
+    REQ2LoadFile --> REQ2HasSig{stateIntegrity<br/>exists?}
+    REQ2HasSig -->|Yes| REQ2Verify["verifyStateHmac<br/>regenerate signature<br/>timing-safe comparison"]
+    REQ2HasSig -->|No| REQ2Migrate["Migration Mode<br/>Add signature<br/>Log warning"]
+    REQ2Verify --> REQ2Match{Signatures<br/>match?}
+    REQ2Match -->|Yes| REQ2Ok["Return state<br/>OK"]
+    REQ2Match -->|No| REQ2Tamper["Return null<br/>Tampering detected"]
+    REQ2Migrate --> REQ2SaveMigrated["Save with signature"]
+    REQ2SaveMigrated --> REQ2Ok
+
+    %% REQ-3: Scope Validation Flow
+    CheckREQ -->|REQ-3| REQ3Start["REQ-3: Scope Size Limits<br/>(Memory Protection)"]
+    REQ3Start --> REQ3SetScope["set-scope Tool<br/>Called"]
+    REQ3SetScope --> REQ3Input["Input:<br/>files[] + dirs[]"]
+    REQ3Input --> REQ3FileCheck["Check file count<br/>≤ 200?"]
+    REQ3FileCheck -->|No| REQ3FileErr["Error:<br/>Files > 200<br/>Suggest splitting tasks"]
+    REQ3FileCheck -->|Yes| REQ3DirCheck["Check dir count<br/>≤ 20?"]
+    REQ3DirCheck -->|No| REQ3DirErr["Error:<br/>Dirs > 20<br/>Suggest splitting tasks"]
+    REQ3DirErr --> REQ3ResultErr["Result: REJECT<br/>Suggest task division"]
+    REQ3FileErr --> REQ3ResultErr
+    REQ3DirCheck -->|Yes| REQ3Save["Save to TaskState.scope"]
+    REQ3Save --> REQ3Next["next Tool Called<br/>parallel_analysis<br/>→ parallel_design"]
+    REQ3Next --> REQ3Validate["validateScopeSize<br/>Check scope at transition"]
+    REQ3Validate --> REQ3TransCheck{Scope still<br/>valid?}
+    REQ3TransCheck -->|No| REQ3TransErr["Error:<br/>Scope size exceeded"]
+    REQ3TransCheck -->|Yes| REQ3TransOk["Allow transition"]
+    REQ3TransErr --> REQ3FinalErr["Result: BLOCK<br/>Transition denied"]
+    REQ3TransOk --> REQ3FinalOk["Result: ALLOW<br/>Proceed to design"]
+
+    %% REQ-4: Bash Command Analysis Flow
+    CheckREQ -->|REQ-4| REQ4Start["REQ-4: Bash Analysis<br/>(Compound Command Detection)"]
+    REQ4Start --> REQ4Cmd["Command received<br/>e.g., 'pwd && rm -rf /'"]
+    REQ4Cmd --> REQ4Split["splitCompoundCommand<br/>Split by &&, ||, ;, |"]
+    REQ4Split --> REQ4Parts["Generate parts<br/>['pwd', 'rm -rf /']"]
+    REQ4Parts --> REQ4Loop["For each part"]
+    REQ4Loop --> REQ4Part["Process part<br/>e.g., 'pwd'"]
+    REQ4Part --> REQ4ReadOnly{Is read-only?<br/>ls, cat, git status, etc.}
+    REQ4ReadOnly -->|Yes| REQ4NextPart["Continue to next part"]
+    REQ4ReadOnly -->|No| REQ4ModCheck{File modifying?<br/>rm, echo>, awk>, etc.}
+    REQ4ModCheck -->|Yes| REQ4ModBlock["BLOCK<br/>File modification<br/>detected"]
+    REQ4ModCheck -->|No| REQ4WhiteOk["Whitelist OK<br/>Continue"]
+    REQ4NextPart --> REQ4MoreParts{More parts?}
+    REQ4MoreParts -->|Yes| REQ4Loop
+    REQ4MoreParts -->|No| REQ4AllOk["All parts checked"]
+    REQ4WhiteOk --> REQ4MoreParts
+    REQ4AllOk --> REQ4ResultAllow["Result: ALLOW<br/>All parts safe"]
+    REQ4ModBlock --> REQ4ResultBlock["Result: BLOCK<br/>Dangerous command"]
+
+    %% REQ-5: Artifact Content Validation Flow
+    CheckREQ -->|REQ-5| REQ5Start["REQ-5: Artifact Content<br/>(Quality Validation)"]
+    REQ5Start --> REQ5Next["next Tool Called"]
+    REQ5Next --> REQ5Hook["check-workflow-artifact<br/>hook triggered"]
+    REQ5Hook --> REQ5Phase["Determine phase<br/>research, requirements,<br/>spec, test-design, etc."]
+    REQ5Phase --> REQ5FileLoop["For each required file"]
+    REQ5FileLoop --> REQ5FileExist{File exists?}
+    REQ5FileExist -->|No| REQ5Missing["Add to missing[]"]
+    REQ5FileExist -->|Yes| REQ5Content["Read content"]
+    REQ5Content --> REQ5SizeCheck["Size check<br/>≥ 200 bytes?"]
+    REQ5SizeCheck -->|No| REQ5SizeErr["Error:<br/>File too small"]
+    REQ5SizeCheck -->|Yes| REQ5SectionCheck["Check required sections<br/>## requirements,<br/>## spec, etc."]
+    REQ5SectionCheck -->|Missing| REQ5SectionErr["Error:<br/>Required section absent"]
+    REQ5SectionCheck -->|Present| REQ5PatternCheck["Check forbidden patterns<br/>TODO, WIP, header-only"]
+    REQ5PatternCheck -->|Found| REQ5PatternErr["Error:<br/>Stub/empty detected"]
+    REQ5PatternCheck -->|Not found| REQ5HeaderCheck["Check for header-only<br/>all lines start with #"]
+    REQ5HeaderCheck -->|Only headers| REQ5HeaderErr["Error:<br/>No body content"]
+    REQ5HeaderCheck -->|Has body| REQ5ContentOk["Content OK"]
+    REQ5SizeErr --> REQ5AddInvalid["Add to invalid[]"]
+    REQ5SectionErr --> REQ5AddInvalid
+    REQ5PatternErr --> REQ5AddInvalid
+    REQ5HeaderErr --> REQ5AddInvalid
+    REQ5Missing --> REQ5CheckMore{More files?}
+    REQ5ContentOk --> REQ5CheckMore
+    REQ5AddInvalid --> REQ5CheckMore
+    REQ5CheckMore -->|Yes| REQ5FileLoop
+    REQ5CheckMore -->|No| REQ5Result{Missing or<br/>invalid found?}
+    REQ5Result -->|Yes| REQ5ResultFail["Result: BLOCK<br/>Artifact invalid<br/>Fix and retry"]
+    REQ5Result -->|No| REQ5ResultPass["Result: ALLOW<br/>All artifacts valid"]
+
+    %% REQ-6: Design Validation Flow
+    CheckREQ -->|REQ-6| REQ6Start["REQ-6: Design Validation<br/>(Stub Detection Mandatory)"]
+    REQ6Start --> REQ6Next["next Tool Called<br/>parallel_design<br/>→ test_design"]
+    REQ6Next --> REQ6Perform["performDesignValidation<br/>Called"]
+    REQ6Perform --> REQ6Check{SKIP_DESIGN<br/>_VALIDATION set?}
+    REQ6Check -->|Yes| REQ6Ignore["IGNORED<br/>Always validate"]
+    REQ6Check -->|No| REQ6Validate["Proceed with validation"]
+    REQ6Ignore --> REQ6Validate
+    REQ6Validate --> REQ6DesignVal["DesignValidator<br/>.validateAll"]
+    REQ6DesignVal --> REQ6ExistingVal["Existing validations<br/>spec.md, state-machine.mmd,<br/>flowchart.mmd checks"]
+    REQ6ExistingVal --> REQ6StubDetect["detectStubImplementations<br/>Scan scope files"]
+    REQ6StubDetect --> REQ6ScopeFiles["Get scope files<br/>affectedFiles from TaskState"]
+    REQ6ScopeFiles --> REQ6FileLoop2["For each source file"]
+    REQ6FileLoop2 --> REQ6ReadFile["Read file content"]
+    REQ6ReadFile --> REQ6FindStubs["findStubsInFile<br/>Detect 4 patterns"]
+    REQ6FindStubs --> REQ6Pattern1["Pattern 1:<br/>Empty methods<br/>method() { }"]
+    REQ6Pattern1 --> REQ6Pattern2["Pattern 2:<br/>TODO/FIXME comments<br/>// TODO: implement"]
+    REQ6Pattern2 --> REQ6Pattern3["Pattern 3:<br/>Empty classes<br/>class Foo { }"]
+    REQ6Pattern3 --> REQ6Pattern4["Pattern 4:<br/>NotImplementedError<br/>throw NotImplementedError"]
+    REQ6Pattern4 --> REQ6StubFound{Stubs found?}
+    REQ6StubFound -->|Yes| REQ6AddStubs["Add to<br/>missingItems[]"]
+    REQ6StubFound -->|No| REQ6MoreFiles{More files?}
+    REQ6AddStubs --> REQ6MoreFiles
+    REQ6MoreFiles -->|Yes| REQ6FileLoop2
+    REQ6MoreFiles -->|No| REQ6HasErrors{Any stubs<br/>or missing?}
+    REQ6HasErrors -->|Yes| REQ6FailVal["passed = false<br/>missingItems populated"]
+    REQ6HasErrors -->|No| REQ6PassVal["passed = true"]
+    REQ6FailVal --> REQ6StrictCheck{Strict mode<br/>enforced?}
+    REQ6StrictCheck -->|Yes| REQ6BlockTrans["BLOCK transition<br/>Show error details"]
+    REQ6StrictCheck -->|No| REQ6IgnoreVal["WARN ONLY<br/>Not enforced"]
+    REQ6BlockTrans --> REQ6ResultBlock2["Result: BLOCK<br/>Stubs must be completed<br/>before test_design"]
+    REQ6IgnoreVal --> REQ6ResultWarn["Result: ALLOW<br/>With warnings<br/>(deprecated)"]
+    REQ6PassVal --> REQ6ResultAllow2["Result: ALLOW<br/>Design validated<br/>No stubs detected"]
+
+    %% Combine results
+    REQ1Result --> End([End])
+    REQ2Ok --> End
+    REQ2Tamper --> End
+    REQ3ResultErr --> End
+    REQ3FinalErr --> End
+    REQ3FinalOk --> End
+    REQ4ResultAllow --> End
+    REQ4ResultBlock --> End
+    REQ5ResultPass --> End
+    REQ5ResultFail --> End
+    REQ6ResultBlock2 --> End
+    REQ6ResultAllow2 --> End
+    REQ6ResultWarn --> End
+
+    %% Styling
+    classDef reqbox fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#512da8,stroke-width:2px
+
+    class REQ1Start,REQ2Start,REQ3Start,REQ4Start,REQ5Start,REQ6Start reqbox
+    class CheckREQ,REQ1Check,REQ2HasSig,REQ2Match,REQ3FileCheck,REQ3DirCheck,REQ3TransCheck,REQ4ReadOnly,REQ4ModCheck,REQ5FileExist,REQ5SizeCheck,REQ5SectionCheck,REQ5PatternCheck,REQ5HeaderCheck,REQ5Result,REQ6Check,REQ6StubFound,REQ6HasErrors,REQ6StrictCheck decision
+    class REQ1Result,REQ2Ok,REQ3FinalOk,REQ4ResultAllow,REQ5ResultPass,REQ6ResultAllow2 success
+    class REQ1Block1,REQ1Block2,REQ2Tamper,REQ3ResultErr,REQ3FinalErr,REQ4ResultBlock,REQ5ResultFail,REQ6ResultBlock2 error
+    class REQ1Error,REQ2WriteStart,REQ2ReadStart,REQ3SetScope,REQ3Next,REQ4Cmd,REQ4Split,REQ5Hook,REQ6Next,REQ6Perform process

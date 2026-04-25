@@ -1,0 +1,71 @@
+phase: test_design
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内のセパレーターとMarkdownヘッダーを太字ラベルに統一置換し、TOON成果物への汚染根本原因を排除する
+status: complete
+idPrefix: TD
+
+testStrategy:
+  approach: buildSubagentPrompt出力の文字列検査ユニットテストを中心に、ソースファイルの静的検査とregistry.ts非変更の回帰確認を組み合わせる
+  framework: vitest(プロジェクト標準)
+  coverageTarget: AC-1からAC-4の全受入基準に対応するテストケースを網羅
+
+testCases[13]{tcId,acRef,title,precondition,action,expected,priority}:
+  TC-AC1-01, AC-1, definitions-shared.tsの静的セパレーター置換確認, 変更適用済みのdefinitions-shared.ts, ARTIFACT_QUALITY_RULES/SUMMARY_SECTION_RULE/EXIT_CODE_RULE/PROCEDURE_ORDER_RULE/bashCategoryHelpの各定数・関数出力を文字列取得, 行頭に三連等号+ラベル+三連等号のパターンが0件であること, must
+  TC-AC1-02, AC-1, definitions.ts buildToonFirstSection内の静的セパレーター置換確認, 変更適用済みのdefinitions.ts, buildToonFirstSection関数の出力文字列(任意のphaseとdocsDir)を取得, 行頭に三連等号+ラベル+三連等号のパターンが0件であること, must
+  TC-AC1-03, AC-1, defs-stage6.tsのドキュメント配置ルールセパレーター置換確認, 変更適用済みのdefs-stage6.ts, docs_updateフェーズのsubagentTemplateを文字列取得, 行頭に三連等号+ラベル+三連等号のパターンが0件であること, must
+  TC-AC2-01, AC-2, 動的変換ロジック削除確認(replaceAll不在), 変更適用済みのdefinitions.ts, definitions.tsソースコード全体をgrepし行頭ハッシュ記号置換のreplaceAllパターンを検索, replaceAllによるヘッダー変換パターンが0件であること, must
+  TC-AC2-02, AC-2, 動的変換ロジック削除確認(buildSubagentPrompt出力検査), 変更適用済みのdefinitions.ts, buildSubagentPromptを呼び出し出力文字列を取得, 出力にセパレーター行頭パターン(三連等号+スペース)が0件であること, must
+  TC-AC3-01, AC-3, defs-stage1テンプレート内ヘッダー太字置換確認, 変更適用済みのdefs-stage1.ts, 全フェーズのsubagentTemplateを文字列取得, 行頭二重ハッシュ+スペースのパターンが0件であること, must
+  TC-AC3-02, AC-3, defs-stage2テンプレート内ヘッダー太字置換確認, 変更適用済みのdefs-stage2.ts, 全フェーズのsubagentTemplateを文字列取得, 行頭二重ハッシュ+スペースのパターンが0件であること, must
+  TC-AC3-03, AC-3, defs-stage3からstage5テンプレート内ヘッダー太字置換確認, 変更適用済みのdefs-stage3/4/5.ts, 全フェーズのsubagentTemplateを文字列取得, 行頭二重ハッシュ+スペースまたは三重ハッシュ+スペースのパターンが0件であること, must
+  TC-AC3-04, AC-3, defs-stage6テンプレート内ヘッダー太字置換確認, 変更適用済みのdefs-stage6.ts, 全フェーズのsubagentTemplateを文字列取得, 行頭二重ハッシュ+スペースのパターンが0件であること, must
+  TC-AC3-05, AC-3, buildSubagentPrompt全フェーズ出力のセパレーターとヘッダー不在確認, 全テンプレート変更適用済み+動的変換削除済み, PHASE_DEFINITIONSの全フェーズに対しbuildSubagentPromptを呼び出し, 全出力に行頭三連等号パターンと行頭二重/三重ハッシュパターンが0件であること, must
+  TC-AC4-01, AC-4, registry.tsのJS厳密等価演算子非変更確認(git diff), 変更適用前後のgitリポジトリ, git diff registry.tsを実行, 差分が空であること, must
+  TC-AC4-02, AC-4, registry.tsの厳密等価演算子が正常動作すること, 変更適用済みのregistry.ts, registry.tsのgetNextPhase等の関数で厳密等価比較を含むロジックを実行, 比較結果が変更前と同一であること, should
+
+edgeCases[5]{ecId,acRef,description,testApproach}:
+  TD-EC1, AC-1, 太字ラベル置換後に**記号が正しく配置されていること(開き閉じペア), 各定数の太字ラベル行を正規表現で検査し開き**と閉じ**がペアであることを確認
+  TD-EC2, AC-2, 動的変換ロジック削除後もbuildSubagentPromptが正常に文字列を返すこと(エラーなし), 全フェーズに対しbuildSubagentPromptを呼び出し例外が発生しないことを確認
+  TD-EC3, AC-3, strip処理(L143-146)が変更されていないこと, strip処理のregex4行がdefinitions.tsに変更なく存在することをソース検査で確認
+  TD-EC4, AC-1, 共有フラグメント展開後のセパレーター不在確認, buildSubagentPromptでフラグメント(SUMMARY_SECTION等)が展開された後の最終出力を検査
+  TD-EC5, AC-3, subagentTemplate内のフラグメントプレースホルダー(中括弧変数)を含む行がヘッダーでないこと, フラグメント展開前のテンプレート文字列でプレースホルダー行を検査
+
+testDataStrategy:
+  inputPhases: scope_definition/research/requirements/planning/test_design/docs_update(各ステージ代表)
+  taskName: test-task
+  docsDir: docs/workflows/test-task
+  workflowDir: .harness/workflows/test-task
+  userIntent: テスト用ダミー意図文字列
+  validationRegex:
+    separatorPattern: /^={3,}\s/gm (行頭三連以上の等号+空白)
+    headerPattern: /^#{2,}\s/gm (行頭二連以上のハッシュ+空白)
+    boldLabelPattern: /^\*\*[^*]+\*\*/gm (行頭太字ラベル)
+
+testExecutionPlan[4]{step,action,scope,verificationMethod}:
+  1, ソースファイル静的検査, definitions-shared.ts/definitions.ts/defs-stage6.tsの定数文字列, TC-AC1-01からTC-AC1-03をgrepベースで実行
+  2, 動的変換削除検証, definitions.tsのソースコードとbuildSubagentPrompt出力, TC-AC2-01からTC-AC2-02を実行
+  3, テンプレートヘッダー太字置換検証, defs-stage1からstage6の全subagentTemplate, TC-AC3-01からTC-AC3-05を実行
+  4, 回帰テスト, registry.tsのgit diff+既存テスト実行, TC-AC4-01からTC-AC4-02を実行
+
+regressionScope:
+  unchangedFiles: registry.ts(git diffで差分なしを確認)
+  unchangedLogic: buildSubagentPromptのstrip処理4行(L143-146)が変更されていないこと
+  functionality: buildSubagentPromptが全フェーズで例外なく文字列を返すこと
+
+decisions[6]{id,statement,rationale}:
+  TD-D1, テスト中心はbuildSubagentPromptの出力文字列検査とする, 最終出力にセパレーターやヘッダーが含まれないことが真の受入基準であり静的検査だけでは動的変換の影響を見落とす
+  TD-D2, 全フェーズに対するイテレーション検査を含める(TC-AC3-05), フェーズごとの個別検査では漏れが生じる可能性があり全件ループで網羅性を担保する
+  TD-D3, registry.tsの非変更はgit diffで確認する(TC-AC4-01), ソースコード比較よりgit diffが確実であり変更意図のない修正を検出できる
+  TD-D4, strip処理の非変更確認をエッジケースに含める(TD-EC3), strip処理は意図的に変更対象外でありうっかり修正すると既存の防御層が壊れる
+  TD-D5, テストデータは各ステージから代表フェーズを選び全ステージをカバーする, 全30フェーズの個別テストは冗長であり代表選定で効率と網羅性を両立する
+  TD-D6, 太字ラベルの形式検証(開閉ペア)をエッジケースに含める(TD-EC1), 置換ミスで**が閉じられないとMarkdown崩れが発生しサブエージェントの読解精度が低下する
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/template-separator-cleanup/spec.toon, spec, 実装計画(静的7箇所+動的削除3行+テンプレートヘッダー101箇所の変更仕様)
+  docs/workflows/template-separator-cleanup/requirements.toon, spec, 機能要件4件+非機能要件3件+AC4件の要件定義
+  docs/workflows/template-separator-cleanup/test-design.toon, test, AC-1からAC-4に対応する13テストケース+5エッジケースのテスト設計
+
+next:
+  criticalDecisions: TD-D1(buildSubagentPrompt出力検査が中心) TD-D2(全フェーズイテレーション)
+  readFiles: src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts src/phases/defs-stage6.ts src/phases/registry.ts
+  warnings: テストフレームワーク(vitest)の設定確認が必要。既存テストファイルが未検出のため新規テストファイル作成が前提

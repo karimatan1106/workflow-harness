@@ -1,0 +1,93 @@
+flowchart TD
+    Start((ワークフロー開始)) --> FR1{FR-1: バリデーション処理}
+
+    FR1 --> ExtractCode("extractNonCodeLines関数を実行")
+    ExtractCode --> CheckFence{"バックティックまたは<br/>チルダフェンス<br/>を検出"}
+
+    CheckFence -->|フェンス開始| FenceStart("フェンス状態フラグを反転<br/>フェンス開始行を除外")
+    CheckFence -->|フェンス内| FenceInside("行全体を返却配列から除外")
+    CheckFence -->|フェンス外| FenceOut("行を返却配列に追加")
+
+    FenceStart --> FenceTrack("フェンス追跡状態を維持")
+    FenceTrack --> CheckEnd{"フェンス終了行か"}
+    CheckEnd -->|Yes| FenceEnd("フェンス状態フラグを反転<br/>終了行を除外")
+    CheckEnd -->|No| FenceInside
+
+    FenceInside --> CheckFence
+    FenceOut --> CheckFence
+    FenceEnd --> CheckFence
+
+    CheckFence -->|処理完了| NonCodeLines("コードフェンス外の行配列を生成")
+
+    NonCodeLines --> OriginalProhibited("禁止パターン検出を実行<br/>content.includes検索範囲を限定")
+    OriginalProhibited --> BracketDetect("角括弧プレースホルダー検出を実行<br/>正規表現マッチ範囲を限定")
+
+    BracketDetect --> FR2{FR-2: リトライ時<br/>モデルエスカレーション}
+
+    FR2 --> RetryCount{"リトライ回数<br/>>= 2か"}
+    RetryCount -->|No| FirstRetry("suggestModelEscalation: false<br/>を返却")
+    RetryCount -->|Yes| ErrorCheck{"エラー種別を判定"}
+
+    ErrorCheck -->|複数エラー同時<br/>errors.length >= 3| Escalate("suggestModelEscalation: true<br/>を返却")
+    ErrorCheck -->|角括弧検出エラー| Escalate
+    ErrorCheck -->|禁止パターンエラー| Escalate
+    ErrorCheck -->|その他| NoEscalate("suggestModelEscalation: false<br/>を返却")
+
+    FirstRetry --> BuildResult("BuildRetryResult型で<br/>メタデータを返却")
+    Escalate --> BuildResult
+    NoEscalate --> BuildResult
+
+    BuildResult --> FR3{FR-3: テスト記録<br/>キーワード検出}
+
+    FR3 --> OutputAnalysis("テスト出力を分析")
+    OutputAnalysis --> KeywordMatch{"BLOCKING_FAILURE_KEYWORDS<br/>にマッチするか"}
+    KeywordMatch -->|No| RecordSuccess("テスト結果を記録成功")
+    KeywordMatch -->|Yes| BoundaryCheck{"単語境界アサーション\b<br/>で検証"}
+
+    BoundaryCheck -->|失敗| CompoundCheck{"isCompoundWordContext関数<br/>で複合語判定"}
+    BoundaryCheck -->|成功| KeywordFailed("キーワード検出で拒否")
+
+    CompoundCheck -->|大文字始まり語を<br/>前後2語以内に検出| CompoundContext("複合語コンテキスト判定<br/>除外対象外")
+    CompoundCheck -->|大文字始まり語を<br/>検出しない| StrictMatch("単語として確定<br/>キーワード検出で拒否")
+
+    CompoundContext --> PhaseCheck{"現在フェーズは<br/>regression_testか"}
+    StrictMatch --> PhaseCheck
+
+    PhaseCheck -->|regression_test| AllowHashMatch("同一ハッシュを許可<br/>上書き記録可能")
+    PhaseCheck -->|testing| DenyHashMatch("同一ハッシュを拒否<br/>上書き記録不可")
+
+    RecordSuccess --> AllowHashMatch
+    AllowHashMatch --> RecordTestOutput("テスト出力をハッシュ化<br/>記録に保存")
+    DenyHashMatch --> RecordTestOutput
+
+    RecordTestOutput --> FR4{FR-4: regression_test<br/>遷移チェック}
+
+    FR4 --> CurrentPhase{"現在フェーズは<br/>testingか"}
+    CurrentPhase -->|No| SkipCheck("遷移チェックをスキップ")
+    CurrentPhase -->|Yes| BaselineCheck{"taskState.testBaseline<br/>が存在するか"}
+
+    BaselineCheck -->|存在| AllowTransition("regression_testへの<br/>遷移を許可")
+    BaselineCheck -->|未設定| ConfirmCheck{"forceTransition<br/>パラメータが<br/>trueか"}
+
+    ConfirmCheck -->|true| AllowTransition
+    ConfirmCheck -->|false| ShowWarning("警告メッセージを表示<br/>requiresConfirmation: true")
+
+    ShowWarning --> UserConfirm{"ユーザーが<br/>遷移を許可するか"}
+    UserConfirm -->|Yes| AllowTransition
+    UserConfirm -->|No| BlockTransition("遷移をブロック")
+
+    SkipCheck --> AllowTransition
+    AllowTransition --> RegressionStart("regression_testフェーズ開始")
+    BlockTransition --> End2((修正完了))
+
+    KeywordFailed --> End1((修正中止))
+    RegressionStart --> End((ワークフロー完了))
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C1
+    style End1 fill:#FFB6C1
+    style End2 fill:#FFB6C1
+    style FR1 fill:#87CEEB
+    style FR2 fill:#87CEEB
+    style FR3 fill:#87CEEB
+    style FR4 fill:#87CEEB

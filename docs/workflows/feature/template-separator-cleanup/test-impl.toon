@@ -1,0 +1,51 @@
+phase: test_impl
+task: template-separator-cleanup
+intent: サブエージェントテンプレート内のセパレーターとMarkdownヘッダーを太字ラベルに統一置換する
+status: complete
+idPrefix: TD
+
+testFile: src/__tests__/template-separator-cleanup.test.ts
+framework: vitest
+totalTests: 27
+redResult: 25 failed / 2 passed (TDD Red確認済み)
+
+testStructure[6]{describeBlock,testCount,acRef,coverage}:
+  shared constants separator check, 5, AC-1, ARTIFACT_QUALITY_RULES/SUMMARY_SECTION_RULE/EXIT_CODE_RULE/PROCEDURE_ORDER_RULE/bashCategoryHelp
+  buildToonFirstSection separator check, 1, AC-1, design_review phase TOON入力セクション
+  dynamic conversion logic removed, 2, AC-2, definitions.tsソース検査+buildSubagentPrompt出力検査
+  templates have no Markdown headers, 15, AC-3, 14代表フェーズのテンプレート+全フェーズbuildSubagentPrompt出力
+  defs-stage6 docs_update separator, 1, AC-1, docs_updateテンプレートの静的セパレーター
+  edge cases, 3, AC-1/AC-3, 全フェーズno-throw+strip処理存在確認+フラグメント展開後検査
+
+validationPatterns[2]{id,regex,purpose}:
+  SEP_RE, 行頭三連以上等号+空白, セパレーター検出
+  HEADER_RE, 行頭二連以上ハッシュ+空白, Markdownヘッダー検出
+
+passedTests[2]{name,reason}:
+  TD-EC2 buildSubagentPrompt does not throw, 現行コードでも全フェーズで正常動作
+  TD-EC3 strip processing regex lines exist, strip処理は変更対象外で存在確認のみ
+
+failedTests[25]{category,count,reason}:
+  AC-1 separator in constants, 5, 現行コードに三連等号セパレーターが含まれる
+  AC-1 buildToonFirstSection, 1, 現行コードにTOON入力セパレーターが含まれる
+  AC-1 defs-stage6, 1, docs_updateにセパレーターが含まれる
+  AC-2 dynamic conversion, 2, definitions.tsに動的変換ロジックが存在する
+  AC-3 template headers, 14, 各ステージのテンプレートにMarkdownヘッダーが含まれる
+  AC-3 all phases output, 1, buildSubagentPrompt出力にセパレーターとヘッダーが含まれる
+  edge case EC4 fragment expansion, 1, フラグメント展開後にセパレーターが残存する
+
+decisions[5]{id,statement,rationale}:
+  TD-D1, 正規表現2種(SEP_RE/HEADER_RE)で全パターンを検出する, 三連等号セパレーターとMarkdownヘッダーの両方を網羅するため
+  TD-D2, 代表14フェーズのテンプレート個別検査+全フェーズbuildSubagentPrompt出力一括検査を組み合わせる, 個別検査で特定箇所を明示しつつ一括検査で漏れを防ぐ
+  TD-D3, definitions.tsソースコードの正規表現パターン検査でreplaceAll削除を確認する, git diffよりもテスト内で完結し環境非依存で実行可能
+  TD-D4, strip処理の存在確認をエッジケースに含めた, strip処理は変更対象外だが誤削除の回帰防止として検証する
+  TD-D5, テストファイルを156行に収めた, 200行制限内で27テストケースを効率的に配置
+
+artifacts[2]{path,role,summary}:
+  src/__tests__/template-separator-cleanup.test.ts, test, 27テストケース(25 Red + 2 Green)のvitestファイル
+  docs/workflows/template-separator-cleanup/test-impl.toon, report, テスト実装フェーズの成果物
+
+next:
+  criticalDecisions: TD-D1(正規表現2種で検出) TD-D2(個別+一括の二層検査)
+  readFiles: src/__tests__/template-separator-cleanup.test.ts src/phases/definitions-shared.ts src/phases/definitions.ts src/phases/defs-stage1.ts src/phases/defs-stage2.ts src/phases/defs-stage3.ts src/phases/defs-stage4.ts src/phases/defs-stage5.ts src/phases/defs-stage6.ts
+  warnings: implementationフェーズでは静的セパレーター置換+動的変換削除+テンプレートヘッダー太字化の順序を遵守すること(PL-D3)

@@ -1,0 +1,34 @@
+task: tier-c-gaps-n16-n25
+phase: threat_modeling
+intent: Tier C 6項目のセキュリティ脅威分析
+riskScore: 5
+
+threatSummary:
+  scope: "retry複雑度分類、archgateフック統合、AIアンチパターン検出、E2Eテスト、安全性テストの6項目"
+  primaryConcern: "N-25 Safety testingが発見したパストラバーサル脆弱性の修正が最重要。taskNameがdocsDir生成に直結するためディレクトリトラバーサル攻撃が理論的に可能。"
+  attackSurface: "MCPツール入力パラメータ（taskName, userIntent, testFile, output）が主要攻撃面"
+
+threats[5]{id,threat,likelihood,impact,mitigation}:
+  TM-1, "taskNameにパストラバーサル文字列(../)が含まれdocsDir生成時に任意パスに書き込み", medium, high, "sanitizeTaskName関数でpath.basename適用+禁止文字(../\\:*?<>|)除去。safety.test.tsで検証。"
+  TM-2, "userIntentに巨大文字列(10MB+)が渡されメモリ枯渇", low, medium, "入力長制限10000文字をZodスキーマで強制。超過時はtruncateして続行。"
+  TM-3, "archgateQuickCheckのpatternにReDoSパターンが登録され実行時間が爆発", low, high, "pattern実行にtimeout 100msを設定。タイムアウト時はpassedとして扱いフック全体をブロックしない。"
+  TM-4, "comment_ratio checkTypeで巨大ファイル(10000行+)のパースが遅延", low, low, "行数上限チェックを先に実行し10000行超過のファイルはスキップ。"
+  TM-5, "E2Eテストがfsモック外のファイルシステムに書き込み", low, medium, "全E2Eテストでvi.mock('fs')を使用しインメモリfsStoreで完結。実ファイルシステムへの書き込みゼロ。"
+
+decisions[5]{id,statement,rationale}:
+  TM-D1, "sanitizeTaskNameをlifecycle.tsに追加しcreateTaskState内で適用する", "攻撃面の根本対策。path.basenameで親ディレクトリ参照を除去し安全な文字のみを許可する。"
+  TM-D2, "全MCPツール入力にZodスキーマの文字数上限を追加する", "巨大入力によるDoSを防止。taskName: max100, userIntent: max10000, output: max100000。"
+  TM-D3, "archgateQuickCheckのRegExp実行にtimeout 100msを設定する", "ReDoSパターンがフック全体の実行時間を破壊することを防止。"
+  TM-D4, "E2Eテストは全てvi.mock('fs')のインメモリストアで実行する", "テスト実行が実ファイルシステムに副作用を及ぼさないことを保証する。"
+  TM-D5, "safety.test.tsにOWASP Top10の主要攻撃パターン4種を含める", "パストラバーサル/XSS/SQLインジェクション/入力長超過の4カテゴリで網羅的にテスト。"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/requirements.toon, input, 7AC+6RTMの要件定義
+  docs/workflows/tier-c-gaps-n16-n25/threat-model.toon, output, 5脅威+5対策の脅威分析
+
+next:
+  criticalDecisions: "TM-D1(sanitizeTaskName)がN-25実装の前提条件。TM-D3(timeout 100ms)がN-18のパフォーマンス制約。"
+  readFiles: "requirements.toon, retry.ts, archgate.ts, lifecycle.ts"
+  warnings: "sanitizeTaskNameの実装は既存taskNameとの後方互換性を確保すること。既存タスクのworkflowDir/docsDirパスが変わらないよう既存タスクには適用しない。"
+
+result{phase,status,artifact,lines}: threat_modeling, complete, docs/workflows/tier-c-gaps-n16-n25/threat-model.toon, 36

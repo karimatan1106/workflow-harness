@@ -1,0 +1,44 @@
+stateDiagram-v2
+    Start --> Step1_Prepare: workflow-plugin内の整理準備
+
+    Step1_Prepare --> Step1_Modify: bash-whitelist.js修正
+    Step1_Modify --> Step1_Gitignore: .gitignore追加
+    Step1_Gitignore --> Step1_Commit: コミット実行
+    Step1_Commit --> Step1_Verify: コミット検証
+
+    Step1_Verify --> Verify1_Success: git status確認
+    Verify1_Success --> Step1_Complete: Step1完了
+
+    Step1_Complete --> Step2_Prepare: .gitmodules作成準備
+
+    Step2_Prepare --> Step2_Create: .gitmodules新規作成
+    Step2_Create --> Step2_Verify: ファイル内容検証
+
+    Step2_Verify --> Verify2_Success: 形式確認
+    Verify2_Success --> Step2_Complete: Step2完了
+
+    Step2_Complete --> Step3_Prepare: 親リポジトリポインタ更新準備
+
+    Step3_Prepare --> Step3_Add: git add .gitmodules実行
+    Step3_Add --> Step3_AddSubmodule: git add workflow-plugin実行
+    Step3_AddSubmodule --> Step3_Commit: コミット実行
+    Step3_Commit --> Step3_Verify: 更新検証
+
+    Step3_Verify --> Verify3_Submodule: git submodule status確認
+    Verify3_Submodule --> Verify3_Pointer: ポインタハッシュ確認
+    Verify3_Pointer --> Step3_Complete: Step3完了
+
+    Step3_Complete --> Step4_Verify: settings.json検証
+
+    Step4_Verify --> Verify4_UserPrompt: UserPromptSubmit欠落確認
+    Verify4_UserPrompt --> Verify4_OCR: OCR参照欠落確認
+    Verify4_OCR --> Verify4_Hooks: フック登録内容確認
+    Verify4_Hooks --> Step4_Complete: Step4完了
+
+    Step4_Complete --> FinalVerify: 全体検証
+
+    FinalVerify --> FinalGit: Gitリポジトリ整合性確認
+    FinalGit --> FinalBash: parallel_verification許可設定確認
+    FinalBash --> AllSuccess: 全検証合格
+
+    AllSuccess --> End: 修正完了

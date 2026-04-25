@@ -1,0 +1,45 @@
+phase: research
+task: context-engineering-improvements
+status: complete
+summary: "types-core.ts 198行・200行制限確認済み。buildSubagentPromptシグネチャ・ヘッダー生成ロジック(164-166行)・PHASE_REGISTRYの多inputFilesフェーズ特定・refreshCheckpointTraceability呼出元3箇所・refinedIntent生成はharness_approveでrequirements承認後が最適と判明"
+
+decisions[8]{id,statement,rationale}:
+  R-1, "types-core.tsは現在198行(200行制限)。InputFileMode型1行+PhaseConfig.inputFileModes?1行+Checkpoint.refinedIntent?1行=計3行追加で201行になるため、156行の空行1行削除で200行維持が可能", "156行目`// ─── Phase Configuration ─────────────────────────────`の前後に空行があり削除コスト最小。型定義はすべてtypes-core.tsの末尾(198行)近くに追加が最も局所的"
+  R-2, "buildSubagentPromptは164行でheaderを構築: `task:{taskName} intent:{userIntent}`。ここのuserIntentを`refinedIntent ?? userIntent`に変更するだけで全フェーズに自動伝播する。シグネチャにrefinedIntent?: stringをオプショナル末尾追加(projectTraitsの後)が後方互換最安全", "definitions.tsのbuildSubagentPromptは全フェーズ共通の唯一プロンプト生成関数。164行目の変数1箇所変更で30フェーズ全てに影響。既存5-7呼び出し元はundefined渡しで後方互換"
+  R-3, "inputFilesが多く圧縮効果が高いフェーズ: design_review(5ファイル: state-machine.mmd/flowchart.mmd/ui-design.toon/spec.toon/threat-model.toon)、acceptance_verification(2: requirements.toon/test-design.toon)、docs_update(3: spec.toon/requirements.toon/code-review.toon)。implementation/planning/test_designも2ファイル", "registry.tsのPHASE_REGISTRYを直接確認。design_reviewが最多5ファイルで優先度最高。summaryモードでspec.toon/threat-model.toonを参照扱いにすることでコンテキスト削減効果大"
+  R-4, "refreshCheckpointTraceabilityは3経路で呼ばれる: applyAddAC(88行)・applyAddRTM(94行)・applyUpdateACStatus(101行)。refinedIntentのcheckpointへのコピーはこの関数の末尾3行追加で全経路をカバーできる", "manager-write.ts 77-82行を確認。refreshCheckpointTraceabilityはstate.acceptanceCriteria/rtmEntriesをcheckpointにコピーする。同じパターンでstate.refinedIntentが存在する場合にcheckpoint.refinedIntentへコピーを追加"
+  R-5, "refinedIntent生成の最適タイミングはharness_approveのrequirements承認時(approval.ts 61行のsm.approveGate呼び出し後)。この時点でAC-Nが≥3件確定済み(IA-2チェック通過済み)。AC群のdescriptionを結合してrefinedIntentを生成しstate.refinedIntentに格納", "approval.ts 54-60行のIA-2チェックにより承認時点でAC数≥3が保証済み。requirements.toonのtoon.summaryまたはAC-N群のdescription配列を結合した文字列がrefinedIntentの生成源として最適。harness_nextでのphase遷移時点では遅すぎる(次フェーズ開始前に反映が必要)"
+  R-6, "PHASE_REGISTRYの1行エントリ形式(例: design_review行は約230文字)にinputFileModes追加するとさらに行長が増加する。inputFileModesはRecord<string,InputFileMode>型でPHASE_REGISTRYの各エントリに追加。ファイル名キーはinputFiles配列の末尾パスのみ(例: 'spec.toon': 'summary')", "registry.ts 23行目のdesign_review定義を確認。1行形式のまま追加するとコードレビューで不評。複数行形式に展開してinputFileModes追加が保守性上優れる。ただし200行制限はregistry.tsには課されていない(現在171行で制限外)"
+  R-7, "buildSubagentPromptのin:行生成(165行)を拡張してモード情報を付与: `in: {file}[mode]`形式。inputFileModes[basename]でモードを取得し値がない場合はfullとする。basenamematchはpath.basename(f)で取得", "definitions.ts 162-166行のheader構築部を確認。現在は`inputFiles.join(', ')`で単純列挙。拡張後は各ファイルにモードラベルを付与してsubagentが読み込み戦略を判断できる。パーサー変更不要でヘッダーのプレーンテキスト内にモード情報を含める"
+  R-8, "TaskState.refinedIntent?: stringはtypes.tsのTaskStateインターフェース(55-130行)の'User intent'セクション(74-75行)に追加。`refinedIntent?: string`を`userIntent: string`の次行に配置することで意図関連フィールドを集約", "types.ts 74-75行を確認。userIntentとopenQuestionsの間にrefinedIntentを挿入するのが意味論的に一貫。TaskStateSchemのpassthrough()により追加フィールドのZodスキーマ変更は不要(types-core.ts 198行目確認)"
+
+artifacts[7]{path,role,summary}:
+  workflow-harness/mcp-server/src/state/types-core.ts, spec, "198行・200行制限。追加箇所: 156行空行削除+InputFileMode型(export type)+PhaseConfig.inputFileModes?+Checkpoint.refinedIntent?の3行追加で正確に200行"
+  workflow-harness/mcp-server/src/state/types.ts, spec, "130行。TaskState.refinedIntent?: stringをuserIntent(74行)の直後75行目に挿入。re-exportにInputFileModeを追加"
+  workflow-harness/mcp-server/src/phases/registry.ts, impl, "171行。200行制限なし。design_review/acceptance_verification/docs_updateにinputFileModes追加が優先度高。planningにも有効"
+  workflow-harness/mcp-server/src/phases/definitions.ts, impl, "184行。buildSubagentPromptシグネチャにrefinedIntent?: string追加(134行目projectTraitsの後)。164行でintent変数をrefinedIntent??userIntentで使用。165行でinputFiles各ファイルにモード情報付与"
+  workflow-harness/mcp-server/src/phases/definitions-shared.ts, spec, "61行。SUMMARY_SECTION_RULEにinputFileModes説明(full=全文/summary=要約ヘッダーのみ/reference=ファイルパスのみ)3行追加"
+  workflow-harness/mcp-server/src/state/manager-write.ts, impl, "131行。refreshCheckpointTraceability(77-82行)末尾にrefinedIntent伝播3行追加。approval.tsの承認処理後にrefinedIntent生成ロジック追加"
+  workflow-harness/mcp-server/src/tools/handlers/approval.ts, impl, "75行。handleHarnessApproveのrequirements承認後(71行のsm.advancePhase前)にAC-N群からrefinedIntentを生成しsm.setRefinedIntent(taskId, refinedIntent)を呼び出す"
+
+environment:
+  node_version: v22.15.0
+  tsc_version: "5.9.3 (workflow-harness/mcp-server/node_modules/.bin/tsc)"
+  typescript_config: "^5.4.0 (package.json devDependency)"
+  build_command: "cd mcp-server && npm run build (tsc)"
+  init_sh: "src/tools/init.sh は存在しない。ハーネスはMCPサーバー起動(node dist/server.js)で初期化。init相当処理はcreateTaskState(manager-write.ts 44行)が担当"
+
+key_findings:
+  types_core_line_count: "198行(200行制限)。3行追加には既存空行1行削除が必要"
+  buildSubagentPrompt_header: "164-166行でheader生成。intentはuserIntent変数として164行に埋め込み"
+  buildSubagentPrompt_signature: "7引数(phase/taskName/docsDir/workflowDir/userIntent/taskId?/projectTraits?)"
+  buildSubagentPrompt_callers: "getPhaseDefinition経由で全フェーズ共通。呼び出し元はhandler.ts等のlifecycle経路"
+  high_input_phase: "design_review=5files, docs_update=3files, acceptance_verification=2files, planning=2files"
+  refreshCheckpoint_callers: "applyAddAC(88行)/applyAddRTM(94行)/applyUpdateACStatus(101行)の3箇所"
+  refinedIntent_timing: "harness_approve requirements承認後。IA-2(AC≥3)通過済みが保証されるタイミング"
+  state_manager_extension: "sm.setRefinedIntentメソッド追加が必要(manager.tsへの追加)"
+
+next:
+  criticalDecisions: "StateManagerにsetRefinedIntentメソッドを追加する方法(manager.tsまたはmanager-write.tsの直接関数かメソッド追加か)。buildSubagentPromptの全呼び出し元の特定(handler.ts/lifecycle.tsから検索)。inputFileModes設計でbasename一致かfullpath一致か"
+  readFiles: "workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/tools/handler.ts, workflow-harness/mcp-server/src/state/types-invariant.ts"
+  warnings: "types-core.tsの200行制限は厳格(CLAUDE.md記載)。空行削除での調整は実装時に慎重に実行。registry.tsのデザインレビュー行は現在約230文字でinputFileModes追加で更に長くなるため複数行展開を検討。TaskStateSchemaのpassthrough()確認済みだがZodの実行時バリデーションを通過するか統合テスト必要"

@@ -1,0 +1,57 @@
+phase: research
+task: サイズ判定改善(harness_start size引数追加)
+status: complete
+inputArtifact: docs/workflows/サイズ判定改善(harness_start size引数追加)/scope-definition.toon
+
+existingPatterns[6]{id,pattern,location,description}:
+  EP-1, risk-classifier自動分類, mcp-server/src/phases/risk-classifier.ts, "analyzeScope()でファイルパスからRiskInputを構築し、calculateRiskScore()でスコア算出、classifySize()でsmall/medium/largeに分類する3段パイプライン"
+  EP-2, SIZE_SKIP_MAP静的定義, mcp-server/src/phases/registry.ts:91-126, "TaskSizeごとにスキップするフェーズを静的配列で定義。small=21フェーズスキップ、medium=8フェーズスキップ、large=スキップなし"
+  EP-3, createTaskState内のriskScore/size一体生成, mcp-server/src/state/manager-write.ts:48-67, "createTaskState関数内でriskScore算出とsize分類を一括実行し、TaskStateオブジェクトに埋め込む"
+  EP-4, StateManager.createTask中継パターン, mcp-server/src/state/manager.ts:49-55, "manager.ts のcreateTask()はcreateTaskState()を呼び出し、persistState/ensureStateDirs/writeTaskIndexを実行する薄いラッパー"
+  EP-5, inputSchemaによるMCPバリデーション, mcp-server/src/tools/defs-a.ts:6-20, "harness_startのinputSchemaでtaskName/userIntentをrequiredとし、files/dirsをoptionalとして定義"
+  EP-6, lifecycle.tsの引数展開パターン, mcp-server/src/tools/handlers/lifecycle.ts:34-60, "handleHarnessStartでargs.taskName/args.userIntentをString()で取得し、args.files/args.dirsをArray.isArrayで安全にキャストする"
+
+magicNumbers[7]{value,location,purpose,rationale}:
+  3, risk-classifier.ts:19, fileCount>=10のリスクポイント, 10ファイル以上は大規模変更と判定
+  2, risk-classifier.ts:20, fileCount>=5のリスクポイント, 中規模変更の閾値
+  1000, risk-classifier.ts:23, codeLineEstimate高リスク閾値, 1000行以上は高リスク
+  100, risk-classifier.ts:56, ファイルあたり推定行数, "codeLineEstimate = files.length * 100 という固定推定"
+  3, risk-classifier.ts:36, small判定の上限スコア, score.total<=3でsmall
+  7, risk-classifier.ts:37, medium判定の上限スコア, score.total<=7でmedium
+  0.6, registry.ts:129, small用minLines係数, smallタスクの成果物最低行数を60%に緩和
+
+implicitConstraints[8]{id,constraint,source,impact}:
+  IC-1, TaskState.riskScoreフィールドは必須, types-core.ts:72, "RiskScore型(total: number / factors: any)がTaskStateに必須であり、sizeだけ設定してもriskScoreの値が必要"
+  IC-2, getActivePhases()はsize引数のみで動作, registry.ts:134-137, "SIZE_SKIP_MAPからスキップ対象を取得するためsizeがあれば十分。risk-classifierへの依存はない"
+  IC-3, classifySize閾値がハードコード, risk-classifier.ts:35-38, "small<=3 / medium<=7 / large>=8 の閾値が関数内に固定されており外部設定不可"
+  IC-4, analyzeScope内のパス文字列マッチング, risk-classifier.ts:41-57, "ファイルパスに test/auth/docker等のキーワードが含まれるかで分類するため精度が低い"
+  IC-5, createTaskStateの引数順序, manager-write.ts:48, "createTaskState(taskName / userIntent / hmacKey / files / dirs)の5引数。size追加位置がシグネチャの後方互換に影響"
+  IC-6, HMAC署名はstateIntegrityで検証, manager-write.ts:65, "signState()でTaskState全体を署名するため、riskScoreの値変更はHMAC値に影響する"
+  IC-7, Checkpoint内にriskScoreは含まれない, manager-write.ts:61, "checkpointにはtaskId/phase/completedPhases/timestamp等のみ。riskScoreはチェックポイント対象外"
+  IC-8, テストファイルが9件存在, __tests__/*.test.ts, "risk-classifier.test.ts と risk-classifier-classify.test.ts を含む9テストファイルがcreateTaskStateまたはrisk-classifierを参照"
+
+fileAnalysis[6]{path,lines,keyFindings}:
+  mcp-server/src/phases/risk-classifier.ts, 58, "3関数(calculateRiskScore/classifySize/analyzeScope)を公開。RiskInput型をローカル定義。codeLineEstimate=files.length*100の固定推定。score閾値: small<=3/medium<=7/large>=8"
+  mcp-server/src/state/manager-write.ts, 144, "createTaskState()がrisk-classifierの3関数全てをインポート・呼び出し。riskScore/size/firstPhaseを算出してTaskStateを構築。sanitizeTaskName()も定義"
+  mcp-server/src/state/manager.ts, 180, "StateManagerクラスがcreateTask()でcreateTaskState()を呼び出す中継層。引数は(taskName / userIntent / files / dirs)の4つ"
+  mcp-server/src/tools/handlers/lifecycle.ts, 243, "handleHarnessStart()がsm.createTask()を呼び出す。argsからtaskName/userIntent/files/dirsを展開。size引数の取得ロジックは現在存在しない"
+  mcp-server/src/tools/defs-a.ts, 172, "harness_startのinputSchemaにtaskName/userIntent/files/dirsの4プロパティ。sizeプロパティは存在しない"
+  mcp-server/src/phases/registry.ts, 182, "SIZE_SKIP_MAP/SIZE_MINLINES_FACTOR/getActivePhases/getNextPhase等を定義。sizeの値のみで動作しrisk-classifierに依存しない"
+
+decisions[7]{id,statement,rationale}:
+  R-01, defs-a.tsのharness_start inputSchemaにsize enum=['small'/'medium'/'large']を追加する, "MCPスキーマレベルで不正値を排除し、lifecycle.tsでのバリデーションコードを不要にする"
+  R-02, lifecycle.tsでargs.sizeをTaskSize型として取得しsm.createTask()に渡す, "EP-6の既存パターンに従い、undefinedの場合はデフォルト値の適用をcreateTaskState側に委ねる"
+  R-03, manager.tsのcreateTask()シグネチャにsize?: TaskSizeを5番目の引数として追加する, "既存の4引数(taskName/userIntent/files/dirs)の後にオプショナル引数を追加することで後方互換性を維持する"
+  R-04, createTaskState()でsize未指定時はlargeをデフォルトとする, "largeは全フェーズ実行(SIZE_SKIP_MAP large=[])であり安全側に倒す設計。オーケストレーターが明示的にsmall/mediumを指定した場合のみフェーズがスキップされる"
+  R-05, riskScoreフィールドはsizeから固定マッピング(small={total:2/factors:{}}/medium={total:5/factors:{}}/large={total:8/factors:{}})で設定する, "IC-1によりriskScoreは必須フィールド。risk-classifierを呼ばない場合は代表値を設定してスキーマ互換性を維持する"
+  R-06, risk-classifier.tsからのimport文(calculateRiskScore/classifySize/analyzeScope)をmanager-write.tsから削除する, "呼び出しを除去してもimportが残るとデッドコード警告が出るためimportも同時に整理する"
+  R-07, risk-classifier.tsのファイル自体は削除せず残置する, "9件のテストファイルが参照しており、削除すると大量のテスト修正が必要になる。デッドコード削除は別タスクとする"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/scope-definition.toon, 入力, スコープ定義成果物
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/research.toon, 出力, リサーチ成果物(本ファイル)
+
+next:
+  criticalDecisions: "riskScoreの固定マッピング値(small=2/medium=5/large=8)がclassifySize()の閾値(<=3/<=7/>=8)と整合していることを確認済み。createTaskStateのsize引数の位置は既存引数の末尾(6番目)とする"
+  readFiles: "mcp-server/src/__tests__/manager-core.test.ts, mcp-server/src/__tests__/risk-classifier.test.ts, mcp-server/src/__tests__/risk-classifier-classify.test.ts (テスト影響範囲の確認用)"
+  warnings: "risk-classifier.test.ts/risk-classifier-classify.test.tsはrisk-classifier.ts自体のユニットテストであり本変更の影響を受けない。manager-core.test.tsはcreateTask()を呼び出している可能性がありシグネチャ変更時に修正が必要な場合がある"

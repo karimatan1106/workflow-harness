@@ -1,0 +1,21 @@
+phase: test_selection
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T09:30:00+09:00"
+decisions[5]{id,statement,rationale}:
+  TS-001,gitコマンドベースの検証を選択する,ユニットテスト対象のコードがなくgit操作の結果確認のみが必要なため
+  TS-002,grep と git ls-files を検証手段とする,各ACの検証に最も直接的なコマンドであるため
+  TS-003,検証はimplementation完了後に手動実行する,git操作の結果は自動テストフレームワークでは検証できないため
+  TS-004,サブモジュールの検証はサブモジュールディレクトリ内で実行する,git ls-filesはリポジトリルートからの相対パスで動作するため
+  TS-005,全7テストケースを実行対象とする,git操作タスクのため選択的スキップは不要であり全件実行が適切
+selectedTests[7]{id,reason}:
+  TC-AC1-01,gitignoreエントリ確認に必須
+  TC-AC1-02,gitignoreエントリ確認に必須
+  TC-AC1-03,gitignoreエントリ確認に必須
+  TC-AC2-01,dist/の追跡解除確認に必須
+  TC-AC2-02,state/の追跡解除確認に必須
+  TC-AC3-01,親リポファイルの追跡解除確認に必須
+  TC-AC4-01,全体整合性確認に必須
+artifacts[1]{path,role,summary}:
+  docs/workflows/gitignore整備/test-selection.toon,test,テスト選択結果
+next:
+  readFiles[1]: docs/workflows/gitignore整備/test-design.toon

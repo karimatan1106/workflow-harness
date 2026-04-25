@@ -1,0 +1,26 @@
+flowchart TD
+    Start(("開始")) --> ReadMain("プロジェクトルートCLAUDE.md読み込み")
+    ReadMain --> ReadPlugin("workflow-plugin/CLAUDE.md読み込み")
+    ReadPlugin --> FR1("FR-1: 禁止語リスト除去 - 行289-298と行358を数値参照に置き換え")
+    FR1 --> FR3("FR-3: 実質行説明追加 - 行249と253の直後にプレーンラベル行の除外要件を挿入")
+    FR3 --> FR2("FR-2: 角括弧制約の詳細説明 - 行295の直後にコードフェンス内検出の注意書きを追加")
+    FR2 --> FR4("FR-4: 禁止語複合語の回避表現拡充 - 行296を複数行の言い換え例に拡張")
+    FR4 --> FR5("FR-5: commitフェーズのファイル削除ガイダンス - 行186のBashカテゴリを修正")
+    FR5 --> SyncPlugin("workflow-plugin/CLAUDE.mdへの同期修正 - FR-1からFR-4の内容を反映")
+    SyncPlugin --> VerifyMain("Grep検証: プロジェクトルートCLAUDE.md - 禁止語リストと角括弧と実質行説明の確認")
+    VerifyMain --> VerifyPlugin("Grep検証: workflow-plugin/CLAUDE.md - 同期修正内容の確認")
+    VerifyPlugin --> CompareFiles("両ファイルの記述内容を目視比較 - 整合性の確認")
+    CompareFiles --> TestTask("新規タスクでparallel_verificationフェーズ実行 - リトライ回数4回以下を確認")
+    TestTask --> RecordResult("修正内容と検証結果を成果物に記録 - NFR-1達成状況を評価")
+    RecordResult --> End(("完了"))
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style FR1 fill:#87CEEB
+    style FR3 fill:#87CEEB
+    style FR2 fill:#DDA0DD
+    style FR4 fill:#DDA0DD
+    style FR5 fill:#DDA0DD
+    style VerifyMain fill:#FFD700
+    style VerifyPlugin fill:#FFD700
+    style TestTask fill:#FFA07A

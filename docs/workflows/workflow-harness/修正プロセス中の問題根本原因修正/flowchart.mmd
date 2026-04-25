@@ -1,0 +1,23 @@
+flowchart TD
+    Start("処理開始: 3件の修正実装") --> OpenFile("definitions.ts ファイルを開く")
+    OpenFile --> CheckStructure("既存テンプレート構造を確認")
+    CheckStructure --> ApplyFRC("FR-C 適用: research フェーズチェックリスト修正")
+    ApplyFRC --> FRCDetail("612行の checklist 配列要素を変更<br/>ベースライン記録タイミングを testing フェーズに明示")
+    FRCDetail --> ApplyFRA("FR-A 適用: code_review テンプレート修正")
+    ApplyFRA --> FRADetail("862行の subagentTemplate に禁止語転記防止ガイダンスを追記<br/>新規セクション『## 禁止語転記防止（重要）』を挿入")
+    FRADetail --> ApplyFRB("FR-B 適用: performance_test テンプレート修正")
+    ApplyFRB --> FRBDetail("930行の subagentTemplate にサブヘッダー密度ガイダンスを追記<br/>新規セクション『## サブヘッダー多用時のセクション密度確保』を挿入")
+    FRBDetail --> BuildCheck("npm run build 実行")
+    BuildCheck --> BuildSuccess{"ビルド成功?"}
+    BuildSuccess -->|Yes| RestartMCP("MCP サーバープロセス再起動")
+    BuildSuccess -->|No| FixError("コンパイルエラーを修正")
+    FixError --> BuildCheck
+    RestartMCP --> VerifyServer("workflow_status で正常応答確認")
+    VerifyServer --> VerifyContent("FR-C 変更内容を Read ツールで確認")
+    VerifyContent --> CheckConsistency("CLAUDE.md ルール20との整合性を目視確認")
+    CheckConsistency --> Success("処理完了: 検証成功")
+
+    style Start fill:#e1f5ff
+    style Success fill:#c8e6c9
+    style BuildSuccess fill:#fff9c4
+    style FixError fill:#ffccbc

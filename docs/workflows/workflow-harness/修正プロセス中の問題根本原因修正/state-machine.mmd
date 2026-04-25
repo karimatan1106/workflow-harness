@@ -1,0 +1,123 @@
+## サマリー
+
+このステートマシン図は、spec.md で定義された3件の修正（FR-A、FR-B、FR-C）が definitions.ts に適用される過程における状態遷移を表現するものである。
+
+**目的**: definitions.ts の修正プロセスにおける各 FR（Functional Requirement）の実装段階と状態遷移を視覚化し、修正フロー全体の理解を支援する。
+
+**評価スコープ**: FR-A（code_review テンプレート修正）、FR-B（performance_test テンプレート修正）、FR-C（research チェックリスト修正）の3つの独立した修正タスクと、それぞれの完了後の統合ビルド・再起動プロセスを対象とする。
+
+**主要な決定事項**: 3つの修正は異なる対象箇所を対象としているため独立実行可能であること、ただし全修正完了後に1回のビルドと MCP サーバー再起動が必須であること、stateDiagram-v2 の形式に従い開始・終了状態に名前付き状態（Start、End）を使用すること。
+
+**次フェーズで必要な情報**: 各 FR の挿入・置換対象となる具体的なテキスト内容（spec.md 「実装計画」セクション参照）、ビルド成功とサーバー再起動完了が実装の必須完了条件であること。
+
+---
+
+## 修正プロセスのステートマシン図
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start: 修正タスク開始
+
+    Start --> FR_A_Begin: FR-A 開始
+    Start --> FR_B_Begin: FR-B 開始
+    Start --> FR_C_Begin: FR-C 開始
+
+    FR_A_Begin --> FR_A_Completed: code_review テンプレート修正完了
+
+    FR_B_Begin --> FR_B_Completed: performance_test テンプレート修正完了
+
+    FR_C_Begin --> FR_C_Completed: research チェックリスト修正完了
+
+    FR_A_Completed --> All_Completed: 3件の修正すべて完了
+    FR_B_Completed --> All_Completed: 3件の修正すべて完了
+    FR_C_Completed --> All_Completed: 3件の修正すべて完了
+
+    All_Completed --> Build_Start: npm run build 実行開始
+
+    Build_Start --> Build_Success: ビルド成功（TypeScript コンパイル完了）
+    Build_Start --> Build_Failed: ビルド失敗（構文エラー発生）
+
+    Build_Failed --> FR_Fix: エラー原因を修正
+
+    FR_Fix --> Build_Start: ビルド再実行
+
+    Build_Success --> Server_Restart: MCP サーバープロセス再起動
+
+    Server_Restart --> Status_Check: workflow_status で確認
+
+    Status_Check --> Status_OK: 正常応答確認
+    Status_Check --> Status_Failed: 応答失敗
+
+    Status_Failed --> Server_Restart: サーバー再起動
+
+    Status_OK --> End: 実装完了（修正が本番環境で有効化）
+```
+
+---
+
+## 各修正の詳細状態遷移
+
+### FR-A の状態遷移（code_review テンプレート修正）
+
+FR-A は code_review サブエージェントテンプレートに「## 禁止語転記防止（重要）」セクションを追記するもの。以下の遷移を経る。
+
+- 初期状態: code_review テンプレートが禁止語ガイダンスなし（ガイダンス欠落状態）
+- 修正操作: 「## 出力」セクション直前に禁止語転記防止セクションを挿入
+- 最終状態: code_review テンプレートがガイダンス完全に含む（ガイダンス追記完了状態）
+
+manual_test・security_scan・e2e_test の各テンプレートに既に存在するガイダンスと同等内容を追加し、テンプレート間の一貫性が確保される。
+
+### FR-B の状態遷移（performance_test テンプレート修正）
+
+FR-B は performance_test サブエージェントテンプレートに「## サブヘッダー多用時のセクション密度確保」セクションを追記するもの。以下の遷移を経る。
+
+- 初期状態: performance_test テンプレートが密度確保ガイダンスなし（ガイダンス欠落状態）
+- 修正操作: 「## ボトルネック分析セクションの行数ガイダンス」末尾と「## 評価結論フレーズの重複回避」の間にサブヘッダー密度セクションを挿入
+- 最終状態: performance_test テンプレートがサブヘッダー活用時の実質行数確保ガイダンス完全に含む（ガイダンス追記完了状態）
+
+security_scan テンプレートに既に存在する同等セクション「## サブヘッダー多用時のセクション密度確保（FR-2: 実質行数不足防止）」の構造を踏襲し、テンプレート間の一貫性が確保される。
+
+### FR-C の状態遷移（research チェックリスト修正）
+
+FR-C は research フェーズのチェックリスト配列における「ベースライン記録」の項目記述を修正するもの。以下の遷移を経る。
+
+- 初期状態: チェックリスト項目が「研究フェーズでベースラインを記録」という誤った記述（CLAUDE.md ルール20との矛盾状態）
+- 修正操作: 記述を「testing フェーズで workflow_capture_baseline を呼び出して実施」に変更し、技術的根拠（readonly カテゴリのみであるため testing カテゴリコマンドが使用不可）を明示
+- 最終状態: チェックリスト項目が CLAUDE.md ルール20と整合した記述に変更完了（記述整合性確保状態）
+
+### 統合ビルド・再起動フロー
+
+FR-A・FR-B・FR-C の3つの修正が完了した後の統合フロー。
+
+- ビルド前状態: definitions.ts にすべての修正が適用された状態
+- npm run build 実行: TypeScript をコンパイルしコンパイルエラーがないか検査
+- ビルド成功後: MCP サーバープロセスを再起動し、新しい definitions.ts が読み込まれる（モジュールキャッシュ更新）
+- workflow_status 実行: サーバーが正常に応答することで実装完了を確認
+
+ビルド失敗時は修正箇所の構文エラーが原因であり、該当行を修正してビルド再実行。
+
+---
+
+## 修正プロセスの独立性
+
+3つの修正（FR-A、FR-B、FR-C）は異なるファイル行番号を対象としており、相互に干渉しない。したがって修正順序は問わず、以下の3パターンのいずれでも実装可能である。
+
+- パターン1: FR-C、FR-A、FR-B の順
+- パターン2: FR-A、FR-B、FR-C の順
+- パターン3: FR-B、FR-C、FR-A の順
+
+ただしすべての修正を同一ファイルに加えるため、ビルド・再起動は3つの修正完了後に1回実施すれば十分である。
+
+---
+
+## 検証チェックポイント
+
+実装完了後の検証は以下の3ステップを経る。
+
+**ステップ1**: npm run build により TypeScript コンパイルが完全に成功し、dist/phases/definitions.js にすべての修正が反映されたコンパイル結果を確認する。
+
+**ステップ2**: MCP サーバープロセスを再起動し、古いモジュールキャッシュが削除される状態に遷移する。新しい definitions.js が読み込まれることが重要である。
+
+**ステップ3**: workflow_status MCP 呼び出しによりサーバーが正常に応答し、新しいテンプレート定義が反映されていることを確認する。
+
+---

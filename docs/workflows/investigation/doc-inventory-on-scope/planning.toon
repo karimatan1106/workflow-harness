@@ -1,0 +1,84 @@
+→purpose: 既存ドキュメント棚卸し機能の実装計画
+→task: doc-inventory-on-scope
+
+## 実装計画
+
+→implementation_steps[5]{order,file,change}:
+  1,workflow-harness/mcp-server/src/state/types.ts,TaskStateにdocPaths?: string[]を追加
+  2,workflow-harness/mcp-server/src/tools/defs-a.ts,harness_set_scopeスキーマにdocPathsプロパティ(items: string)を追加
+  3,workflow-harness/mcp-server/src/tools/handlers/scope-nav.ts,argsからdocPathsを取得しstate.docPathsに保存
+  4,workflow-harness/mcp-server/src/phases/definitions.ts,buildDocCategoriesにdocPaths引数追加。docPathsの各パスをカテゴリリストに追加。buildSubagentPromptからdocPathsを渡す
+  5,workflow-harness/mcp-server/src/phases/defs-stage1.ts,scope_definitionテンプレートにStep 3.7(ドキュメント探索)追加
+
+## 設計詳細
+
+### Step 1: TaskState型拡張
+types.tsのTaskStateインターフェースに追加:
+```typescript
+docPaths?: string[];  // 既存プロジェクトドキュメントパス（scope_definitionで収集）
+```
+
+### Step 2: MCPスキーマ拡張
+defs-a.tsのharness_set_scopeのprojectTraitsと同階層に追加:
+```typescript
+docPaths: {
+  type: "array",
+  items: { type: "string" },
+  description: "Existing project document paths discovered during scope_definition"
+}
+```
+
+### Step 3: ハンドラー拡張
+scope-nav.tsでargsからdocPathsを抽出してstateに保存:
+```typescript
+const docPaths = Array.isArray(args.docPaths) ? args.docPaths as string[] : undefined;
+if (docPaths) state.docPaths = docPaths;
+```
+
+### Step 4: buildDocCategories拡張
+definitions.tsのbuildDocCategories関数シグネチャ変更:
+```typescript
+export function buildDocCategories(traits?: Record<string, boolean>, docPaths?: string[]): string {
+  // ...existing code...
+  // 第3層: 既存ドキュメントパス
+  if (docPaths && docPaths.length > 0) {
+    for (const dp of docPaths) {
+      if (!seen.has(dp)) { seen.add(dp); lines.push(`${lines.length + 1}. ${dp} -- 既存プロジェクトドキュメント`); }
+    }
+  }
+  return lines.join('\n');
+}
+```
+buildSubagentPromptの呼び出し側でもdocPathsを渡す。
+
+### Step 5: テンプレート拡張
+defs-stage1.tsのscope_definitionテンプレートのStep 3.5の後に追加:
+```
+Step 3.7: 既存ドキュメント探索
+プロジェクト内の既存ドキュメントファイルを探索し、harness_set_scopeのdocPathsに設定:
+```bash
+find . -maxdepth 4 -type f \( -name "*.md" -o -name "*.rst" -o -name "*.adoc" \) \
+  -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" \
+  -not -path "*/docs/workflows/*" | head -50
+```
+対象: README, CHANGELOG, docs/, wiki/, specifications/ 等のドキュメントディレクトリ
+除外: node_modules, .git, dist, docs/workflows(一時ワークフロー)
+```
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,docPathsをProjectTraitsではなくTaskState直接に配置,booleanフラグとstring配列は性質が異なる
+  D-2,buildDocCategoriesの第2引数として追加,既存の第1引数(traits)との後方互換性維持
+  D-3,find -maxdepth 4で探索深度制限,大規模プロジェクトでのパフォーマンス確保
+  D-4,docs/workflows/を除外パスに含める,一時ワークフロー成果物は永続ドキュメントではない
+  D-5,head -50で上限制限,ドキュメント数が多すぎるプロジェクトでのコンテキスト肥大化防止
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/doc-inventory-on-scope/planning.toon,created
+
+## next
+
+→next: test_design

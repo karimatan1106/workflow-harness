@@ -1,0 +1,78 @@
+task: tier-c-gaps-n16-n25
+phase: test_design
+intent: AC-1~AC-7に対応するテストケース22件を5テストファイルに構成しRTM追跡マトリクスで全ACカバレッジを保証する
+
+testFiles[5]{seq,fileName,gapId,acId,testCount,sourceFile}:
+  1, plankton.test.ts, N-16, AC-1, 5, retry.ts
+  2, skill-rules.test.ts, N-17, AC-2, 5, "dod-helpers.ts/handler-shared.ts/registry.ts"
+  3, antipattern.test.ts, N-21, AC-5, 4, "archgate.ts/linter-runner.ts"
+  4, e2e-mcp-chain.test.ts, N-20, AC-4, 3, "handler.ts/manager.ts"
+  5, safety.test.ts, N-25, AC-6, 5, "manager-write.ts/lifecycle.ts"
+
+testCases[22]{id,file,description,inputSetup,expectedResult,acTrace}:
+  TC-AC1-01, plankton.test.ts, "L4エラー(density/formatting)がtrivialに分類される", "DoDCheckResult[]: [{level:'L4',check:'content_validation',passed:false,fix:'禁止語を削除'}]とerrorClass:'SyntaxError'を渡す", "classifyComplexity返却値が'trivial'", AC-1
+  TC-AC1-02, plankton.test.ts, "L3エラー(missing section)がmoderateに分類される", "DoDCheckResult[]: [{level:'L3',check:'artifact_quality',passed:false}]とerrorClass:'LogicError'を渡す", "classifyComplexity返却値が'moderate'", AC-1
+  TC-AC1-03, plankton.test.ts, "L1エラー(file missing)がcriticalに分類される", "DoDCheckResult[]: [{level:'L1',check:'output_file_exists',passed:false}]とerrorClass:'FileNotFound'を渡す", "classifyComplexity返却値が'critical'", AC-1
+  TC-AC1-04, plankton.test.ts, "buildRetryPromptの出力に複雑度タグが含まれる", "RetryContext(retryCount:1)とDoDCheckResult[](L4エラー1件)を渡してbuildRetryPrompt呼び出し", "返却promptに'[TRIVIAL]'文字列が含まれる", AC-1
+  TC-AC1-05, plankton.test.ts, "複数エラーの場合最も重い分類が使用される", "DoDCheckResult[]: L4(trivial相当)とL1(critical相当)の混合配列を渡す", "classifyComplexity返却値が'critical'(最重分類が優先)", AC-1
+  TC-AC2-01, skill-rules.test.ts, "FORBIDDEN_PATTERNSが12語全て含む", "dod-helpers.tsからFORBIDDEN_PATTERNSをimport", "配列長が12かつ英語4語(半角大文字略語)+日本語8語(漢字/カタカナ混在)を全て含む", AC-2
+  TC-AC2-02, skill-rules.test.ts, "TOON必須フィールド(decisions/artifacts/next)がレジストリに含まれる", "registry.tsからPHASE_REGISTRYをimportしtest_designエントリのrequiredSectionsを参照", "requiredSectionsが['decisions','artifacts','next']を含む", AC-2
+  TC-AC2-03, skill-rules.test.ts, "PHASE_APPROVAL_GATESが5種含む", "handler-shared.tsからPHASE_APPROVAL_GATESをimport", "Object.keys長が5かつrequirements/design_review/test_design/code_review/acceptance_verificationをキーに含む", AC-2
+  TC-AC2-04, skill-rules.test.ts, "PHASE_REGISTRYの各エントリがbashCategoriesフィールドを持つ", "registry.tsからPHASE_REGISTRYをimportし全エントリを走査", "全エントリのbashCategoriesがstring[]型で長さ1以上", AC-2
+  TC-AC2-05, skill-rules.test.ts, "PHASE_REGISTRYの各エントリがminLinesフィールドを持つ", "registry.tsからPHASE_REGISTRYをimportし全エントリを走査", "全エントリのminLinesが数値で0超過", AC-2
+  TC-AC5-01, antipattern.test.ts, "runCommentRatioが40%以下でpassed:true", "コメント行20%のTypeScriptコンテンツ(コード8行+コメント2行)を生成しcountCommentLines呼び出し", "ratio<=0.4かつ外側のarchgate判定がpassed:true", AC-5
+  TC-AC5-02, antipattern.test.ts, "runCommentRatioが40%超過でpassed:false", "コメント行60%のコンテンツ(コード4行+コメント6行)を生成しcountCommentLines呼び出し", "ratio>0.4かつ外側のarchgate判定がpassed:false(violation報告)", AC-5
+  TC-AC5-03, antipattern.test.ts, "comment_ratio checkTypeがarchgate runArchGateChecksで実行される", "archgate-rules.jsonにcomment_ratioルール(threshold:40)を登録しrunArchGateChecksにコメント率50%のFileInfo配列を渡す", "ArchGateResult.passed===falseかつchecks配列にcomment_ratio ruleIdのエントリが存在", AC-5
+  TC-AC5-04, antipattern.test.ts, "空ファイルでpassed:true(ゼロ除算なし)", "空文字列をcountCommentLinesに渡す", "ratio===0かつエラーなし(totalLines===0でゼロ除算が発生しない)", AC-5
+  TC-AC4-01, e2e-mcp-chain.test.ts, "lifecycle chain: start->set_scope->add_ac->next", "vi.mock('fs')でインメモリfsStore使用。handleToolCallにharness_start(taskName+userIntent)を渡し返却taskId/sessionTokenを取得。続けてharness_set_scope/harness_add_ac/harness_next(forceTransition:true)を呼び出す", "全4呼び出しが成功し各返却値のtaskIdが一貫。harness_next後のphaseがscope_definitionから遷移済み", AC-4
+  TC-AC4-02, e2e-mcp-chain.test.ts, "quality chain: record_test->record_test_result->record_proof", "TC-AC4-01で取得したtaskId/sessionTokenを使用。harness_record_test(testId+description)→harness_record_test_result(exitCode:0)→harness_record_proof(result:true)を順次呼び出す", "全3呼び出しが成功しstate.proofLog配列にエントリが追加される", AC-4
+  TC-AC4-03, e2e-mcp-chain.test.ts, "verification chain: approve->next->complete", "承認ゲート対象フェーズまで進めた後harness_approve→harness_next→承認後遷移を確認", "harness_approve成功後のharness_nextがphase遷移を実行", AC-4
+  TC-AC6-01, safety.test.ts, "taskNameにパストラバーサル(../)でsanitize後にトラバーサルなし", "sanitizeTaskName('../../etc/passwd')を呼び出す", "返却値に'..'や'/'が含まれない。返却値が'etcpasswd'または'passwd'", AC-6
+  TC-AC6-02, safety.test.ts, "taskNameに特殊文字(:*?<>|)でsanitize後に除去", "sanitizeTaskName('task:name*with?special<>|chars')を呼び出す", "返却値が'tasknamewithspecialchars'(英数字とハイフン/アンダースコアのみ残る)", AC-6
+  TC-AC6-03, safety.test.ts, "userIntentが10000文字超過でtruncateされる", "handleHarnessStartに10001文字のuserIntentを渡す", "respondErrorが呼ばれvalidation errorメッセージにmaxLength超過が示される", AC-6
+  TC-AC6-04, safety.test.ts, "XSSペイロード(<script>)がエスケープまたは除去される", "sanitizeTaskName('<script>alert(1)</script>')を呼び出す", "返却値に'<'や'>'が含まれない。返却値が'scriptalert1script'", AC-6
+  TC-AC6-05, safety.test.ts, "SQLインジェクション('; DROP TABLE)が安全に処理される", "sanitizeTaskName(\"'; DROP TABLE tasks;--\")を呼び出す", "返却値に引用符やセミコロンが含まれない。返却値が'DROPTABLEtasks--'または類似の安全な文字列", AC-6
+
+acTcMatrix[7]{acId,tcIds,coverage}:
+  AC-1, "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC1-05", "trivial/moderate/criticalの3分類+プロンプト埋め込み+複数エラー優先度の5ケースで完全カバー"
+  AC-2, "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-04/TC-AC2-05", "禁止語12語+TOON必須フィールド+承認ゲート5種+bashCategories+minLinesの5ルール検証で完全カバー"
+  AC-3, none, "N-18 archgate-linter統合はAC-3対応テスト。AC-5のTC-AC5-03がarchgate統合を部分検証。専用テストはtestingフェーズで追加"
+  AC-4, "TC-AC4-01/TC-AC4-02/TC-AC4-03", "lifecycle/quality/verificationの3チェーンで完全カバー"
+  AC-5, "TC-AC5-01/TC-AC5-02/TC-AC5-03/TC-AC5-04", "閾値上下+archgate統合+空ファイル境界の4ケースで完全カバー"
+  AC-6, "TC-AC6-01/TC-AC6-02/TC-AC6-03/TC-AC6-04/TC-AC6-05", "パストラバーサル+特殊文字+巨大入力+XSS+SQLiの5攻撃パターンで完全カバー"
+  AC-7, "全TC", "testingフェーズでvitest run全件pass(525+22=547件以上)を確認"
+
+mockStrategy[3]{file,approach,detail}:
+  plankton.test.ts, "直接import+純粋関数テスト", "classifyComplexityは外部依存なしの純粋関数。DoDCheckResult配列を直接構築しimportした関数に渡す。vi.mock不要"
+  e2e-mcp-chain.test.ts, "vi.mock('fs')+インメモリfsStore", "vi.mock('fs')でreadFileSync/writeFileSync/existsSyncをインメモリMap<string,string>で代替。vi.mock('../utils/hmac.js')でHMAC検証をバイパスしsignState→固定文字列/generateSessionToken→固定トークン返却"
+  safety.test.ts, "直接import+入力バリエーション", "sanitizeTaskNameは外部依存なしの純粋関数。攻撃パターン文字列を直接渡し返却値をアサート。handleHarnessStartのmaxLengthテストはStateManagerモック必要"
+
+boundaryConditions[5]{id,description,expectedBehavior}:
+  BC-1, "classifyComplexityにchecks空配列とerrorClass:'Unknown'を渡す", "fallbackルール適用でfailed checks数0→'trivial'を返却"
+  BC-2, "countCommentLinesに改行のみの文字列を渡す", "totalLines>0かつcommentLines===0かつratio===0"
+  BC-3, "sanitizeTaskNameに100文字ちょうどの有効文字列を渡す", "切り詰めなしで入力がそのまま返却される"
+  BC-4, "sanitizeTaskNameに全て無効文字の文字列を渡す", "サニタイズ後空文字列→Error('Invalid taskName: empty after sanitization')がthrow"
+  BC-5, "runArchGateChecksにcomment_ratioルールとcontentInfos未指定を渡す", "contentInfosがundefinedのためviolation検出なし(passed:true)"
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "テストケース総数を22件とし5ファイルに分散配置する", "AC-1(5件)+AC-2(5件)+AC-4(3件)+AC-5(4件)+AC-6(5件)=22件。AC-3はAC-5のTC-AC5-03で部分検証しAC-7はtestingフェーズで検証するためテスト設計フェーズでは専用TCを設けない"
+  TD-2, "plankton.test.tsはclassifyComplexity関数の純粋関数テストに集中する", "classifyComplexityはerrorClassとDoDCheckResult[]のみ受け取る純粋関数のためモック不要でテスト容易性が最高。buildRetryPrompt統合テスト(TC-AC1-04)でプロンプト埋め込みも検証する"
+  TD-3, "skill-rules.test.tsはコード定数の直接importで検証する", "FORBIDDEN_PATTERNS/PHASE_APPROVAL_GATES/PHASE_REGISTRYを直接importし実行時の値を検証することでリファクタリング追従性を確保する。ハードコード値との比較ではなく構造的制約(配列長/キー存在/型)を検証する"
+  TD-4, "e2e-mcp-chain.test.tsはvi.mock('fs')でStateManagerをインメモリ化する", "ディスクI/O排除でテスト独立性と並列実行を確保する。handleToolCall経由の呼び出しでツール間状態伝搬の一貫性を検証する。HMAC検証はvi.mockでバイパスしセキュリティテストはsafety.test.tsに分離する"
+  TD-5, "safety.test.tsはsanitizeTaskNameの5攻撃パターンを網羅する", "パストラバーサル/特殊文字/巨大入力/XSS/SQLiの5パターンはOWASP Top 10のインジェクション系攻撃を網羅する。sanitizeTaskNameは純粋関数のためモック不要で高速実行可能"
+  TD-6, "antipattern.test.tsはcountCommentLinesとarchgate統合の両方を検証する", "countCommentLinesの単体テスト(TC-AC5-01/02/04)とrunArchGateChecks統合テスト(TC-AC5-03)を同一ファイルに配置しcomment_ratio機能の全レイヤーをカバーする"
+  TD-7, "AC-7(全テスト通過)のテストケースはtestingフェーズに委譲する", "AC-7はvitest run全件passの統合検証であり個別テストケースとして設計するものではない。testingフェーズでvitest実行結果をharness_record_test_resultで記録する"
+
+artifacts[7]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/test-design.toon, output, 22テストケース+5テストファイル構成+AC追跡マトリクス+モック戦略+境界条件の包括的テスト設計
+  docs/workflows/tier-c-gaps-n16-n25/spec.toon, input, 技術仕様書(classifyComplexity/sanitizeTaskName/countCommentLines/runArchGateQuickCheck関数設計)
+  docs/workflows/tier-c-gaps-n16-n25/requirements.toon, input, AC-1~AC-7の受入基準定義とRTM6件
+  workflow-harness/mcp-server/src/tools/retry.ts, reference, classifyComplexity追加先(188行)
+  workflow-harness/mcp-server/src/tools/archgate.ts, reference, comment_ratio checkType追加先(187行)
+  workflow-harness/mcp-server/src/gates/dod-helpers.ts, reference, FORBIDDEN_PATTERNS定数(12語)
+  workflow-harness/mcp-server/src/tools/handler-shared.ts, reference, PHASE_APPROVAL_GATES定数(5種)
+
+next:
+  criticalDecisions: "TD-1のテストケース22件構成が確定。TD-2のclassifyComplexity純粋関数テスト方針とTD-4のvi.mock('fs')インメモリ化方針がテスト実装の基盤。TD-5の5攻撃パターンがsanitizeTaskNameの検証範囲を確定。TD-7によりAC-7検証はtestingフェーズに委譲。"
+  readFiles: "retry.ts(classifyComplexity実装確認), archgate.ts(comment_ratio分岐実装確認), linter-runner.ts(countCommentLines実装確認), manager-write.ts(sanitizeTaskName実装確認), handler-shared.ts(PHASE_APPROVAL_GATES参照), dod-helpers.ts(FORBIDDEN_PATTERNS参照), registry.ts(PHASE_REGISTRY参照)"
+  warnings: "AC-3(N-18 archgate-linter統合)の専用テストケースはtest_designフェーズでは未設計。testingフェーズでrunArchGateQuickCheckの単体テストとpost-tool-lint.sh統合テストを追加する必要がある。e2e-mcp-chain.test.tsのvi.mock('fs')はStateManagerコンストラクタ内のensureHmacKeysもモック対象に含めること。"

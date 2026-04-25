@@ -1,0 +1,66 @@
+flowchart TD
+    Start("修正開始: definitions.ts の3つのsubagentTemplate修正")
+
+    FR6_Check("FR-6の対象を特定<br/>行878: testing フェーズ")
+    FR6_ReadCurrent("現在のtestingテンプレート読み込み<br/>workflow_record_test_result セクション確認")
+    FR6_Insert("workflow_capture_baseline セクション追記<br/>位置: workflow_record_test_resultセクション直後")
+    FR6_Content("追記内容を記述<br/>- 呼び出し義務の明示<br/>- パラメータ説明<br/>- テスト出力からの抽出方法<br/>- ベースライン記録の遷移ブロック警告<br/>- 記録結果の活用案内")
+    FR6_Verify("FR-6修正完了を確認<br/>テンプレートに新セクションが含まれているか確認")
+
+    FR7_Check("FR-7の対象を特定<br/>行782: test_impl フェーズ")
+    FR7_ReadCurrent("現在のtest_implテンプレート読み込み<br/>現在は『テストコードを実装してください（TDD Red）。』のみ")
+    FR7_Insert("4つのセクションを末尾に追記<br/>末尾の引用符の前に追記")
+    FR7_Content("追記内容を構成<br/>1. テストファイルの出力先<br/>2. workflow_record_test の呼び出し手順<br/>3. 手動確認手順のみの場合の取り扱い<br/>4. ワークフロー制御ツール禁止")
+    FR7_TestDirGuide("プロジェクト固有のディレクトリ構造を記述<br/>src/phases/__tests__/<br/>src/tools/__tests__/<br/>src/validation/__tests__/<br/>src/__tests__/")
+    FR7_Verify("FR-7修正完了を確認<br/>テンプレートに4つのセクションが含まれているか確認")
+
+    FR8_Check("FR-8の対象を特定<br/>行953: docs_update フェーズ")
+    FR8_ReadCurrent("現在のdocs_updateテンプレート読み込み<br/>現在は『ドキュメントを更新してください。』のみ")
+    FR8_Insert("4つのセクションを末尾に追記<br/>末尾の引用符の前に追記")
+    FR8_PermittedDocs("許可ドキュメント一覧を記述<br/>- docs/spec/ 配下<br/>- docs/architecture/ 配下<br/>- docs/operations/ 配下<br/>- CHANGELOG.md<br/>- README.md")
+    FR8_ProhibitedFiles("禁止ファイル一覧を記述<br/>- docs/workflows/{taskName}/ 配下<br/>- MEMORY.md<br/>- .claude/state/ 配下")
+    FR8_NoTargetCase("更新対象が存在しない場合の取り扱いを明記")
+    FR8_ToolProhibit("ワークフロー制御ツール禁止リストを追加")
+    FR8_Verify("FR-8修正完了を確認<br/>テンプレートに4つのセクションが含まれているか確認")
+
+    BuildCheck("ビルド実行<br/>cd workflow-plugin/mcp-server<br/>npm run build")
+    BuildVerify("ビルド成功を確認<br/>dist/phases/definitions.js の更新日時を確認")
+
+    TestRun("テストスイート実行<br/>既存テストが全てパスするか確認<br/>definitions.test.ts の構造テスト実行")
+    TestVerify("テスト結果を確認<br/>回帰テスト失敗がないか確認")
+
+    MCPRestart("MCPサーバーを再起動<br/>Claude Desktop のサーバー再起動または<br/>プロセス終了・再起動")
+
+    FinalVerify("修正反映の確認<br/>workflow_status でsubagentTemplate確認<br/>FR-6: workflow_capture_baseline セクションが含まれているか<br/>FR-7: workflow_record_test 呼び出し手順が含まれているか<br/>FR-8: 更新禁止ファイルリストが含まれているか")
+
+    Complete("修正完了")
+
+    Start --> FR6_Check
+    FR6_Check --> FR6_ReadCurrent
+    FR6_ReadCurrent --> FR6_Insert
+    FR6_Insert --> FR6_Content
+    FR6_Content --> FR6_Verify
+
+    FR6_Verify --> FR7_Check
+    FR7_Check --> FR7_ReadCurrent
+    FR7_ReadCurrent --> FR7_Insert
+    FR7_Insert --> FR7_Content
+    FR7_Content --> FR7_TestDirGuide
+    FR7_TestDirGuide --> FR7_Verify
+
+    FR7_Verify --> FR8_Check
+    FR8_Check --> FR8_ReadCurrent
+    FR8_ReadCurrent --> FR8_Insert
+    FR8_Insert --> FR8_PermittedDocs
+    FR8_PermittedDocs --> FR8_ProhibitedFiles
+    FR8_ProhibitedFiles --> FR8_NoTargetCase
+    FR8_NoTargetCase --> FR8_ToolProhibit
+    FR8_ToolProhibit --> FR8_Verify
+
+    FR8_Verify --> BuildCheck
+    BuildCheck --> BuildVerify
+    BuildVerify --> TestRun
+    TestRun --> TestVerify
+    TestVerify --> MCPRestart
+    MCPRestart --> FinalVerify
+    FinalVerify --> Complete

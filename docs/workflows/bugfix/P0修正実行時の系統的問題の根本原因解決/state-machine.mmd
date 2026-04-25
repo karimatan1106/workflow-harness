@@ -1,0 +1,84 @@
+stateDiagram-v2
+    Init --> Start
+
+    Start --> ValidatorInitialization: フェーズ開始
+
+    %% FR-1: artifact-validator バリデーション処理
+    ValidatorInitialization --> ContentAnalysis: コンテンツ入力受け取り
+    ContentAnalysis --> CodeFenceDetection: コードフェンス検出開始<br/>(バックティック/チルダ)
+    CodeFenceDetection --> InsideCodeFence: フェンス開始検出
+    CodeFenceDetection --> CodeExtraction: フェンス範囲外行抽出
+    InsideCodeFence --> CodeFenceClose: フェンス終了行検出
+    CodeFenceClose --> CodeExtraction: 非コード行配列生成
+
+    CodeExtraction --> ForbiddenPatternCheck: 禁止パターン検出<br/>(extractNonCodeLines適用)
+    ForbiddenPatternCheck --> BracketDetection: 角括弧検出<br/>(extractNonCodeLines適用)
+    BracketDetection --> DuplicateLineCheck: 重複行検出
+
+    %% 検出結果判定
+    ForbiddenPatternCheck --> ErrorDetected: パターン検出時<br/>エラー情報生成
+    ForbiddenPatternCheck --> BracketDetection: パターンなし
+    BracketDetection --> ErrorDetected: 角括弧検出時<br/>エラー情報生成
+    BracketDetection --> DuplicateLineCheck: 角括弧なし
+    DuplicateLineCheck --> ErrorDetected: 重複検出時<br/>エラー情報生成
+    DuplicateLineCheck --> ValidationSuccess: エラーなし
+
+    %% FR-2: モデルエスカレーション
+    ErrorDetected --> RetryCountEvaluation: エラー発生<br/>リトライカウント評価
+    RetryCountEvaluation --> FirstRetryPhase: retryCount=1<br/>(初回リトライ)
+    RetryCountEvaluation --> SecondRetryPhase: retryCount>=2<br/>(2回目以降)
+
+    FirstRetryPhase --> BuildRetryPrompt1: buildRetryPrompt実行<br/>suggestModelEscalation=false
+    BuildRetryPrompt1 --> HaikuRetry: haiku継続使用
+
+    SecondRetryPhase --> MultipleErrorCheck: 複数エラー判定<br/>(errors.length>=3)
+    MultipleErrorCheck --> BuildRetryPrompt2: buildRetryPrompt実行<br/>suggestModelEscalation=true
+    BuildRetryPrompt2 --> SonnetEscalation: sonnetへエスカレーション
+    MultipleErrorCheck --> BuildRetryPrompt2: 角括弧/禁止語検出
+
+    HaikuRetry --> SubagentExecution: Haiku subagent実行
+    SonnetEscalation --> SubagentExecution: Sonnet subagent実行
+
+    SubagentExecution --> BinaryRetryResult: リトライ成功/失敗
+    BinaryRetryResult --> ValidationSuccess: リトライ成功
+    BinaryRetryResult --> ErrorDetected: リトライ失敗
+
+    %% FR-3: テスト記録キーワード検出
+    ValidationSuccess --> TestResultPhase: テスト記録フェーズへ
+    TestResultPhase --> KeywordAnalysis: 出力テキスト解析
+    KeywordAnalysis --> CompoundWordContext: isCompoundWordContext実行<br/>(複合語判定)
+    CompoundWordContext --> BlockingFailureDetection: BLOCKING_FAILURE_KEYWORDS検出
+
+    BlockingFailureDetection --> CompoundWordMatch: 複合語パターン検出<br/>('Fail Closed'等)
+    CompoundWordMatch --> RecordAccepted: テスト記録許可<br/>(誤拒否排除)
+    BlockingFailureDetection --> RecordRejected: 単語単独検出<br/>ブロック対象キーワード
+
+    %% FR-4: regression_test遷移制御とハッシュポリシー
+    TestResultPhase --> PhaseTransitionEvaluation: フェーズ遷移判定
+    PhaseTransitionEvaluation --> TestingToRegressionCheck: testing→regression_test<br/>遷移時チェック
+    TestingToRegressionCheck --> BaselineExistenceVerification: ベースライン存在チェック<br/>(taskState.testBaseline)
+
+    BaselineExistenceVerification --> BaselineFound: ベースライン記録済み
+    BaselineExistenceVerification --> BaselineNotFound: ベースライン未設定
+
+    BaselineFound --> RegressionPhaseEntry: regression_testフェーズへ進行
+    BaselineNotFound --> ConfirmationDialog: requiresConfirmation警告<br/>提示
+    ConfirmationDialog --> UserConfirmation: ユーザー確認
+    UserConfirmation --> ForceTransitionFlag: forceTransition判定
+    ForceTransitionFlag --> ForceEnabled: forceTransition=true
+    ForceTransitionFlag --> ForceDisabled: forceTransition未指定
+
+    ForceEnabled --> RegressionPhaseEntry: 遷移許可<br/>(強制遷移)
+    ForceDisabled --> ReturnToTestingPhase: ベースライン記録へ戻す<br/>(workflow_capture_baseline)
+    ReturnToTestingPhase --> TestResultPhase: 再記録フロー開始
+
+    RegressionPhaseEntry --> HashValidationPolicy: ハッシュ重複ポリシー適用<br/>(regression_testフェーズ)
+    HashValidationPolicy --> SameHashDetection: 既存ハッシュ値一致検出
+    SameHashDetection --> RegressionHashTreatment: regression_testでは<br/>上書き記録許可
+    RegressionHashTreatment --> RecordAccepted: テスト記録許可<br/>(修正前後比較両記録)
+
+    RecordAccepted --> ValidationSuccess
+    RecordRejected --> ErrorRecovery: エラー記録処理
+    ErrorRecovery --> End
+    ValidationSuccess --> End
+    End --> Completed

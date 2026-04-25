@@ -1,0 +1,78 @@
+%% 誤配置テストファイル削除フローチャート
+%%
+%% サマリー（目的・決定事項・次フェーズ情報）:
+%% 目的: RCA-1タスクで生成された誤配置テストファイル(verify-sync.test.ts)をworkflow-plugin/mcp-server/src/直下から削除し、
+%% ディレクトリ構造を正規化する。削除対象はgit未追跡ファイルであり、削除によるコミット履歴への影響なし。
+%%
+%% 主要な決定事項:
+%% 1. 削除対象ファイル: workflow-plugin/mcp-server/src/verify-sync.test.ts（git未追跡、826行、古い版）
+%% 2. 削除方法: rm コマンドを使用（git rm ではなく通常削除）
+%% 3. 変更不要ファイル: workflow-plugin/mcp-server/src/__tests__/verify-sync.test.ts（正規ファイル、git追跡済み）
+%% 4. テスト回帰判定: テスト失敗件数がゼロであれば正常（テスト総数変動がある場合は記録）
+%%
+%% 次フェーズで必要な情報:
+%% 1. 削除実行前に ls でファイル存在確認を行うこと
+%% 2. 削除実行後に ls でファイル消滅を確認し、__tests__ディレクトリと本体ファイル(verify-sync.ts)は存在すること
+%% 3. git status で削除がgit未追跡ファイルであることを確認（ステータスクリーン）
+%% 4. npm test 実行後に失敗件数がゼロであることを記録
+%% 5. テスト総数が897件付近であることを確認（増減ある場合は原因を記録）
+
+flowchart TD
+    Start("開始: 誤配置ファイル削除プロセス")
+
+    Start --> CheckFile("ls コマンドで対象ファイル存在確認<br/>C:\\ツール\\Workflow\\workflow-plugin\\mcp-server\\src\\")
+
+    CheckFile --> FileExists{"ファイル<br/>verify-sync.test.ts<br/>存在?"}
+
+    FileExists -->|Yes| VerifyGitStatus("git ls-files で追跡状態確認<br/>未追跡であることを検証")
+
+    FileExists -->|No| ErrorNotFound("エラー: 削除対象ファイルが見つからない<br/>既に削除済みまたはパス誤り")
+
+    VerifyGitStatus --> IsUntracked{"ファイルが<br/>git未追跡<br/>状態?"}
+
+    IsUntracked -->|Yes| ExecuteDelete("rm コマンド実行<br/>rm 'C:\\ツール\\Workflow\\workflow-plugin/mcp-server/src/verify-sync.test.ts'")
+
+    IsUntracked -->|No| ErrorTracked("エラー: ファイルがgit追跡済み<br/>git rm で削除すること")
+
+    ExecuteDelete --> ConfirmDelete("削除後 ls でファイル消滅を確認<br/>verify-sync.test.ts が出力に無いこと")
+
+    ConfirmDelete --> DeleteConfirmed{"削除確認<br/>成功?"}
+
+    DeleteConfirmed -->|Yes| CheckOtherFiles("正規ファイルと本体ファイルの存在確認<br/>__tests__/verify-sync.test.ts（正規ファイル）存在確認<br/>verify-sync.ts（本体）存在確認")
+
+    DeleteConfirmed -->|No| ErrorDeleteFailed("エラー: ファイル削除失敗<br/>パス確認して再実行")
+
+    CheckOtherFiles --> OthersOK{"他ファイル<br/>正常存在?"}
+
+    OthersOK -->|Yes| VerifyGitClean("git status で削除後のステータス確認<br/>git -C workflow-plugin status --short")
+
+    OthersOK -->|No| ErrorOthersAffected("エラー: 関連ファイルが影響を受けた<br/>予期しない変更がある")
+
+    VerifyGitClean --> IsClean{"git ステータス<br/>クリーン<br/>またはgit未追跡<br/>削除のみ?"}
+
+    IsClean -->|Yes| RunTests("testingフェーズで npm test 実行<br/>cd workflow-plugin/mcp-server && npm test")
+
+    IsClean -->|No| ErrorDirty("警告: git に予期しない変更が記録<br/>原因を調査する必要がある")
+
+    RunTests --> TestResults{"テスト実行<br/>失敗件数<br/>ゼロ?"}
+
+    TestResults -->|Yes| RecordTestCount("テスト総数を記録<br/>期待値: 897件前後<br/>増減があった場合は原因を記録")
+
+    TestResults -->|No| AnalyzeFail("失敗テストを分析<br/>削除によるリグレッションか確認")
+
+    RecordTestCount --> Complete("完了: 品質基準達成<br/>・削除確認: OK<br/>・git状態: OK<br/>・テスト失敗: ゼロ")
+
+    AnalyzeFail --> IsRegressionFromDelete{"削除に起因する<br/>リグレッション<br/>?"}
+
+    IsRegressionFromDelete -->|Yes| Fail("タスク失敗: リグレッション検出<br/>原因を特定して修正")
+
+    IsRegressionFromDelete -->|No| Complete
+
+    ErrorNotFound --> EndError("タスク中止")
+    ErrorTracked --> EndError
+    ErrorDeleteFailed --> EndError
+    ErrorOthersAffected --> EndError
+    ErrorDirty --> EndError
+    Fail --> EndError
+
+    Complete --> End("終了: 誤配置ファイル削除完了")

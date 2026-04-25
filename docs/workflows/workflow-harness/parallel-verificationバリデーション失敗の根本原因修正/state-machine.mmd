@@ -1,0 +1,95 @@
+stateDiagram-v2
+    [*] --> DocumentationDrift
+
+    DocumentationDrift: ドキュメント-実装乖離<br/>（角括弧説明誤り）
+    note right of DocumentationDrift
+        CLAUDE.md：「コードフェンス外の全角括弧禁止」
+        definitions.ts：「配列記法禁止」
+        artifact-validator.ts：「[#xxx#]形式のみ検出」
+        →説明内容が矛盾
+    end note
+
+    DocumentationDrift --> CLAUDEMdAnalysis: 現状分析開始
+
+    CLAUDEMdAnalysis: CLAUDE.md修正準備<br/>（説明文箇所特定）
+    note right of CLAUDEMdAnalysis
+        修正対象箇所：
+        1. 成果物品質要件内の禁止パターン説明
+        2. 禁止パターン完全リスト末尾
+    end note
+
+    CLAUDEMdAnalysis --> CLAUDEMdUpdate: CLAUDE.md修正実行<br/>（テンプレート更新）
+
+    CLAUDEMdUpdate: CLAUDE.md更新完了<br/>（禁止形式を[#xxx#]に統一）
+    note right of CLAUDEMdUpdate
+        修正内容：
+        - ハッシュ記号付きのみが禁止
+        - 通常の角括弧は許可
+        - コードフェンス内は除外
+    end note
+
+    CLAUDEMdUpdate --> DefinitionsTsAnalysis: definitions.ts分析
+
+    DefinitionsTsAnalysis: definitions.ts修正準備<br/>（複数箇所特定）
+    note right of DefinitionsTsAnalysis
+        修正対象箇所：
+        1. e2e_test（FR-3）
+        2. performance_test（FR-4）
+        3. buildSubagentTemplate
+        4. buildRetryPrompt
+    end note
+
+    DefinitionsTsAnalysis --> DefinitionsTsUpdate: definitions.ts修正実行<br/>（ガイダンス更新）
+
+    DefinitionsTsUpdate: definitions.ts更新完了<br/>（全ガイダンス統一）
+    note right of DefinitionsTsUpdate
+        修正内容：
+        - FR-3・FR-4の配列記法説明削除
+        - buildSubagentTemplate更新
+        - buildRetryPrompt更新
+    end note
+
+    DefinitionsTsUpdate --> BuildProcess: ビルド実行<br/>（TypeScript→JavaScript）
+
+    BuildProcess: ビルド完了<br/>（dist/*.js更新）
+    note right of BuildProcess
+        実行コマンド：
+        cd workflow-plugin/mcp-server
+        npm run build
+    end note
+
+    BuildProcess --> ServerRestart: MCPサーバー再起動
+
+    ServerRestart: サーバー再起動完了<br/>（新ガイダンス有効化）
+    note right of ServerRestart
+        1. プロセス終了
+        2. 新バイナリ読み込み
+        3. モジュールキャッシュリセット
+    end note
+
+    ServerRestart --> TestExecution: テスト実行
+
+    TestExecution: 全テスト実行<br/>（945件検証）
+    note right of TestExecution
+        検証項目：
+        - 既存テスト945件の通過
+        - リグレッション確認
+        - テンプレート動作確認
+    end note
+
+    TestExecution --> TestPass: テスト全通過<br/>（品質保証完了）
+    note right of TestPass
+        結果：945/945件合格
+        リグレッション：なし
+    end note
+
+    TestPass --> DriftResolution: ドキュメント-実装一致<br/>（修正完了状態）
+    note right of DriftResolution
+        達成状況：
+        ✅ CLAUDE.md（[#xxx#]形式統一）
+        ✅ definitions.ts（ガイダンス統一）
+        ✅ artifact-validator.ts（実装仕様一致）
+        ✅ テスト合格（品質確認）
+    end note
+
+    DriftResolution --> [*]

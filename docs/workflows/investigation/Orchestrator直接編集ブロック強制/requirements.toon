@@ -1,0 +1,14 @@
+phase: requirements
+taskId: 9fb16d24-4d20-4da1-845a-9d93167ee1b9
+ts: "2026-03-02T10:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  REQ-001,runHook内isBypassPath直後にdocs/workflows/パスチェックを追加してexit 2でブロックする,既存コード構造を最小限の変更で拡張でき行数制限を守れる
+  REQ-002,SKILL.md Section 3にOrchestratorの直接編集違反例と正しいパターンを追加する,CLAUDE.md Section 6の文書化済みルールをSKILL.mdにも反映し意識強化できる
+  REQ-003,workflow.mdにSKILL.mdと同一変更を適用してミラー状態を維持する,両ファイル乖離による環境依存リスクを排除できる
+  REQ-004,パスチェックはreplaceでスラッシュ正規化してからincludesで検出する,Windows/Unix両環境でのパス表記差異を吸収できる
+  REQ-005,既存isBypassPath/getEffectiveExtensionのインターフェースは変更しない,最小変更原則に従い副作用リスクをゼロにできる
+artifacts[2]{path,role,summary}:
+  docs/workflows/Orchestrator直接編集ブロック強制/requirements.md,spec,機能要件・非機能要件・AC-1〜AC-5・NOT_IN_SCOPEを定義した要件定義書
+  docs/workflows/Orchestrator直接編集ブロック強制/requirements.toon,checkpoint,requirementsフェーズのTOONチェックポイント
+next:
+  readFiles[5]: workflow-harness/hooks/phase-edit-guard.js,.claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md,docs/workflows/Orchestrator直接編集ブロック強制/requirements.md,docs/workflows/Orchestrator直接編集ブロック強制/scope_definition.toon

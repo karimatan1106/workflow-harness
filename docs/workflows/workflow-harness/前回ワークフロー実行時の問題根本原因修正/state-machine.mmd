@@ -1,0 +1,46 @@
+stateDiagram-v2
+    [*] --> TaskStart: workflow_start実行
+
+    state TaskStart {
+        [*] --> GitDiffExec: git diff実行
+        GitDiffExec --> GitDiffSuccess: 成功
+        GitDiffExec --> GitDiffFailure: 失敗
+        GitDiffSuccess --> SavePreExisting: ファイルリスト取得
+        GitDiffFailure --> SavePreExisting: 空配列で保存
+        SavePreExisting --> [*]: preExistingChanges記録完了
+    }
+
+    TaskStart --> TaskExecution: タスク開始
+
+    state TaskExecution {
+        [*] --> Research
+        Research --> Requirements
+        Requirements --> Implementation
+        Implementation --> DocsUpdate
+        DocsUpdate --> [*]
+    }
+
+    TaskExecution --> ScopeValidation: docs_update to commit遷移
+
+    state ScopeValidation {
+        [*] --> GetChangedFiles: git diff実行
+        GetChangedFiles --> FilterLoop: changedFiles取得
+        FilterLoop --> CheckPreExisting: 各ファイルを判定
+        CheckPreExisting --> Skip: preExistingChangesに含まれる
+        CheckPreExisting --> CheckExclude: 含まれない
+        CheckExclude --> Skip: EXCLUDE_PATTERNSに一致
+        CheckExclude --> CheckScope: 一致しない
+        CheckScope --> InScope: スコープ内
+        CheckScope --> OutOfScope: スコープ外
+        Skip --> FilterLoop: 次のファイルへ
+        InScope --> FilterLoop: 次のファイルへ
+        OutOfScope --> ValidationFailed: スコープ違反検出
+        FilterLoop --> ValidationPassed: 全ファイル処理完了
+    }
+
+    ScopeValidation --> CommitPhase: 検証合格
+    ScopeValidation --> Blocked: 検証失敗
+    CommitPhase --> PushPhase
+    PushPhase --> Completed
+    Blocked --> [*]: エラー終了
+    Completed --> [*]: 正常完了

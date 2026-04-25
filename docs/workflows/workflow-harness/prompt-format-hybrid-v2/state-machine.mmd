@@ -1,0 +1,21 @@
+stateDiagram-v2
+    [*] --> Start
+    Start --> ReadFile : open workflow-delegation.md
+    ReadFile --> InsertFormatRules : locate insertion point (line 117)
+    InsertFormatRules --> AddContaminationGuard : append format rule to Common Constraints
+    AddContaminationGuard --> VerifyLineCount : count total lines
+    VerifyLineCount --> End : line count <= 200
+    VerifyLineCount --> TrimContent : line count > 200
+    TrimContent --> VerifyLineCount : re-check after trimming
+    End --> [*]
+
+    Start : Initialize implementation phase
+    ReadFile : ConfirmCurrentLines then IdentifyInsertPoint
+    InsertFormatRules : CreateHeading then AddSixRules
+    AddContaminationGuard : Append guard line to constraints
+    VerifyLineCount : RunWordCount then CompareThreshold
+    TrimContent : Condense or remove excess content
+    End : All F-NNN requirements verified
+
+    note right of Start : Entry point for implementation
+    note left of TrimContent : Triggered only if exceeding 200 lines

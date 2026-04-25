@@ -1,0 +1,59 @@
+task: tier-b-gaps-n08-n15
+phase: scope_definition
+intent: Tier B 8項目（N-08〜N-15）の実用性分析と統合方針決定
+riskScore: 4
+rationale: "8ツール中、プロジェクト構造（MCPサーバー+Next.jsフロントエンド+VSCodeプラグイン）に実際に適用可能なのは5件。Dockerfileが存在せずAPIテスト対象サーバーが存在しないため、N-13 HurlとN-15 container-structure-testはスコープ外。N-14 Playwright CLIはフロントエンド統合テストに有用だがe2eディレクトリ未整備のため段階的導入。"
+
+toolAnalysis[8]{id,tool,verdict,integration,rationale}:
+  N-08, Oxlint, in-scope, "PostToolUseフック（post-tool-lint.sh）にoxlint --deny-only実行を追加", "TypeScript/Reactプロジェクトに即座に適用可能。ESLintの50-100倍高速でフック実行時間を増加させない。biome check と並列実行し片方が未インストールでもgraceful degradation。"
+  N-09, Biome, in-scope, "post-tool-lint.sh の既存biome統合を拡張しformat+lint統合チェックに変更", "既にpost-tool-lint.shでbiome checkが統合済み。現在はcheck限定のため format --check を追加してフォーマット一貫性も保証する。npm install @biomejs/biome が必要。"
+  N-10, jscpd, in-scope, "archgateルールとして重複コード検出を追加しDoD時にチェック", "MCPサーバー（2000行超）とフロントエンド（コンポーネント群）両方の重複検出に有用。archgate.tsの既存checkType体系にduplicate_code型を追加しjscpd --format json の出力をパースする。"
+  N-11, eslint-plugin-security, in-scope, "workflow-pluginのeslint.config.jsにセキュリティルールを追加", "workflow-pluginに既にESLint+typescript-eslintが構成済み。pluginを追加するだけで eval/child_process/非安全正規表現を静的検出できる。MCPサーバーはESLint未導入のため対象外。"
+  N-12, ast-grep, in-scope, "archgateルールのpattern_absent/pattern_required検査をast-grepベースに強化", "現在archgate.tsのパターンマッチはRegExpベースで構文構造を認識できない。ast-grepはAST認識のパターンマッチングを提供し、console.log残存検出やimportパターン強制などを正確に実行できる。CLIバイナリとして導入しexecaで呼び出す。"
+  N-13, Hurl, out-of-scope, "該当なし", "プロジェクトにHTTP APIエンドポイントが本番運用で外部公開されていない。MCPサーバーはstdio通信でありHTTPテスト対象外。フロントエンドはNext.jsだがAPIルートの外部テストより vitest による統合テストが適切。"
+  N-14, Playwright CLI, deferred, "e2eディレクトリ構築後にparallel_verificationのe2e_testサブフェーズで使用", "フロントエンドのE2Eテストに有用だが、e2eディレクトリ未整備かつNext.js開発サーバー起動が前提。別タスクでe2e基盤を整備した後に導入する方が効率的。現時点ではパッケージインストールのみ準備。"
+  N-15, container-structure-test, out-of-scope, "該当なし", "プロジェクト内にDockerfileが存在しない。コンテナイメージのビルド・デプロイパイプラインが未構築のため、コンテナ構造テストを適用する対象がない。Dockerfile導入時に再評価する。"
+
+scopeFiles[6]{path,role}:
+  .claude/hooks/post-tool-lint.sh, impl
+  workflow-harness/mcp-server/src/tools/archgate.ts, impl
+  workflow-plugin/eslint.config.js, impl
+  workflow-harness/mcp-server/src/tools/defs-b.ts, impl
+  workflow-harness/mcp-server/package.json, config
+  workflow-plugin/package.json, config
+
+scopeDirs[4]{path,purpose}:
+  .claude/hooks, PostToolUseフック実装の格納先
+  workflow-harness/mcp-server/src/tools, archgateとMCPツール拡張の格納先
+  workflow-harness/mcp-server/src/__tests__, archgate拡張のテスト格納先
+  workflow-plugin, eslint-plugin-security統合対象
+
+newFiles[3]{path,role}:
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, impl
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, test
+  workflow-harness/mcp-server/src/__tests__/archgate-jscpd.test.ts, test
+
+outOfScope[4]{item,reason}:
+  N-13 Hurl APIテスト, MCPサーバーがstdio通信でありHTTPエンドポイント不在
+  N-15 container-structure-test, プロジェクトにDockerfile不在でコンテナビルド未構築
+  N-14 Playwright CLI完全統合, e2eディレクトリ未整備のため基盤構築を別タスクとする
+  workflow-harness/mcp-serverへのESLint導入, MCPサーバーはvitest+tsc--noEmitで品質保証しておりESLint追加は過剰
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "N-08 OxlintはPostToolUseフック（post-tool-lint.sh）への追加で統合する", "フック内でbiome checkと同列にoxlint --deny-onlyを実行する。未インストール時はサイレントスキップ（graceful degradation）とし、既存のN-01 biome統合パターンと同一の設計方針を維持する。"
+  SD-2, "N-09 Biome拡張はformat --checkを既存フックに追加する形で行う", "post-tool-lint.shに既にbiome check統合済み。現在のlint-onlyチェックにformat --checkを追加し、フォーマット不一致も警告として報告する。破壊的変更なし。"
+  SD-3, "N-10 jscpdはarchgate.tsの新checkType duplicate_codeとして統合する", "archgateは既にline_count/pattern_absent/pattern_requiredの3種を持つ。jscpd --format json --threshold 5の出力をパースする新checkTypeを追加し、DoDチェック時に重複コードを自動検出する。閾値はデフォルト5%で設定しarchgateルール登録時にオーバーライド可能。"
+  SD-4, "N-11 eslint-plugin-securityはworkflow-pluginのeslint.config.jsにのみ適用する", "MCPサーバー（workflow-harness）にはESLintが未構成でありESLint導入コストが高い。一方workflow-pluginは既にESLint+typescript-eslintが完全構成済み。セキュリティルールの追加はpluginインストールと設定ファイル数行の変更で完了する。"
+  SD-5, "N-12 ast-grepはarchgate.tsのパターンチェック精度向上に使用する", "現在のRegExpベースパターンマッチは文字列リテラル内のconsole.logを誤検出する等の精度問題がある。ast-grepはAST認識でこれを解決する。CLIバイナリとしてインストールしexeca経由で呼び出す。archgate.tsにast_grep_pattern型を新設する。"
+  SD-6, "全ツールのインストールはgraceful degradationパターンで統一する", "各ツールの未インストール状態でもフック/archgateがエラー終了しないようcommand -v チェックを前置する。これによりCI環境やクリーンインストール時の互換性を維持する。"
+  SD-7, "linter-runner.tsを新設し各リンターの実行とJSON出力パースを一元化する", "post-tool-lint.shからのシェル呼び出しとarchgate.tsからのTypeScript呼び出しの両方で再利用可能な統一ランナーを提供する。execa依存（MCPサーバーに既存）を活用しプロセス実行を標準化する。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/scope-definition.toon, report, 8ツールの実用性分析とスコープ決定
+  docs/workflows/tier-b-gaps-n08-n15/requirements.toon, spec, 受入基準と要件定義（次フェーズ）
+  docs/workflows/tier-b-gaps-n08-n15/research.toon, research, 各ツールの技術調査（次フェーズ）
+
+next:
+  criticalDecisions: "SD-3（jscpd閾値5%）とSD-5（ast-grepバイナリ依存）が実装アーキテクチャの基盤を決定する"
+  readFiles: "workflow-phases.md, workflow-gates.md, archgate.ts, post-tool-lint.sh"
+  warnings: "ast-grepはRust製バイナリのため Windows/Linux/macOS 各プラットフォームでのインストール検証が必要"

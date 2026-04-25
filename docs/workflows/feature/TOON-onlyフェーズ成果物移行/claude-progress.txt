@@ -1,0 +1,11 @@
+[2026-03-01T17:20:31.260Z] COMPLETED: scope_definition → NEXT: research | Task: TOON-onlyフェーズ成果物移行 | Done: 1 phases
+[2026-03-01T17:26:04.437Z] COMPLETED: research → NEXT: requirements | Task: TOON-onlyフェーズ成果物移行 | Done: 2 phases
+[2026-03-01T17:37:05.915Z] COMPLETED: requirements → NEXT: planning | Task: TOON-onlyフェーズ成果物移行 | Done: 3 phases
+[2026-03-01T17:42:00.299Z] COMPLETED: planning → NEXT: test_design | Task: TOON-onlyフェーズ成果物移行 | Done: 4 phases
+[2026-03-01T17:45:29.447Z] COMPLETED: test_design → NEXT: test_impl | Task: TOON-onlyフェーズ成果物移行 | Done: 5 phases
+[2026-03-01T17:46:40.885Z] COMPLETED: test_impl → NEXT: implementation | Task: TOON-onlyフェーズ成果物移行 | Done: 6 phases
+[2026-03-01T18:18:25.101Z] COMPLETED: implementation → NEXT: build_check | Task: TOON-onlyフェーズ成果物移行 | Done: 7 phases
+[2026-03-01T18:18:52.231Z] COMPLETED: build_check → NEXT: testing | Task: TOON-onlyフェーズ成果物移行 | Done: 8 phases
+[2026-03-01T18:19:34.010Z] COMPLETED: testing → NEXT: commit | Task: TOON-onlyフェーズ成果物移行 | Done: 9 phases
+[2026-03-01T18:23:30.162Z] COMPLETED: commit → NEXT: push | Task: TOON-onlyフェーズ成果物移行 | Done: 10 phases
+[2026-03-01T18:24:17.944Z] COMPLETED: push → NEXT: completed | Task: TOON-onlyフェーズ成果物移行 | Done: 11 phases

@@ -1,0 +1,85 @@
+# Flowchart: harness-template-reliability
+
+phase: flowchart
+task: harness-template-reliability
+taskId: b160b7f1-1db4-4bd5-a4b1-603492c8bdff
+
+## decisions
+
+- FC-001: テンプレート文言修正(FIX-1/FIX-4)を最初に実行する。ロジック変更を含まないため回帰リスクが最小であり、後続ステップの前提を安定させる。
+- FC-002: FIX-1はPL-01→PL-02→PL-03の直列実行とする。同一ファイル(defs-stage0.ts)への変更がPL-02/PL-03に含まれるため、並列実行するとコンフリクトが発生する。
+- FC-003: FIX-3のcascade分岐はBoolean正規化(undefined→false)を冒頭で実施し、cascade===trueの場合のみreapproveブロックに入る。デフォルトパスとcascadeパスを完全分離する。
+- FC-004: cascade-reapproveで前提条件(IA-1/IA-2/IA-6)未達の場合、即時中断してユーザーに手動対応を通知する。連鎖失敗のブロック防止(TM-003)のため、部分的な再承認状態を許容しない。
+- FC-005: FIX-5のcompleted滞留検出はNumber.isFinite()による不正値チェックを前段に配置し、不正値の場合はスキップして警告を出さない。誤警告防止(TM-006)の直接対策。
+- FC-006: FIX-3のapproval削除(PL-08)はPHASE_APPROVAL_GATESに存在しかつcompletedPhasesから除外済みのフェーズに限定する。削除範囲の過剰拡大を防止する(TM-002)。
+
+## flowchart
+
+```mermaid
+flowchart TD
+    START([FIX-1〜FIX-5 実装開始]) --> PL01
+
+    subgraph PHASE_A [FIX-1/FIX-4: テンプレート文言修正]
+        PL01[PL-01: toon-skeletons-a.ts<br>userResponseキー追加]
+        PL01 --> PL02[PL-02: defs-stage0.ts<br>AskUserQuestion必須指示追加]
+        PL02 --> PL03[PL-03: defs-stage0.ts<br>SUMMARY_SECTIONプレースホルダ挿入]
+        PL03 --> PL04[PL-04: definitions-shared.ts<br>TOON形式ガイダンス強化]
+    end
+
+    PHASE_A --> PL05
+
+    subgraph PHASE_B [FIX-2: testingテンプレート修正]
+        PL05[PL-05: defs-stage5.ts<br>baseline_captureリマインド追加]
+    end
+
+    PHASE_B --> PL06
+
+    subgraph PHASE_C [FIX-5: analytics警告追加]
+        PL06[PL-06: phase-analytics.ts<br>completed滞留検出]
+        PL06 --> FC_FINITE{FC-005:<br>Number.isFinite<br>経過時間は有効値?}
+        FC_FINITE -->|有効| FC_STALE{経過時間 ><br>3600s?}
+        FC_FINITE -->|不正値| SKIP_WARN[スキップ: 警告なし]
+        FC_STALE -->|Yes| EMIT_WARN[滞留警告をadviceに追加]
+        FC_STALE -->|No| NO_WARN[警告不要: 正常範囲]
+    end
+
+    EMIT_WARN --> PL07
+    NO_WARN --> PL07
+    SKIP_WARN --> PL07
+
+    subgraph PHASE_D [FIX-3: cascade-reapprove]
+        PL07[PL-07: defs-a.ts<br>cascadeパラメータ追加<br>optional/後方互換]
+        PL07 --> PL08[PL-08: scope-nav.ts + manager-lifecycle.ts<br>goBack後のapproval削除]
+        PL08 --> FC_SCOPE{FC-006:<br>対象フェーズは<br>PHASE_APPROVAL_GATES内<br>かつ未complete?}
+        FC_SCOPE -->|Yes| DEL_APPROVAL[approval削除実行]
+        FC_SCOPE -->|No| SKIP_DEL[削除スキップ: 範囲外保護]
+        DEL_APPROVAL --> PL09
+        SKIP_DEL --> PL09
+
+        PL09[PL-09: scope-nav.ts<br>cascade-reapproveロジック]
+        PL09 --> FC_CASCADE{FC-003:<br>cascade === true?}
+        FC_CASCADE -->|false / undefined| DEFAULT_PATH[デフォルトパス:<br>cascade処理なし<br>goBack結果のみ返却]
+        FC_CASCADE -->|true| FC_PRECOND{FC-004:<br>前提条件チェック<br>IA-1 / IA-2 / IA-6}
+        FC_PRECOND -->|全て通過| REAPPROVE_LOOP[PHASE_APPROVAL_GATES走査<br>handleHarnessApprove経由で再承認]
+        FC_PRECOND -->|未達| ABORT_CASCADE[即時中断:<br>ユーザーに手動対応通知]
+        REAPPROVE_LOOP --> FC_GATE{承認ゲート<br>通過?}
+        FC_GATE -->|成功| NEXT_GATE{次のゲート<br>あり?}
+        FC_GATE -->|失敗| ABORT_CASCADE
+        NEXT_GATE -->|Yes| REAPPROVE_LOOP
+        NEXT_GATE -->|No| CASCADE_DONE[cascade-reapprove完了]
+    end
+
+    DEFAULT_PATH --> DONE
+    CASCADE_DONE --> DONE
+    ABORT_CASCADE --> DONE
+    DONE([全FIX実装完了])
+```
+
+## artifacts
+
+- docs/workflows/harness-template-reliability/flowchart.mmd: FIX-1〜FIX-5の実装フローチャート。4サブグラフ(テンプレート文言/testing/analytics/cascade)、6分岐判定(FC-001〜FC-006)を含む。
+
+## next
+
+- readFiles: mcp-server/src/tools/handlers/scope-nav.ts, mcp-server/src/tools/handlers/approval.ts, mcp-server/src/phases/toon-skeletons-a.ts, mcp-server/src/phases/defs-stage0.ts
+- warnings: FIX-3(PHASE_D)の実装時はPL-07→PL-08→PL-09の順序を厳守すること。PL-09のreapproveループではhandleHarnessApprove関数を直接呼び出し、独自承認ロジックを実装しないこと。

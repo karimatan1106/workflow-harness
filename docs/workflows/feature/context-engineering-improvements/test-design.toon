@@ -1,0 +1,68 @@
+phase: test_design
+task: context-engineering-improvements
+status: complete
+summary: "InputFileModeとrefinedIntentの2機能に対するテスト戦略。AC-1〜AC-4の全4件に対応するTC-AC1-01〜TC-AC4-02の7テストケースを定義。ユニットテスト主体で統合テストをapproval経路の確認に使用する。"
+
+decisions[6]{id,statement,rationale}:
+  TD-1, "テスト戦略はユニットテスト主体(6件)＋統合テスト補完(1件)とする。unit:integration=6:1", "実装対象はInputFileMode型定義・buildSubagentPromptヘッダー生成・refreshCheckpointTraceability伝播・approval.ts生成ロジックの4モジュール。型定義とpure functionはユニットで十分。approval経路はハーネスhandlerとstateManagerを横断するため統合テストが必要"
+  TD-2, "types-core.tsの行数検証はwc -lコマンドでなくvitest内でreadFileSyncによるassertとして実装する", "CI上でwc -l結果をparseするよりテストコード内でreadFileSyncして行数カウントした方がOS差異なく安定して実行できる。200行制限はKC-1の核心制約のためテストに組み込む価値がある"
+  TD-3, "buildSubagentPromptのモード別ヘッダー検証はモック不使用でPHASE_REGISTRYを直接参照する実装で行う", "PL-3決定通りbasenameマッチングはPHASE_REGISTRYのinputFileModesと照合する。テストでは実際のregistryエントリを使用して設定値のin-full/in-summary/in-refサフィックス出力を検証する方がモック汚染なく信頼性が高い"
+  TD-4, "既存テスト723件はrefinedIntent追加により影響を受けないことをKC-2(TaskStateSchema passthrough)を根拠に保証する", "ZodスキーマはpassthroughなためrefinedIntentフィールドの追加でバリデーションエラーは発生しない。しかし型変更がコンパイルエラーを引き起こす可能性があるため、既存のhandler-approval.test.tsが引き続きパスすることでregression保証とする"
+  TD-5, "エッジケーステスト方針: 未設定ファイル(モードなし)はデフォルトfull扱いとなることを検証する", "PL-3でデフォルト動作がfullであると決定済み。inputFileModes辞書にキーが存在しないファイルに対してin: filename[full]サフィックスが付与されることをTC-AC1-03で確認する"
+  TD-6, "refinedIntent未設定時はuserIntentフォールバックをTC-AC2-02で検証する。未設定(undefined)時はuserIntentがそのまま使われることを明示的にassertする", "PL-2の`refinedIntent ?? userIntent`実装の正確な動作をカバー。nullishコアリシング挙動を明示テストすることでLLM実装者の混乱を防ぐ"
+
+test_strategy:
+  approach: "ユニットテスト主体。対象4モジュールのpure functionをvitest直接invocationで検証。approval統合はhandler-test-setupを流用"
+  test_files: "workflow-harness/mcp-server/src/__tests__/context-engineering.test.ts (新規1ファイル)"
+  existing_coverage: "handler-approval.test.tsの既存3テストは変更不要。manager-core.test.tsの13テストも影響なし"
+  framework: "vitest 同一setup pattern (mkdtempSync + vi.stubEnv + vi.resetModules)"
+
+tc_mapping[7]{ac,tcId,description}:
+  AC-1, TC-AC1-01, "buildSubagentPromptがdesign_reviewフェーズでstate-machine.mmd/flowchart.mmdにin-refサフィックスを生成する"
+  AC-1, TC-AC1-02, "buildSubagentPromptがacceptance_verificationフェーズでrequirements.toonにin-summaryサフィックスとtest-design.toonにin-fullサフィックスを生成する"
+  AC-1, TC-AC1-03, "inputFileModes未設定のファイルはデフォルトfullとして扱われin-fullサフィックスが付与される(エッジケース)"
+  AC-2, TC-AC2-01, "harness_approve(requirements)通過後にtask.refinedIntentがAC群descriptionのjoin文字列として設定される"
+  AC-2, TC-AC2-02, "buildSubagentPromptでrefinedIntentがundefinedの場合はuserIntentがheaderに使用される(フォールバック)"
+  AC-3, TC-AC3-01, "PHASE_REGISTRYのdesign_review/acceptance_verification/docs_updateにinputFileModes設定が存在しキーがstate-machine.mmd等の期待バリューを持つ"
+  AC-4, TC-AC4-01, "types-core.tsの行数が200行以下であること"
+
+test_cases[7]{id,ac,type,target,precondition,steps,expected,boundary}:
+  TC-AC1-01, AC-1, unit, "buildSubagentPrompt in definitions.ts", "PHASE_REGISTRYのdesign_reviewにinputFileModes設定済み", "buildSubagentPrompt('design_review', 'task', '/docs', '/wf', 'intent')を呼び出してheader部を抽出する", "in: /docs/state-machine.mmd[ref], /docs/flowchart.mmd[ref]が含まれる", "design_reviewはinputFiles5件のうち2件がreferenceモード"
+  TC-AC1-02, AC-1, unit, "buildSubagentPrompt in definitions.ts", "PHASE_REGISTRYのacceptance_verificationにinputFileModes設定済み", "buildSubagentPrompt('acceptance_verification', 'task', '/docs', '/wf', 'intent')を呼び出してheader部を検証する", "in:行にrequirements.toon[sum]とtest-design.toon[full]の両サフィックスが含まれる", "summaryとfullの混在をひとつのフェーズで確認"
+  TC-AC1-03, AC-1, unit, "buildSubagentPrompt default mode fallback", "inputFileModes辞書にキーなしのファイルが存在する", "inputFileModes未設定フェーズ(research)でbuildSubagentPromptを呼び出す", "in:行のファイルにサフィックスなしかin-full相当の出力になる(モード未設定=full)", "デフォルト動作の境界値"
+  TC-AC2-01, AC-2, integration, "handleHarnessApprove in approval.ts", "harness_startでタスク作成、AC-1〜AC-3を追加、requirementsフェーズに到達", "harness_approveをtype=requirementsで呼び出し、その後mgr.loadTask(taskId)でstate.refinedIntentを確認する", "state.refinedIntentがAC-1〜AC-3のdescriptionをjoin(' / ')した文字列と一致する", "AC数3件(最小値)での生成検証"
+  TC-AC2-02, AC-2, unit, "buildSubagentPrompt refinedIntent fallback", "refinedIntentをundefinedとしてbuildSubagentPromptを呼び出す", "refinedIntent引数を省略して呼び出し、生成されるheaderのintent部を検証する", "header内のintent部にuserIntentの値が使用されている", "nullishコアリシングのundefined境界"
+  TC-AC3-01, AC-3, unit, "PHASE_REGISTRY entries in registry.ts", "registry.tsにinputFileModes追加済み", "PHASE_REGISTRYのdesign_review/acceptance_verification/docs_updateにinputFileModes?プロパティが存在するかTypeScriptの型チェックとオブジェクトアクセスで確認する", "各フェーズのinputFileModesが期待キー(state-machine.mmdなど)と値(reference/summary/full)を持つRecord<string, InputFileMode>である", "空オブジェクト{}は不可—少なくとも1キーが必要"
+  TC-AC4-01, AC-4, unit, "types-core.ts line count constraint", "types-core.ts実装完了後", "readFileSyncでファイルを読み込み改行コードで分割してlengthを検証する", "行数が200以下であること", "200行がハード上限(KC-1)"
+
+test_data:
+  intentBase: "This is a test user intent that is long enough to pass the minimum length requirement for testing."
+  ac_descriptions: "['Acceptance criterion 1 for testing approval', 'Acceptance criterion 2 for testing approval', 'Acceptance criterion 3 for testing approval']"
+  refinedIntentExpected: "Acceptance criterion 1 for testing approval / Acceptance criterion 2 for testing approval / Acceptance criterion 3 for testing approval"
+  inputModesSample: "{ 'state-machine.mmd': 'reference', 'flowchart.mmd': 'reference', 'ui-design.toon': 'summary', 'spec.toon': 'summary', 'threat-model.toon': 'summary' }"
+
+test_setup:
+  newFile: "workflow-harness/mcp-server/src/__tests__/context-engineering.test.ts"
+  imports: "vitest (describe/it/expect/beforeAll/afterAll), mkdtempSync/rmSync/mkdirSync, handler-test-setup.js (for integration test)"
+  envSetup: "vi.stubEnv STATE_DIR / DOCS_DIR + vi.resetModules() (既存manager-core.test.tsパターンに準拠)"
+  teardown: "afterAll: vi.unstubAllEnvs() + rmSync(TEMP_DIR, {recursive:true, force:true})"
+
+coverage_summary:
+  ac1_coverage: "TC-AC1-01(design_review reference), TC-AC1-02(acceptance_verification mixed), TC-AC1-03(default fallback) — 3件"
+  ac2_coverage: "TC-AC2-01(refinedIntent生成統合), TC-AC2-02(fallback unit) — 2件"
+  ac3_coverage: "TC-AC3-01(registry設定確認) — 1件"
+  ac4_coverage: "TC-AC4-01(行数制約) — 1件"
+  total: 7
+  uncovered_risks: "KC-4(basename照合)はTC-AC1-01のdocsDirをフルパスで与えることで間接カバー。KC-2(Zodパススルー)はhandler-approval.test.tsの既存テストが継続パスすることで保証"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/context-engineering-improvements/scope-definition.toon, spec, "スコープ定義。対象6ファイルと変更範囲を確定"
+  docs/workflows/context-engineering-improvements/research.toon, spec, "調査フェーズ出力。現状の行数・型構造・呼び出し元を確認"
+  docs/workflows/context-engineering-improvements/requirements.toon, spec, "機能要件8件・非機能要件6件・AC-1〜AC-4を定義"
+  docs/workflows/context-engineering-improvements/planning.toon, design, "技術仕様・RTM F-001〜F-008・実装順序6ステップを定義"
+  docs/workflows/context-engineering-improvements/test-design.toon, test, "本ファイル。テスト戦略・7テストケース・TC→AC追跡マトリクスを定義"
+
+next:
+  criticalDecisions: "TC-AC1-01とTC-AC1-02のサフィックス文字列形式を実装前に確定する必要がある。in: file[full]かin: file[ref]かin-full: fileかの3形式候補がある。spec.toonのPL-3ではin-full/in-summary/in-refをファイル名末尾に付与とあるが、header行のフォーマット(括弧表記かプレフィックスか)は定義必要"
+  readFiles: "workflow-harness/mcp-server/src/phases/defs-stage4.ts (design_reviewのsubagentTemplateを確認してin:行フォーマットの既存例を把握). workflow-harness/mcp-server/src/__tests__/handler-test-setup.ts (advanceUntilPhaseの使用方法を確認して統合テストTC-AC2-01のsetupを設計)."
+  warnings: "TC-AC2-01は統合テストのため実行時間が長くなる可能性がある。handler-test-setup.tsのadvanceUntilPhaseがrequirementsフェーズまで正確に到達することを前提とするが、smallタスクではphase遷移パスが異なる場合があるため注意。test_impl前のtest_designはapproval gateを持つため、advanceUntilPhaseがapproval gateをスキップする仕組みを確認すること"

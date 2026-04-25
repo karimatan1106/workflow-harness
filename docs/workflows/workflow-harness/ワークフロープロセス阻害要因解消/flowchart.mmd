@@ -1,0 +1,21 @@
+%% ワークフロープロセス阻害要因解消 fix-all.js 処理フローチャート
+%% 8件の修正（D-1～D-8）を3つのフックファイルに一括適用するスクリプトの処理フロー
+%% 各修正はapplyFix関数で文字列検索・置換を行い、一致箇所が1件のみであることを検証する
+%% 修正対象: bash-whitelist.js(5件), phase-edit-guard.js(2件), enforce-workflow.js(1件)
+%% 全修正完了後に成功/失敗カウントを表示し、失敗があればexit code 1で終了する
+
+flowchart TD
+    A[fix-all.js 開始] --> B[3つのフックファイルをCRLF正規化して読み込み]
+    B --> C[D-1: ci_verificationをverificationPhasesに追加 - bash-whitelist.js]
+    C --> D[D-2: deployPhasesグループ新設とdeploy追加 - bash-whitelist.js]
+    D --> E[D-3a: SHELL_BUILTINS定数を定義 - bash-whitelist.js]
+    E --> F[D-3b: checkCommand内でSHELL_BUILTINSスキップ追加 - bash-whitelist.js]
+    F --> G[D-4: nodeコマンドをtestingとcode_editリストに追加 - bash-whitelist.js]
+    G --> H[D-5: PHASE_ORDERに10件の欠落フェーズ追加 - phase-edit-guard.js]
+    H --> I[D-6: normalizeGitCommand関数追加とマッチング前呼び出し - bash-whitelist.js]
+    I --> J[D-7: displayBlockMessageのconsole.logをconsole.errorに変更 - phase-edit-guard.js]
+    J --> K[D-8a: PHASE_EXTENSIONSからarchitecture_review削除 - enforce-workflow.js]
+    K --> L[D-8b: PHASE_DESCからarchitecture_review削除 - enforce-workflow.js]
+    L --> M{全修正の成功/失敗カウント集計}
+    M -->|失敗0件| N[成功: exit code 0で終了]
+    M -->|失敗1件以上| O[失敗あり: exit code 1で終了]

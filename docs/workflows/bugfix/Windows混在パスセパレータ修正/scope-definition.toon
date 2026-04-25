@@ -1,0 +1,10 @@
+task: Windows混在パスセパレータ修正
+intent: lifecycle.tsのDoD成果物チェックでパスセパレータ混在バグを修正
+scope-files: workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts
+scope-dirs: workflow-harness/mcp-server/src/tools/handlers
+size: small
+impact: ハーネスのharness_nextがWindows環境で成果物ファイルを検出できない
+root-cause: "docsDir(バックスラッシュ)とoutputFileテンプレート(フォワードスラッシュ)の結合で混在パスが生成される"
+fix: "path.normalize()でoutPath生成後にパスを正規化する"
+risk: low
+affected-phases: 全フェーズ(DoD成果物チェック共通)

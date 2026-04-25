@@ -1,0 +1,306 @@
+title: ハーネスシステム Research分析結果
+phase: research
+taskName: harness-system-documentation
+intent: "ハーネスシステムの現状の要件、基本設計、アーキテクチャ、全30フェーズの仕様を永続ドキュメントとして作成し、各仕様がコードのどの部分(ファイル:行番号)と対応するかのトレーサビリティを含める"
+createdAt: 2026-03-08
+
+summary: "ハーネスMCPサーバーの全ソースファイル46本(5,117行)を精読し、6サブシステム(フェーズ/ゲート/ツール/状態/ユーティリティ/エントリ)の内部構造・依存関係・制約を完全に特定した。30フェーズ+completedの定義、22個のDoDチェック関数、21個のMCPツール、TaskState v4スキーマ、Reflector-Curator-ACE 3層学習パイプライン、HMAC-SHA256状態整合性検証の詳細仕様を記録。Magic Number 28個と依存バージョン3種を特定済み。"
+
+environmentVersions:
+  node: "v22.15.0"
+  typescript: "5.9.3"
+  npm: "10.9.2"
+
+sourceCodeMetrics:
+  totalFiles: 46
+  totalLines: 5117
+  maxFileLines: 197
+  maxFile: "src/phases/defs-stage6.ts"
+  allFilesUnder200Lines: true
+
+phaseSystem:
+  description: "30フェーズ+completed=31エントリがPHASE_REGISTRYに定義。PHASE_ORDER配列で厳密順序を固定。6ステージファイル(defs-stage1〜6)にサブエージェントテンプレートを格納。"
+  registryFile: "src/phases/registry.ts:8-55"
+  orderArray: "src/phases/registry.ts:57-89"
+  sizeSkipMap: "src/phases/registry.ts:91-124"
+  helperFunctions: "src/phases/registry.ts:126-170 (getActivePhases, getNextPhase, getParallelGroup, getPhasesInGroup, isParallelPhase, getActiveParallelGroups, getPhaseConfig)"
+  definitionsAggregator: "src/phases/definitions.ts:26-33"
+  promptBuilder: "src/phases/definitions.ts:79-136"
+  sharedTypes: "src/phases/definitions-shared.ts:10-19 (PhaseDefinition interface)"
+  templateFragments: "src/phases/definitions-shared.ts:26-57 (ARTIFACT_QUALITY_RULES, SUMMARY_SECTION_RULE, EXIT_CODE_RULE, bashCategoryHelp)"
+
+phases[31]{name,stage,model,outputFile,requiredSections,minLines,bashCategories,parallelGroup,approvalRequired,defFile}:
+  scope_definition, 1, sonnet, "{docsDir}/scope-definition.toon", "decisions/artifacts/next", 30, readonly, -, -, defs-stage1.ts:9-68
+  research, 1, sonnet, "{docsDir}/research.toon", "decisions/artifacts/next", 50, readonly, -, -, defs-stage1.ts:70-93
+  impact_analysis, 1, sonnet, "{docsDir}/impact-analysis.toon", "decisions/artifacts/next", 40, readonly, -, -, defs-stage1.ts:96-141
+  requirements, 2, sonnet, "{docsDir}/requirements.toon", "decisions/acceptanceCriteria/notInScope/openQuestions", 50, readonly, requirements, -, defs-stage1.ts:144-193
+  threat_modeling, 3, sonnet, "{docsDir}/threat-model.toon", "decisions/artifacts/next", 40, readonly, parallel_analysis, -, defs-stage2.ts:9-40
+  planning, 3, sonnet, "{docsDir}/spec.toon", "decisions/artifacts/next", 50, readonly, parallel_analysis, -, defs-stage2.ts:42-74
+  state_machine, 4, haiku, "{docsDir}/state-machine.mmd", "decisions", 15, readonly, parallel_design, -, defs-stage2.ts:76-106
+  flowchart, 4, haiku, "{docsDir}/flowchart.mmd", "decisions", 15, readonly, parallel_design, -, defs-stage2.ts:108-138
+  ui_design, 4, sonnet, "{docsDir}/ui-design.toon", "decisions/artifacts/next", 50, readonly, parallel_design, -, defs-stage2.ts:140-171
+  design_review, 5, sonnet, "{docsDir}/design-review.toon", "decisions/artifacts/next", 30, readonly, -, design, defs-stage3.ts:9-52
+  test_design, 6, sonnet, "{docsDir}/test-design.toon", "decisions/artifacts/next", 50, readonly, -, test_design, defs-stage3.ts:54-96
+  test_selection, 6, haiku, "{docsDir}/test-selection.toon", "decisions/artifacts/next", 20, readonly, -, -, defs-stage3.ts:98-129
+  test_impl, 7, sonnet, -, -, 0, "readonly/testing", -, -, defs-stage4.ts:9-36
+  implementation, 7, sonnet, -, -, 0, "readonly/testing/implementation", -, -, defs-stage4.ts:38-71
+  refactoring, 7, haiku, -, -, 0, "readonly/testing/implementation", -, -, defs-stage4.ts:73-99
+  build_check, 8, haiku, -, -, 0, "readonly/testing/implementation", parallel_quality, -, defs-stage4.ts:101-122
+  code_review, 8, sonnet, "{docsDir}/code-review.toon", "decisions/artifacts/next", 30, readonly, parallel_quality, code_review, defs-stage4.ts:124-173
+  testing, 9, haiku, -, -, 0, "readonly/testing", -, -, defs-stage5.ts:9-32
+  regression_test, 9, haiku, -, -, 0, "readonly/testing", -, -, defs-stage5.ts:34-57
+  acceptance_verification, 10, sonnet, "{docsDir}/acceptance-report.toon", "decisions/artifacts/next", 40, readonly, -, acceptance, defs-stage5.ts:59-93
+  manual_test, 11, sonnet, "{docsDir}/manual-test.toon", "decisions/artifacts/next", 40, "readonly/testing", parallel_verification, -, defs-stage5.ts:95-122
+  security_scan, 11, sonnet, "{docsDir}/security-scan.toon", "decisions/artifacts/next", 40, "readonly/testing/security", parallel_verification, -, defs-stage5.ts:124-152
+  performance_test, 11, sonnet, "{docsDir}/performance-test.toon", "decisions/artifacts/next", 40, "readonly/testing", parallel_verification, -, defs-stage6.ts:9-38
+  e2e_test, 11, sonnet, "{docsDir}/e2e-test.toon", "decisions/artifacts/next", 40, "readonly/testing", parallel_verification, -, defs-stage6.ts:40-67
+  docs_update, 12, sonnet, "{docsDir}/docs-update.toon", "decisions/artifacts/next", 30, "readonly/implementation", -, -, defs-stage6.ts:69-97
+  commit, 13, haiku, -, -, 0, "readonly/git", -, -, defs-stage6.ts:99-117
+  push, 13, haiku, -, -, 0, "readonly/git", -, -, defs-stage6.ts:119-134
+  ci_verification, 13, haiku, -, -, 0, readonly, -, -, defs-stage6.ts:136-151
+  deploy, 14, haiku, -, -, 0, readonly, -, -, defs-stage6.ts:153-168
+  health_observation, 14, sonnet, "{docsDir}/health-report.toon", "decisions/artifacts/next", 20, readonly, -, -, defs-stage6.ts:170-196
+  completed, 99, haiku, -, -, 0, readonly, -, -, registry.ts:54
+
+parallelGroups[4]{name,phases,stage}:
+  parallel_analysis, "threat_modeling/planning", 3
+  parallel_design, "state_machine/flowchart/ui_design", 4
+  parallel_quality, "build_check/code_review", 8
+  parallel_verification, "manual_test/security_scan/performance_test/e2e_test", 11
+
+approvalGates[5]{phase,type,source}:
+  requirements, requirements, "handler-shared.ts:20"
+  design_review, design, "handler-shared.ts:21"
+  test_design, test_design, "handler-shared.ts:22"
+  code_review, code_review, "handler-shared.ts:23"
+  acceptance_verification, acceptance, "handler-shared.ts:24"
+
+taskSizing:
+  small: "riskScore 0-3 -> ~12 phases (19 skipped)"
+  medium: "riskScore 4-7 -> ~22 phases (8 skipped)"
+  large: "riskScore 8+ -> 30 phases (0 skipped)"
+  skipMapSource: "registry.ts:91-124"
+
+riskClassifier:
+  source: "src/phases/risk-classifier.ts:17-58"
+  fileCountScoring: ">=10 files: +3, >=5: +2, >=2: +1"
+  codeLineScoring: ">=1000 lines: +2, >=200: +1"
+  booleanFactors: "hasConfig: +1, hasInfra: +2, hasSecurity: +2, hasDatabase: +1, hasTests: +1"
+  maxPossibleScore: 12
+  scopeAnalysis: "risk-classifier.ts:41-58 (pattern matching on file/dir paths)"
+
+gateSystem:
+  orchestrator: "src/gates/dod.ts:24-59 (runDoDChecks)"
+  totalChecks: 22
+  formatter: "src/gates/dod.ts:61-71 (formatDoDResult)"
+
+dodChecks[23]{name,level,source,applicablePhases,description}:
+  output_file_exists, L1, "dod-l1-l2.ts:11-26", "phases with outputFile", "出力ファイルの存在確認"
+  input_files_exist, L1, "dod-l1-l2.ts:29-44", "phases with inputFiles", "入力ファイルの存在確認 (IFV-1)"
+  exit_code_zero, L2, "dod-l1-l2.ts:46-59", "phases with L2 proof", "テスト/ビルド終了コード0確認"
+  tdd_red_evidence, L2, "dod-l1-l2.ts:62-80", test_impl, "TDD Redフェーズ証拠 (TDD-1)"
+  artifact_quality, L3, "dod-l3.ts:13-35", "phases with outputFile", "TOON解析可能性チェック"
+  rtm_completeness, L3, "dod-l3.ts:41-57", "code_review/acceptance_verification/completed", "RTMステータス最低水準チェック"
+  ac_completeness, L3, "dod-l3.ts:59-77", "acceptance_verification/completed", "全AC-Nがmet状態か確認"
+  artifact_freshness, L3, "dod-l3.ts:80-101", "phases with inputFiles", "入力成果物の鮮度確認 (AFV-1: 7日警告/30日ブロック)"
+  invariant_completeness, L3, "dod-l3.ts:103-122", "acceptance_verification/completed", "全INV-NがheldかVIOLATED確認"
+  baseline_required, L3, "dod-l3.ts:124-135", regression_test, "テストベースライン記録確認"
+  tc_coverage, L3, "dod-l4-ia.ts:61-83", test_design, "TC数>=AC数確認 (CRV-1)"
+  content_validation, L4, "dod-l4-content.ts:39-68", "phases with outputFile", "禁止語/プレースホルダー/重複行/必須TOONキー検証"
+  ac_format, L4, "dod-l4-requirements.ts:25-46", requirements, "AC-N最低3件確認 (IA-2)"
+  not_in_scope_section, L4, "dod-l4-requirements.ts:48-67", requirements, "notInScopeキー存在確認 (IA-2)"
+  open_questions_section, L4, "dod-l4-requirements.ts:105-124", requirements, "openQuestionsキー存在確認 (IA-1)"
+  intent_consistency, L4, "dod-l4-requirements.ts:70-103", requirements, "userIntentキーワード反映確認 (CIC-1)"
+  delta_entry_format, L4, "dod-l4-delta.ts:20-66", "18 artifact phases", "decisions[]配列5件以上確認"
+  ac_design_mapping, L4, "dod-l4-ia.ts:12-37", design_review, "acDesignMappingキー+全AC対応確認 (IA-3)"
+  ac_tc_mapping, L4, "dod-l4-ia.ts:40-58", test_design, "acTcMappingキー存在確認 (IA-4)"
+  ac_achievement_table, L4, "dod-l4-ia.ts:86-123", code_review, "acAchievementStatusキー+not_metなし確認 (IA-5)"
+  artifact_drift, L4, "dod-l4-art.ts:19-40", "8 post-approval phases", "承認済み成果物のSHA-256変更検出 (ART-1)"
+  package_lock_sync, L4, "dod-l4-commit.ts:16-36", commit, "package.json/lock同期確認 (DEP-1)"
+  dead_references, L4, "dod-l4-refs.ts:23-52", "5 review/design phases", "相対MDリンクの死参照検出 (DRV-1)"
+
+dodHelpers:
+  forbiddenPatterns: "dod-helpers.ts:7-9 (12語: 英語4種+日本語8種の完了判断不能語句)"
+  bracketPlaceholder: "dod-helpers.ts:12 (正規表現: 角括弧+ハッシュ囲みパターン)"
+  structuralLineDetection: "dod-helpers.ts:14-25"
+  nonCodeLineExtraction: "dod-helpers.ts:27-37 (コードフェンス内除外)"
+  duplicateLineDetection: "dod-helpers.ts:48-61 (3回以上重複)"
+
+mcpTools[21]{name,handler,handlerFile,description}:
+  harness_start, handleHarnessStart, "handlers/lifecycle.ts:21-42", "タスク作成+sessionToken発行+gitダーティ警告"
+  harness_status, handleHarnessStatus, "handlers/lifecycle.ts:44-64", "タスク状態取得(verbose/core切替)"
+  harness_next, handleHarnessNext, "handlers/lifecycle.ts:66-123", "DoD検証+フェーズ遷移+リトライ+Curator起動"
+  harness_approve, handleHarnessApprove, "handlers/approval.ts:16-74", "承認ゲート通過+ART-1ハッシュ記録+IA-1/2検証"
+  harness_set_scope, handleHarnessSetScope, "handlers/scope-nav.ts:15-31", "スコープ更新(addMode対応)"
+  harness_complete_sub, handleHarnessCompleteSub, "handlers/scope-nav.ts:33-78", "並列サブフェーズ完了+DoD検証+PHA-1ロールバック"
+  harness_back, handleHarnessBack, "handlers/scope-nav.ts:80-94", "フェーズロールバック+retryCountリセット"
+  harness_reset, handleHarnessReset, "handlers/scope-nav.ts:96-108", "タスクリセット(scope_definitionへ)"
+  harness_record_proof, handleHarnessRecordProof, "handlers/recording.ts:11-22", "L1-L4証拠記録"
+  harness_add_ac, handleHarnessAddAc, "handlers/recording.ts:24-40", "受入基準追加(AC-N)"
+  harness_add_rtm, handleHarnessAddRtm, "handlers/recording.ts:42-58", "RTMエントリ追加(F-NNN)"
+  harness_record_feedback, handleHarnessRecordFeedback, "handlers/recording.ts:60-73", "ユーザーフィードバック記録"
+  harness_capture_baseline, handleHarnessCaptureBaseline, "handlers/recording.ts:75-90", "テストベースライン記録"
+  harness_record_test_result, handleHarnessRecordTestResult, "handlers/recording.ts:92-107", "テスト結果記録(exitCode+output)"
+  harness_record_test, handleHarnessRecordTest, "handlers/recording.ts:109-121", "テストファイルパス登録"
+  harness_get_test_info, handleHarnessGetTestInfo, "handlers/query.ts:15-21", "テストファイル+ベースライン取得"
+  harness_record_known_bug, handleHarnessRecordKnownBug, "handlers/query.ts:23-36", "既知バグ記録(severity付き)"
+  harness_get_known_bugs, handleHarnessGetKnownBugs, "handlers/query.ts:38-43", "既知バグ一覧取得"
+  harness_get_subphase_template, handleHarnessGetSubphaseTemplate, "handlers/query.ts:45-65", "サブエージェントプロンプトテンプレート取得"
+  harness_pre_validate, handleHarnessPreValidate, "handlers/query.ts:67-85", "DoD事前検証(ドライラン)"
+  harness_update_ac_status, handleHarnessUpdateAcStatus, "handlers/query.ts:87-103", "AC-Nステータス更新"
+
+toolDefinitions:
+  defsA: "src/tools/defs-a.ts:6-164 (11ツール: start〜add_rtm)"
+  defsB: "src/tools/defs-b.ts:6-158 (10ツール: record_feedback〜update_rtm_status)"
+  dispatcher: "src/tools/handler.ts:19-54 (switch文21分岐)"
+
+stateManagement:
+  taskStateV4: "src/state/types.ts:52-121 (TaskState interface)"
+  coreTypes: "src/state/types-core.ts:1-194 (PhaseName/TaskSize/RiskScore/RTMEntry/AcceptanceCriterion/ProofEntry/Checkpoint/SubPhaseStatus/PhaseConfig/Zod schemas)"
+  invariantTypes: "src/state/types-invariant.ts:1-23 (Invariant/InvariantStatus)"
+  stateManager: "src/state/manager.ts:23-196 (StateManager class: 22 public methods)"
+  readOps: "src/state/manager-read.ts:1-91 (loadTaskFromDisk/listTasksFromDisk/buildTaskIndex)"
+  writeOps: "src/state/manager-write.ts:1-120 (persistState/createTaskState/signAndPersist/updateCheckpoint/applyAddAC/applyAddRTM/applyUpdateACStatus/applyUpdateRTMStatus/appendProgressLog)"
+  invariantOps: "src/state/manager-invariant.ts:1-58 (applyAddInvariant/applyUpdateInvariantStatus/applyGetKnownBugs/applyIncrementRetryCount/applyGetRetryCount/applyResetRetryCount/applyRecordArtifactHash)"
+
+hmacSecurity:
+  source: "src/utils/hmac.ts:1-85"
+  algorithm: "HMAC-SHA256"
+  keyGeneration: "randomBytes(32).toString('hex') = 64 hex chars"
+  keyRotation: "current + previous keys, verifyStateWithRotation tries both"
+  stateSign: "canonical JSON (sorted keys) -> HMAC-SHA256"
+  sessionToken: "randomBytes(32).toString('hex') = 64 hex chars"
+  taskId: "crypto.randomUUID()"
+
+reflectorCuratorAce:
+  reflector: "src/tools/reflector.ts:1-153"
+  reflectorTypes: "src/tools/reflector-types.ts:1-70"
+  curator: "src/tools/curator.ts:1-140"
+  curatorHelpers: "src/tools/curator-helpers.ts:1-98"
+  aceContext: "src/tools/ace-context.ts:1-103"
+  pipeline: "失敗→stashFailure→成功→promoteStashedFailure→Reflector→Curator(task完了時)→ACE(quality>=0.6昇格)"
+  maxLessons: 50
+  maxAfterCuration: 40
+  staleThreshold: "30日"
+  fuzzyDedupThreshold: 0.7
+  acePromoteThreshold: 0.6
+  qualityScore: "helpfulCount / (helpfulCount + harmfulCount + 1)"
+  v2toV3Migration: "reflector-types.ts:51-70"
+
+retrySystem:
+  source: "src/tools/retry.ts:1-153"
+  errorClasses: "FileNotFound/SyntaxError/LogicError/Unknown (EAC-1)"
+  modelEscalation: "retry>=2 && haiku -> sonnet, retry>=3 -> sonnet forced"
+  maxRetries: "5 (lifecycle.ts:77-80, RLM-1)"
+  vdb1Warning: "3回同エラー -> バリデータバグ疑い (lifecycle.ts:100-102)"
+  improvementMapping: "15 error patterns -> actionable instructions (retry.ts:34-128)"
+
+entryPoints:
+  mcpServer: "src/index.ts:1-48 (StdioServerTransport, @modelcontextprotocol/sdk)"
+  cli: "src/cli.ts:1-109 (add-invariant/update-invariant-status subcommands)"
+  serverVersion: "0.1.0"
+
+magicNumbers[28]{value,location,purpose,rationale}:
+  20, "defs-a.ts:14 / lifecycle.ts:25", "userIntent最低文字数", "曖昧な意図の早期拒否"
+  30, "registry.ts:10 / defs-stage1.ts:16", "scope_definition minLines", "最低成果物サイズ"
+  50, "registry.ts:11 / defs-stage1.ts:78", "research/requirements/planning minLines", "中程度成果物サイズ"
+  40, "registry.ts:12", "impact_analysis/threat_modeling/acceptance等 minLines", "標準成果物サイズ"
+  15, "registry.ts:19-20", "state_machine/flowchart minLines", "図表成果物の最低サイズ"
+  3, "risk-classifier.ts:19", "fileCount>=10時の加算スコア", "大規模変更のリスク反映"
+  7, "dod-l3.ts:86", "WARN_MS 7日(成果物鮮度警告)", "陳腐化した成果物の早期警告"
+  30, "dod-l3.ts:87", "BLOCK_MS 30日(成果物鮮度ブロック)", "古すぎる成果物からの再実行強制"
+  5, "dod-l4-delta.ts:12", "DELTA_ENTRY_MIN_COUNT decisions最低数", "意思決定記録の品質担保"
+  50, "reflector.ts:17", "MAX_LESSONS Reflector最大教訓数", "コンテキスト膨張防止"
+  40, "curator.ts:25", "MAX_LESSONS_AFTER_CURATION", "Curator剪定後の目標数"
+  30, "curator.ts:26", "STALE_THRESHOLD_DAYS", "古い教訓の剪定基準"
+  0.7, "curator.ts:27", "FUZZY_DEDUP_THRESHOLD", "類似教訓の統合閾値"
+  0.6, "ace-context.ts:16", "PROMOTE_THRESHOLD", "ACEへの昇格品質閾値"
+  5000, "manager.ts:118", "testResult output最大文字数", "状態ファイル肥大化防止"
+  60000, "dod-l4-commit.ts:10", "SYNC_TOLERANCE_MS package.json/lock同期許容差", "ビルド直後の一時的不一致許容"
+  32, "hmac.ts:33/80", "HMAC鍵/sessionTokenのバイト数", "暗号学的強度確保"
+  200, "CLAUDE.md全体", "ソースファイル行数上限", "コンテキスト圧縮・可読性維持"
+  5, "lifecycle.ts:77", "リトライ上限回数 (RLM-1)", "無限ループ防止"
+  3, "dod-l4-requirements.ts:39", "AC-N最低件数 (IA-2)", "意図精度担保の最低基準"
+  3, "lifecycle.ts:100", "VDB-1警告閾値", "バリデータバグ疑い検出"
+  20, "reflector.ts:66", "stashedFailures最大保持数", "メモリ制御"
+  5, "reflector.ts:119", "getLessonsForPhase最大返却数", "プロンプト肥大化防止"
+  100, "defs-stage1.ts:38-53", "Serena検索limit", "LSP検索の分岐係数制御"
+  10, "defs-stage1.ts:53", "依存追跡の安全上限hop数", "無限追跡防止"
+  4, "types-core.ts:194", "TaskState version番号", "スキーマバージョン管理"
+  20, "curator.ts:98-101", "stashedFailures保持期間(7日)", "完了済みタスクの残骸クリーン"
+  3, "dod-helpers.ts:58", "重複行検出閾値(3回以上)", "コピペ防止"
+
+taskStateFields:
+  identity: "taskId(UUID), taskName, version(=4)"
+  phaseTracking: "phase, completedPhases[], skippedPhases[], subPhaseStatus{}"
+  sizing: "size(small/medium/large), riskScore{total, factors}"
+  intent: "userIntent, openQuestions[], notInScope[]"
+  scope: "scopeFiles[], scopeDirs[], scopeGlob?, plannedFiles[]"
+  traceability: "acceptanceCriteria[AC-N], rtmEntries[F-NNN], proofLog[ProofEntry]"
+  invariants: "invariants[INV-N]"
+  checkpoint: "taskId/phase/completedPhases/timestamp/sha256/userIntent/scopeFiles/acceptanceCriteria/rtmEntries"
+  paths: "docsDir, workflowDir"
+  extended: "approvals{}, feedbackLog[], baseline{}, testResults[], resetHistory[], testFiles[], knownBugs[]"
+  sprint12: "retryCount{}, artifactTimestamps{}, requirementCount, artifactHashes{}, parallelPhaseBackupLog[]"
+  security: "sessionToken(64 hex), stateIntegrity(HMAC-SHA256)"
+  metadata: "createdAt, updatedAt, parentTaskId?, childTaskIds?"
+
+zodValidation:
+  source: "types-core.ts:183-194"
+  taskIdFormat: "z.string().uuid()"
+  taskNameMin: "z.string().min(1)"
+  versionLiteral: "z.literal(4)"
+  phaseNameEnum: "z.enum(PHASE_NAMES)"
+  sizeEnum: "z.enum(['small','medium','large'])"
+  userIntentMin: "z.string().min(20)"
+  sessionTokenMin: "z.string().min(32)"
+  passthrough: "未知フィールドを許容(拡張性確保)"
+
+intentAccuracyChecks[7]{id,check,phase,source}:
+  IA-1, "OPEN_QUESTIONS存在+空チェック", requirements, "dod-l4-requirements.ts:105-124 / approval.ts:35-52"
+  IA-2, "AC-N最低3件+NOT_IN_SCOPE必須", requirements, "dod-l4-requirements.ts:25-67 / approval.ts:54-60"
+  IA-3, "acDesignMappingキー+全AC対応", design_review, "dod-l4-ia.ts:12-37"
+  IA-4, "acTcMappingキー存在", test_design, "dod-l4-ia.ts:40-58"
+  IA-5, "acAchievementStatusキー+not_metなし", code_review, "dod-l4-ia.ts:86-123"
+  IA-6, "全AC+RTM最終検証", acceptance_verification, "dod-l3.ts:59-77 + dod-l3.ts:41-57"
+  IA-7, "impact_analysisはresearch後(parallel_analysis外)", -, "registry.ts:12 (stage:1, no parallelGroup)"
+
+rtmStatusChain:
+  phases: "code_review -> acceptance_verification -> completed"
+  minStatus: "code_review:implemented, acceptance_verification:tested, completed:verified"
+  statusRank: "pending:0, implemented:1, tested:2, verified:3"
+  source: "dod-l3.ts:37-57"
+
+skillFileRouting:
+  source: "handler-shared.ts:42-73"
+  totalEntries: 30
+  maxPerPhase: 4
+  routingLogic: "フェーズ名→関連スキルファイル名配列のハードコードマッピング"
+
+promptBuilding:
+  headerStripping: "definitions.ts:95-97 (verbose task/input/output headers -> compact 2-line header)"
+  fragmentExpansion: "definitions.ts:99-102 (SUMMARY_SECTION/BASH_CATEGORIES/ARTIFACT_QUALITY/EXIT_CODE_RULE)"
+  variableSubstitution: "definitions.ts:104-109 (taskName/docsDir/workflowDir/userIntent/taskId/phase)"
+  toonFirstInjection: "definitions.ts:126-127 (ACE TOON入力セクション)"
+  lessonInjection: "definitions.ts:128-129 (Reflector教訓)"
+  markdownSanitization: "definitions.ts:133 (## -> === / ### -> == to prevent TOON contamination)"
+
+decisions[8]{id,statement,rationale}:
+  R-1, "ソースコード全46ファイル5117行が200行制限を遵守している(最大197行: defs-stage6.ts)", "ファイル行数カウントにより全ファイルが制約内であることを検証済み"
+  R-2, "DoDゲートシステムは22個の独立チェック関数で構成され全てが決定的(L1-L4)である", "dod.ts:34-56の呼出順序から各チェックが独立実行されることを確認。L5(LLM判断)は存在しない"
+  R-3, "Reflector-Curator-ACE 3層パイプラインは非ブロッキング設計で本体処理に影響しない", "全catch節が空で例外を握り潰す設計。学習機能の障害がタスク実行をブロックしない"
+  R-4, "TaskState v4はZodスキーマでpassthrough付き検証を行い前方互換性を確保している", "types-core.ts:183-194のTaskStateSchemaがpassthrough()で未知フィールドを許容"
+  R-5, "HMAC-SHA256による状態整合性検証は鍵ローテーションをサポートしcurrent+previous両方で検証を試行する", "hmac.ts:68-76のverifyStateWithRotationが2鍵対応"
+  R-6, "フェーズ遷移時にリトライカウンタをリセットし成功パスでReflector教訓を昇格する学習ループが実装されている", "lifecycle.ts:108-109でpromoteStashedFailure+resetRetryCount"
+  R-7, "承認ゲート通過時にSHA-256ハッシュを記録し後続フェーズでの無断変更を検出するART-1ドリフト検知が実装されている", "approval.ts:63-69でハッシュ記録、dod-l4-art.ts:19-40で検出"
+  R-8, "プロンプトビルダーがMarkdownヘッダー(##)をTOONセーフな区切り(===)に変換しサブエージェントの出力汚染を防止している", "definitions.ts:133のreplaceが## -> ===に変換しTOONパースエラーを予防"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-system-documentation/research.toon, report, "ソースコード精読結果: 46ファイル5117行の全構造・31フェーズ・22 DoDチェック・21 MCPツール・Magic Number 28個を網羅的に記録"
+  docs/workflows/harness-system-documentation/init.sh, impl, "ビルド・テスト・セットアップスクリプト: npm ci/build/vitest run"
+  docs/workflows/harness-system-documentation/scope-definition.toon, spec, "前フェーズ成果物: 48ファイル6モジュール12成果物のドキュメント計画"
+
+next:
+  criticalDecisions: "DOC-01〜DOC-12の執筆順序確定、各文書のTOONスキーマ設計、トレーサビリティマトリクスの46ソース×42テスト対応表の分割戦略"
+  readFiles: "src/__tests__/ 配下の42テストファイルの対応関係マッピング、.claude/skills/harness/の9スキルファイルとCLAUDE.mdの関係整理"
+  warnings: "DOC-12トレーサビリティマトリクスは46ソース×42テストの大規模対応表のため複数ファイル分割が必要。ソースコード行数がscope-definitionの3481行から実測5117行に修正(dod-l4-toon.ts等の追加ファイル分)"

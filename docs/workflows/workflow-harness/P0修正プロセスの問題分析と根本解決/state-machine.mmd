@@ -1,0 +1,61 @@
+stateDiagram-v2
+    Start --> TemplateGenerationInit: buildPrompt関数開始
+
+    TemplateGenerationInit --> BracketPlaceholderSection: 角括弧説明セクション処理
+    BracketPlaceholderSection --> BracketPlaceholderEnhanced: 説明内容拡張<br/>（コードブロック内の検査対象化）
+    BracketPlaceholderEnhanced --> BracketPlaceholderExamplesAdded: NG例・OK例追加<br/>（2パターン以上）
+
+    BracketPlaceholderExamplesAdded --> ForbiddenPatternsSection: 禁止語セクション処理
+    ForbiddenPatternsSection --> ForbiddenPatternsEnhanced: 複合語検出の具体例追加<br/>（3件以上）
+    ForbiddenPatternsEnhanced --> CompoundWordMapping1: 言い換えルール1追加<br/>（英語系複合語→設定値表現）
+    CompoundWordMapping1 --> CompoundWordMapping2: 言い換えルール2追加<br/>（検討系→追加調査表現）
+    CompoundWordMapping2 --> CompoundWordMapping3: 言い換えルール3追加<br/>（予定系→計画表現）
+
+    CompoundWordMapping3 --> PhaseGuidesSectionStart: PHASE_GUIDES設定処理
+    PhaseGuidesSectionStart --> ParallelVerificationModelChange: parallel_verification設定確認
+    ParallelVerificationModelChange --> ManualTestModelUpdate: manual_testのmodel更新<br/>（haiku→sonnet）
+    ManualTestModelUpdate --> SecurityScanModelUpdate: security_scanのmodel更新<br/>（haiku→sonnet）
+    SecurityScanModelUpdate --> PerformanceTestModelUpdate: performance_testのmodel更新<br/>（haiku→sonnet）
+    PerformanceTestModelUpdate --> E2ETestModelUpdate: e2e_testのmodel更新<br/>（haiku→sonnet）
+
+    E2ETestModelUpdate --> CommentAddition: コストトレードオフコメント追加<br/>（リトライ削減による効果記載）
+    CommentAddition --> BuildProcess: TemplateGenerationComplete<br/>（全ファイル生成完了）
+
+    BuildProcess --> CLAUDEMdUpdateStart: CLAUDE.md更新処理
+    CLAUDEMdUpdateStart --> ModuleCacheSection: MCPサーバーキャッシュセクション確認
+    ModuleCacheSection --> RestartConditionsAdded: 強制再起動条件追加<br/>（コアモジュール変更後の再起動義務）
+    RestartConditionsAdded --> Rule22Addition: AIへの厳命Rule 22追加<br/>（再起動未実施の禁止）
+    Rule22Addition --> TableUpdateInCLAUDE: subagent設定テーブル更新<br/>（parallel_verification model列変更）
+
+    TableUpdateInCLAUDE --> IntegrationComplete: 全変更統合完了<br/>（FR-1,FR-2,FR-3統合）
+    IntegrationComplete --> BuildCommand: npm run buildによるトランスパイル
+    BuildCommand --> MCPServerRestart: MCPサーバープロセス再起動
+    MCPServerRestart --> End
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style TemplateGenerationInit fill:#87CEEB
+    style BracketPlaceholderSection fill:#87CEEB
+    style BracketPlaceholderEnhanced fill:#87CEEB
+    style BracketPlaceholderExamplesAdded fill:#87CEEB
+    style ForbiddenPatternsSection fill:#87CEEB
+    style ForbiddenPatternsEnhanced fill:#87CEEB
+    style CompoundWordMapping1 fill:#87CEEB
+    style CompoundWordMapping2 fill:#87CEEB
+    style CompoundWordMapping3 fill:#87CEEB
+    style PhaseGuidesSectionStart fill:#FFD700
+    style ParallelVerificationModelChange fill:#FFD700
+    style ManualTestModelUpdate fill:#FFD700
+    style SecurityScanModelUpdate fill:#FFD700
+    style PerformanceTestModelUpdate fill:#FFD700
+    style E2ETestModelUpdate fill:#FFD700
+    style CommentAddition fill:#FFD700
+    style BuildProcess fill:#98FB98
+    style CLAUDEMdUpdateStart fill:#FFA07A
+    style ModuleCacheSection fill:#FFA07A
+    style RestartConditionsAdded fill:#FFA07A
+    style Rule22Addition fill:#FFA07A
+    style TableUpdateInCLAUDE fill:#FFA07A
+    style IntegrationComplete fill:#DDA0DD
+    style BuildCommand fill:#FFE4B5
+    style MCPServerRestart fill:#FFE4B5

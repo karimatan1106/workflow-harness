@@ -1,0 +1,112 @@
+---
+phase: state_machine
+task: harness-report-fb-fixes
+status: complete
+inputArtifact: docs/workflows/harness-report-fb-fixes/planning.md
+outputArtifact: docs/workflows/harness-report-fb-fixes/state-machine.mmd
+---
+
+## State Machine Architecture
+
+4件のFB修正（FB-1+5、FB-2、FB-4、FB-6）の状態遷移図。各修正は独立した並列フロー。
+
+### FB-1+5: Readonly Phase Tool Filter
+
+- **初期状態**: AllowedToolsNotFixed
+- **状態遷移**: ReadonlyPhaseDetection → FilterChainApply → AllowedToolsFixed
+- **最終状態**: Write/Edit tools removed from allowedTools
+- **条件**: bashCategories.length === 1 AND bashCategories[0] === 'readonly'
+- **コード**: delegate-coordinator.ts L120-125
+- **差分規模**: 1行（isReadonlyPhase変数追加）
+
+### FB-2: Structural Line ID Pattern Recognition
+
+- **初期状態**: PatternNotRecognized
+- **状態遷移**: LineContentInspect → IDPatternDetect → RegexPatternInsert → StructuralLinePatternAdded
+- **最終状態**: isStructuralLine() recognizes /^(?:[-*]\s+)?[A-Z]{1,5}-\d{1,4}[:：]/ pattern
+- **パターン優先度**: ID パターンをジェネリックラベルチェックの前にテスト
+- **コード**: dod-helpers.ts L26
+- **設計**: 汎用IDパターン正規表現で複数フォーマット対応
+
+### FB-4: RTM Upsert Operation
+
+- **初期状態**: RTMNotUpdated
+- **状態遷移**: RTMEntryReceive → IDSearchExecute → ExistingIDCheck
+  - **分岐1 (ID exists)**: SpliceReplace → RTMUpdated
+  - **分岐2 (ID not exists)**: PushNewEntry → RTMUpdated
+- **最終状態**: rtmEntries array updated with no duplicates
+- **パフォーマンス**: O(n) acceptable for small arrays (<50 elements)
+- **コード**: manager-write.ts L126-129
+- **設計**: Array インターフェース保持（Map 構造変更は影響大）
+
+### FB-6: Artifact Hash Cache Clear on GoBack
+
+- **初期状態**: ArtifactHashesNotCleared
+- **状態遷移**: GoBackPhaseExec → RetryCountReset → ArtifactHashesClear → HashCacheClearedAndValid
+- **最終状態**: artifactHashes = {} (fully cleared)
+- **スコープ**: 全アーティファクトクリア（選別削除ではない）
+- **理由**: targetPhase+ にマップするキーのスキーマ保証がない
+- **コード**: manager-lifecycle.ts L126
+
+## State Diagram (Mermaid)
+
+```mermaid
+stateDiagram-v2
+  [*] --> FB1_Detect: phaseGuide received
+  FB1_Detect --> FB1_ReadonlyCheck: inspect bashCategories
+  FB1_ReadonlyCheck --> FB1_FilterApply: isReadonlyPhase=true
+  FB1_ReadonlyCheck --> FB1_PassThrough: isReadonlyPhase=false
+  FB1_FilterApply --> FB1_Done: allowedTools (W/E removed)
+  FB1_PassThrough --> FB1_Done: allowedTools (unchanged)
+
+  [*] --> FB2_Input: line content
+  FB2_Input --> FB2_PatternTest: regex test
+  FB2_PatternTest --> FB2_Match: pattern matches
+  FB2_PatternTest --> FB2_NoMatch: pattern fails
+  FB2_Match --> FB2_Done: isStructuralLine=true
+  FB2_NoMatch --> FB2_Continue: check next pattern
+
+  [*] --> FB4_Entry: RTM entry input
+  FB4_Entry --> FB4_SearchID: findIndex call
+  FB4_SearchID --> FB4_Found: existingIdx>=0
+  FB4_SearchID --> FB4_NotFound: existingIdx=-1
+  FB4_Found --> FB4_Splice: splice at idx
+  FB4_NotFound --> FB4_Push: push entry
+  FB4_Splice --> FB4_Done: rtmEntries updated
+  FB4_Push --> FB4_Done: rtmEntries updated
+
+  [*] --> FB6_GoBack: goBack call
+  FB6_GoBack --> FB6_ClearRetry: retryCount={}
+  FB6_ClearRetry --> FB6_ClearHash: artifactHashes={}
+  FB6_ClearHash --> FB6_Done: cache cleared
+
+  FB1_Done --> [*]
+  FB2_Done --> [*]
+  FB4_Done --> [*]
+  FB6_Done --> [*]
+```
+
+## Design Decisions
+
+- D-SM-001: 4件修正は相互独立 - 単一implementationフェーズで一括実行可能
+- D-SM-002: FB-1+5はplanOnlyフィルタと同一パターン - allowedTools.filter()で実装
+- D-SM-003: FB-2正規表現 /^(?:[-*]\s+)?[A-Z]{1,5}-\d{1,4}[:：]/ は汎用IDパターン
+- D-SM-004: FB-4はfindIndex+splice方式でupsert実装 - Map構造変更は影響大きい
+- D-SM-005: FB-6はartifactHashes全クリア({})を安全側選択 - 部分削除はリスク高
+- D-SM-006: 全4修正の状態遷移は線形かつ単方向 - rollback時の不可逆性保証
+- D-SM-007: 4つの修正機能は完全に分離可能 - テスト実行順序はランダムでも安全
+
+## Artifacts
+
+- docs/workflows/harness-report-fb-fixes/state-machine.mmd (this file)
+- docs/workflows/harness-report-fb-fixes/planning.md (input)
+- docs/workflows/harness-report-fb-fixes/state-machine-design.txt (analysis)
+
+## Implementation Mapping
+
+| FB修正 | 状態遷移 | コード変更 | テストファイル |
+|--------|---------|----------|-----------------|
+| FB-1+5 | ReadonlyPhase → FilterApply → Done | delegate-coordinator.ts L120-125 | delegate-coordinator-readonly.test.ts |
+| FB-2 | LineContent → IDPattern → Done | dod-helpers.ts L26 | dod-extended.test.ts |
+| FB-4 | RTMEntry → IDSearch → Upsert → Done | manager-write.ts L126-129 | manager-write-rtm.test.ts |
+| FB-6 | GoBack → RetryReset → HashClear → Done | manager-lifecycle.ts L126 | manager-lifecycle-reset.test.ts |

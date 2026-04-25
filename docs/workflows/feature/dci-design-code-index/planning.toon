@@ -1,0 +1,84 @@
+→purpose: DCI実装計画
+→task: dci-design-code-index
+
+## 実装計画
+
+→implementation_steps[8]{order,file,change}:
+  1,workflow-harness/mcp-server/src/dci/types.ts,DCIIndex型定義(codeToDesign/designToCode/orphans)
+  2,workflow-harness/mcp-server/src/dci/index-builder.ts,buildIndex関数: @specコメント解析+インデックスJSON生成
+  3,workflow-harness/mcp-server/src/dci/index-query.ts,queryDocsForFile/queryFilesForDoc/validateIndex関数
+  4,workflow-harness/mcp-server/src/tools/defs-c.ts,4つのDCI MCPツール定義(JSON Schema)
+  5,workflow-harness/mcp-server/src/tools/handlers/dci.ts,4つのDCIハンドラー(薄いアダプタ層)
+  6,workflow-harness/mcp-server/src/tools/handler.ts,TOOL_DEFS_C import + switch case 4件追加
+  7,workflow-harness/mcp-server/src/__tests__/dci.test.ts,AC-1~6テスト
+  8,workflow-harness/mcp-server/src/__tests__/dci-integration.test.ts,MCPツール経由の統合テスト
+
+## 設計詳細
+
+### src/dci/types.ts (~30行)
+```typescript
+export interface DCICodeEntry {
+  specs: string[];       // 関連設計書パス
+  layer1: string;        // 1行サマリー
+}
+export interface DCIDesignEntry {
+  implementedBy: string[];
+  testedBy: string[];
+  layer1: string;
+}
+export interface DCIIndex {
+  version: string;       // "1"
+  generatedAt: string;   // ISO datetime
+  projectRoot: string;
+  codeToDesign: Record<string, DCICodeEntry>;
+  designToCode: Record<string, DCIDesignEntry>;
+  orphans: {
+    codeWithoutSpec: string[];
+    specWithoutCode: string[];
+  };
+}
+```
+
+### src/dci/index-builder.ts (~120行)
+1. globでsrc/**/*.ts, src/**/*.tsx を列挙(node_modules/dist除外)
+2. 各ファイルの先頭50行を読み、regex `/@spec\s+(\S+)/` で@specパスを抽出
+3. @spec直後のJSDocコメント行からlayer1サマリーを抽出
+4. codeToDesign/designToCodeの双方向マップを構築
+5. @specなしファイルをorphans.codeWithoutSpecに追加
+6. designToCodeに含まれないdocPathsをorphans.specWithoutCodeに追加
+7. .claude/state/design-code-index.jsonに保存
+
+### src/dci/index-query.ts (~80行)
+- queryDocsForFile(index, filePath): specs + layer1
+- queryFilesForDoc(index, docPath): implementedBy + testedBy
+- validateIndex(index, projectRoot): 壊れたリンク検出(existsSync)
+
+### src/tools/defs-c.ts (~60行)
+4ツール定義:
+- dci_build_index: { projectRoot: string }
+- dci_query_docs: { filePath: string }
+- dci_query_files: { docPath: string }
+- dci_validate: {}
+
+### src/tools/handlers/dci.ts (~80行)
+各ハンドラーがsrc/dci/の関数を呼び出すアダプタ。
+インデックス未生成時はdci_build_indexを自動実行。
+
+## decisions
+
+→decisions[6]{id,decision,rationale}:
+  D-1,初回はv1で@specのみ対応,最小限の実装で価値を確認してからv2で拡張
+  D-2,インデックスはファイルベース(JSON),DB不要でシンプル
+  D-3,クエリ時にインデックス未生成なら自動生成,UX向上
+  D-4,layer1はJSDocの@specの次行から抽出,LLM呼び出し不要
+  D-5,ファイル存在チェックはvalidateIndex時のみ,build時は不要(パフォーマンス)
+  D-6,テストファイル(*.test.ts)はcodeToDesignに含めずtestedByとして別管理,テストと実装の区別
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/dci-design-code-index/planning.toon,created
+
+## next
+
+→next: test_design

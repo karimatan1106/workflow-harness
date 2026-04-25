@@ -1,0 +1,58 @@
+flowchart TD
+    Start([修正開始]) --> CheckDir{修正対象<br/>ディレクトリ<br/>確認}
+
+    CheckDir -->|存在| ReadEnforce["enforce-workflow.jsを読み込み<br/>- CRLFを正規化<br/>- 1行ずつ解析"]
+    CheckDir -->|不存在| ErrorDir["エラー: ファイル未発見"]
+    ErrorDir --> End1([修正失敗])
+
+    ReadEnforce --> ParseEnforce{docs_update/<br/>ci_verification<br/>エントリ<br/>検出}
+
+    ParseEnforce -->|検出| InsertEnforceEntry["見つからない場合<br/>エントリを挿入<br/>- CRLFで統一<br/>- インデント確認"]
+    ParseEnforce -->|未検出| InsertEnforceEntry
+
+    InsertEnforceEntry --> WriteEnforce["修正内容を<br/>enforce-workflow.jsへ<br/>上書き保存"]
+
+    WriteEnforce --> ReadBash["bash-whitelist.jsを読み込み<br/>- CRLFを正規化<br/>- 『> 』パターン検索"]
+
+    ReadBash --> ParseBash{「> 」パターン<br/>regex型<br/>確認}
+
+    ParseBash -->|文字列型| ConvertRegex["regex型への<br/>変換実行<br/>- /\> /g を作成<br/>- case文追加"]
+    ParseBash -->|既にregex型| SkipConvert["変換スキップ"]
+
+    ConvertRegex --> AddCase["isRegexパターン<br/>case文を追加<br/>- フラグ判定"]
+    SkipConvert --> AddCase
+
+    AddCase --> WriteBash["修正内容を<br/>bash-whitelist.jsへ<br/>上書き保存"]
+
+    WriteBash --> ReadPhase["phase-edit-guard.jsを読み込み<br/>- CRLFを正規化<br/>- エントリポイント検索"]
+
+    ReadPhase --> ParsePhase{regression_test<br/>ci_verification<br/>deploy<br/>エントリ確認}
+
+    ParsePhase -->|不完全| InsertPhaseEntry["不足エントリを挿入<br/>- regression_test追加<br/>- ci_verification追加<br/>- deploy追加"]
+    ParsePhase -->|完全| SkipPhaseEntry["挿入スキップ"]
+
+    InsertPhaseEntry --> WritePhase["修正内容を<br/>phase-edit-guard.jsへ<br/>上書き保存"]
+    SkipPhaseEntry --> WritePhase
+
+    WritePhase --> Validate["修正内容の<br/>検証実行<br/>- 構文チェック<br/>- ファイルスキャン"]
+
+    Validate --> ValidResult{検証<br/>結果}
+
+    ValidResult -->|エラー| ErrorValidate["検証エラー<br/>ログ出力"]
+    ErrorValidate --> RollBack["ロールバック処理<br/>- 前バージョン復元"]
+    RollBack --> End2([修正失敗])
+
+    ValidResult -->|成功| ConfirmFix["修正成功を確認<br/>- 全3ファイル修正完了<br/>- 整合性チェック完了"]
+
+    ConfirmFix --> Summary["修正サマリー生成<br/>- enforce-workflow: エントリ追加済み<br/>- bash-whitelist: regex型変換済み<br/>- phase-edit-guard: エントリ追加済み"]
+
+    Summary --> End3([修正完了])
+
+    style Start fill:#90EE90
+    style End3 fill:#90EE90
+    style End1 fill:#FFB6C6
+    style End2 fill:#FFB6C6
+    style ErrorDir fill:#FFB6C6
+    style ErrorValidate fill:#FFB6C6
+    style ConfirmFix fill:#87CEEB
+    style Summary fill:#87CEEB

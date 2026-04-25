@@ -1,0 +1,36 @@
+→purpose: 既存ドキュメント棚卸し機能のテスト設計
+→task: doc-inventory-on-scope
+
+## テストケース
+
+→test_cases[7]{id,ac,description,method}:
+  TC-AC1-01,AC-1,scope_definitionテンプレートに"ドキュメント探索"または"docPaths"を含むステップが存在する,テンプレート文字列検査
+  TC-AC2-01,AC-2,harness_set_scopeにdocPaths配列を渡すとTaskStateに保存される,統合テスト(StateManager)
+  TC-AC2-02,AC-2,docPathsを省略した場合undefinedのまま,統合テスト(StateManager)
+  TC-AC3-01,AC-3,docPaths=["docs/api.md"]でbuildDocCategories呼び出し時にカテゴリリストに含まれる,ユニットテスト
+  TC-AC3-02,AC-3,docPathsの重複パスはFALLBACK_ITEMSやtrait categoriesと重複排除される,ユニットテスト
+  TC-AC4-01,AC-4,docPaths未設定でbuildDocCategories呼び出し時に既存5項目のみ出力,ユニットテスト(既存テスト流用)
+  TC-AC4-02,AC-4,docPaths=[]でbuildDocCategories呼び出し時に既存動作と同一出力,ユニットテスト
+
+## テストファイル
+
+→test_files[1]{path,cases}:
+  workflow-harness/mcp-server/src/__tests__/doc-inventory.test.ts,"TC-AC1-01,TC-AC2-01,TC-AC2-02,TC-AC3-01,TC-AC3-02,TC-AC4-01,TC-AC4-02"
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,1ファイルに全テストケースを集約,機能が小さいため分散不要
+  D-2,buildDocCategoriesのユニットテスト中心,コア変更はこの関数のみ
+  D-3,テンプレート検査はTC-AC1-01で文字列マッチ,テンプレートの構造テストは既存パターンに従う
+  D-4,統合テストはStateManager経由,MCPハンドラー直接呼び出しより安定
+  D-5,TC-AC4-01は既存テストとの一貫性確認,後方互換性の証明
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/doc-inventory-on-scope/test-design.toon,created
+
+## next
+
+→next: test_impl

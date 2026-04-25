@@ -1,0 +1,50 @@
+flowchart TD
+    Start(修正プロセス開始)
+    Start --> Code1(FR-REQ-1: vi.mock fs ブロックへの mkdirSync 追加)
+    Start --> Code2(FR-REQ-4: definitions.ts フォールバック値の更新)
+
+    Code1 --> Test1(design-validator.test.ts のテスト実行)
+    Test1 --> Verify1{UT-5.1～5.4が通過？}
+    Verify1 -->|Yes| BuildCheck(ビルド確認実行)
+    Verify1 -->|No| Debug1(デバッグ・修正)
+    Debug1 --> Test1
+
+    Code2 --> TypeCheck(TypeScript 型チェック)
+    TypeCheck --> Verify2{型エラー無し？}
+    Verify2 -->|No| Debug2(型定義確認・修正)
+    Debug2 --> TypeCheck
+    Verify2 -->|Yes| BuildCheck
+
+    BuildCheck --> AllTests(全テストスイート実行)
+    AllTests --> Verify3{912件以上が合格？}
+    Verify3 -->|No| Regression(リグレッション調査)
+    Regression --> Debug3(原因特定・修正)
+    Debug3 --> AllTests
+    Verify3 -->|Yes| DocPhase(ドキュメント修正フェーズへ)
+
+    DocPhase --> Doc1(FR-REQ-2: MEMORY.md へ FR-22 記録追記)
+    DocPhase --> Doc2(FR-REQ-3: MEMORY.md へ FR-A～FR-D 記録追記)
+
+    Doc1 --> Verify4{記録内容正確？}
+    Verify4 -->|Yes| Doc2Check(Doc2へ進む)
+    Verify4 -->|No| Edit1(編集修正)
+    Edit1 --> Verify4
+
+    Doc2 --> Verify5{記録内容正確？}
+    Verify5 -->|Yes| Doc3(FR-REQ-5: CLAUDE.md 保守ルール追記)
+    Verify5 -->|No| Edit2(編集修正)
+    Edit2 --> Verify5
+
+    Doc3 --> Verify6{追記内容完全？}
+    Verify6 -->|Yes| Doc4(FR-REQ-6: MEMORY.md FIX-1 更新)
+    Verify6 -->|No| Edit3(編集修正)
+    Edit3 --> Verify6
+
+    Doc4 --> Verify7{FIX-1 記述更新完了？}
+    Verify7 -->|Yes| AllComplete(全修正完了)
+    Verify7 -->|No| Edit4(編集修正)
+    Edit4 --> Verify7
+
+    AllComplete --> End(修正プロセス終了)
+
+    Doc2Check -.-> Doc2

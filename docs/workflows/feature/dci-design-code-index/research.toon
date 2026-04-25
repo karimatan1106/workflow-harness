@@ -1,0 +1,44 @@
+→purpose: DCI実装のためのコードベース調査結果
+→task: dci-design-code-index
+
+## 既存パターン分析
+
+→existing_patterns[4]{pattern,location,detail}:
+  @specコメント,全主要.tsファイル,"// @spec docs/spec/features/workflow-harness.md 形式で広く使用済み"
+  MCPツール定義,tools/defs-a.ts + defs-b.ts,"JSON Schemaでinput定義。TOOL_DEFS_A/B配列にpush"
+  ハンドラーディスパッチ,tools/handler.ts,"switch文で name → handler関数マッピング。新ツール追加はcase追加"
+  状態管理,state/manager.ts,"loadTask/saveTask。signAndPersistでHMAC署名"
+
+## 技術的制約
+
+→constraints[5]{id,constraint}:
+  TC-1,handler.ts は55行(200行以下)。4ツール追加しても余裕あり
+  TC-2,defs-a.ts / defs-b.ts は各100行前後。defs-c.ts に分離が適切
+  TC-3,インデックスファイルはStateManager管轄外。専用のread/write関数が必要
+  TC-4,@specコメント解析はregexで十分(AST不要)。パターン: "// @spec" or "* @spec"
+  TC-5,design-code-index.jsonはプロジェクトルート基準のパス格納
+
+## 依存バージョン
+
+→versions[3]{tool,version}:
+  node,v20.x
+  typescript,5.x
+  vitest,1.6.x
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,DCI MCPツール定義はdefs-c.tsに分離,defs-a/bの200行制限を守る
+  D-2,DCIハンドラーはtools/handlers/dci.tsに集約,4ツール全てを1ファイルで管理(各ツール短い)
+  D-3,インデックス生成・クエリロジックはsrc/dci/に分離,ツールハンドラーは薄いアダプタ層
+  D-4,@specパースはregex /\/[\/\*]\s*@spec\s+(\S+)/,シンプルで十分
+  D-5,インデックスファイルパスは.claude/state/design-code-index.json,既存state管理と同ディレクトリ
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/dci-design-code-index/research.toon,created
+
+## next
+
+→next: requirements

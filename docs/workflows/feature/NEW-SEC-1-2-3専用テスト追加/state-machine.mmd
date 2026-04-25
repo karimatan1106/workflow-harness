@@ -1,0 +1,36 @@
+stateDiagram-v2
+    [*] --> Init: テスト開始
+    Init --> LoadModules: require(fs, path, assert)読み込み
+    LoadModules --> ResolveRoot: プロジェクトルート探索開始
+
+    ResolveRoot --> LoadFailed: workflow-pluginディレクトリ未検出
+    LoadFailed --> [*]: exit code 2（異常終了）
+
+    ResolveRoot --> LoadBashWhitelist: bash-whitelist.jsモジュール読み込み
+    LoadBashWhitelist --> LoadLoopDetector: loop-detector.jsモジュール読み込み
+    LoadLoopDetector --> Suite1Start: テスト準備完了（passed=0, failed=0）
+
+    Suite1Start --> SEC1_01: Suite1開始「NEW-SEC-1ゼロ幅文字サニタイズ」
+    SEC1_01 --> SEC1_02: U+200B（ゼロ幅スペース）splitCommandParts検証
+    SEC1_02 --> SEC1_03: U+200C（ゼロ幅非結合子）splitCommandParts検証
+    SEC1_03 --> SEC1_04: U+200D（ゼロ幅結合子）splitCommandParts検証
+    SEC1_04 --> SEC1_05: U+FEFF（BOM）splitCommandParts検証
+    SEC1_05 --> SEC1_06: 複数ゼロ幅文字混合入力の検証
+    SEC1_06 --> Suite2Start: 正常入力の非破壊性確認後にSuite1終了
+
+    Suite2Start --> SEC2_01: Suite2開始「NEW-SEC-2 Fail-Closedロジック」
+    SEC2_01 --> SEC2_02: 不正base64パターンでdetectEncodedCommand検証
+    SEC2_02 --> SEC2_03: 不正printf hexパターンでdetectEncodedCommand検証
+    SEC2_03 --> SEC2_04: 不正echo octalパターンでdetectEncodedCommand検証
+    SEC2_04 --> Suite3Setup: 正常コマンドの非破壊性確認後にSuite2終了
+
+    Suite3Setup --> SEC3_01: Suite3開始「NEW-SEC-3エラーログ出力」（console.warn/errorスパイ設定）
+    SEC3_01 --> SEC3_02: 存在しないパスでconsole.warn呼び出し検証
+    SEC3_02 --> SEC3_03: 両方失敗時のconsole.error呼び出し検証
+    SEC3_03 --> SpyRestore: 正常パスでログ非出力を確認
+
+    SpyRestore --> Aggregate: スパイ復元処理後に結果集計開始
+    Aggregate --> AllPassed: 全テスト成功（failed === 0）
+    Aggregate --> SomeFailed: 一部テスト失敗（failed > 0）
+    AllPassed --> [*]: process.exit(0)で正常終了
+    SomeFailed --> [*]: process.exit(1)で失敗終了

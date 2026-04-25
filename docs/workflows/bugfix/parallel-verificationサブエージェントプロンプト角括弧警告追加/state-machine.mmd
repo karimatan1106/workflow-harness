@@ -1,0 +1,57 @@
+stateDiagram-v2
+    Start --> BugExists: タスク開始、現在の問題を把握
+
+    BugExists --> SubagentMisled: buildPrompt が誤ったNG/OK例を生成し、サブエージェントに送信
+
+    SubagentMisled --> ValidationFailed: サブエージェントが誤ったプロンプトに従い、コードフェンス外に技術記法を記述
+
+    ValidationFailed --> BugExists: バリデーション失敗を報告、コード未修正のままリトライ
+
+    BugExists --> CodeFixed: definitions.ts行1155-1160を正しい8行に修正
+
+    CodeFixed --> BuildComplete: npm run buildを実行、TypeScriptをトランスパイル
+
+    BuildComplete --> ServerRestarted: MCPサーバープロセスを再起動、新しいバイナリをメモリ上で実行開始
+
+    ServerRestarted --> PromptCorrect: 全フェーズのサブエージェントが修正済みプロンプトを受信、正しいNG/OK例に従う
+
+    PromptCorrect --> End
+
+    note right of BugExists
+        buildPrompt関数内に存在する
+        NG/OK例の方向が逆になっている状態
+    end note
+
+    note right of SubagentMisled
+        プロンプトが「コードフェンス内もNG」
+        と誤って指示しているため
+        サブエージェントが誤解
+    end note
+
+    note right of ValidationFailed
+        artifact-validatorが
+        コードフェンス外の角括弧を検出
+        バリデーション失敗
+    end note
+
+    note right of CodeFixed
+        行1155-1160の6行を修正後の8行に
+        置き換え完了
+        NG/OK の対比が正しくなる
+    end note
+
+    note right of BuildComplete
+        dist/phases/definitions.js
+        が更新されたことを確認
+    end note
+
+    note right of ServerRestarted
+        モジュールキャッシュをクリアし
+        新しいバイナリで動作開始
+    end note
+
+    note right of PromptCorrect
+        全フェーズのサブエージェントが
+        正しい品質要件プロンプトを受信し
+        バリデーションエラー解消
+    end note

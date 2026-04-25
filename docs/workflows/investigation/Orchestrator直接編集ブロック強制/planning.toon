@@ -1,0 +1,20 @@
+phase: planning
+taskId: 9fb16d24-4d20-4da1-845a-9d93167ee1b9
+ts: "2026-03-02T10:30:00+09:00"
+decisions[7]{id,statement,rationale}:
+  PL-D001,パスチェックはisBypassPath()直後の行59直後に挿入する,既存コード構造を最小変更で拡張でき行数制限とコード可読性を維持できる
+  "PL-D002","パスチェックはfilePath.replace正規化からincludes('docs/workflows/')の2ステップとする","hook-utils.jsのisBypassPath実装パターンに合わせ外部依存なく実装できる"
+  PL-D003,ブロックメッセージは既存JSON形式のdecision+reasonキー構成にする,AC-5のstderrフォーマット要件と既存拡張子ブロックとの一貫性を保てる
+  PL-D004,SKILL.mdへの追記はファイル末尾6行以内で行う,既存セクション構造を破壊せず最小変更でOrchestratorパターンを補強できる
+  PL-D005,workflow.mdはSKILL.mdと同一変更を適用してミラー一致を維持する,両ファイル乖離による環境依存リスクを排除できる
+  "PL-D006","実装順序はステップ1(phase-edit-guard.js)→ステップ2(SKILL.md)→ステップ3(workflow.md)とする","ステップ3がステップ2の内容を参照するため依存順序を守る必要がある"
+  PL-D007,RTMエントリF-001〜F-003をAC-1〜AC-3に対応させて定義する,トレーサビリティチェーンをplanningフェーズで確立しcode_reviewゲートをパスできる状態にする
+rtm[3]{id,ac,file}:
+  F-001,AC-1,workflow-harness/hooks/phase-edit-guard.js
+  F-002,AC-2,.claude/skills/harness/SKILL.md
+  F-003,AC-3,workflow-harness/skills/workflow.md
+artifacts[2]{path,role,summary}:
+  docs/workflows/Orchestrator直接編集ブロック強制/spec.md,spec,技術仕様書。アーキテクチャ設計・RTMエントリ・実装順序・変更対象ファイルを定義
+  docs/workflows/Orchestrator直接編集ブロック強制/planning.toon,checkpoint,planningフェーズTOONチェックポイント
+next:
+  readFiles[1]: docs/workflows/Orchestrator直接編集ブロック強制/spec.md

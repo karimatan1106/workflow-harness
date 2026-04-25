@@ -1,0 +1,26 @@
+task: harness_delegate_coordinator TOON正式パース実装
+phase: test_design
+
+test-cases[8]{id,description,type,ac-ref}:
+  TC-1, parseToonKvが正常なTOON文字列をRecord<string string>に変換できる, unit, AC-1/AC-2
+  TC-2, parseToonKvが空文字列で空オブジェクトを返す, unit, AC-3
+  TC-3, parseToonKvがテーブルブロック行をスキップする, unit, AC-1
+  TC-4, parseToonKvがクォート付き値をunescする, unit, AC-1/AC-2
+  TC-5, instructionパース後にfullInstructionが構造化されている, integration, AC-1
+  TC-6, coordinator出力パース後に構造化戻り値が返される, integration, AC-2
+  TC-7, 非TOON文字列のinstructionでフォールバックが動作する, integration, AC-3
+  TC-8, MCPツール呼び出しが.agent/mcp-debug.logに記録される, integration, AC-5
+
+test-strategy: 既存テストの有無に応じてユニットテストはtoon-helpers.test.tsに追加。統合テストは手動検証（delegate-coordinatorはサブプロセス起動のため自動テスト困難）
+
+decisions[5]{id,statement,rationale}:
+  TD-1, parseToonKvのユニットテストを優先, 純粋関数でテストが容易なため
+  TD-2, delegate-coordinator統合テストは手動検証, サブプロセス起動のためvitestでの自動テストが困難
+  TD-3, TC-8はログファイル存在確認で検証, ログ内容の完全一致は脆弱なため
+  TD-4, 既存テストが存在しない場合もAC-4は既存コードのビルド成功で判定, テストゼロの場合failゼロ
+  TD-5, フォールバックテスト(TC-7)はparseToonKvの戻り値で判定, 空オブジェクト=フォールバック発動
+
+artifacts[1]{id,path,description}:
+  A-1, docs/workflows/harness_delegate_coordinator TOON正式パース実装/test_design.toon, テスト設計書
+
+next: implementation

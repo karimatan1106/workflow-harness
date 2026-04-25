@@ -1,0 +1,144 @@
+phase: analytics
+task: docs-workflows-refactoring-v2
+taskId: 5127ee0c-0fad-4088-a2bc-e7c590595738
+generatedAt: "2026-03-28T23:04:03.656Z"
+totalElapsed: 367878s
+phaseTimings:
+  scope_definition:
+    duration: 332635s
+    current: false
+  research:
+    duration: 226s
+    current: false
+  impact_analysis:
+    duration: 178s
+    current: false
+  requirements:
+    duration: 231s
+    current: false
+  threat_modeling:
+    duration: 111s
+    current: false
+  planning:
+    duration: 422s
+    current: false
+  state_machine:
+    duration: 64s
+    current: false
+  flowchart:
+    duration: 97s
+    current: false
+  ui_design:
+    duration: 215s
+    current: false
+  design_review:
+    duration: 186s
+    current: false
+  test_design:
+    duration: 180s
+    current: false
+  test_selection:
+    duration: 74s
+    current: false
+  test_impl:
+    duration: 41s
+    current: false
+  implementation:
+    duration: 162s
+    current: false
+  refactoring:
+    duration: 8s
+    current: false
+  build_check:
+    duration: 4s
+    current: false
+  code_review:
+    duration: 197s
+    current: false
+  testing:
+    duration: 38s
+    current: false
+  regression_test:
+    duration: 10s
+    current: false
+  acceptance_verification:
+    duration: 293s
+    current: false
+  manual_test:
+    duration: 171s
+    current: false
+  security_scan:
+    duration: 114s
+    current: false
+  performance_test:
+    duration: 72s
+    current: false
+  e2e_test:
+    duration: 204s
+    current: false
+  docs_update:
+    duration: 56s
+    current: false
+  commit:
+    duration: 73s
+    current: false
+  push:
+    duration: 11s
+    current: false
+  ci_verification:
+    duration: 4s
+    current: false
+  deploy:
+    duration: 4s
+    current: false
+  health_observation:
+    duration: 70s
+    current: false
+  completed:
+    duration: 31729s
+    current: true
+errorAnalysis[1]{phase,retries,topFailure}:
+  test_impl,1,tdd_red_evidence(L2) x2
+errorHistory[30]{phase,retry,check,level,passed,evidence}:
+  test_impl,1,output_file_exists,L1,true,No output file required for this phase
+  test_impl,1,input_files_exist,L1,true,All 2 input files exist
+  test_impl,1,spec_paths_exist,L1,true,"@spec path check not required for phase: test_impl"
+  test_impl,1,exit_code_zero,L2,true,"Phase test_impl: exit_code_zero exempted via dodExemptions (checked by tdd_red_evidence instead)"
+  test_impl,1,artifact_quality,L3,true,No artifact quality check required for this phase
+  test_impl,1,toon_safety,L4,true,No output file for this phase
+  test_impl,1,content_validation,L4,true,No content validation required for this phase
+  test_impl,1,rtm_completeness,L3,true,"RTM completeness check not required for phase: test_impl"
+  test_impl,1,rtm_required,L3,true,"RTM required check not applicable for phase: test_impl"
+  test_impl,1,ac_completeness,L3,true,"AC completeness check not required for phase: test_impl"
+  test_impl,1,invariant_completeness,L3,true,"Invariant completeness check not required for phase: test_impl"
+  test_impl,1,ac_format,L4,true,"ac_format check not required for phase: test_impl"
+  test_impl,1,not_in_scope_section,L4,true,"not_in_scope_section check not required for phase: test_impl"
+  test_impl,1,open_questions_section,L4,true,"open_questions_section check not required for phase: test_impl"
+  test_impl,1,intent_consistency,L4,true,"intent_consistency check not required for phase: test_impl"
+  test_impl,1,baseline_required,L3,true,"Baseline check not required for phase: test_impl"
+  test_impl,1,artifact_freshness,L3,true,All input artifacts are fresh
+  test_impl,1,delta_entry_format,L4,true,"Delta Entry format check not applicable for phase: test_impl"
+  test_impl,1,ac_design_mapping,L4,true,"AC→design mapping check not required for phase: test_impl"
+  test_impl,1,ac_tc_mapping,L4,true,"AC→TC traceability check not required for phase: test_impl"
+  test_impl,1,ac_achievement_table,L4,true,"AC Achievement Status check not required for phase: test_impl"
+  test_impl,1,tc_coverage,L3,true,"TC coverage check not required for phase: test_impl"
+  test_impl,1,artifact_drift,L4,true,All 3 approved artifacts are unmodified (ART-1)
+  test_impl,1,package_lock_sync,L4,true,Package lock sync check only applicable for commit phase
+  test_impl,1,tdd_red_evidence,L2,false,"TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)"
+  test_impl,1,test_results_exist,L1,true,"Test results check not required for phase: test_impl"
+  test_impl,1,test_regression_gate,L2,true,"Regression gate not required for phase: test_impl"
+  test_impl,1,hearing_user_response,L2,true,"userResponse check not required for phase: test_impl"
+  test_impl,1,dead_references,L4,true,"Dead reference check not required for phase: test_impl"
+  test_impl,1,dci_validation,L4,true,"skip: not a DCI phase"
+bottlenecks:
+  slowestPhase: scope_definition (332635s)
+  mostRetriedPhase: test_impl (1 retries)
+  mostFailedCheck: tdd_red_evidence (2 failures)
+advice[2]: "フェーズ分割またはスコープ縮小を検討: scope_definition (332635s)","タスクサイズの見直しを推奨 (総所要時間: 367878s)"
+outlierPhases[2]{phase,seconds,iqrScore}:
+  scope_definition,332635,2039.45
+  completed,31729,193.4
+errorClassification:
+  recurring[0]:
+  cascading[0]:
+  oneOff[1]: tdd_red_evidence

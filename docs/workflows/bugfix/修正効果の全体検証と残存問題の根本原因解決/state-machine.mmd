@@ -1,0 +1,127 @@
+## サマリー
+
+本ステートマシン図は、3つの修正（FR-1: MEMORY.md更新、FR-2: next.ts修正、FR-3: definitions.ts追記）が適用された後のOrchestratorの状態遷移フローを表現します。
+
+- 目的: workflow_nextでのsubagentTemplate取得から、並列フェーズのサブフェーズ処理までの状態遷移を可視化し、各フェーズ間の連携を明確にする
+- 評価スコープ: Orchestratorが現フェーズから次フェーズへ遷移する際のsubagentTemplate取得フロー、および並列フェーズでのサブフェーズスリム化の効果
+- 主要な決定事項: workflow_nextのレスポンスからトップレベルのsubagentTemplateのみを使用し、サブフェーズレベルのsubagentTemplateはworkflow_statusで個別取得する設計。MEMORY.mdでこの正しい取得経路を明示することでOrchestratorの混乱を防止
+- 検証状況: FR-2による次.tsスリム化処理によって並列フェーズ遷移時のレスポンスサイズが約61K文字から15K文字以下に削減されることが期待される状態
+- 次フェーズで必要な情報: 実装完了後はnpm run buildとMCPサーバー再起動が必須であり、その後workflow_statusで現フェーズを確認して設計検証を開始する
+
+## ステートマシン図
+
+ステートマシンは以下の主要状態と遷移を表現します。Start状態から実装フェーズ開始までの流れを示し、FR-2のスリム化による高速化効果と、FR-1による正しい取得経路の明示が反映されています。各状態間の遷移には、修正内容が与える影響を記載しています。
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> GetPhaseGuide: workflow_nextを呼び出し
+
+    GetPhaseGuide --> ExtractTemplate: phaseGuideからtopLevelの<br/>subagentTemplateを抽出<br/>(FR-1: 正しい経路を明示)
+
+    ExtractTemplate --> PrepareTask: Taskプロンプトに<br/>テンプレートを埋め込み
+
+    PrepareTask --> ExecuteTask: Taskを起動
+
+    ExecuteTask --> TaskComplete: subagentが<br/>成果物を完成
+
+    TaskComplete --> CheckParallel: 並列フェーズか<br/>単一フェーズか
+
+    CheckParallel --> SinglePhase: 単一フェーズ
+    CheckParallel --> ParallelPhase: 並列フェーズ<br/>(parallel_verification等)
+
+    SinglePhase --> TransitionNext: 次フェーズへ<br/>workflow_nextで遷移
+
+    ParallelPhase --> CheckSubphases: サブフェーズ処理<br/>が必要か
+
+    CheckSubphases --> QueryStatus: サブフェーズごとに<br/>workflow_statusで<br/>subagentTemplate取得<br/>(FR-2: スリム化により<br/>workflow_nextは軽量)
+
+    QueryStatus --> SubphaseTemplate: phaseGuide.subPhases<br/>からサブフェーズの<br/>subagentTemplateを<br/>取得(レスポンス小)
+
+    SubphaseTemplate --> ExecuteSubtask: subagentを起動
+
+    ExecuteSubtask --> SubtaskComplete: subagentが<br/>成果物を完成
+
+    SubtaskComplete --> AllSubphasesComplete: 全サブフェーズ<br/>完了したか
+
+    AllSubphasesComplete --> MoreSubphases: 未完了の<br/>サブフェーズあり
+    MoreSubphases --> QueryStatus
+
+    AllSubphasesComplete --> SubphasesFinished: 全サブフェーズ完了
+
+    SubphasesFinished --> TransitionNext
+
+    TransitionNext --> End
+
+    [*] -.->|"FR-1: MEMORY.md更新による<br/>正しい取得経路の明示"| Start
+    [*] -.->|"FR-2: next.tsの<br/>subagentTemplateスリム化<br/>(61K→15K以下)"| Start
+    [*] -.->|"FR-3: definitions.tsの<br/>評価結論ガイダンス追記"| TaskComplete
+
+    note right of GetPhaseGuide
+        workflow_nextから
+        phaseGuide全体を取得
+        FR-2適用済みにより
+        subPhase.subagentTemplate
+        は既に除外済み
+    end note
+
+    note right of QueryStatus
+        workflow_statusを呼び出し
+        特定のサブフェーズの
+        phaseGuideを取得
+        必要に応じて個別の
+        subagentTemplateを参照
+    end note
+
+    note right of End
+        実装フェーズ開始準備完了
+        npm run build と
+        MCPサーバー再起動済み
+    end note
+```
+
+## 状態遷移の詳細説明
+
+以下は各状態の役割と遷移条件の詳細です。
+
+### Start状態
+Orchestratorが現フェーズを完了し、次のフェーズへの遷移を開始する初期状態。この時点でFR-1（MEMORY.md更新）により、Orchestratorは正しい取得経路（workflow_next経由）を認識しています。
+
+### GetPhaseGuide状態
+workflow_nextを呼び出してphaseGuideを取得。FR-2によるスリム化処理により、このレスポンスサイズは約15K文字以下に削減されています。トップレベルのsubagentTemplateはまだこの時点で含まれており、次フェーズ実行に必要です。
+
+### ExtractTemplate状態
+取得したphaseGuideからトップレベルのsubagentTemplateを抽出。FR-1により、Orchestratorはこの経路が信頼できることを認識し、workflow_statusから再度取得する不要な動作は実施しません。
+
+### PrepareTask～ExecuteTask状態
+subagentTemplate内のプレースホルダー${taskName}や${taskId}を置き換え、Taskを起動。subagentが成果物を作成します。FR-3（definitions.ts追記）により、manual_test・performance_test・e2e_testのテンプレートには新しい評価結論ガイダンスが含まれています。
+
+### CheckParallel状態
+遷移先が並列フェーズ（parallel_analysis、parallel_design、parallel_quality、parallel_verification）か単一フェーズかを判定。並列フェーズの場合、複数のサブフェーズを同時処理する必要があります。
+
+### ParallelPhase～SubphasesFinished状態
+並列フェーズの場合、各サブフェーズごとにworkflow_statusを呼び出してサブフェーズ固有のphaseGuideを取得。FR-2により、workflow_nextの時点ではサブフェーズレベルのsubagentTemplate・content・claudeMdSectionsが既に除外されているため、workflow_statusによる個別取得が設計上の正しい動作になります。全サブフェーズの完了を待つ間ループします。
+
+### TransitionNext状態
+全フェーズ（または全サブフェーズ）の処理が完了。次フェーズへの遷移準備をします。
+
+### End状態
+状態遷移完了。実装フェーズ開始の準備が整った状態。FR-2・FR-3による変更が反映されるにはnpm run buildとMCPサーバー再起動が必須となります。
+
+## 修正の影響マッピング
+
+各修正がステートマシンのどの部分に影響するかを示します。
+
+### FR-1（MEMORY.md更新）
+Start状態からExtractTemplate状態への遷移パスに影響。Orchestratorが「workflow_nextからsubagentTemplateを取得する」という正しい経路を理解し、workflow_statusから再度取得しようとする誤った判断を防止します。
+
+### FR-2（next.tsのスリム化）
+GetPhaseGuide状態のレスポンスサイズに影響。並列フェーズ遷移時のレスポンスが約61K文字から15K文字以下に削減。その結果、QueryStatus状態で個別のサブフェーズsubagentTemplateを取得する必要性が明確になります。
+
+### FR-3（definitions.tsの追記）
+TaskComplete状態とSubtaskComplete状態に影響。subagentが生成する成果物に対して「評価結論フレーズの重複回避」に関する明確なガイダンスが付与され、バリデーション失敗を減らします。
+
+## バリデーション観点
+
+このステートマシン図は、workflow_nextとworkflow_statusの責任分離を明示します。FR-2によりworkflow_nextは「フェーズ遷移に必要な情報の軽量提供」に特化し、workflow_statusは「フェーズの詳細情報・サブフェーズのテンプレート個別取得」に特化する設計が実現されます。これにより、Orchestratorの処理フローが明確化され、エラーハンドリングの改善が期待できます。

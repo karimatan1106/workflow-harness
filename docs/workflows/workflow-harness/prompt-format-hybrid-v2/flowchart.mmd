@@ -1,0 +1,18 @@
+flowchart TD
+    A[Start: Read workflow-delegation.md] --> B[Locate insertion point before Common Constraints]
+    B --> C[Insert Prompt Format Rules section with 6 rules]
+    C --> D[Append contamination prevention line to Common Constraints]
+    D --> E{Line count <= 200?}
+    E -->|Yes| F[Run grep verification for F-001 through F-006]
+    F --> G{All F-NNN checks pass?}
+    G -->|Yes| H[End: File ready for commit]
+    G -->|No| I[Identify failing requirement]
+    I --> J[Fix content to satisfy requirement]
+    J --> F
+    E -->|No| K[Trim or condense content to reduce line count]
+    K --> E
+
+    style A fill:#e8f5e9
+    style H fill:#c8e6c9
+    style E fill:#fff9c4
+    style G fill:#fff9c4

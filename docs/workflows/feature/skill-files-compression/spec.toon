@@ -1,0 +1,81 @@
+task: skill-files-compression
+phase: planning
+status: complete
+timestamp: 2026-03-07T21:00:00+09:00
+
+rtm[7]{id,requirement,designRef,codeRef,testRef}:
+  F-001, REQ-F01 workflow-subagent.md to workflow-execution.md rename + MT-01~03 template 97 lines delete, FT-06, .claude/skills/harness/workflow-execution.md, AC-4 grep MT keyword absence
+  F-002, REQ-F02 workflow-execution.md retains subagent type/model table + phase-edit restriction table only (56 lines), FT-06, .claude/skills/harness/workflow-execution.md, AC-1 wc -l <= 200
+  F-003, REQ-F03 workflow-docs-structure.md + workflow-docs-phases.md merged into workflow-docs.md with SF-07 duplicate tree 25 lines removed, FT-10, .claude/skills/harness/workflow-docs.md, AC-1 wc -l <= 200
+  F-004, REQ-F04 CLAUDE.md complete overlap 6 locations (OV-01/02/05/07/09/12) deleted, FT-02/03/04/05, all skill files, AC-2 grep OV keyword absence
+  F-005, REQ-F05 CLAUDE.md practical overlap 6 locations (OV-03/04/06/08/10/11) replaced with CLAUDE.md SecN reference, FT-03/04/05, workflow-orchestrator/gates/rules.md, AC-2 reference presence
+  F-006, REQ-F06 inter-file overlap 8 locations (SF-01~08) consolidated to single source, FT-02/03/04/05/06, designated authority files, AC-3 single source verification
+  F-007, REQ-F07 descriptive prose converted to bullet lists across all files, FT-01~10, all skill files, AC-6 total lines <= 1000
+
+fileTransformSpec[10]{id,file,targetLines,deleteLines,keepSections,addLines,dependsOn}:
+  FT-06, workflow-subagent.md to workflow-execution.md (186 to 56), 56, "frontmatter update (name/description). Delete subagent startup template L61-95 (MT-01: 35 lines). Delete retry template L97-146 (MT-02: 50 lines). Delete parallel example L152-163 (MT-03: 12 lines). Delete bash category definition L50-57 (SF-01: move to rules.md). Delete model escalation L148-150 (SF-02: already in rules.md). Delete context handoff L165-169 (SF-03: already in orchestrator.md)", "phase-by-phase subagent config table L6-33 (28 lines). Phase-by-phase bash permission table L34-48 (15 lines). Error-type to improvement-request conversion table L99-108 (10 lines). Phase-edit restriction table L171-186 (16 lines)", "add CLAUDE.md Sec5/Sec6/Sec12 reference header (1 line). Rename file workflow-subagent.md to workflow-execution.md", none
+
+  FT-02, workflow-phases.md (154 to 100), 100, "delete Phase Table section L8-41 (34 lines: OV-01 complete overlap with CLAUDE.md Sec2). Delete Parallel Groups table L43-51 (9 lines: info in CLAUDE.md Sec2). Delete Task Sizing table L53-60 (8 lines: OV-02 complete overlap with CLAUDE.md Sec3)", "Phase Work Descriptions L64-154 (91 lines: skill-file-unique value). Frontmatter L1-4 (4 lines)", "add CLAUDE.md Sec2/Sec3 reference line after frontmatter (1 line). Add phase-set summary line from L60 (1 line)", FT-06
+
+  FT-03, workflow-orchestrator.md (159 to 110), 110, "delete sessionToken Rules Sec3 L116-126 (11 lines: OV-07 complete overlap with CLAUDE.md Sec9). Delete Execution Flow detail L20-30 (reduce 11 lines: OV-08 overlap with CLAUDE.md Sec5). Delete Phase Completion Reporting L51-55 (5 lines: in CLAUDE.md Sec5). Trim context handoff prose to bullets L42-49 (save 4 lines)", "Three-Layer Model L13-17. Subagent Prompt Template Rule L32-33. Model Selection L35-40. Context Handoff (compressed) L42-49. MCP Tool Reference Sec2 L59-113. Memory Curator Protocol Sec4 L129-159", "add CLAUDE.md Sec5/Sec9 reference header (1 line)", FT-06
+
+  FT-04, workflow-gates.md (155 to 110), 110, "delete IA-1~7 Sec2 L52-89 (38 lines: OV-09 complete overlap with CLAUDE.md Sec7). Delete Traceability Sec4 L124-155 (32 lines: OV-10 overlap with CLAUDE.md Sec10). Reduce DoD table prose (5 lines)", "Control Levels L1-L4 table Sec1 L8-17. DoD Gate Checks table L22-49. User Intent Policy UI-1~7 Sec3 L92-121", "add CLAUDE.md Sec7/Sec10 reference header (1 line)", none
+
+  FT-05, workflow-rules.md (123 to 120), 120, "delete Session Recovery Sec5 L92-98 (7 lines: OV-05 complete overlap with CLAUDE.md Sec8). Trim Artifact Quality Sec6 L104-109 to reference (save 4 lines: OV-06 overlap with CLAUDE.md Sec11)", "AI Directives 23 rules Sec1 (keep all). Prohibited Actions 22 rules Sec2 (keep all). Retry Protocol Sec3 (keep: authority source per SD-03). Completion Language Sec4 (keep all). Bash Categories Sec7 (keep: authority source per SD-03 receiving SF-01 from subagent.md)", "add CLAUDE.md Sec8/Sec11 reference header (1 line). Absorb bash security category from workflow-subagent.md L55 (1 line: security: npm audit/npx audit-ci/npx snyk test/npx semgrep/semgrep/trivy)", FT-06
+
+  FT-07, workflow-operations.md (122 to 60), 60, "delete MCP Server Module Caching explanation prose L52-58 (7 lines: reference CLAUDE.md Sec12 instead). Delete Mandatory Restart Conditions core files list L68-71 (4 lines: in CLAUDE.md). Compress Correct Command Examples to 2 lines L35-40 (save 4 lines). Compress Correct Installation Examples to 2 lines L107-112 (save 4 lines). Trim Prohibited Root Placements to inline list (save 3 lines). Trim Prohibited Root Commands to inline list (save 3 lines). Compress File Placement table L114-121 (save 5 lines). Compress Operation Rules to 3 bullets (save 5 lines). Delete Cleanup section L43-47 (5 lines: obvious operational detail). Compress Restart Steps to 2-line summary (save 4 lines)", "Test Output Placement table L15-23. MCP restart 4-step procedure (compressed). Package Installation table L92-96", "add CLAUDE.md Sec12 reference header (1 line)", none
+
+  FT-08, workflow-project-structure.md (117 to 90), 90, "compress Project Root tree to 1-line summary (save 5 lines). Compress Dependency Flow prose to 1 line (save 4 lines). Compress Applicability section to 2 lines (save 6 lines). Trim Phase-Specific Considerations table prose (save 4 lines). Reduce Docs-to-Source Mapping table whitespace (save 3 lines)", "Frontend tree structure. Backend tree structure. Docs-to-Source Mapping table. Phase-Specific Considerations table. Co-location principle", none, none
+
+  FT-09, workflow-api-standards.md (152 to 120), 120, "compress Schema Definition code example to essential pattern (save 4 lines). Compress Route Definition code example to essential pattern (save 6 lines). Compress OpenAPI Doc Generation code example to essential pattern (save 4 lines). Compress Frontend Type Generation to 2 lines (save 5 lines). Compress CI/CD Integration to 2 lines (save 5 lines). Reduce Response Formats JSON examples (save 6 lines)", "Technology Stack table. Directory Structure tree. Error Code Table. API Versioning rules. Workflow Phase Mapping table", none, none
+
+  FT-10, "workflow-docs-structure.md (186) + workflow-docs-phases.md (198) to workflow-docs.md (180)", 180, "delete duplicate docs/ directory tree from docs-structure L18-64 (merge with docs-phases flow: SF-07 save 25 lines). Delete Workflow Artifacts Example from docs-structure L132-141 (10 lines: redundant with docs-phases flow). Delete Enterprise Placement Example from docs-structure L142-154 (13 lines: redundant with docs-phases Per-Phase tables). Delete docs-phases CDD+TDD Cycle diagram L186-198 (13 lines: prose sufficient). Delete Environment Variables table from docs-structure L156-164 (9 lines: operational detail). Compress Scope Setting Guidance to 3 lines from docs-structure L80-94 (save 10 lines). Compress Mermaid Diagram Patterns to pattern-only from docs-structure L165-186 (save 10 lines). Compress Document Creation Flow diagram from docs-phases L156-184 (save 15 lines). Delete docs-phases frontmatter (4 lines: merged into single file). Delete Project-Common Documents table explanation from docs-phases L7-8 (2 lines)", "docs-structure: Directory Structure Overview table + docs/spec/features/ importance + Product Spec Reflection Rules + Artifact Placement Rules + Naming Conventions table + diagrams Directory Usage. docs-phases: Project-Common Documents table + Per-Phase Document Creation (all 13 phase sections) + CDD integration note", "add single frontmatter block for merged file (4 lines). Create unified section flow: Structure > Naming > Per-Phase Docs > Scope/Artifacts", none
+
+  FT-01, SKILL.md (88 to 75), 75, "update file index from 10 entries to 8 entries (remove workflow-subagent.md/workflow-docs-structure.md/workflow-docs-phases.md and add workflow-execution.md/workflow-docs.md: net -1 entry save 2 lines). Compress description prose L12-16 to 2 lines (save 3 lines). Trim Command Routing detail for other commands L79-81 (save 2 lines). Compress Workflow Usage Decision table to 2 bullets (save 4 lines)", "Commands table Sec1. Command Routing Sec2 (harness start/next/approve/complete-sub flows). Orchestrator Direct Edit Policy Sec4", "update file list to reflect 9 files post-compression", "FT-02,FT-03,FT-04,FT-05,FT-06,FT-07,FT-08,FT-09,FT-10"
+
+implementationOrder[4]{step,files,rationale}:
+  Step1, FT-06 (workflow-subagent.md to workflow-execution.md), dependency root: bash/retry content moves to rules.md and context-handoff stays in orchestrator.md. Must complete before FT-02/FT-03/FT-05 can absorb content
+  Step2, "FT-10 (docs-structure + docs-phases to workflow-docs.md) + FT-04 (gates.md) + FT-07 (operations.md) + FT-08 (project-structure.md) + FT-09 (api-standards.md)", independent transforms with no cross-dependencies. Can execute in any order within this step
+  Step3, "FT-02 (phases.md) + FT-03 (orchestrator.md) + FT-05 (rules.md)", depend on FT-06 completion for content absorption. rules.md absorbs bash/security category from subagent.md
+  Step4, FT-01 (SKILL.md), must execute last because file index depends on all other transforms being complete
+
+estimatedTotals:
+  inputFiles: 11
+  outputFiles: 9
+  inputLines: 1640
+  outputLines: 921
+  compressionRatio: 44%
+  deletedFiles: workflow-subagent.md / workflow-docs-structure.md / workflow-docs-phases.md
+  newFiles: workflow-execution.md / workflow-docs.md
+
+linesBudget[9]{file,current,target,margin}:
+  SKILL.md, 88, 75, 125
+  workflow-phases.md, 154, 100, 100
+  workflow-orchestrator.md, 159, 110, 90
+  workflow-gates.md, 155, 110, 90
+  workflow-rules.md, 123, 120, 80
+  workflow-execution.md, 186, 56, 144
+  workflow-operations.md, 122, 60, 140
+  workflow-project-structure.md, 117, 90, 110
+  workflow-api-standards.md, 152, 120, 80
+
+decisions[8]{id,statement,rationale}:
+  PL-01, FT-06 is the dependency root and must execute first because it produces content that FT-02/FT-03/FT-05 absorb, workflow-subagent.md contains bash categories (SF-01) and retry protocol (SF-02) that move to rules.md and context handoff (SF-03) that stays in orchestrator.md. Executing FT-06 first prevents merge conflicts
+  PL-02, FT-10 docs merge uses structure-first layout: Directory Structure then Naming then Per-Phase Docs then Scope/Artifacts, docs-structure provides the WHERE (directory layout) and docs-phases provides the WHEN (phase-by-phase creation guide). Unified flow eliminates the need for cross-references between the two files
+  PL-03, Phase Table (34 lines) in workflow-phases.md is deleted entirely rather than compressed because CLAUDE.md Sec2 contains the authoritative 30-phase listing with identical information, keeping a compressed version would still be redundant. The Phase Work Descriptions (91 lines) are the only skill-file-unique content worth preserving
+  PL-04, IA-1~7 section (38 lines) and Traceability section (32 lines) in workflow-gates.md are deleted because CLAUDE.md Sec7 and Sec10 contain identical definitions, gates.md retains Control Levels (L1-L4) and DoD table which are not in CLAUDE.md and UI-1~7 which has additional detail beyond CLAUDE.md Sec7
+  PL-05, Error-type to improvement-request conversion table (10 lines) from workflow-subagent.md is preserved in workflow-execution.md because it is the only content not dynamically generated by MCPserver buildRetryPrompt, this table guides Orchestrator behavior when constructing retry instructions and has no equivalent in CLAUDE.md or MCP templates
+  PL-06, Bash security category (npm audit/snyk/semgrep/trivy) is absorbed into workflow-rules.md Sec7 because SD-03 designates rules.md as the single source for all bash category definitions adding 1 line to the existing category table. The security category currently only exists in workflow-subagent.md
+  PL-07, Environment Variables table (9 lines) from workflow-docs-structure.md is dropped rather than moved to operations.md because DOCS_BASE/DOCS_DIR/STATE_DIR defaults are documented in CLAUDE.md and harness source code. Only VALIDATE_DESIGN_STRICT=false is operational but rarely used and can be documented inline when needed
+  PL-08, CDD+TDD Cycle diagram (13 lines) from workflow-docs-phases.md is dropped because the per-phase document tables already specify CDD integration (test_impl stories / implementation green) making the diagram redundant. The Document Creation Flow text (compressed) provides sufficient sequencing information
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/skill-files-compression/spec.toon, spec, 10 file transform specs with line-level delete/keep/add instructions and 4-step implementation order
+  docs/workflows/skill-files-compression/requirements.toon, input, 7 functional + 5 non-functional requirements + 6 acceptance criteria
+  docs/workflows/skill-files-compression/research.toon, input, overlap analysis (CLAUDE.md 12 locations / MCP 3 templates / inter-file 8 locations)
+
+next:
+  criticalPath[3]: FT-06 first (dependency root) then FT-10/04/07/08/09 parallel then FT-02/03/05 then FT-01 last
+  readFiles[4]: .claude/skills/harness/workflow-subagent.md, .claude/skills/harness/workflow-docs-structure.md, .claude/skills/harness/workflow-docs-phases.md, workflow-harness/CLAUDE.md
+  risks[2]: total lines 921 is under 1000 target (AC-6 met) but individual files may exceed target during implementation requiring additional prose compression, workflow-rules.md at 120 target lines is tight with bash security absorption - may need to compress AI Directives prose further
+  verificationPlan[3]: after each FT run wc -l to confirm target, after all FTs run grep for OV/MT/SF overlap markers, final SKILL.md index matches ls output

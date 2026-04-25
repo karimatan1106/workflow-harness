@@ -1,0 +1,41 @@
+phase: requirements
+taskId: 0ea4294a-cc38-4718-b9e9-112b8ca7d93b
+ts: "2026-03-02T00:00:00+09:00"
+delta[7]{id,type,summary}:
+  REQ-001,decision,harness_startコマンド実行時にユーザーのuserIntentが不明確な場合（目的・成功条件・影響範囲が不明）にブロックせずAskUserQuestionツールで不明点を深掘り質問してからタスクを開始する仕組みをSKILL.mdに実装する
+  REQ-002,decision,変更対象はSKILL.mdとworkflow.mdの2ファイルのみでMCP serverのTypeScriptコードは変更しない
+  REQ-003,finding,UI-7の警告のみ通過設計では目的・成功条件・影響範囲が不明なままタスクが開始され後続フェーズで手戻りが多発する問題がある
+  REQ-004,decision,AskUserQuestionの同時質問数は最大3問でoptions数は2〜4件（Claude Code制約）
+  REQ-005,decision,全3軸が明確な場合はAskUserQuestionをスキップして直接harness_startを呼ぶ（速度維持）
+  REQ-006,decision,SKILL.mdとworkflow.mdはWriteツールで同一内容を同時書き換えしdiff完全一致を確認する
+  REQ-007,decision,変更後も20文字未満のuserIntentはUI-1でブロックされAskUserQuestionは呼ばれない（二重構造維持）
+fr[5]{id,summary,source}:
+  FR-1,/harness start時のuserIntent3軸分析（目的軸・成功条件軸・影響範囲軸の明確/不明評価）,SD-004/R-010
+  FR-2,不明軸がある場合のAskUserQuestionによる対話的質問（最大3問・options2〜4件）,SD-006/R-005
+  FR-3,ユーザー回答を元のuserIntentと統合してharness_startを呼ぶ（20文字以上確認済み）,SD-006/R-008
+  FR-4,全軸が明確な場合はAskUserQuestionをスキップして直接harness_startを呼ぶ,SD-006
+  FR-5,SKILL.mdとworkflow.mdの2ファイルをWriteツールで同時更新しdiff完全一致を確認,SD-008/R-006
+nfr[5]{id,summary,constraint}:
+  NFR-1,AskUserQuestionのoptions数は2〜4件,Claude Code組み込みツール制約
+  NFR-2,変更箇所はSKILL.mdの## 2. Command Routingのステップ2〜4のみ,SD-002
+  NFR-3,MCP serverのTypeScript変更なし,SD-003
+  NFR-4,workflow-gates.mdのUI-1〜UI-7ポリシー定義を変更しない,SD-010
+  NFR-5,変更後も20文字未満はMCP server側でブロックされUI-1は維持,R-002/R-008
+ac[5]{id,verifiable_condition}:
+  AC-1,「機能を追加する」入力時にAskUserQuestionが発動し目的・成功条件・影響範囲のうち1軸以上を質問すること
+  AC-2,AskUserQuestion回答後にharness_startが呼ばれscope_definitionフェーズで正常開始すること
+  AC-3,3軸すべて明確なuserIntent入力時にAskUserQuestionがスキップされharness_startが直接呼ばれること
+  AC-4,変更後のSKILL.mdとworkflow-harness/skills/workflow.mdがdiff比較で完全一致すること
+  AC-5,20文字未満のuserIntent入力時にUI-1ブロックが発動しAskUserQuestionが呼ばれないこと
+scope[2]{file,section,action}:
+  .claude/skills/harness/SKILL.md,## 2. Command Routing (steps 2-4) + ## 1. Commands table,replace with AskUserQuestion dialog flow
+  workflow-harness/skills/workflow.md,## 2. Command Routing (steps 2-4) + ## 1. Commands table,same as above (mirror sync)
+notInScope[7]{item}:
+  workflow-harness/mcp-server/src配下のTypeScriptコード全体
+  AskUserQuestionツール自体の実装変更
+  workflow-gates.mdのUI-1〜UI-7ポリシー条文
+  CLAUDE.mdおよびworkflow-harness/CLAUDE.md
+  /harness next・approve・complete-sub等の他コマンドルーティング
+  ## 3. Workflow Usage Decisionテーブル
+  多言語対応・軸カスタマイズ・回答バリデーション
+openQuestions: none

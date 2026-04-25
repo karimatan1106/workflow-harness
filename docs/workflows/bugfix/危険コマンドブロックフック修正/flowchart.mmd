@@ -1,0 +1,29 @@
+flowchart TD
+    A[フック起動] --> B[タイムアウト設定 3秒]
+    B --> C[stdin読み込み]
+    C --> D{JSON パース成功?}
+    
+    D -->|No| E[exit 0 許可]
+    D -->|Yes| F[command抽出]
+    
+    F --> G{PowerShell パターン?}
+    G -->|Yes| H[exit 1 ブロック]
+    G -->|No| I{Windows taskkill?}
+    
+    I -->|Yes| H
+    I -->|No| J{WMI コマンド?}
+    
+    J -->|Yes| H
+    J -->|No| K{Unix kill系?}
+    
+    K -->|Yes| H
+    K -->|No| L{システム終了系?}
+    
+    L -->|Yes| H
+    L -->|No| M{ファイル破壊系?}
+    
+    M -->|Yes| H
+    M -->|No| N{バイパスパターン?}
+    
+    N -->|Yes| H
+    N -->|No| E

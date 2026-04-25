@@ -1,0 +1,93 @@
+stateDiagram-v2
+    Start --> ReadSpec
+
+    ReadSpec --> IdentifyLine: 実装フェーズ開始
+    note right of ReadSpec
+        spec.mdから修正計画を確認
+        タスク内容を把握
+    end note
+
+    IdentifyLine --> VerifyTarget
+    note right of IdentifyLine
+        CLAUDE.md内の対象範囲を特定
+        フェーズ別Bashコマンド許可カテゴリテーブルを確認
+    end note
+
+    VerifyTarget --> EditLine
+    note right of VerifyTarget
+        170行から190行を読み込み
+        ci_verification行の位置を確認
+    end note
+
+    EditLine --> ExecuteEdit
+    note right of EditLine
+        置換前内容を確認
+        パイプ区切り3カラム形式を検証
+    end note
+
+    ExecuteEdit --> CheckEditResult
+    note right of ExecuteEdit
+        文字列置換実行
+        readonly,testingからreadonlyへ変更
+    end note
+
+    CheckEditResult --> VerifyResult
+    note right of CheckEditResult
+        Edit ツール実行結果を確認
+        エラーが発生していないか検証
+    end note
+
+    VerifyResult --> ValidateCategory
+    note right of VerifyResult
+        Read ツールでci_verification行付近を読み込み
+        修正内容を目視確認
+    end note
+
+    ValidateCategory --> ValidateDescription
+    note right of ValidateCategory
+        許可カテゴリが「readonly」のみか確認
+        testingが削除されたか検証
+    end note
+
+    ValidateDescription --> CheckOtherLines
+    note right of ValidateDescription
+        用途説明が「CI結果確認のため読み取りのみ」か確認
+        内容が実態と矛盾しないか判定
+    end note
+
+    CheckOtherLines --> VerifyTableStructure
+    note right of CheckOtherLines
+        前後の行が変更されていないか確認
+        security_scan行とcommit行が正常か検証
+    end note
+
+    VerifyTableStructure --> CheckDefinitionsTS
+    note right of VerifyTableStructure
+        テーブル構造が崩れていないか確認
+        カラム区切りのパイプが正常か検証
+    end note
+
+    CheckDefinitionsTS --> ConfirmMatch
+    note right of CheckDefinitionsTS
+        definitions.tsのci_verificationエントリを確認
+        allowedBashCategoriesの設定を検証
+    end note
+
+    ConfirmMatch --> ValidationResult
+    note right of ConfirmMatch
+        allowedBashCategoriesがreadonlyのみか確認
+        二重要素配列の内容が正確か判定
+    end note
+
+    ValidationResult --> Complete
+    note right of ValidationResult
+        修正内容とdefinitions.tsが完全に一致したか判定
+        すべての検証を通過したか確認
+    end note
+
+    Complete --> End
+    note right of Complete
+        実装完了
+        ワークフロー次フェーズへ進む
+    end note
+

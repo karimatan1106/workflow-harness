@@ -1,0 +1,65 @@
+task: fix-toon-example-format
+phase: scope_definition
+status: complete
+date: 2026-03-12
+
+intent: DoD L3/L4のTOON exampleフィールドが誤った1値1行形式で記載されており、LLMが誤形式を模倣してパースエラーを4回繰り返す問題を修正する。テンプレートのルール記述も曖昧な表現を具体例付きに変更する。
+
+problem_statement:
+  root_cause: TOONパーサーはカンマ区切り1行形式を期待するが、DoD L3/L4のexampleフィールドが誤った1値1行形式で記載されている
+  symptom: LLMがexampleを模倣して誤形式を生成し、パースエラーを4回繰り返す
+  affected_count: 3ファイル（dod-l3.ts, dod-l4-delta.ts, definitions-shared.ts）
+
+correct_toon_format:
+  rule: 各行はカンマ区切りで全フィールドを1行に記載
+  correct: SD-1, "要件を明確化する", "ユーザー意図との整合性確保のため"
+  wrong: "SD-1 / statement / rationale（1値1行形式は禁止。各フィールドを別行に書かないこと）"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "dod-l3.tsのexampleを修正する", "現状の1値1行形式はTOONパーサーが期待するカンマ区切り1行形式と異なり、LLMが誤形式を模倣する原因となっている"
+  SD-2, "dod-l4-delta.tsのexampleを修正する", "L4チェックのexampleも同様に誤形式であり、L3と一貫した正しい形式に揃える必要がある"
+  SD-3, "definitions-shared.tsのSUMMARY_SECTION_RULEを強化する", "配列行の書き方説明が曖昧なため、正誤対比の具体例を追加してLLMの混乱を防ぐ"
+  SD-4, "exampleは複数行（最低3エントリ）を示す", "1エントリのみの例示ではdecisions[N>=5]の要件と乖離し、LLMが5エントリを書くべきことを把握しにくい"
+  SD-5, "誤形式の明示的な警告をexampleと共に追加する", "正しい例だけでなく禁止パターンを明示することで、LLMが同じ間違いを繰り返す可能性をさらに低減する"
+  SD-6, "サブモジュール内のファイルを直接修正する", "workflow-harnessサブモジュール内のTypeScriptファイルを対象とし、mcp-serverのビルド後に反映させる"
+  SD-7, "修正後にTOONパースが通ることをハーネスのDoDで自動検証する", "修正の正しさはdod-l3/l4チェック自体のパスで確認できるため、別途テストを追加しなくてよい"
+
+artifacts[3]{path,role,summary}:
+  "workflow-harness/mcp-server/src/gates/dod-l3.ts", impl, "L3 artifact_qualityチェック。exampleフィールドが誤形式。修正対象。"
+  "workflow-harness/mcp-server/src/gates/dod-l4-delta.ts", impl, "L4 delta_entry_formatチェック。exampleフィールドが誤形式。修正対象。"
+  "workflow-harness/mcp-server/src/phases/definitions-shared.ts", spec, "SUMMARY_SECTION_RULEテンプレート。配列ルール説明が曖昧。正誤例追加が必要。"
+
+scope:
+  in_scope:
+    - dod-l3.ts: exampleフィールドをカンマ区切り複数行形式に修正
+    - dod-l4-delta.ts: exampleフィールドをカンマ区切り複数行形式に修正
+    - definitions-shared.ts: SUMMARY_SECTION_RULEの配列記述に正誤対比例を追加
+  out_of_scope:
+    - TOONパーサー本体の変更
+    - 他フェーズのDoDチェックファイル（今回の誤形式は上記3箇所のみ確認）
+    - mcp-serverのビルド設定変更
+    - テストファイルの新規追加
+
+acceptance_criteria[4]{id,description,status}:
+  AC-1, "dod-l3.tsのexampleがカンマ区切り1行形式で記載されている", open
+  AC-2, "dod-l4-delta.tsのexampleがカンマ区切り1行形式で記載され最低3エントリを示している", open
+  AC-3, "definitions-shared.tsのSUMMARY_SECTION_RULEに正誤対比例が含まれている", open
+  AC-4, "修正後にmcp-serverのTypeScriptコンパイルエラーが発生しない", open
+
+risks[3]{id,description,mitigation}:
+  R-1, "テンプレートリテラル修正が複雑になる可能性", "ReadでTypeScriptソースを確認し構造を把握してからEditする"
+  R-2, "definitions-shared.tsのEdit時に一致失敗するリスク", "old_stringに十分なコンテキスト行を含めて一意性を確保する"
+  R-3, "サブモジュール変更がgit submodule updateで上書きされるリスク", "変更後に親リポジトリからサブモジュールのコミットを確認する"
+
+next:
+  criticalDecisions:
+    - SD-4: exampleは複数行（最低3エントリ）を示すことでdecisions[N>=5]要件との整合性を確保
+    - SD-5: 誤形式の明示的な警告をexampleと共に追加する
+  readFiles:
+    - "workflow-harness/mcp-server/src/gates/dod-l3.ts"
+    - "workflow-harness/mcp-server/src/gates/dod-l4-delta.ts"
+    - "workflow-harness/mcp-server/src/phases/definitions-shared.ts"
+  warnings:
+    - definitions-shared.tsはテンプレートリテラルのため改行構造に注意すること
+    - exampleフィールドの修正はTypeScriptの文字列リテラルとして有効な形式を維持すること
+    - サブモジュール変更後は親リポジトリのgit statusで差分を確認すること

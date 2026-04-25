@@ -1,0 +1,63 @@
+flowchart TD
+    Start([開始: 3バグ修正]) --> Step1["Step 1: BUG-002修正<br/>mcp-server/tsconfig.jsonのexclude修正"]
+
+    Step1 --> Step1A["excludeに2パターン追加:<br/>- '**/__tests__/**'<br/>- '**/*.test.ts'"]
+
+    Step1A --> Step2["Step 2: ビルド確認<br/>npm run build実行"]
+
+    Step2 --> Check1{"dist/にテストファイル残存?"}
+
+    Check1 -->|Yes| Step1A
+    Check1 -->|No| Step3["Step 3: BUG-001修正<br/>workflow-plugin/vitest.config.ts新規作成"]
+
+    Step3 --> Step3A["設定内容:<br/>- globals: true<br/>- environment: node<br/>- include複数パターン"]
+
+    Step3A --> Step3B["includeパターン:<br/>- mcp-server/src/**/*.test.ts<br/>- mcp-server/tests/**/*.test.ts<br/>- hooks/__tests__/*.test.js"]
+
+    Step3B --> Step4["Step 4: BUG-003修正<br/>DesignValidatorモック修正"]
+
+    Step4 --> Step4A["修正対象ファイル1:<br/>session-token.test.ts"]
+
+    Step4A --> Step4B["vi.fn(() => {...})を<br/>vi.fn().mockImplementation()<br/>形式に変更"]
+
+    Step4B --> Step4C["修正対象ファイル2:<br/>skip-env-removal.test.ts"]
+
+    Step4C --> Step4D["同様にmockImplementation形式に変更"]
+
+    Step4D --> Step4E["修正対象ファイル3:<br/>next.test.ts"]
+
+    Step4E --> Step4F["mockImplementationと<br/>関連するmockImplementation呼び出しを修正"]
+
+    Step4F --> Step5["Step 5: mcp-server検証<br/>mcp-server/からnpx vitest run"]
+
+    Step5 --> Check2{"732テスト全合格?"}
+
+    Check2 -->|No| Debug1["デバッグ実施<br/>エラーログ確認"]
+    Debug1 --> IDentify["問題の原因分析"]
+    IDentify --> Backtrack1{"修正対象の<br/>確認"}
+    Backtrack1 -->|BUG-002| Step1A
+    Backtrack1 -->|BUG-001| Step3A
+    Backtrack1 -->|BUG-003| Step4A
+
+    Check2 -->|Yes| Step6["Step 6: workflow-plugin検証<br/>workflow-plugin/からnpx vitest run"]
+
+    Step6 --> Check3{"全テスト合格?"}
+
+    Check3 -->|No| Debug2["デバッグ実施<br/>エラーログ確認"]
+    Debug2 --> IDentify2["問題の原因分析"]
+    IDentify2 --> Backtrack2{"修正対象の<br/>確認"}
+    Backtrack2 -->|BUG-002| Step1A
+    Backtrack2 -->|BUG-001| Step3A
+    Backtrack2 -->|BUG-003| Step4A
+
+    Check3 -->|Yes| Complete([完了: 3バグ修正完了<br/>全テスト合格確認済])
+
+    style Start fill:#90EE90
+    style Complete fill:#FFB6C6
+    style Check1 fill:#FFE4B5
+    style Check2 fill:#FFE4B5
+    style Check3 fill:#FFE4B5
+    style Debug1 fill:#FF6347
+    style Debug2 fill:#FF6347
+    style IDentify fill:#FF6347
+    style IDentify2 fill:#FF6347

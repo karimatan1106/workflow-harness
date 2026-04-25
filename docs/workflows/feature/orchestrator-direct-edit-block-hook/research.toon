@@ -1,0 +1,84 @@
+phase: research
+task: orchestrator-direct-edit-block-hook
+intent: "PreToolUseフックで、Orchestratorがdocs/workflows/配下の成果物ファイルを直接Write/Editすることをブロックし、DoD失敗時のsubagent再起動強制を機械的に担保する"
+
+existingHookArchitecture:
+  hookRegistration: ".claude/settings.json の hooks.PreToolUse 配列にエントリを追加。matcher フィールドでツール名をパイプ区切りでフィルタリングする"
+  stdinFormat: "Claude Codeがフックプロセスの標準入力にJSON形式でツール呼び出し情報を送信する。file_pathキーに対象ファイルのパスが含まれる"
+  exitCodeSemantics: "exit 0 = 許可、exit 2 = ブロック（ツール実行を阻止しstderrメッセージをLLMに返却）。exit 1は予期せぬエラーとして扱われ許可方向にフォールバックする"
+  pathExtraction: "grep -o で file_path の値を抽出し、sed でWindowsバックスラッシュをスラッシュに正規化する共通パターン（pre-tool-config-guard.sh参照）"
+  bypassPattern: "各フックは環境変数による無効化を提供する。CONFIG_GUARD_DISABLEがconfig-guardのバイパス変数。新フックではORCHESTRATOR_GUARD_DISABLEを使用する"
+  observability: "/tmp/harness-hook-obs.log にタイムスタンプ付きでフック動作を記録する共通パターン。log_obs関数で統一"
+
+existingHooks[5]{name,trigger,matcher,purpose}:
+  pre-tool-config-guard.sh, PreToolUse, "Write|Edit", 設定ファイル(.eslintrc/tsconfig/package.json等)およびsettings.jsonへの書き込みをexit 2でブロック
+  pre-tool-no-verify-block.sh, PreToolUse, Bash, "git commit --no-verify パターンを正規表現で検出しexit 2でブロック"
+  context-watchdog.sh, PreToolCall, 全ツール, "ツール呼び出しカウンター、重複Read検出、チェックポイント強制、サブエージェント知識注入"
+  post-tool-lint.sh, PostToolUse, "Write|Edit", "TypeScript/Python/Go/Rust の自動lint + format。tsc/biome/oxlint/ruff/golangci-lint等を実行"
+  stop-test-enforcer.sh, Stop, なし, "Stop時にテスト実行を強制するフック"
+
+nodeJsHookLayer:
+  location: "workflow-plugin/hooks/phase-edit-guard.js"
+  role: "Node.js版のフェーズ別編集制限フック。現在のワークフローフェーズに基づいてファイルタイプ（.ts/.md/.mmd等）の編集可否を判定する"
+  separation: "親リポジトリの.claude/hooks/はbashスクリプトでClaude Code本体のPreToolUseフックとして動作する。workflow-plugin/hooks/はNode.jsでMCPサーバー経由のフック層として動作する。両者は独立した2つのガードレイヤーを構成する"
+  stateAccess: "phase-edit-guard.jsはワークフローstate（.claude/state/workflows/配下）を読み込んで現在フェーズを判定する。新規bashフックはステートレスでパスパターンのみで判定する"
+
+pathMatchingAnalysis:
+  targetPath: "docs/workflows/ 配下の全ファイル"
+  exceptionPath: "docs/workflows/{taskName}/claude-progress.txt のみOrchestratorの直接編集を許可"
+  matchingStrategy: "正規化後のパスに対して docs/workflows/ プレフィックスの存在を case 文で判定する。Windowsパスのバックスラッシュ正規化を先行実施する"
+  edgeCases: "絶対パス（C:/ツール/Workflow/docs/workflows/...）と相対パス（docs/workflows/...）の両方を捕捉する必要がある。既存のconfig-guardはbasenameのみで判定するが、本フックはパスプレフィックスで判定するため、パスの正規化がより重要になる"
+
+designConstraints[6]{id,constraint,source}:
+  DC-01, "bashスクリプトとして.claude/hooks/に配置する（Node.js層のphase-edit-guardとは独立）", "SD-01(scope-definition)"
+  DC-02, "matcher: Write|Edit でsettings.jsonに登録する", "SD-02(scope-definition)"
+  DC-03, "exit 2でブロックし日本語メッセージを出力する", "SD-05(scope-definition) + 既存パターン"
+  DC-04, "ORCHESTRATOR_GUARD_DISABLE=true でバイパス可能にする", "SD-06(scope-definition)"
+  DC-05, "claude-progress.txtは例外として許可する（SKILL.md Sec7準拠）", "SD-04(scope-definition)"
+  DC-06, "stdin JSONからfile_pathを抽出しWindowsパス正規化を適用する共通パターンを踏襲", "pre-tool-config-guard.sh実装パターン"
+
+implicitConstraints[4]{id,constraint,derivation}:
+  IC-01, "settings.jsonのPreToolUse配列に追加する順序は既存エントリの後に追加する。フック実行順序は配列の定義順に依存する", "settings.jsonの構造解析"
+  IC-02, "フックスクリプトのshebangは #!/bin/bash を使用する。MSYS環境でのbash 5.2.37互換性を確保する", "既存フック群の共通パターン"
+  IC-03, "ブロックメッセージにsubagent再起動の具体的手順を含める。Orchestratorがメッセージを読んで行動指針を得られるようにする", "workflow-rules.md Rule21 + Prohibited Action 4"
+  IC-04, "フック内でワークフローステートへのアクセスは行わない。パスパターンのみでステートレスに判定する", "bashフック層の設計原則（config-guard/no-verify-blockはいずれもステートレス）"
+
+magicNumbers[5]{value,usage,rationale}:
+  "exit 2", "ツール実行ブロックの終了コード", "Claude Codeフック仕様で定義。exit 0=許可、exit 2=ブロック。exit 1=エラー（許可方向フォールバック）"
+  "exit 0", "ツール実行許可の終了コード", "Claude Codeフック仕様。フック正常通過を示す"
+  "docs/workflows/", "ブロック対象パスプレフィックス", "SKILL.md Sec7およびworkflow-plugin CLAUDE.mdの成果物ディレクトリ定義に準拠"
+  "claude-progress.txt", "例外許可ファイル名", "SKILL.md Sec7に明記。Orchestratorが進捗追跡に使用する正当なファイル"
+  "/tmp/harness-hook-obs.log", "観測ログ出力先", "既存フック群（config-guard/post-tool-lint）の共通ログファイルパス"
+
+dependencyVersions:
+  node: "v22.15.0"
+  npm: "10.9.2"
+  bash: "GNU bash 5.2.37(1)-release (x86_64-pc-msys)"
+  platform: "MSYS_NT-10.0-26200（Windows 10/11 + Git Bash/MSYS2環境）"
+  relevantBehavior: "MSYS環境ではパス区切りがスラッシュに自動変換されるケースがあるが、Claude Codeからのstdin JSONではWindowsバックスラッシュが二重エスケープ(\\\\)で渡される場合がある。sed による正規化が必須"
+
+riskAssessment[3]{id,risk,mitigation}:
+  RA-01, "settings.jsonが既にmodified状態のため、フックエントリ追加時に既存変更との競合が発生する可能性がある", "git diffで現在の変更内容を確認し、フックエントリ追加を既存変更にマージする形で実施する"
+  RA-02, "パス正規化の不備により、特定のパス形式でガードをすり抜ける可能性がある（絶対パス/相対パス/大文字小文字）", "case文でワイルドカード(*docs/workflows/*)を使用し、パスの先頭部分に依存しないマッチングを行う"
+  RA-03, "フック実行順序によりconfig-guardが先にブロックし、本フックが到達しないケースがある（settings.json自体の編集時）", "settings.jsonはconfig-guardが保護するため本フックの対象外。docs/workflows/配下のファイルはconfig-guardの対象外のため競合しない"
+
+decisions[7]{id,statement,rationale}:
+  R-01, "pre-tool-config-guard.shのfile_path抽出・Windows正規化パターンをそのまま踏襲する", "実績あるパターンを再利用することで動作信頼性を確保し、保守性を統一する"
+  R-02, "case文でワイルドカード *docs/workflows/* を使用し絶対パスと相対パスの両方を捕捉する", "Claude Codeが渡すパスが絶対パスか相対パスかは実行環境に依存するため、プレフィックス位置に依存しないマッチングが必要"
+  R-03, "例外判定はbasenameベースで claude-progress.txt を許可する", "パスプレフィックスの判定後にbasenameで例外判定することで、任意のタスクディレクトリ配下のclaude-progress.txtを一括で許可できる"
+  R-04, "ブロックメッセージに Task tool による subagent 再起動の指示を含める", "Orchestratorがブロック理由と代替行動を即座に把握できるようにする。workflow-rules.md Rule21の機械的担保"
+  R-05, "log_obs関数で /tmp/harness-hook-obs.log に動作記録を残す", "既存フック群の観測パターンに統一。フックの発火回数・ブロック回数のデバッグに使用する"
+  R-06, "settings.jsonのPreToolUse配列の既存config-guardエントリの直後に新フックを追加する", "Write|Editに対する2段階ガード（設定ファイル保護 + 成果物保護）として論理的な順序を維持する"
+  R-07, "フックスクリプトのファイルサイズは50行以内に収める", "既存のpre-tool-no-verify-block.sh(25行)と同程度のシンプルさを維持し、レビュー容易性を確保する"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/research.toon, report, "本リサーチ成果物。既存フックアーキテクチャの分析と設計判断を記録"
+  docs/workflows/orchestrator-direct-edit-block-hook/scope-definition.toon, spec, "スコープ定義。影響ファイル6件・決定事項6件・除外3件を定義"
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, impl, "新規作成予定のPreToolUseフック。docs/workflows/配下へのWrite/Editをexit 2でブロック"
+  .claude/settings.json, impl, "hooks.PreToolUseに新規フックエントリを追加する設定ファイル"
+  docs/workflows/orchestrator-direct-edit-block-hook/init.sh, impl, "S1-10準拠のビルド・テスト環境確認スクリプト"
+
+next:
+  criticalDecisions: "R-02(ワイルドカードパスマッチ), R-03(claude-progress.txt例外), R-06(settings.json登録順序)"
+  readFiles: ".claude/hooks/pre-tool-config-guard.sh, .claude/settings.json, .claude/skills/harness/SKILL.md, .claude/skills/harness/workflow-rules.md"
+  warnings: "settings.jsonのhooks.PreToolUse配列は現在2エントリ（config-guard + no-verify-block）。新フックは同一matcher(Write|Edit)のconfig-guardの直後に追加すること。フック実行順序が配列定義順に依存するため順序に注意"

@@ -1,0 +1,61 @@
+id: R-DOD-ERR-STRUCT
+title: DoD Error Structuring - Current System Analysis
+phase: research
+status: complete
+date: 2026-03-10
+
+summary: DoDCheckResult currently returns free-text evidence strings. retry.ts uses 15+ regex patterns in errorToImprovement to parse these strings into Japanese improvement instructions. This is fragile: any change to evidence wording breaks regex matching, and new checks require adding new regex patterns. Proposed fix adds structured fix/example fields to DoDCheckResult so each check provides its own remediation guidance.
+
+currentArchitecture: DoDCheckResult has 4 fields (level, check, passed, evidence). evidence is an unstructured string containing error details. dod.ts runDoDChecks collects 22 check results, prefixing failed evidence with [L1]-[L4] level tags. formatDoDResult renders all checks as text lines. retry.ts buildRetryPrompt receives the concatenated error string and must reverse-engineer which checks failed.
+
+evidenceStringFormats: Evidence strings follow no consistent schema. Patterns include File missing / TOON parse failed / Forbidden patterns found / Missing required TOON keys / RTM entries not at required status / AC not met. Some are English and some Japanese. Some embed paths and counts and IDs.
+
+errorToImprovementAnalysis: 15 regex branches in errorToImprovement map error patterns to Japanese improvement instructions. Each regex matches a substring of the evidence string. Pattern categories: file-existence (1), syntax/format (5: forbidden, density, duplicates, brackets, TOON parse), logic/completeness (7: sections, content-lines, AC-format, NOT_IN_SCOPE, OPEN_QUESTIONS, RTM-status, baseline), exit-code (1), generic-fallback (1).
+
+regexFragility: Regex patterns use case-insensitive flags and partial matching. Changes to evidence wording in any DoD check function can silently break the corresponding regex in retry.ts. No compile-time or test-time coupling ensures evidence strings match retry patterns. Adding a new DoD check requires remembering to add a corresponding regex.
+
+classifyErrorAnalysis: classifyError uses 3 regex branches to categorize errors into FileNotFound, SyntaxError, LogicError, or Unknown. This classification drives model escalation logic. Same fragility as errorToImprovement.
+
+dodCheckInventory[22]{check,level,sourceFile,evidencePattern}:
+  output_file_exists, L1, dod-l1-l2.ts, File missing or File exists
+  input_files_exist, L1, dod-l1-l2.ts, Missing input files or All N input files exist
+  exit_code_zero, L2, dod-l1-l2.ts, non-zero exit code or exit code 0
+  tdd_red_evidence, L2, dod-l1-l2.ts, Japanese TDD message with TDD-1 suffix
+  artifact_quality, L3, dod-l3.ts, TOON parse failed or TOON parse OK
+  rtm_completeness, L3, dod-l3.ts, RTM entries not at required status
+  ac_completeness, L3, dod-l3.ts, AC not met or AC still open
+  artifact_freshness, L3, dod-l3.ts, Stale artifacts (>30 days)
+  invariant_completeness, L3, dod-l3.ts, Invariants not held
+  baseline_required, L3, dod-l3.ts, No baseline captured or Baseline captured
+  content_validation, L4, dod-l4-content.ts, compound forbidden + brackets + duplicates + TOON keys
+  ac_format, L4, dod-l4-requirements.ts, AC-N entries minimum 3
+  not_in_scope, L4, dod-l4-requirements.ts, NOT_IN_SCOPE section missing
+  open_questions, L4, dod-l4-requirements.ts, OPEN_QUESTIONS section missing
+  intent_consistency, L4, dod-l4-requirements.ts, intent mismatch details
+  delta_entry_format, L4, dod-l4-delta.ts, delta format validation
+  ac_design_mapping, L4, dod-l4-ia.ts, AC-to-design mapping errors
+  ac_tc_mapping, L4, dod-l4-ia.ts, AC-to-TC mapping errors
+  ac_achievement_table, L4, dod-l4-ia.ts, AC achievement table errors
+  tc_coverage, L3, dod-l4-ia.ts, TC coverage errors
+  artifact_drift, L4, dod-l4-art.ts, artifact drift details
+  package_lock_sync, L4, dod-l4-commit.ts, package-lock sync errors
+
+retryFlowAnalysis: buildRetryPrompt receives RetryContext with errorMessage string. It calls errorToImprovement to get improvement list, classifyError for error class, then constructs a Japanese retry prompt with error in a code block (marked reference-only, no-copy) and numbered improvement instructions. Model escalation: haiku->sonnet at retry 2, sonnet forced at retry 3+.
+
+proposedSolution: Add optional fix (string) and example (string) fields to DoDCheckResult. Each check function populates these when passed=false. retry.ts reads fix/example directly from DoDCheckResult instead of regex-parsing evidence. errorToImprovement becomes a thin fallback for legacy checks. classifyError can use the check name instead of regex.
+
+impactScope: 8 DoD source files need fix/example additions. retry.ts needs refactoring to consume structured fields. dod-types.ts needs 2 new optional fields. formatDoDResult may optionally display fix/example. 449 existing tests must continue passing.
+
+decisions[5]{id,statement,rationale}:
+  R-1, Evidence strings lack structure causing regex fragility in retry.ts, 15+ regex patterns must be maintained in sync with evidence wording across 8 files with no compile-time safety
+  R-2, fix field should be a single actionable string not an array, Each check produces exactly one failure mode per invocation; compound checks like content_validation can concatenate
+  R-3, example field should show correct output format not incorrect output, Showing correct examples guides the sub-agent toward the fix rather than reinforcing the error pattern
+  R-4, classifyError should use DoDCheckResult.check field for classification, The check field (output_file_exists etc.) is a stable enum-like string unlike free-text evidence
+  R-5, Backward compatibility requires fix/example to be optional fields, Existing code returns DoDCheckResult without these fields; making them required would break all 22 check functions simultaneously
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/dod-error-structuring/research.toon,research,DoDエラーメッセージ構造化の現状分析
+next:
+  criticalDecisions: R-1 through R-5 validated against codebase analysis
+  readFiles: dod-types.ts, dod.ts, dod-l1-l2.ts, dod-l3.ts, dod-l4-content.ts, retry.ts, dod-l4-requirements.ts, dod-l4-delta.ts, dod-l4-ia.ts, dod-l4-art.ts, dod-l4-commit.ts
+  warnings: content_validation check in dod-l4-content.ts produces compound errors (multiple failures concatenated) which may need special handling for fix field

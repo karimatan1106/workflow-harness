@@ -1,0 +1,13 @@
+flowchart TD
+    A[開始] --> B[親リポ .gitignore に3行追加]
+    B --> C[親リポ: git rm --cached .claude-phase-guard-log.json]
+    C --> D[サブモジュールに移動]
+    D --> E[git rm -r --cached mcp-server/dist/]
+    E --> F[git rm -r --cached mcp-server/.claude/state/]
+    F --> G[サブモジュール内でコミット]
+    G --> H[親リポに戻る]
+    H --> I[親リポで git add + commit]
+    I --> J{検証: git ls-files}
+    J -->|全AC合格| K[完了]
+    J -->|失敗| L[原因調査・修正]
+    L --> J

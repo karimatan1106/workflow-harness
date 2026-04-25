@@ -1,0 +1,167 @@
+---
+config:
+    xyChart:
+        width: 900
+        height: 600
+    themeVariables:
+        primaryColor: '#9C27B0'
+        primaryBorderColor: '#7B1FA2'
+        lineColor: '#F57C00'
+        secondBorderColor: '#00838F'
+        tertiaryColor: '#4CAF50'
+---
+
+## 全体ステートマシン図: ワークフロー実行時バグ修正ワークフロー
+
+```mermaid
+stateDiagram-v2
+    [*] --> ResearchPhase
+
+    ResearchPhase --> RequirementsPhase: バグを分析
+    RequirementsPhase --> BugIdentificationComplete: 4つのバグ特定
+
+    BugIdentificationComplete --> FQ1Analysis: FQ-1: testingフェーズハッシュチェック
+    FQ1Analysis --> FQ1Implementation: 修正仕様確認
+    FQ1Implementation --> FQ1Verification: next.ts修正完了
+
+    FQ1Verification --> FQ2Analysis: FQ-2: hasRedirection関数
+    FQ2Analysis --> FQ2Implementation: 正規表現修正
+    FQ2Implementation --> FQ2Verification: bash-whitelist.js修正完了
+
+    FQ2Verification --> FQ3Analysis: FQ-3: allowedBashCategories
+    FQ3Analysis --> FQ3Implementation: readonly+gitに統一
+    FQ3Implementation --> FQ3Verification: definitions.ts修正完了
+
+    FQ3Verification --> FQ4Analysis: FQ-4: ブランチ確認手順
+    FQ4Analysis --> FQ4Implementation: サブモジュール対応
+    FQ4Implementation --> FQ4Verification: subagentTemplate更新完了
+
+    FQ4Verification --> MCPServerRebuild: MCPサーバー再起動
+    MCPServerRebuild --> AllBugFixed: 全バグ修正完了
+    AllBugFixed --> [*]
+```
+
+## FQ-1: testingフェーズハッシュチェックの状態遷移
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> BeforeRecordTest: testingフェーズ開始
+    BeforeRecordTest --> RecordTestResult: workflow_record_test_result呼び出し
+    RecordTestResult --> HashAdded: ハッシュを配列に追加
+    HashAdded --> WorkflowNext: workflow_next呼び出し
+
+    WorkflowNext --> HashCheckDecision: ハッシュ重複チェック開始
+
+    HashCheckDecision --> OriginalBehavior: 修正前:\n常にハッシュチェック
+    OriginalBehavior --> SelfReferenceDuplicate: 自己参照検出\n(フェーズブロック発生)
+    SelfReferenceDuplicate --> Failure: 失敗: 前回と同一の\nテスト出力と誤判定
+
+    HashCheckDecision --> ImprovedBehavior: 修正後:\ntestingフェーズをスキップ
+    ImprovedBehavior --> SkipHashCheck: ハッシュチェックをスキップ
+    SkipHashCheck --> Success: 成功: フェーズ遷移完了
+
+    Success --> NextPhase: 次フェーズ(parallel_verification)へ遷移
+    NextPhase --> End: End
+
+    Failure --> End
+```
+
+## FQ-2: hasRedirection関数の判定状態遷移
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> ReceiveCommand: シェルコマンド受信
+
+    ReceiveCommand --> CommandType: コマンドタイプ判定
+
+    CommandType --> HasDoubleRedirect: >> を含むか？
+    HasDoubleRedirect --> TrueDouble: はい（>>検出）
+    TrueDouble --> DoubleRedirectDetected: >>はリダイレクト\nとして検出
+    DoubleRedirectDetected --> RedirectBlocked: リダイレクト含むと判定\nコマンドブロック
+
+    HasDoubleRedirect --> FalseDouble: いいえ
+    FalseDouble --> RegexCheck: 正規表現 /?(?<!=)>(?!=)/ テスト
+
+    RegexCheck --> HasSingleRedirect: > が検出される？
+
+    HasSingleRedirect --> IsComparisonOp: > の前後が = か？
+    IsComparisonOp --> GreaterEqual: >= 検出（修正後）
+    GreaterEqual --> ComparisonOperator: >= は比較演算子\nリダイレクトではない
+    ComparisonOperator --> NoBlock: ブロックなし\nコマンド実行許可
+
+    IsComparisonOp --> LessEqual: <= 検出（修正後）
+    LessEqual --> ComparisonOperator2: <= は比較演算子\nリダイレクトではない
+    ComparisonOperator2 --> NoBlock
+
+    IsComparisonOp --> RealRedirect: > は単独\n（スペース含む）
+    RealRedirect --> SimpleRedirect: > はリダイレクト
+    SimpleRedirect --> RedirectBlocked
+
+    HasSingleRedirect --> NoRedirect: いいえ
+    NoRedirect --> NoBlock
+
+    NoBlock --> AllowCommand: コマンド許可
+    RedirectBlocked --> BlockCommand: コマンドブロック
+
+    AllowCommand --> End: End
+    BlockCommand --> End
+```
+
+## FQ-4: pushフェーズブランチ確認の状態遷移
+
+```mermaid
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> PushPhaseStart: pushフェーズ開始\nsubagent起動
+
+    PushPhaseStart --> BranchConfirmation: ブランチ確認コマンド実行\n(git branch --show-current)
+
+    BranchConfirmation --> BranchOutput: コマンド出力受信
+
+    BranchOutput --> BranchStateCheck: ブランチ状態判定
+
+    BranchStateCheck --> DetachedHEAD: 出力が空文字？
+    DetachedHEAD --> IsDetached: はい\n(detached HEAD状態)
+    IsDetached --> DetachedError: エラー報告\nブランチ確定不可
+    DetachedError --> Abort: 処理中止
+
+    BranchStateCheck --> NormalBranch: いいえ\n(通常ブランチ)
+    NormalBranch --> BranchNameStored: ブランチ名を変数に格納\n(例: name=\"master\")
+
+    BranchNameStored --> SubmoduleCheck: サブモジュール存在確認\n(git submodule foreach)
+
+    SubmoduleCheck --> HasSubmodule: サブモジュールあり？
+    HasSubmodule --> YesSubmodule: はい
+    YesSubmodule --> CheckSubmoduleBranch: 各サブモジュールの\nブランチ確認
+    CheckSubmoduleBranch --> SubmoduleBranchState: サブモジュール\nブランチ状態判定
+    SubmoduleBranchState --> SubDetached: Detached HEAD？
+    SubDetached --> SubIsDetached: はい
+    SubIsDetached --> SubError: サブモジュールが\ndetached状態\nエラー報告
+    SubError --> Abort
+    SubDetached --> SubNormal: いいえ
+    SubNormal --> PushSubmodule: git push origin {subBranchName}\n(各サブモジュール)
+    PushSubmodule --> SubmodulePushComplete: サブモジュール\npush完了
+
+    HasSubmodule --> NoSubmodule: いいえ
+    NoSubmodule --> PushMain: 親リポジトリpush準備
+    SubmodulePushComplete --> PushMain: 親リポジトリpush実行
+
+    PushMain --> ExecutePush: git push origin {確認されたブランチ名}\n実行
+
+    ExecutePush --> PushResult: push実行結果
+
+    PushResult --> PushSuccess: 成功
+    PushSuccess --> AllPushComplete: 全push完了
+    AllPushComplete --> Success: 成功: pushフェーズ完了
+    Success --> End: End
+
+    PushResult --> PushFailure: 失敗
+    PushFailure --> End
+
+    Abort --> End
+```

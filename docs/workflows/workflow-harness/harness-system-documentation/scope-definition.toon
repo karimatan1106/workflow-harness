@@ -1,0 +1,72 @@
+title: ハーネスシステム永続ドキュメント スコープ定義
+phase: scope_definition
+taskName: harness-system-documentation
+intent: "ハーネスシステムの現状の要件、基本設計、アーキテクチャ、全30フェーズの仕様を永続ドキュメントとして作成し、各仕様がコードのどの部分(ファイル:行番号)と対応するかのトレーサビリティを含める"
+createdAt: 2026-03-08
+
+summary: "ハーネスMCPサーバーのソースコード全48ファイル(本体3,481行)+ テスト42ファイル(5,277行)+ スキル文書10ファイル(880行)+ 権威仕様CLAUDE.md(151行)を調査し、ドキュメント化対象を5カテゴリ・12成果物に分類した。コード変更は行わず、既存コードの構造・機能・相互依存関係を永続ドキュメントとして記録する。"
+
+sourceCodeInventory:
+  totalSourceFiles: 48
+  totalSourceLines: 3481
+  totalTestFiles: 42
+  totalTestLines: 5277
+  totalSkillDocs: 10
+  totalSkillLines: 880
+  authoritativeSpec: CLAUDE.md (151行)
+
+modules[6]{name,dir,files,lines,role}:
+  phases, src/phases/, 10, 1441, "30フェーズ定義・レジストリ・リスク分類・サブエージェントテンプレート"
+  gates, src/gates/, 13, 893, "L1-L4 DoDゲート検証(ファイル存在・終了コード・品質・内容)"
+  tools, src/tools/ + src/tools/handlers/, 15, 1552, "MCPツール定義・ディスパッチ・ハンドラ5モジュール・Reflector・Curator・ACE"
+  state, src/state/, 7, 666, "TaskState v4型定義・永続化・読取・書込・不変条件・HMAC署名"
+  utils, src/utils/, 1, 85, "HMAC鍵管理・状態署名・セッショントークン生成"
+  entry, src/, 2, 157, "MCPサーバーエントリポイント(index.ts)・CLIツール(cli.ts)"
+
+documentPlan[12]{id,path,category,scope,traceabilityTarget}:
+  DOC-01, docs/spec/features/phase-system.md, 機能仕様, "30フェーズ定義・14ステージ・並列グループ4種・タスクサイズスキップマップ・フェーズ順序", "src/phases/registry.ts:8-55 src/phases/definitions.ts:26-33 src/state/types-core.ts:27-59"
+  DOC-02, docs/spec/features/gate-system.md, 機能仕様, "L1-L4 DoDゲート22チェック・承認ゲート5種・RTM/AC完全性検証", "src/gates/dod.ts:24-59 src/gates/dod-l1-l2.ts src/gates/dod-l3.ts src/gates/dod-l4-*.ts"
+  DOC-03, docs/spec/features/state-management.md, 機能仕様, "TaskState v4スキーマ・HMAC署名・チェックポイント・セッショントークン・永続化", "src/state/types.ts:52-121 src/state/manager.ts:23-196 src/utils/hmac.ts"
+  DOC-04, docs/spec/features/mcp-tools.md, 機能仕様, "21MCPツール定義・入力スキーマ・ハンドラルーティング・セッション検証", "src/tools/defs-a.ts:6-164 src/tools/defs-b.ts:6-158 src/tools/handler.ts:19-54"
+  DOC-05, docs/spec/features/subagent-system.md, 機能仕様, "サブエージェントテンプレート生成・プロンプトビルダー・変数展開・TOON-firstセクション", "src/phases/definitions.ts:79-136 src/phases/defs-stage1.ts〜defs-stage6.ts"
+  DOC-06, docs/spec/features/reflector-curator.md, 機能仕様, "Reflector学習ループ・Curator剪定・ACE cross-task知識・品質スコア", "src/tools/reflector.ts src/tools/curator.ts src/tools/ace-context.ts"
+  DOC-07, docs/spec/features/retry-system.md, 機能仕様, "リトライプロンプト生成・エラー分類(EAC-1)・モデルエスカレーション・改善指示マッピング", "src/tools/retry.ts:6-153"
+  DOC-08, docs/spec/features/risk-classifier.md, 機能仕様, "リスクスコア算出・タスクサイズ分類・スコープ分析", "src/phases/risk-classifier.ts:17-58"
+  DOC-09, docs/spec/features/traceability.md, 機能仕様, "AC-N受入基準・F-NNN RTMエントリ・ProofLog・Invariant不変条件", "src/state/types-core.ts:100-168 src/state/manager-write.ts:82-120 src/tools/handlers/recording.ts"
+  DOC-10, docs/architecture/overview.md, アーキテクチャ, "6モジュール構成・依存関係グラフ・MCPプロトコル統合・200行制限", "src/index.ts:1-48 全モジュール"
+  DOC-11, docs/architecture/modules/data-flow.md, アーキテクチャ, "ツール呼出→ハンドラ→StateManager→永続化のデータフロー・フェーズ遷移シーケンス", "src/tools/handler.ts src/state/manager.ts src/tools/handlers/lifecycle.ts"
+  DOC-12, docs/traceability-matrix.md, トレーサビリティ, "全機能仕様↔ソースファイル:行番号の対応表・テストカバレッジマッピング", "全48ソースファイル↔42テストファイル"
+
+documentCategories[3]{id,name,count,purpose}:
+  CAT-1, docs/spec/features/, 9, "各サブシステムの機能仕様(要件・振る舞い・制約・コード参照)"
+  CAT-2, docs/architecture/, 2, "システム全体のアーキテクチャ設計(モジュール構成・データフロー)"
+  CAT-3, docs/traceability-matrix.md, 1, "仕様↔コード↔テストの追跡可能性マトリクス"
+
+keyFindings[8]{id,finding,evidence}:
+  KF-1, "全ソースファイルが200行以下の制約を遵守", "最大ファイル: defs-stage6.ts(197行) manager.ts(196行) types-core.ts(194行)"
+  KF-2, "30フェーズ+completed=31エントリがPHASE_REGISTRYに定義済み", "src/phases/registry.ts:8-55 PHASE_ORDER配列で順序固定"
+  KF-3, "DoDゲートは22個の個別チェック関数で構成", "src/gates/dod.ts:34-57 L1(2)+L2(2)+L3(6)+L4(12)=22チェック"
+  KF-4, "MCPツールは21種類が2ファイルに分割定義", "src/tools/defs-a.ts(11ツール) + defs-b.ts(10ツール)"
+  KF-5, "TaskState v4はZodスキーマで実行時検証", "src/state/types-core.ts:183-194 TaskStateSchema"
+  KF-6, "Reflector-Curator-ACEの3層学習パイプライン実装済み", "reflector.ts(失敗学習) → curator.ts(剪定) → ace-context.ts(cross-task昇格)"
+  KF-7, "HMAC-SHA256による状態整合性検証とセッショントークン認証", "src/utils/hmac.ts signState/verifyStateWithRotation"
+  KF-8, "テストカバレッジ: 42テストファイル5,277行が48ソースファイル3,481行をカバー(1.52倍)", "src/__tests__/*.ts"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "ドキュメントはMarkdown形式で作成し docs/spec/features/ と docs/architecture/ に配置する", "既存コードの @spec アノテーションが docs/spec/features/ を参照しており整合性を維持するため"
+  SD-2, "機能仕様9文書・アーキテクチャ2文書・トレーサビリティ1文書の計12成果物とする", "6モジュール構成に対し機能単位で分割することで各文書を200行以内に収めるため"
+  SD-3, "トレーサビリティマトリクスは独立文書として仕様↔コード↔テストの3軸で構成する", "コード変更時に仕様の影響範囲を即座に特定可能にするため"
+  SD-4, "スキル文書(10ファイル880行)とCLAUDE.md(151行)は運用ルールとして参照するが別途ドキュメント化対象としない", "スキル文書はLLM向け実行時指示であり永続仕様書とは性質が異なるため"
+  SD-5, "各機能仕様にはソースファイル:行番号の参照を必須とする", "タスク要件「各仕様がコードのどの部分と対応するかのトレーサビリティを含める」を直接満たすため"
+  SD-6, "テスト仕様は独立文書にせずトレーサビリティマトリクスに統合する", "42テストファイルは各機能のソースコードと1:1対応しておりマトリクスで管理する方が保守効率が高いため"
+  SD-7, "ドキュメント作成順序はDOC-10(概要)→DOC-01(フェーズ)→DOC-02(ゲート)→DOC-03(状態)→DOC-04(ツール)→残りの順とする", "アーキテクチャ概要を先に確定することで個別仕様の文脈が明確になるため"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-system-documentation/scope-definition.toon, spec, "スコープ定義: 48ソースファイルを6モジュールに分類し12成果物のドキュメント計画を策定"
+  docs/spec/features/, spec, "機能仕様9文書の出力先ディレクトリ(DOC-01〜DOC-09)"
+  docs/architecture/, design, "アーキテクチャ設計2文書の出力先ディレクトリ(DOC-10〜DOC-11)"
+
+next:
+  criticalDecisions: "DOC-01〜DOC-12の作成順序確定、各文書の必須セクション構成、トレーサビリティマトリクスのカラム定義"
+  readFiles: "src/phases/defs-stage1.ts, src/phases/defs-stage2.ts, src/phases/defs-stage3.ts, src/phases/defs-stage4.ts, src/phases/defs-stage5.ts, src/phases/defs-stage6.ts, src/gates/dod-l1-l2.ts, src/gates/dod-l3.ts, src/tools/handlers/lifecycle.ts, src/tools/handlers/recording.ts"
+  warnings: "DOC-12トレーサビリティマトリクスは48ソース×42テストの対応関係を網羅する必要があり単一文書では200行を超える可能性がある"

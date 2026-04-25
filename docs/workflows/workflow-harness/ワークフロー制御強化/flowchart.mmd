@@ -1,0 +1,173 @@
+flowchart TD
+    A["【フロー1】<br/>Bashコマンド検証"] --> B["Bashコマンド<br/>受信"]
+
+    B --> C{"FILE_MODIFYING_COMMANDS<br/>正規表現チェック<br/>node -e | python -c |<br/>sh -c | eval |<br/>|sh | &&sh"}
+
+    C -->|マッチ| D["ファイル変更コマンド<br/>と判定"]
+    C -->|マッチ不可| E["ファイル変更なし<br/>と判定"]
+
+    D --> F{"現在の<br/>フェーズを判定"}
+    F -->|idle| G["実行禁止"]
+    F -->|research| G
+    F -->|requirements| G
+    F -->|parallel_analysis| G
+    F -->|parallel_design| G
+    F -->|design_review| G
+    F -->|test_design| G
+    F -->|test_impl| H["テストファイルのみ許可"]
+    F -->|implementation| I["実装ファイル許可"]
+    F -->|refactoring| I
+    F -->|parallel_quality| I
+    F -->|testing| H
+    F -->|regression_test| H
+    F -->|parallel_verification| H
+    F -->|docs_update| J["ドキュメント許可"]
+    F -->|commit| G
+    F -->|push| G
+    F -->|ci_verification| J
+    F -->|deploy| J
+    F -->|completed| G
+
+    E --> K{"ALWAYS_ALLOWED<br/>チェック<br/>ls | cat | find |<br/>grep | head | tail"}
+    K -->|許可リスト| L["実行許可"]
+    K -->|それ以外| M["通常のコマンド<br/>処理へ"]
+
+    G --> N["🚫 ブロック<br/>エラーメッセージ返却"]
+    H --> O["✓ 実行許可"]
+    I --> O
+    J --> O
+    L --> O
+    M --> O
+
+    O --> END["終了"]
+    N --> END
+
+    subgraph flow1["フロー1: phase-edit-guard"]
+        B
+        C
+        D
+        E
+        F
+        G
+        H
+        I
+        J
+        K
+        L
+        M
+        N
+        O
+    end
+
+    ---
+
+    P["【フロー2】<br/>design-validator検証"] --> Q["spec.mdを<br/>パース"]
+
+    Q --> R["データ抽出"]
+    R -->|classes| S["クラス定義を抽出"]
+    R -->|methods| T["メソッド定義を抽出"]
+    R -->|filePaths| U["ファイルパスを抽出"]
+
+    S --> V["処理キュー<br/>に追加"]
+    T --> V
+    U --> V
+
+    V --> W{"キュー内に<br/>未処理項目?"}
+
+    W -->|あり| X["項目を取得"]
+    X --> Y["ソースファイル<br/>読み込み"]
+
+    Y --> Z["コメント除去<br/>■ // 形式<br/>■ /* */ 形式"]
+    Z --> AA["文字列リテラル<br/>除去<br/>■ シングルクォート<br/>■ ダブルクォート<br/>■ バッククォート"]
+
+    AA --> AB["正規表現マッチ<br/>クラス/メソッド/<br/>ファイル判定"]
+
+    AB --> AC{"マッチ<br/>結果"}
+
+    AC -->|実装済み| AD["✓ OK<br/>記録"]
+    AC -->|未実装| AE["✗ 未実装<br/>記録"]
+    AC -->|エラー| AF["⚠ エラー<br/>記録"]
+
+    AD --> W
+    AE --> W
+    AF --> W
+
+    W -->|なし| AG{"未実装項目<br/>存在?"}
+
+    AG -->|なし| AH["✓ 検証成功<br/>結果返却"]
+    AG -->|あり| AI["✗ 検証失敗<br/>未実装リスト<br/>返却"]
+
+    AH --> END2["終了"]
+    AI --> END2
+
+    subgraph flow2["フロー2: design-validator"]
+        Q
+        R
+        S
+        T
+        U
+        V
+        W
+        X
+        Y
+        Z
+        AA
+        AB
+        AC
+        AD
+        AE
+        AF
+        AG
+        AH
+        AI
+    end
+
+    ---
+
+    AJ["【フロー3】<br/>成果物チェック"] --> AK["現在の<br/>フェーズ判定"]
+
+    AK --> AL["必須成果物<br/>リスト取得"]
+
+    AL --> AM{"リスト内に<br/>成果物?"}
+
+    AM -->|あり| AN["成果物を取得"]
+    AN --> AO["ファイル<br/>存在確認"]
+
+    AO --> AP{"ファイル<br/>存在?"}
+
+    AP -->|なし| AQ["❌ エラー<br/>『ファイルが見つかりません』<br/>記録"]
+    AP -->|あり| AR["ファイルサイズ<br/>確認"]
+
+    AR --> AS{"サイズ<br/>チェック<br/>最小1KB"}
+
+    AS -->|0KB| AT["⚠ 警告<br/>『ファイルが空です』<br/>記録"]
+    AS -->|1KB以上| AU["✓ OK<br/>記録"]
+
+    AQ --> AM
+    AT --> AM
+    AU --> AM
+
+    AM -->|なし| AV{"エラー<br/>存在?"}
+
+    AV -->|あり| AW["❌ チェック失敗<br/>エラー一覧返却"]
+    AV -->|なし| AX["✓ チェック成功<br/>成功通知返却"]
+
+    AW --> END3["終了"]
+    AX --> END3
+
+    subgraph flow3["フロー3: 成果物チェック"]
+        AK
+        AL
+        AM
+        AN
+        AO
+        AP
+        AQ
+        AR
+        AS
+        AT
+        AU
+        AV
+        AW
+        AX
+    end

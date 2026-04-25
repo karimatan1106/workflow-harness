@@ -1,0 +1,28 @@
+phase: research
+taskId: 0ea4294a-cc38-4718-b9e9-112b8ca7d93b
+ts: "2026-03-02T00:00:00+09:00"
+findings[10]{id,summary,file}:
+  R-001,SKILL.mdの/harness startルーティングは現行7ステップでステップ2〜4がUI-1/UI-2/UI-7,.claude/skills/harness/SKILL.md
+  R-002,UI-1の20文字未満ブロックはSKILL.mdとMCP server両方に実装されている二重構造,workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts
+  R-003,UI-2の曖昧表現リスト(とか/など/いい感じ等)はworkflow-gates.mdにあるがSKILL.mdには列挙なし,.claude/skills/harness/workflow-gates.md
+  R-004,UI-7は警告のみ通過設計のため目的・成功条件が不明なままharness_startが呼ばれる,.claude/skills/harness/SKILL.md
+  R-005,AskUserQuestionはSKILL.md本体に使用例なし。workflow-gates.mdのIA-1節に1箇所のみ言及,.claude/skills/harness/workflow-gates.md
+  R-006,SKILL.mdとworkflow.mdは88行で完全に同一内容のミラー関係。差分なし,workflow-harness/skills/workflow.md
+  R-007,workflow-orchestrator.mdのExecution FlowにuserIntent深掘りの記述はなくharness_startが直接呼ばれる,.claude/skills/harness/workflow-orchestrator.md
+  R-008,harness_startのuserIntentパラメータにminLength:20が設定されMCP serverがバリデーションを実施,workflow-harness/mcp-server/src
+  R-009,Commands テーブル(##1)の/harness start説明文がUI-1のみ言及でありSD-009のリスクがある,.claude/skills/harness/SKILL.md
+  R-010,新フローはAskUserQuestionで最大3問を質問し回答統合後にharness_startを呼ぶ(SD-006),docs/workflows/userIntent不明点深掘りシステム/scope-definition.md
+magicNumbers[6]{id,value,location,description}:
+  MN-001,20chars,SKILL.md line 36 / workflow-gates.md line 95,UI-1 userIntent最小文字数
+  MN-002,3問,scope-definition.md line 25,AskUserQuestion最大質問数
+  MN-003,3軸,scope-definition.md line 25,目的・成功条件・影響範囲の分析軸数
+  MN-004,88行,SKILL.md / workflow.md,現在の両ミラーファイルの行数(200行制限の44%)
+  MN-005,5,SKILL.md line 51,Pre-start checks アクティブタスク上限
+  MN-006,2,scope-definition.md line 36-38,同期対象ミラーファイル数
+changeScope[2]{file,section,action}:
+  .claude/skills/harness/SKILL.md,## 2. Command Routing (steps 2-4),replace UI-1/UI-2/UI-7 steps with AskUserQuestion dialog flow
+  workflow-harness/skills/workflow.md,## 2. Command Routing (steps 2-4),same as above (mirror sync)
+next:
+  readFiles[2]: .claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md
+  criticalDecisions[3]: SD-002,SD-003,SD-006
+  requirementsItems[3]: 3軸検出条件の定義,最大3問の質問生成ロジック,AskUserQuestion発動閾値

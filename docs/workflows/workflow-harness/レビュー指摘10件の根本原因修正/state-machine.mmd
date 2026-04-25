@@ -1,0 +1,62 @@
+stateDiagram-v2
+    [*] --> TestFileReceived
+
+    TestFileReceived --> ParsingContent: ファイル読み込み開始
+    TestFileReceived --> ErrorState: ファイルアクセス失敗
+
+    ParsingContent --> CheckingAssertions: パース完了
+    ParsingContent --> ErrorState: パース失敗（構文エラー）
+
+    CheckingAssertions --> CheckingTestCases: アサーション分析完了
+    CheckingAssertions --> ValidationFailed: アサーション欠落検出
+
+    CheckingTestCases --> CheckingStubs: テストケース数確認完了
+    CheckingTestCases --> ValidationFailed: テストケース不足検出
+
+    CheckingStubs --> ValidationPassed: スタブなし確認
+    CheckingStubs --> ValidationFailed: スタブ/モック検出
+
+    ValidationPassed --> [*]
+    ValidationFailed --> [*]
+    ErrorState --> [*]
+
+    note right of TestFileReceived
+        テストファイルを受領
+        ファイルサイズ・形式確認
+    end note
+
+    note right of ParsingContent
+        TypeScript/JavaScriptコード解析
+        AST構築
+    end note
+
+    note right of CheckingAssertions
+        expect/assert文の存在確認
+        アサーション数の統計
+    end note
+
+    note right of CheckingTestCases
+        describe/it/test関数の検出
+        テストケース数カウント
+    end note
+
+    note right of CheckingStubs
+        モック・スタブの検出
+        外部依存の検出
+        jest.mock()等の確認
+    end note
+
+    note right of ValidationPassed
+        全チェック合格
+        レポート出力
+    end note
+
+    note right of ValidationFailed
+        検証不合格
+        問題箇所をレポート出力
+    end note
+
+    note right of ErrorState
+        予期しないエラー
+        スタックトレース記録
+    end note

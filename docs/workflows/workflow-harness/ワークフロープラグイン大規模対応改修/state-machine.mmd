@@ -1,0 +1,193 @@
+%% サマリー: ワークフロープラグイン大規模対応改修のステートマシン図
+%% 目的: 19フェーズの状態遷移と承認ゲート、動的スキップ、リカバリパスを可視化
+%% 主要な決定事項: B-1承認ゲート追加、C-3動的スキップ、C-4段階的リカバリ、D-1複数世代鍵管理
+
+stateDiagram-v2
+    [*] --> idle
+
+    %% タスク開始 (workflow_start)
+    idle --> research: workflow_start(taskName)
+
+    %% research フェーズ
+    research --> requirements: workflow_next
+
+    %% requirements フェーズ
+    requirements --> requirementsApprovalGate: workflow_next
+
+    %% REQ-B1: requirements承認ゲート
+    requirementsApprovalGate --> approved_requirements: workflow_approve(requirements)
+    requirementsApprovalGate --> requirements: エラー<br/>承認なしで次フェーズへ遷移不可
+
+    approved_requirements --> parallel_analysis: workflow_next<br/>(承認確認)
+
+    %% REQ-B3: parallel_analysis内サブフェーズ依存関係
+    parallel_analysis --> threat_modeling: threat_modeling開始
+    parallel_analysis --> planning: planning開始<br/>(threat_modeling推奨)
+
+    %% サブフェーズ完了
+    threat_modeling --> threat_modeling_complete: workflow_complete_sub(threat_modeling)
+    planning --> planning_complete: workflow_complete_sub(planning)
+
+    threat_modeling_complete --> parallel_analysis_next: [両フェーズ完了]
+    planning_complete --> parallel_analysis_next: [両フェーズ完了]
+
+    parallel_analysis_next --> parallel_design: workflow_next
+
+    %% parallel_design フェーズ
+    parallel_design --> state_machine: state_machine開始
+    parallel_design --> flowchart: flowchart開始
+    parallel_design --> ui_design: ui_design開始
+
+    state_machine --> state_machine_complete: workflow_complete_sub(state_machine)
+    flowchart --> flowchart_complete: workflow_complete_sub(flowchart)
+    ui_design --> ui_design_complete: workflow_complete_sub(ui_design)
+
+    state_machine_complete --> parallel_design_next: [全フェーズ完了]
+    flowchart_complete --> parallel_design_next: [全フェーズ完了]
+    ui_design_complete --> parallel_design_next: [全フェーズ完了]
+
+    parallel_design_next --> design_review: workflow_next
+
+    %% design_review フェーズ（承認ゲート）
+    design_review --> design_approved: workflow_approve(design)
+    design_review --> parallel_design: エラー<br/>設計承認なしで次フェーズへ遷移不可
+
+    design_approved --> test_design: workflow_next<br/>(設計承認確認)
+
+    %% test_design フェーズ
+    test_design --> test_impl: workflow_next
+
+    %% test_impl フェーズ
+    test_impl --> implementation: workflow_next
+
+    %% implementation フェーズ
+    implementation --> refactoring: workflow_next
+
+    %% refactoring フェーズ
+    refactoring --> parallel_quality: workflow_next
+
+    %% parallel_quality フェーズ
+    parallel_quality --> build_check: build_check開始
+    parallel_quality --> code_review: code_review開始
+
+    build_check --> build_check_complete: workflow_complete_sub(build_check)
+    code_review --> code_review_complete: workflow_complete_sub(code_review)
+
+    build_check_complete --> parallel_quality_next: [両フェーズ完了]
+    code_review_complete --> parallel_quality_next: [両フェーズ完了]
+
+    parallel_quality_next --> testing: workflow_next
+
+    %% testing フェーズ
+    testing --> regression_test: workflow_next
+
+    %% regression_test フェーズ（リグレッションテスト）
+    regression_test --> parallel_verification: workflow_next
+
+    %% parallel_verification フェーズ
+    parallel_verification --> manual_test: manual_test開始
+    parallel_verification --> security_scan: security_scan開始
+    parallel_verification --> performance_test: performance_test開始
+    parallel_verification --> e2e_test: e2e_test開始
+
+    manual_test --> manual_test_complete: workflow_complete_sub(manual_test)
+    security_scan --> security_scan_complete: workflow_complete_sub(security_scan)
+    performance_test --> performance_test_complete: workflow_complete_sub(performance_test)
+    e2e_test --> e2e_test_complete: workflow_complete_sub(e2e_test)
+
+    manual_test_complete --> parallel_verification_next: [全フェーズ完了]
+    security_scan_complete --> parallel_verification_next: [全フェーズ完了]
+    performance_test_complete --> parallel_verification_next: [全フェーズ完了]
+    e2e_test_complete --> parallel_verification_next: [全フェーズ完了]
+
+    parallel_verification_next --> docs_update: workflow_next
+
+    %% docs_update フェーズ
+    docs_update --> commit: workflow_next
+
+    %% commit フェーズ
+    commit --> push: workflow_next
+
+    %% push フェーズ
+    push --> ci_verification: workflow_next
+
+    %% ci_verification フェーズ
+    ci_verification --> deploy: workflow_next
+
+    %% deploy フェーズ
+    deploy --> completed: workflow_next
+
+    %% 完了状態
+    completed --> [*]
+
+    %% REQ-C3: 動的フェーズスキップ機構
+    %% コードファイルがない場合のスキップパス
+    implementation --> skip_refactoring: コードファイルなし
+    skip_refactoring --> skip_quality: スキップ理由記録
+    skip_quality --> skip_testing: phaseSkipReasons設定
+    skip_testing --> regression_test: testing自動スキップ
+
+    %% REQ-C4: 段階的リカバリ機構（back コマンド）
+    research -.->|workflow_back<br/>(target_phase,reason)| research: 同じフェーズ
+    requirements -.->|workflow_back<br/>(target_phase)| research: リカバリ<br/>バックアップ作成<br/>ガイダンス生成
+
+    parallel_analysis -.->|workflow_back| requirements: リカバリ<br/>threat-model.md<br/>spec.md 退避
+    parallel_design -.->|workflow_back| parallel_analysis: リカバリ<br/>設計図群 退避
+    design_review -.->|workflow_back| parallel_design: リカバリ<br/>設計成果物 退避
+
+    test_design -.->|workflow_back| design_review: リカバリ
+    test_impl -.->|workflow_back| test_design: リカバリ
+    implementation -.->|workflow_back| test_impl: リカバリ<br/>実装ファイル 退避
+
+    refactoring -.->|workflow_back| implementation: リカバリ
+    parallel_quality -.->|workflow_back| refactoring: リカバリ
+    testing -.->|workflow_back| parallel_quality: リカバリ
+
+    regression_test -.->|workflow_back| testing: リカバリ
+    parallel_verification -.->|workflow_back| regression_test: リカバリ
+    docs_update -.->|workflow_back| parallel_verification: リカバリ
+
+    commit -.->|workflow_back| docs_update: リカバリ
+    push -.->|workflow_back| commit: リカバリ
+    ci_verification -.->|workflow_back| push: リカバリ
+    deploy -.->|workflow_back| ci_verification: リカバリ
+
+    %% REQ-C4: リセット機構（reset コマンド）
+    any_phase -.->|workflow_reset(reason)| research: 全成果物バックアップ<br/>すべてのアーティファクト退避<br/>researchから再開
+
+    %% REQ-C2: テスト真正性検証
+    testing -->|recordTestResult| test_authenticity_check: テスト実行時間計測<br/>SHA-256ハッシュ記録
+    test_authenticity_check -->|検証成功| testing: 実行時間 >= 100ms<br/>新規ハッシュ
+    test_authenticity_check -->|検証失敗| testing: エラー返却<br/>捏造検出<br/>使い回し検出
+
+    %% REQ-D1: HMACキー管理統一（複数世代鍵）
+    every_phase -->|HMAC署名| hmac_verification: 最新世代鍵で署名
+    hmac_verification -->|検証成功| every_phase: 署名検証OK<br/>フェーズ遷移続行
+    hmac_verification -->|過去世代| fallback_verification: フォールバック検証<br/>旧世代鍵試行
+    fallback_verification -->|検証成功| every_phase: 世代別検証OK<br/>継続
+    fallback_verification -->|検証失敗| idle: 状態改竄検出<br/>タスク初期化
+
+    %% REQ-D3: パス正規化対応
+    every_phase -->|normalizePath| path_normalization: バックスラッシュ→スラッシュ<br/>UTF-8 NFC正規化
+    path_normalization -->|正規化完了| every_phase: スコープ比較準備
+
+    %% 凡例
+    note right of research
+        高優先度グループ（B群）
+        REQ-B1: requirements承認ゲート追加
+        REQ-B2: 意味的整合性チェック（キーワード抽出）
+        REQ-B3: parallel_analysis内依存関係
+        REQ-B4: サブエージェントコンテキスト改善
+
+    note right of parallel_analysis
+        中優先度グループ（C群）
+        REQ-C1: bashホワイトリストバイパス検出
+        REQ-C2: テスト真正性検証（時間+ハッシュ）
+        REQ-C3: 動的フェーズスキップ機構
+        REQ-C4: 段階的リカバリ機構
+
+    note right of ci_verification
+        低優先度グループ（D群）
+        REQ-D1: HMACキー管理統一（複数世代）
+        REQ-D2: 重複行誤検知修正
+        REQ-D3: Windowsパス正規化対応

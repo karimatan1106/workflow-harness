@@ -1,0 +1,39 @@
+stateDiagram-v2
+    [*] --> BatchA
+
+    state BatchA {
+        direction LR
+        hooks_split: hooks_split (Area 1)
+        skills_refs_update: skills_refs_update (Area 4,6,7)
+        forbidden_word_dedup: forbidden_word_dedup (Area 6)
+        [*] --> hooks_split
+        [*] --> skills_refs_update
+        [*] --> forbidden_word_dedup
+    }
+
+    state BatchB {
+        indexer_delete: indexer_delete (Area 2)\ndelete serena-query.py\nupdate defs-stage1.ts serena refs
+    }
+
+    state BatchC {
+        mcp_server_split: mcp_server_split (Area 3)\nsplit 4 files\ndepends on Area 2 defs-stage1.ts
+    }
+
+    state BatchD {
+        approve_separation: approve_separation (Area 5)\nremove advancePhase from approval.ts
+    }
+
+    state Verification {
+        direction LR
+        build: npm run build
+        test: npm test
+        [*] --> build
+        build --> test
+    }
+
+    BatchA --> BatchB
+    BatchA --> BatchD
+    BatchB --> BatchC
+    BatchC --> Verification
+    BatchD --> Verification
+    Verification --> [*]

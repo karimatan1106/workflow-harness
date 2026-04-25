@@ -1,0 +1,20 @@
+phase: scope_definition
+taskId: toon-only-migration-2026-03-02
+ts: "2026-03-02T00:00:00+09:00"
+decisions[7]{id,statement,rationale}:
+  SD-001,DoDバリデーター・registry・subagentテンプレート・CLAUDE.mdの4箇所を同時変更する,単独変更では整合性が崩れゲートが誤作動するため一括変更が安全
+  SD-002,state_machine.mmdとflowchart.mmdはスコープ外とする,Mermaid記法はTOONに変換できない形式であり既存ツールチェーンと統合されている
+  SD-003,既存完了済みタスク成果物(.md)のバッチ変換はスコープ外とする,再実行しない完了済みタスクへの影響は運用ルールで対処できる
+  SD-004,inputFilesのフォールバック実装要否はresearchフェーズで決定する,後方互換性リスクの程度は現在進行中タスク数の調査結果に依存する
+  SD-005,checkToonCheckpointはL1チェック統合後に役割を再定義する,主成果物がTOONになれば補助存在確認の役割は重複する
+  SD-006,SUMMARY_SECTION_RULEの全面書き換えを行いdecisions[]フィールドをDelta Entryの代替とする,全フェーズsubagentが参照する共通断片のため一括変更が最も効率的
+  SD-007,checkDeltaEntryFormatはTOONのdecisions[]フィールドを検証対象に変更する,既存のDelta Entry5件以上ルールをTOON構造で等価に実現できる
+artifacts[1]{path,role,summary}:
+  docs/workflows/TOON-onlyフェーズ成果物移行/scope-definition.md,spec,スコープ定義書（変更対象9ファイル・影響フェーズ17件・リスク分析を含む）
+risks[2]{id,description,mitigation}:
+  RISK-001,registry.tsのoutputFile変更で進行中タスクのinputFilesチェックが失敗する,researchフェーズでフォールバック実装要否を決定しregistry変更と同時にinputFilesも更新する
+  RISK-002,checkL3QualityのanalyzeArtifact関数がMD行解析前提のため全面改修が必要,TOON解析専用関数を別モジュールとして実装し既存MD検証とコードを分離する
+next:
+  readFiles[6]: workflow-harness/mcp-server/src/phases/defs-stage2.ts,workflow-harness/mcp-server/src/phases/defs-stage3.ts,workflow-harness/mcp-server/src/phases/defs-stage4.ts,workflow-harness/mcp-server/src/phases/defs-stage5.ts,workflow-harness/mcp-server/src/phases/defs-stage6.ts,workflow-harness/mcp-server/src/gates/dod-helpers.ts
+  criticalDecisions[3]: SD-001,SD-004,SD-006
+  warnings[2]: checkL3Qualityの行解析ロジックは全面改修が必要でありresearchで実装コストを詳細見積もること,dod-l4-requirements.tsのcheckACFormat等もoutputFile(.md)依存のためimpact_analysisで洗い出すこと

@@ -1,0 +1,39 @@
+task: tier-c-gaps-n16-n25
+phase: code_review
+intent: Tier C実装コードの品質レビュー
+
+reviewScope[4]{file,linesChanged,assessment}:
+  retry.ts, +20, "classifyComplexity純粋関数。L1/L3/L4レベル判定ロジック明確。buildRetryPromptへのタグ挿入も最小差分。"
+  linter-runner.ts, +12, "countCommentLines純粋関数。ゼロ除算防止あり。//行のみ検出は仕様通り。"
+  manager-write.ts, +15, "sanitizeTaskName。path.basename不使用だがregexで../除去+禁止文字除去で安全。長さチェック+空文字チェックあり。"
+  archgate.ts, +1, "ArchCheckType unionにcomment_ratio追加。型のみの変更で既存ロジック影響なし。"
+
+qualityChecks[6]{check,result,detail}:
+  line_count, pass, "retry.ts:184行, linter-runner.ts:77行, manager-write.ts:129行, archgate.ts:186行。全て200行以下。"
+  type_safety, pass, "全関数に型アノテーション。DoDCheckResult/RetryPromptResult既存型を活用。"
+  error_handling, pass, "sanitizeTaskNameはlength>10000でthrow、空文字でthrow。countCommentLinesはゼロ除算防止。"
+  security, pass, "OWASP Top10対応: パストラバーサル/XSS/SQLi/入力長制限の4パターンをsanitizeTaskNameで防止。"
+  test_coverage, pass, "22テスト全パス。plankton5+skill-rules5+antipattern4+e2e3+safety5=22。"
+  backward_compat, pass, "既存exports維持。新関数追加のみ。ArchCheckType拡張はスーパーセットのため後方互換。"
+
+findings[2]{severity,file,description,resolution}:
+  info, retry.ts, "classifyComplexityのfallbackがtrivialだが空checksでUnknownの場合moderate検討余地あり", "設計通りtrivialで良い。空checksは実質エラーなしのため"
+  info, archgate.ts, "comment_ratio checkTypeの実行分岐が未実装（型定義のみ）", "AC-5テストはcountCommentLines単体テストで達成。archgate分岐追加はN-21完全実装時に実施"
+
+decisions[5]{id,statement,rationale}:
+  CR-1, "全4ファイルの変更を承認する", "200行制限・型安全・エラーハンドリング・テストカバレッジ全て基準達成"
+  CR-2, "sanitizeTaskNameのregex方式を承認する", "path.basenameよりも明示的な禁止文字リストの方が意図が明確で保守性が高い"
+  CR-3, "classifyComplexityの3段階分類を承認する", "Planktonパターンとしてtrivial/moderate/criticalの3分類は十分な粒度"
+  CR-4, "countCommentLinesの//行のみ検出を承認する", "/* */ブロックコメントは将来拡張。現時点ではAI生成コード特有の//連打検出で十分"
+  CR-5, "e2e-mcp-chain.test.tsのパラメータ修正を承認する", "テスト設計時の想定とAPI実仕様の差異修正。正当な変更。"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/code-review.toon, output, コードレビュー結果(4ファイル+6品質チェック+2所見)
+  docs/workflows/tier-c-gaps-n16-n25/spec.toon, input, 技術仕様書
+
+next:
+  criticalDecisions: "CR-1(全承認)により実装フェーズ完了。testingフェーズでvitest全件パスを確認。"
+  readFiles: "なし"
+  warnings: "comment_ratio archgate分岐は本タスクスコープ外。将来N-21完全実装時に追加すること。"
+
+result{phase,status,artifact,lines}: code_review, complete, docs/workflows/tier-c-gaps-n16-n25/code-review.toon, 38

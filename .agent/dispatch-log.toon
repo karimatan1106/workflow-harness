@@ -1,0 +1,57 @@
+entries[6]:
+  - ts: 2026-04-25T00:00:00Z
+    taskId: c1fce747-120d-47fd-81a4-a45de9cea3c9
+    phase: hearing
+    agentType: worker
+    purpose: "express dogfooding hearing artifact"
+    tokens: 29498
+    durationMs: 81593
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: c1fce747-120d-47fd-81a4-a45de9cea3c9
+    phase: implementation
+    agentType: worker
+    purpose: "express dogfooding gitignore append + verify"
+    tokens: 0
+    durationMs: 0
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: c1fce747-120d-47fd-81a4-a45de9cea3c9
+    phase: testing
+    agentType: worker
+    purpose: "express dogfooding AC verify"
+    tokens: 0
+    durationMs: 0
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: c1fce747-120d-47fd-81a4-a45de9cea3c9
+    phase: docs_update
+    agentType: worker
+    purpose: "express dogfooding docs-impact: none"
+    tokens: 0
+    durationMs: 0
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: c1fce747-120d-47fd-81a4-a45de9cea3c9
+    phase: commit
+    agentType: worker
+    purpose: "express dogfooding final commit + push"
+    tokens: 0
+    durationMs: 0
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: 252e85c9-03bc-4046-9279-7882a12aef30
+    phase: hearing
+    agentType: worker
+    purpose: "replace workflow-plugin references hearing artifact"
+    tokens: 0
+    durationMs: 0
+    result: ok
+  - ts: 2026-04-25T00:00:00Z
+    taskId: 252e85c9-03bc-4046-9279-7882a12aef30
+    phase: implementation
+    agentType: worker
+    purpose: "replace plugin refs in 10 test files + impl artifact"
+    tokens: 0
+    durationMs: 0
+    result: error

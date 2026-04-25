@@ -1,0 +1,73 @@
+# セキュリティスキャン新規指摘3件修正 - 実装仕様書
+
+## サマリー
+
+本仕様書では前回のセキュリティスキャンで検出された3件の新規脆弱性に対する修正の詳細実装方針を定義する。
+指摘NEW-SEC-1はbash-whitelist.jsにおけるゼロ幅Unicode文字のサニタイズ不足でありコマンド分割ロジックを回避される可能性がある。
+指摘NEW-SEC-2は同ファイルのdetectEncodedCommand関数におけるFail-Open設計でありデコード失敗時に検証がスキップされる問題である。
+指摘NEW-SEC-3はloop-detector.jsのnormalizeFilePath関数のフォールバック処理にログ出力がなく透明性が不足する問題である。
+3件の修正は既存テスト42件との互換性を維持しながら最小限の変更でセキュリティ強度を向上させることを目的とする。
+優先度はNEW-SEC-2のFail-Closed化が最も高く次にNEW-SEC-1のUnicode対応でNEW-SEC-3のログ強化は低優先度である。
+
+## 概要
+
+本タスクではworkflow-plugin/hooks/配下の2ファイルに対して3件のセキュリティ修正を実施する。
+bash-whitelist.jsではゼロ幅文字サニタイズ関数の追加とdetectEncodedCommandのFail-Closed化を行う。
+loop-detector.jsではnormalizeFilePath関数のフォールバック時のログ出力を追加する。
+修正は全て既存の関数内への最小限の変更であり新規ファイルの追加は不要である。
+テストはsrc/backend/tests/unit/hooks/配下に新規テストケースを追加して検証する。
+
+## 変更対象ファイル
+
+workflow-plugin/hooks/bash-whitelist.jsのsplitCommandParts関数（行253-255）にゼロ幅文字サニタイズを追加する。
+同ファイルのsplitCompoundCommand関数（行333-334付近）にも同様のゼロ幅文字サニタイズを追加する。
+同ファイルのdetectEncodedCommand関数（行395-443）にデコード失敗時のFail-Closedレスポンスを追加する。
+workflow-plugin/hooks/loop-detector.jsのnormalizeFilePath関数（行125-141）にフォールバック時のログ出力を追加する。
+src/backend/tests/unit/hooks/test-n6-security-new.test.ts を新規作成して3件の修正を検証するテストケースを追加する。
+
+## 修正仕様
+
+NEW-SEC-1ではsplitCommandParts関数とsplitCompoundCommand関数の先頭にゼロ幅文字サニタイズ処理を追加する。
+対象文字はU+200B ZERO WIDTH SPACEとU+200C NON-JOINERとU+200D JOINERとU+FEFF BOMの4文字である。
+正規表現/[\u200B\u200C\u200D\uFEFF]/gを使用して全てのゼロ幅文字を空文字列に置換する実装とする。
+パフォーマンス最適化のため正規表現はZERO_WIDTH_CHARS_PATTERNとして関数外で定数定義する。
+sanitizeZeroWidthChars関数を新設しsplitCommandPartsとsplitCompoundCommandの先頭で呼び出す。
+
+NEW-SEC-2ではdetectEncodedCommand関数のデコード失敗時にallowed:falseとreasonを返すように変更する。
+base64デコード失敗時にはreasonとして"Base64 decoding failed"を含むメッセージを返す。
+printf hexデコード失敗時にはreasonとして"Printf hex decoding failed"を含むメッセージを返す。
+echo octalデコード失敗時にはreasonとして"Echo octal decoding failed"を含むメッセージを返す。
+decodedがnullの場合に明示的にreturn文でFail-Closedレスポンスを返すelse節を各パターンに追加する。
+
+NEW-SEC-3ではnormalizeFilePath関数のフォールバック時にログ出力処理を追加する。
+fs.realpathSync失敗時のcatchブロックでconsole.warnを使用して警告ログを出力する。
+path.resolve失敗時のcatchブロックでconsole.errorを使用してエラーログを出力する。
+ログメッセージには元のファイルパスとフォールバック理由とエラーメッセージを含める。
+
+## 実装計画
+
+Phase 1ではbash-whitelist.jsの先頭付近にZERO_WIDTH_CHARS_PATTERN定数とsanitizeZeroWidthChars関数を追加する。
+splitCommandParts関数の先頭でcommand = sanitizeZeroWidthChars(command)を実行してサニタイズを適用する。
+splitCompoundCommand関数の先頭でもcommand = sanitizeZeroWidthChars(command)を実行してサニタイズを適用する。
+Phase 2ではdetectEncodedCommand関数の各デコード処理にデコード失敗時のFail-Closedレスポンスを追加する。
+Phase 3ではnormalizeFilePath関数の2つのcatchブロックにログ出力処理を追加する。
+
+## 影響範囲
+
+bash-whitelist.jsではsplitCommandParts関数とsplitCompoundCommand関数の先頭にサニタイズ処理が追加される。
+既存のコマンド分割ロジックには変更を加えないため正常なコマンド文字列の処理には影響しない。
+detectEncodedCommand関数ではデコード失敗時の動作がFail-OpenからFail-Closedに変更される。
+不正なエンコード文字列を含むコマンドはブロックされるようになるが正常なコマンドには影響しない。
+loop-detector.jsではnormalizeFilePath関数にログ出力が追加されるが戻り値には変更がない。
+既存テスト42件はゼロ幅文字や不正エンコード文字列を使用していないため全て合格することが期待される。
+パフォーマンスへの影響はゼロ幅文字サニタイズが正規表現1回の実行でありナノ秒単位の処理時間増加に留まる。
+
+## テスト方針
+
+NEW-SEC-1に対してはゼロ幅文字U+200Bを含むコマンド文字列がsplitCommandPartsで正しくサニタイズされることを検証する。
+U+200CとU+200DとU+FEFFの各ゼロ幅文字についても同様のサニタイズ検証テストをsrc/backend/tests/で実施する。
+splitCompoundCommand関数でもゼロ幅文字サニタイズが機能することを独立したテストケースで確認する。
+NEW-SEC-2に対しては不正なbase64文字列をdetectEncodedCommandに渡した場合のFail-Closed動作を検証する。
+printf hexパターンとecho octalパターンでも同様にデコード失敗時のFail-Closed動作をテストで確認する。
+NEW-SEC-3に対しては存在しないファイルパスをnormalizeFilePathに渡した場合のログ出力をモックで検証する。
+既存テストスイート42件の回帰テストをsrc/backend/tests/unit/hooks/配下で実施し全件合格を確認する。

@@ -1,0 +1,40 @@
+phase: scope_definition
+taskName: サイズ判定改善(harness_start size引数追加)
+date: 2026-03-22
+userIntent: harness_startにオプショナルsize引数(TaskSize型)を追加し、デフォルトをlargeに変更する。オーケストレーターがuserIntentから設計書の要否を判断してサイズを指定できるようにし、risk-classifierによる自動分類を廃止する。
+
+currentBehavior: createTaskState()がanalyzeScope()でファイル/ディレクトリパスからRiskInputを構築し、calculateRiskScore()でスコア算出後、classifySize()でsmall/medium/largeを自動決定する。オーケストレーターにサイズ選択の余地がない。
+newBehavior: harness_startがオプショナルsize引数を受け取り、createTaskState()に渡す。size未指定時はlargeをデフォルトとする。risk-classifier.tsのanalyzeScope/calculateRiskScore/classifySizeはcreateTaskStateから呼び出されなくなる。
+
+scopeFiles[4]{path, action, reason}:
+  workflow-harness/mcp-server/src/tools/defs-a.ts, edit, harness_start定義のinputSchema.propertiesにsizeプロパティ(enum: small/medium/large)を追加
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts, edit, handleHarnessStart内でargs.sizeを取得しsm.createTask()に渡す
+  workflow-harness/mcp-server/src/state/manager.ts, edit, createTask()シグネチャにオプショナルsize引数を追加しcreateTaskState()に中継する
+  workflow-harness/mcp-server/src/state/manager-write.ts, edit, createTaskState()にオプショナルsize引数を追加し、指定時はそのまま使用、未指定時はlargeをデフォルトとする。analyzeScope/calculateRiskScore/classifySizeの呼び出しを削除する
+
+scopeDirs[2]{dir, reason}:
+  workflow-harness/mcp-server/src/tools, MCPツール定義とハンドラの変更
+  workflow-harness/mcp-server/src/state, StateManager及びcreateTaskStateの変更
+
+changeStrategy: harness_startのinputSchemaにsize(enum)を追加し、lifecycle.ts -> manager.ts -> manager-write.tsの呼び出しチェーンでsizeを伝搬する。createTaskStateではrisk-classifierの呼び出しを除去し、size引数をそのまま使用する(デフォルト: large)。riskScoreフィールドはsize引数から固定値をマッピングして設定する(small=2, medium=5, large=8, factors: {})。
+
+outOfScope[4]{item, reason}:
+  risk-classifier.tsの削除, 他の箇所から参照される可能性があるため本タスクでは削除せず残置する
+  TaskState型定義(types-core.ts)の変更, TaskSize型とriskScoreフィールドは既存のまま使用可能
+  SIZE_SKIP_MAPやgetActivePhasesの変更, sizeの値が変わるだけで参照ロジックは不変
+  既存テストのリファクタリング, createTaskStateのシグネチャ変更に伴う最小限のテスト修正のみ対象とする
+
+decisions[6]{id, statement, rationale}:
+  SD-1, size引数はオプショナルとしデフォルトをlargeにする, 既存の呼び出し元への後方互換性を維持しつつ安全側に倒す(largeは全フェーズ実行)
+  SD-2, risk-classifier.tsのコードは残置し削除しない, 将来的にsize推定のヒントとして再利用する可能性がありデッドコード削除は別タスクとする
+  SD-3, riskScoreフィールドはsize引数から固定値をマッピングして設定する, "TaskStateのriskScoreフィールドは必須であり、small=2/medium=5/large=8等の代表値を設定することでスキーマ互換性を維持する"
+  SD-4, defs-a.tsのsizeプロパティはenum制約付きで定義する, "JSON Schemaのenum: ['small', 'medium', 'large']によりMCPレベルでバリデーションを行い不正値を防ぐ"
+  SD-5, manager.tsのcreateTask()もオプショナルsize引数を追加する, "lifecycle.ts -> manager.ts -> manager-write.tsの3層を貫通させる必要がありmanager.tsは中継のみ"
+  SD-6, createTaskState内のimport文からanalyzeScope/calculateRiskScore/classifySizeを除去する, "呼び出しを削除してもimportが残るとデッドコード警告が出るためimportも同時に整理する"
+
+dependencyAnalysis: lifecycle.tsはsm.createTask()を呼び出しており、manager.tsのcreateTask()はcreateTaskState()を呼び出す。変更はdefs-a.ts(スキーマ) -> lifecycle.ts(引数取得) -> manager.ts(中継) -> manager-write.ts(実処理)の順に伝搬する。risk-classifier.tsはmanager-write.tsからimportされているがimport文ごと除去する。types-core.tsのTaskSize型は変更不要。
+
+artifacts[1]{path, format, description}:
+  docs/workflows/サイズ判定改善(harness_start size引数追加)/scope-definition.toon, toon, スコープ定義成果物
+
+next: research

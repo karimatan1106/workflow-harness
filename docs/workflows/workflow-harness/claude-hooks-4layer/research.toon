@@ -1,0 +1,180 @@
+phase: research
+task: claude-hooks-4layer
+intent: "Claude Code Hooks 4種(PostToolUse/PreToolUse/Stop/PreCompact)を実装し、ms単位フィードバック層を確立する"
+
+existingHookArchitecture:
+  currentHookCount: 4
+  registeredEvents: UserPromptSubmit(2本) / PreToolCall(1本)
+  unregisteredEvents: PostToolUse / PreToolUse / Stop / Notification
+  settingsPath: .claude/settings.json
+  hooksDir: .claude/hooks/
+  pluginHooksDir: workflow-plugin/hooks/
+  pluginHookCount: 9 (JS形式、PreToolUse/PreToolCall対応)
+  pluginEventTypes: PreToolUse(phase-edit-guard / enforce-workflow / loop-detector / spec-first-guard)
+
+settingsJsonSchema:
+  format: JSON object with hooks key
+  hooksKey: object mapping event name to array of hook entries
+  hookEntry: object with matcher(string) and command(array of strings)
+  matcherBehavior: 空文字列は全ツールにマッチ。ツール名パターンで限定可能
+  commandFormat: ["bash", "path/to/script.sh"] or ["node", "path/to/hook.js"]
+  executionOrder: 配列順に逐次実行。いずれか1つでもexit 2でブロック
+
+existingSettingsStructure:
+  UserPromptSubmit: handoff-reader.sh(空matcher) / session-end-reminder.sh(空matcher)
+  PreToolCall: context-watchdog.sh(空matcher)
+  newEntries: PostToolUse / PreToolUse / Stop / Notification を追加予定
+
+eventTypeAnalysis[4]{event,stdinFields,exitCodes,matcherTarget,timing}:
+  PostToolUse,"tool_name, file_path, result","0=pass(stdoutをユーザー表示), 2=show-error-message",tool_name,ツール実行完了直後。結果に対するフィードバックを返す
+  PreToolUse,"tool_name, tool_input (file_path/content含む)","0=allow, 1=skip-silently, 2=block-with-message",tool_name,ツール実行前。exit 2でブロックしstdoutメッセージを表示
+  Stop,"stop_reason, transcript_summary","0=allow-stop, 2=block-stop-and-continue",なし(全Stop),LLM完了宣言時。テスト未実行時にexit 2で完了拒否
+  Notification,"type(compact等), notification_content","0=acknowledge(通知のみ。ブロック不可)",type値,compact実行直前。退避処理のみ実行しexit 0で終了
+
+existingWatchdogAnalysis:
+  event: PreToolCall
+  features: カウンター(30回) / 重複読み込み(3回) / チェックポイント強制(10回Write) / ピットフォール検出 / サブエージェント知識注入
+  magicNumbers: THRESHOLD=30 / REREAD_LIMIT=3 / EDIT_THRESHOLD=10 / CHECKPOINT_MAX_AGE=600
+  checkpointFormat: TOON形式(task/phase/done[]/next[])
+  stdinParsing: grep+sedでtool_name/file_pathを抽出。jq未使用(軽量化のため)
+  overlapWithG02: watchdogはWrite/Edit検出するが設定ファイル保護ロジックは持たない。G-02が保護に特化
+  overlapWithG04: watchdogの編集回数ベースcheckpoint強制とG-04のcompact前退避は補完関係。書き込み先(.agent/checkpoint.toon)が同一のためフォーマット統一が必須
+
+pluginHookAnalysis:
+  language: Node.js (CommonJS require)
+  stdinParsing: process.stdin読み取り→JSON.parse→tool_name/tool_input抽出
+  errorHandling: uncaughtException/unhandledRejection→logError→exit 2(Fail Closed)
+  errorClassification: security(HMAC)→exit 2 / temporary(ENOENT等)→WORKFLOW_FAIL_MODE依存 / unknown→exit 2
+  stateManagement: .claude/state/ 配下にJSON/JSONL形式で保存
+  exitCodeConvention: 0=allow / 1=warn(処理継続) / 2=block
+
+preToolCallVsPreToolUse:
+  PreToolCall: 旧イベント名。watchdogが使用中。全ツール呼び出し前に発火
+  PreToolUse: 新イベント名。plugin hooksが使用。matcherでツール名フィルタ可能
+  coexistence: 同一スクリプトを両イベントに登録可能だが責務分離が推奨。G-02はPreToolUseのWrite/Edit限定
+
+g01PostToolLintDesign:
+  trigger: PostToolUse(matcher="Write|Edit")
+  targetFileDetection: stdinのfile_pathからファイル拡張子を判定(.ts/.tsx/.js/.jsxのみ対象)
+  lintCommand: tsc --noEmit --pretty false
+  executionConstraint: プロジェクトルートにtsconfig.jsonが存在しない場合はサブモジュール(workflow-harness/mcp-server/tsconfig.json等)を検索
+  tsconfigDiscovery: file_pathから上位ディレクトリを走査し最寄りのtsconfig.jsonを使用
+  outputFormat: stdoutにエラー行を出力(Claude Codeがユーザーに表示)
+  exitCode: 0固定(リンター結果は情報提供のみ。ブロックしない)
+  performanceTarget: tsc --noEmit単体で500ms〜3秒。--pretty falseで出力パース不要に
+
+g02PreToolConfigGuardDesign:
+  trigger: PreToolUse(matcher="Write|Edit")
+  protectedPatterns: .eslintrc* / tsconfig*.json / .mcp.json / package.json / .claude/settings.json / .gitignore
+  patternMatchMethod: bash正規表現(=~演算子)でfile_pathの末尾をチェック
+  blockMechanism: exit 2 + stdoutに保護理由メッセージ
+  temporaryOverride: 環境変数CONFIG_GUARD_DISABLE=trueで一時無効化(実装フェーズでの自己設定変更用)
+  messageFormat: "[CONFIG-GUARD] 設定ファイル保護: {filename}への書き込みをブロックしました。意図的な変更の場合はCONFIG_GUARD_DISABLE=trueを設定してください"
+  watchdogInteraction: watchdogはPreToolCallで発火するため実行パスは完全に独立。G-02はPreToolUseで設定ファイル限定
+
+g03StopTestEnforcerDesign:
+  trigger: Stop(matcher未使用。全Stop検出)
+  testDetection: vitest --run --reporter=verbose の実行結果で判定
+  testCommand: npx vitest --run 2>&1
+  testFileCheck: find . -name "*.test.ts" -o -name "*.spec.ts" で存在確認
+  noTestFallback: テストファイル不在時はexit 0(ブロックしない。テストレスプロジェクトへの対応)
+  blockCondition: テストファイルが存在かつvitest exit code非0の場合にexit 2
+  messageFormat: "[STOP-ENFORCER] テスト未通過のため完了をブロック。vitest結果を確認してください"
+  projectRootDetection: スクリプト実行ディレクトリから上位を走査しpackage.jsonを探索
+
+g04PreCompactContextSaveDesign:
+  trigger: Notification(matcher="compact")
+  saveTarget: .agent/checkpoint.toon
+  savedData: task名/phase名/完了済みAC/scopeFiles/重要decisions
+  dataSource: .agent/CRITICAL.toon(存在すれば読み込み) + 環境変数(CURRENT_TASK/CURRENT_PHASE)
+  formatConstraint: watchdogのcheckpointと同一TOON形式を維持(task/phase/done[]/next[])
+  exitCode: 0固定(Notificationイベントはブロック不可)
+  additionalSave: .agent/CRITICAL.toonの内容をcheckpoint.toonに追記統合
+  compactDetection: stdinのtype=compact を確認
+
+magicNumbers[10]{id,name,value,unit,purpose,source}:
+  MN-01,THRESHOLD,30,回,watchdog定期再注入の間隔,context-watchdog.sh L16
+  MN-02,REREAD_LIMIT,3,回,同一ファイル重複読み込み警告閾値,context-watchdog.sh L17
+  MN-03,EDIT_THRESHOLD,10,回,Write/Editごとのチェックポイント強制,context-watchdog.sh L18
+  MN-04,CHECKPOINT_MAX_AGE,600,秒,チェックポイント有効期限(10分),context-watchdog.sh L19
+  MN-05,MARKER_FRESHNESS,1800,秒,handoff注入マーカー鮮度(30分),handoff-reader.sh L24
+  MN-06,TIME_WINDOW,300000,ms,ループ検出ウィンドウ(5分),loop-detector.js L80
+  MN-07,WARNING_SUPPRESS_TIME,60000,ms,警告抑止期間(1分),loop-detector.js L81
+  MN-08,LOOP_THRESHOLD,5,回,同一ファイル編集回数上限(5分間),loop-detector.js概要
+  MN-09,TSC_TIMEOUT,5000,ms,G-01 tsc実行のタイムアウト上限(新規設定),設計判断R-03
+  MN-10,CONFIG_PATTERNS,6,個,G-02保護対象パターン数,scope-definition.toon L33-39
+
+dependencyVersions:
+  node: v22.15.0
+  tsc: 5.3.3
+  npm: 10.9.2
+  platform: MSYS_NT-10.0-26200(Windows 10/11 MSYS2環境)
+  shell: bash(MSYS2提供。GNU coreutils互換)
+  jq: 不使用(grep+sedで軽量パース。MSYS2環境でのjq可用性が不確実)
+
+platformConstraints[5]{id,constraint,impact,mitigation}:
+  PC-01,MSYS2 bash環境でのパス変換(C:\→/c/),file_pathがWindows形式で渡される可能性,パス正規化処理を追加(sed 's|\\|/|g')
+  PC-02,stat -c %Y がGNU stat専用,-f %mへのフォールバック必須(既存watchdogと同じパターン),stat -c %Y 2>/dev/null || stat -f %m 2>/dev/null
+  PC-03,tsc --noEmitの実行パス,グローバルtscとローカルnpx tscの優先順位,npx tsc --noEmit を使用(ローカル優先)
+  PC-04,vitest実行のCWD依存,プロジェクトルートからの相対パスでvitest.config.tsを探索,package.jsonのあるディレクトリでnpx vitest実行
+  PC-05,bashスクリプトのBOM/改行コード,WindowsエディタでのCRLF混入リスク,#!/bin/bashヘッダ + .gitattributes(*.sh text eol=lf)推奨
+
+tsconfigDiscoveryStrategy:
+  approach: file_pathから親ディレクトリを再帰的に走査
+  searchOrder: 1)ファイルと同じディレクトリ 2)親ディレクトリ 3)さらに上位
+  foundAction: tsc --noEmit -p {tsconfig_path} --pretty false {file_path}
+  notFoundAction: stdoutに"tsconfig.json not found"メッセージ出力しexit 0(スキップ)
+  knownLocations: workflow-harness/mcp-server/tsconfig.json / workflow-plugin/mcp-server/tsconfig.json / src/frontend/tsconfig.json
+
+hookExecutionOrder:
+  PreToolUse: 1)enforce-workflow.js 2)hmac-verify.js 3)phase-edit-guard.js 4)pre-tool-config-guard.sh(G-02) 5)spec-first-guard.js 6)loop-detector.js
+  PostToolUse: 1)post-tool-lint.sh(G-01)
+  Stop: 1)stop-test-enforcer.sh(G-03)
+  Notification: 1)pre-compact-context-save.sh(G-04)
+  UserPromptSubmit: 既存2本(変更なし)
+  PreToolCall: 既存1本(変更なし)
+  rationale: PH-6(フック間優先順位)に準拠。G-02はphase-edit-guardの後でloop-detectorの前。設定ファイル保護はフェーズ編集制限の後に評価
+
+stdinParsingStrategy:
+  approach: grep+sed(既存watchdogパターン踏襲。jq依存を回避)
+  toolNameExtract: "echo \"$INPUT\" | grep -o '\"tool_name\"[[:space:]]*:[[:space:]]*\"[^\"]*\"' | head -1 | sed 's/.*\"tool_name\"[[:space:]]*:[[:space:]]*\"//;s/\"$//'"
+  filePathExtract: "echo \"$INPUT\" | grep -o '\"file_path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"' | head -1 | sed 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"//;s/\"$//'"
+  typeFieldExtract: "echo \"$INPUT\" | grep -o '\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*\"' | head -1 | sed 's/.*\"type\"[[:space:]]*:[[:space:]]*\"//;s/\"$//'"
+  robustness: head -1で複数マッチ時の先頭を採用。grep -oで正確なJSON値抽出
+
+decisions[8]{id,statement,rationale}:
+  R-01,"G-01はexit 0固定(情報提供のみ)とし、リンターエラーでブロックしない","開発フロー中のリンターブロックはDXを著しく低下させる。エラー情報をstdoutで即座に表示し修正を促すアプローチが最適"
+  R-02,"G-02の保護パターンはbash正規表現で実装し外部設定ファイルを参照しない","フック実行はms単位。ファイルI/Oを最小化することでレイテンシを抑制。パターン変更頻度は月1回未満"
+  R-03,"G-01のtsc実行にはtimeoutコマンド(5秒上限)を適用する","大規模プロジェクトでtsc --noEmitが長時間化するリスクを回避。5秒でkillしstdoutにタイムアウト通知"
+  R-04,"G-03はテストファイル不在時にexit 0とし完了を許可する","テストレスプロジェクトやドキュメント専用タスクでの完了ブロックを回避。テストが存在する場合のみ強制"
+  R-05,"stdinパースはgrep+sed方式を採用しjqに依存しない","MSYS2環境でのjq可用性が保証されない。既存watchdogの実績あるパターンを再利用することで信頼性確保"
+  R-06,"G-04はNotificationイベントを使用しexit codeでブロックしない","Notificationイベントはブロック不可の仕様。退避処理を実行してexit 0を返す設計が唯一の選択肢"
+  R-07,"settings.jsonへの新規4イベント追加時、既存UserPromptSubmit/PreToolCallエントリは変更しない","既存フック4本の動作に影響を与えないための安全策。新規イベントキーの追加のみ"
+  R-08,"G-01のtsconfig検索はfile_pathから上位走査する動的検索方式を採用する","親リポジトリにtsconfig.jsonがなくサブモジュールごとに異なる。ハードコードではモノレポ構造の変更に追従できない"
+
+artifacts[6]{path,role,summary}:
+  docs/workflows/claude-hooks-4layer/research.toon,deliverable,リサーチ結果。既存フック分析と新規4フック設計方針
+  docs/workflows/claude-hooks-4layer/scope-definition.toon,input,スコープ定義。変更対象8ファイルと4フックの概要設計
+  .claude/settings.json,reference,現行フック設定。3イベント種別に4エントリ登録済み
+  .claude/hooks/context-watchdog.sh,reference,既存PreToolCallフック。G-02/G-04との機能境界分析に使用
+  .agent/CRITICAL.toon,reference,定期再注入データ。G-04の退避対象コンテンツ
+  docs/workflows/claude-hooks-4layer/init.sh,deliverable,ビルド・テスト・セットアップコマンド集
+
+settingsJsonPatch:
+  addedKeys: PostToolUse / PreToolUse / Stop / Notification
+  PostToolUse: [{matcher:"Write|Edit", command:["bash",".claude/hooks/post-tool-lint.sh"]}]
+  PreToolUse: [{matcher:"Write|Edit", command:["bash",".claude/hooks/pre-tool-config-guard.sh"]}]
+  Stop: [{matcher:"", command:["bash",".claude/hooks/stop-test-enforcer.sh"]}]
+  Notification: [{matcher:"compact", command:["bash",".claude/hooks/pre-compact-context-save.sh"]}]
+  preservedKeys: UserPromptSubmit(2エントリ) / PreToolCall(1エントリ)
+
+riskAssessment[4]{hookId,risk,likelihood,impact,mitigation}:
+  G-01,tsc実行の長時間化によるフック遅延,中(サブモジュールのソース規模による),フック応答遅延→DX低下,timeout 5秒上限 + --noEmit --pretty false
+  G-02,正当な設定ファイル変更の意図せぬブロック,低(CONFIG_GUARD_DISABLE環境変数あり),実装フェーズでの自己設定変更が阻害,環境変数で一時無効化。メッセージに無効化手順を含める
+  G-03,テスト実行の長時間化によるStop遅延,中(テストスイート規模による),完了宣言の応答が遅延,vitest --runの--reporter=verbose + timeout制御
+  G-04,checkpoint.toonへの並行書き込み競合,低(watchdogとG-04の発火タイミングが異なる),checkpointデータの破損,G-04書き込み時にwatchdogカウンターをリセット
+
+next:
+  criticalDecisions: R-01(G-01情報提供のみ) R-03(tscタイムアウト5秒) R-05(grep+sed採用) R-08(tsconfig動的検索)
+  readFiles: .claude/settings.json / .claude/hooks/context-watchdog.sh / .agent/CRITICAL.toon / workflow-plugin/hooks/phase-edit-guard.js
+  warnings: PC-01(Windowsパス変換)とPC-03(npx tsc優先)はG-01実装時の最重要制約。G-04とwatchdogのcheckpoint.toon共用フォーマット統一はimpact_analysisで詳細化が必要

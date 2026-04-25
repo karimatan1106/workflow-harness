@@ -1,0 +1,46 @@
+flowchart TD
+    Start(("実装フェーズ開始")) --> ReadSpec(("spec.mdから修正計画を確認<br/>対象: FR-B1・FR-B3・FR-B2の3要件"))
+
+    ReadSpec --> FR_B1_Start(("FR-B1: ルートCLAUDE.mdの<br/>subagentType列修正"))
+
+    FR_B1_Start --> Read_Root(("ファイル読み込み<br/>CLAUDE.md<br/>フェーズ別subagent設定テーブル"))
+
+    Read_Root --> Modify_Research(("143行: research修正<br/>Explore→general-purpose<br/>haiku→sonnet"))
+
+    Modify_Research --> Modify_BuildCheck(("154行: build_check修正<br/>Bash→general-purpose<br/>model: haiku維持"))
+
+    Modify_BuildCheck --> Modify_Testing(("156行: testing修正<br/>Bash→general-purpose<br/>model: haiku維持"))
+
+    Modify_Testing --> Modify_Commit(("162行: commit修正<br/>Bash→general-purpose<br/>model: haiku維持"))
+
+    Modify_Commit --> Modify_Push(("163行: push修正<br/>Bash→general-purpose<br/>model: haiku維持"))
+
+    Modify_Push --> FR_B3_Start(("FR-B3: ルートCLAUDE.mdの<br/>Bashカテゴリテーブル修正"))
+
+    FR_B3_Start --> Modify_Category(("181行: commit/push行修正<br/>許可カテゴリ: readonly, git<br/>→ readonly, implementation"))
+
+    Modify_Category --> Save_Root(("ルートCLAUDE.mdを保存"))
+
+    Save_Root --> FR_B2_Start(("FR-B2: workflow-plugin/CLAUDE.mdの<br/>subagentType列修正"))
+
+    FR_B2_Start --> Read_Plugin(("ファイル読み込み<br/>workflow-plugin/CLAUDE.md<br/>フェーズ別subagent設定テーブル"))
+
+    Read_Plugin --> Modify_Plugin_Research(("181行付近: research修正<br/>Explore→general-purpose<br/>haiku→sonnet"))
+
+    Modify_Plugin_Research --> Modify_Plugin_BuildCheck(("192行付近: build_check修正<br/>Bash→general-purpose"))
+
+    Modify_Plugin_BuildCheck --> Modify_Plugin_Testing(("194行付近: testing修正<br/>Bash→general-purpose"))
+
+    Modify_Plugin_Testing --> Modify_Plugin_Commit(("200行付近: commit修正<br/>Bash→general-purpose"))
+
+    Modify_Plugin_Commit --> Modify_Plugin_Push(("201行付近: push修正<br/>Bash→general-purpose"))
+
+    Modify_Plugin_Push --> Save_Plugin(("workflow-plugin/CLAUDE.mdを保存"))
+
+    Save_Plugin --> SyncCheck{{"2ファイルのsubagentType<br/>とmodel列が一致しているか"}}
+
+    SyncCheck -->|不一致| FR_B2_Start
+
+    SyncCheck -->|一致| Checklist(("最終確認チェックリスト実施<br/>AC-1: Explore/Bash残存なし<br/>AC-2: research=sonnet確認<br/>AC-3: 両ファイル同期確認<br/>AC-4: git参照解消確認<br/>AC-5: カテゴリ定義との整合確認"))
+
+    Checklist --> Complete(("実装フェーズ完了<br/>全修正完了"))

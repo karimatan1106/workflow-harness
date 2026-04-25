@@ -1,0 +1,20 @@
+stateDiagram-v2
+    Start --> CodeReviewGeneration: code_reviewサブエージェント起動
+
+    CodeReviewGeneration --> ArtifactGenerated: 複数FRを評価成果物として生成
+
+    ArtifactGenerated --> ValidatorCheck: バリデーター実行<br/>同一フレーズ検出
+
+    ValidatorCheck --> DuplicateDetectionOld: 修正前（ガイダンス未追加）<br/>同一フレーズを3回以上検出
+
+    DuplicateDetectionOld --> ValidationFailureOld: バリデーション失敗<br/>重複行エラー報告
+
+    ValidationFailureOld --> RetryState: リトライ時点<br/>subagent再起動（同じテンプレート）
+
+    RetryState --> ArtifactGenerated: ガイダンスなしで再度生成<br/>同じエラーが繰り返される
+
+    ValidatorCheck --> UniqueLines: 修正後（ガイダンス追加）<br/>各行にFR番号・ファイル名を含む<br/>同一フレーズなし
+
+    UniqueLines --> ValidationSuccess: バリデーション成功<br/>評価結論フレーズが一意
+
+    ValidationSuccess --> End: 成果物確定<br/>次フェーズへ進行

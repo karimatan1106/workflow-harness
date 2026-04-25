@@ -1,0 +1,51 @@
+phase: test_design
+task: harness_record_proofブロック修正＋docsDir パス不一致修正
+taskId: d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f
+status: complete
+inputArtifact: docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/requirements.toon
+inputArtifact: docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/planning.toon
+
+summary: AC-1〜AC-5 に対する7テストケースを設計。is_lifecycle_mcp のワイルドカードマッチ検証(2件)、getDocsPath の絶対パス検証(2件)、resolveProjectPath の二重解決防止(1件)、既存テストパス(1件)、リグレッション確認(1件)。
+
+testStrategy: unit テストで is_lifecycle_mcp と getDocsPath の個別動作を検証し、integration テストとして既存 vitest スイート全体を実行する。bash の source + 関数呼び出しで shell 関数をテスト可能。TypeScript 側は vitest で直接 import してテストする。
+
+testCases[7]{id,ac,description,type,expected}:
+  TC-AC1-01, AC-1, "is_lifecycle_mcp に mcp__harness__harness_record_proof を渡して return 0 を確認", unit, "return 0 (exit code 0)"
+  TC-AC1-02, AC-1, "is_lifecycle_mcp に mcp__other__some_tool を渡して return 1 を確認", unit, "return 1 (exit code 1)"
+  TC-AC2-01, AC-2, "DOCS_DIR 未設定時に getDocsPath('test-task') が絶対パスを返す", unit, "isAbsolute(result) === true かつ result が getProjectRoot()/docs/workflows/test-task と一致"
+  TC-AC2-02, AC-2, "DOCS_DIR に相対パス custom/docs を設定して getDocsPath('test-task') が絶対パスを返す", unit, "isAbsolute(result) === true かつ result が getProjectRoot()/custom/docs/test-task と一致"
+  TC-AC3-01, AC-3, "getDocsPath が既に絶対パスの DOCS_DIR を受けた場合に二重解決しない", unit, "resolveProjectPath の isAbsolute ガードによりルートが二重付与されない"
+  TC-AC4-01, AC-4, "vitest run で既存テストスイートが全パスする", integration, "全テスト pass かつ exit code 0"
+  TC-AC5-01, AC-5, "DOCS_DIR に絶対パスを設定した場合に getDocsPath が同じパスをそのまま返す", unit, "入力絶対パス + taskName がそのまま返る"
+
+acTcMapping[5]{ac,testCases,coverage}:
+  AC-1, "TC-AC1-01 TC-AC1-02", "ワイルドカードマッチ成功と非harness拒否の両方向を検証"
+  AC-2, "TC-AC2-01 TC-AC2-02", "デフォルト DOCS_DIR とカスタム DOCS_DIR の両ケースで絶対パス化を検証"
+  AC-3, "TC-AC3-01", "resolveProjectPath の isAbsolute ガードにより二重解決が発生しないことを検証"
+  AC-4, "TC-AC4-01", "既存テストスイート全体の通過を検証"
+  AC-5, "TC-AC5-01", "DOCS_DIR が絶対パスの場合に isAbsolute ガードで安全に動作することを検証"
+
+rtmTrace[7]{tc,rtm,ac}:
+  TC-AC1-01, F-001, AC-1
+  TC-AC1-02, F-001, AC-1
+  TC-AC2-01, F-002, AC-2
+  TC-AC2-02, F-002, AC-2
+  TC-AC3-01, F-003, AC-3
+  TC-AC4-01, F-004, AC-4
+  TC-AC5-01, F-005, AC-5
+
+decisions[5]{id,statement,rationale}:
+  TD-1, "shell関数テストは bash -c で source + 関数呼び出しパターンを使用する", "pre-tool-guard.sh は関数定義を含むため直接 source して関数単体をテスト可能"
+  TD-2, "getDocsPath テストでは process.env.DOCS_DIR を beforeEach/afterEach で設定・復元する", "環境変数の副作用を他テストに波及させない"
+  TD-3, "TC-AC3-01 では絶対パスの DOCS_DIR を設定し getDocsPath の戻り値にプロジェクトルートが二重付与されないことを確認する", "resolveProjectPath 内の isAbsolute ガードが正しく機能することの直接検証"
+  TD-4, "TC-AC4-01 は vitest run の exit code で判定する", "個別テスト結果の解析は不要で全体の pass/fail のみが AC-4 の検証対象"
+  TD-5, "TC-AC5-01 と TC-AC3-01 は同じ isAbsolute ガードを検証するが観点が異なるため別テストケースとする", "AC-3 は二重解決防止の内部メカニズム検証で AC-5 はリグレッション観点の外部仕様検証"
+
+artifacts[1]{path,role,summary}:
+  "docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/test-design.toon", spec, "テスト設計: 7テストケースと AC-TC トレーサビリティ"
+
+next:
+  phase: implementation
+  criticalDecisions: shell関数テストは bash source パターン。getDocsPath テストは環境変数の設定・復元で副作用隔離。vitest run で統合検証。
+  readFiles: workflow-harness/hooks/pre-tool-guard.sh workflow-harness/mcp-server/src/state/manager-read.ts workflow-harness/mcp-server/src/utils/project-root.ts
+  warnings: getDocsPath テストで getProjectRoot のモック化が必要な場合あり。CI環境では git コマンドが利用できない可能性があるため process.cwd() フォールバックを前提とする。

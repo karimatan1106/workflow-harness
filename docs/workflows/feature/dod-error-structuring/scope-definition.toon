@@ -1,0 +1,58 @@
+phase: scope_definition
+taskName: dod-error-structuring
+intent: G-06: DoDエラーメッセージをERROR→WHY→FIX→EXAMPLE形式に構造化する
+status: complete
+
+summary: DoDエラーメッセージ生成システムの全体調査を完了した。現在のエラーメッセージは平文の文字列連結で生成されており、構造化されていない。エラー発生源は3層(L1-L2チェック、L3品質チェック、L4コンテンツチェック)に分散し、各チェック関数がDoDCheckResult.evidenceフィールドに自由形式テキストを返す。retry.tsのerrorToImprovement関数が正規表現パターンマッチでエラーを分類し改善指示を生成するが、ERROR/WHY/FIX/EXAMPLE構造は存在しない。構造化によりサブエージェントの1回目成功率向上とリトライ削減が期待できる。
+
+currentState: DoDエラーメッセージは各チェック関数のevidenceフィールドに平文で格納される。formatDoDResult関数が全チェック結果を単純なリスト形式に整形する。buildRetryPrompt関数がerrorToImprovementを呼び出して改善指示を生成するが、エラーの原因説明や具体例は含まれない。一部のチェック関数(dod-l4-requirements.ts等)は修正方法をevidenceに直接埋め込んでいるが形式は統一されていない。
+
+errorSourceFiles[12]{path,role,errorCount}:
+  src/gates/dod.ts, DoDチェックオーケストレータ兼formatDoDResult, 1
+  src/gates/dod-types.ts, DoDCheckResult/DoDResult型定義, 0
+  src/gates/dod-helpers.ts, 禁止パターン/重複行/必須セクション検出, 3
+  src/gates/dod-l1-l2.ts, L1ファイル存在/L2終了コード/TDD Red証拠, 4
+  src/gates/dod-l3.ts, L3品質/RTM/AC/ベースライン/成果物鮮度/不変条件, 6
+  src/gates/dod-l4-content.ts, L4禁止語/プレースホルダー/重複/TOON必須キー, 4
+  src/gates/dod-l4-requirements.ts, L4 AC形式/NOT_IN_SCOPE/OPEN_QUESTIONS/意図整合性, 4
+  src/gates/dod-l4-delta.ts, L4 decisions[]配列検証, 2
+  src/gates/dod-l4-ia.ts, L4 IA-3/IA-4/IA-5/TC網羅率, 4
+  src/gates/dod-l4-art.ts, L4成果物ドリフト検出, 1
+  src/gates/dod-l4-commit.ts, L4 package-lock同期, 1
+  src/gates/dod-l4-refs.ts, L4デッドリファレンス検出, 1
+
+retrySystem[4]{path,role,description}:
+  src/tools/retry.ts, リトライプロンプト構築, classifyError(4分類)とerrorToImprovement(15パターン)でリトライプロンプトを生成
+  src/tools/reflector.ts, 学習システム, extractErrorPatternで失敗パターンを抽出しstashFailure/promoteStashedFailureで教訓化
+  src/tools/handlers/lifecycle.ts, harness_nextハンドラ, DoD失敗時にbuildRetryPromptを呼びretryPrompt/suggestModelEscalation/suggestedModelを返却
+  src/tools/handlers/scope-nav.ts, harness_complete_subハンドラ, 並列サブフェーズのDoD失敗時に同様のリトライ処理を実行
+
+currentErrorFormat: DoDCheckResult型はlevel/check/passed/evidenceの4フィールド。evidenceは自由形式文字列で最大500文字程度。formatDoDResultは「[L1] NG output_file_exists: File missing: path」形式のリスト。buildRetryPromptは失敗理由をコードブロックに入れ改善要求を番号付きリストで出力。一部のevidenceには「修正方法:」接尾辞が付くが全チェックに統一されていない。
+
+identifiedProblems[5]{id,problem,impact}:
+  IP-1, evidenceフィールドが自由形式テキストで構造化されていない, サブエージェントがエラー原因と修正方法を正確に把握できずリトライ失敗率が高い
+  IP-2, errorToImprovementが正規表現パターンマッチに依存し新規チェック追加時に漏れやすい, 新チェック追加時にretry.tsの更新を忘れると改善指示が汎用フォールバックになる
+  IP-3, 一部チェック関数のみevidenceに修正方法を埋め込んでおり形式が不統一, 同じDoD失敗でも修正指示の有無や詳細度がチェックごとに異なる
+  IP-4, エラーの原因説明(WHY)が欠如している, 何が期待値で何が実測値かが不明でサブエージェントが根本原因を誤認する
+  IP-5, 修正の具体例(EXAMPLE)が含まれていない, サブエージェントが正しいフォーマットを推測する必要がありTOON構文エラーを繰り返す
+
+proposedApproach: DoDCheckResult型にstructuredError省略可能フィールドを追加しERROR/WHY/FIX/EXAMPLEの4要素を構造化する。各チェック関数でstructuredErrorを生成する。formatDoDResultとbuildRetryPromptをstructuredError対応に更新する。errorToImprovement関数はstructuredError.fixが存在する場合はそれを優先使用し正規表現フォールバックを保持する。後方互換性のためevidenceフィールドは維持しstructuredErrorは追加フィールドとする。
+
+decisions[7]{id,statement,rationale}:
+  SD-1, DoDCheckResult型にstructuredErrorフィールドを追加し既存evidenceフィールドは後方互換のため保持する, 既存テスト31ファイルとの互換性を維持しつつ段階的に構造化エラーへ移行するため
+  SD-2, structuredErrorはerror/why/fix/exampleの4キーを持つオブジェクト型とする, LLMが各要素を明確に区別でき修正アクションを正確に実行できるため
+  SD-3, 全31チェック関数のうちpassed:false分岐にstructuredErrorを追加する, 部分的な対応では効果が限定的で全チェックの統一が必要なため
+  SD-4, errorToImprovement関数をstructuredError.fixが存在する場合はそれを優先使用するよう変更する, 正規表現マッチの脆弱性を解消しチェック関数側が修正方法を直接指定できるようにするため
+  SD-5, formatDoDResultをERROR→WHY→FIX→EXAMPLE形式で出力するよう更新する, Orchestratorとサブエージェントが構造化されたエラー情報を受け取れるようにするため
+  SD-6, exampleフィールドにはTOON構文の正しい記述例を含める, TOONフォーマットエラーが最も頻出するリトライ原因でありサブエージェントに正解を直接提示することで1回目成功率を向上させるため
+  SD-7, 影響範囲はsrc/gates/配下の9ファイルとsrc/tools/retry.tsとsrc/gates/dod-types.tsの計11ファイルに限定する, テストファイルは型変更に追従するが実装変更は本体ファイルのみで完結するため
+
+artifacts[3]{name,path,description}:
+  scope-definition.toon, docs/workflows/dod-error-structuring/scope-definition.toon, 本スコープ定義成果物
+  dod-types.ts, workflow-harness/mcp-server/src/gates/dod-types.ts, StructuredError型追加対象
+  retry.ts, workflow-harness/mcp-server/src/tools/retry.ts, structuredError優先使用への改修対象
+
+next:
+  criticalDecisions: SD-1(型追加方針)とSD-4(errorToImprovement改修方針)がresearch/impact_analysisで検証すべき設計判断
+  readFiles: src/gates/dod-types.ts, src/gates/dod.ts, src/tools/retry.ts, src/tools/handlers/lifecycle.ts
+  warnings: 既存テスト31ファイルがDoDCheckResult型に依存しており型変更時にテスト修正が必要になる可能性がある

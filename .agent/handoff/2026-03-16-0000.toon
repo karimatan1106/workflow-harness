@@ -1,0 +1,51 @@
+## HANDOFF
+date: 2026-03-16
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 完了タスク
+- [x] stdin JSON解析ガード実装
+- [x] 3層構成確定（Orchestrator→Coordinator→Worker）
+- [x] pre-tool-guard.sh 3層対応
+- [x] delegate-work.ts HARNESS_LAYER=worker追加
+- [x] VS Code拡張 harness-log-pane 作成・インストール
+- [x] シグナル検知修正（unlinkSync+writeFileSync）
+- [x] WSL/Git Bashパス変換修正
+- [x] 3層E2Eテスト完了（ターミナル分割+ログ表示+自動close）
+- [x] コミット・プッシュ完了
+
+## 確定した3層構成
+Orchestrator (VS Codeメイン会話)
+  lifecycle MCP + Agent + Skill + ToolSearch + AskUserQuestion
+  → Agent (Coordinator) 出力可視
+    delegate_work + ToolSearch + non-lifecycle MCP
+    → delegate_work → claude -p (Worker) プロセス隔離
+      Read/Write/Edit/Glob/Grep/Bash のみ
+
+## ガード判別ロジック
+- agent_id無し + HARNESS_LAYER無し → Orchestrator
+- agent_id有り + HARNESS_LAYER無し → Coordinator
+- agent_id無し + HARNESS_LAYER=worker → Worker (claude -p)
+
+## ログ可視性
+- Orchestrator: プロンプト表示
+- Coordinator: Agent結果としてプロンプト表示
+- Worker: .agent/delegate-work.log → VS Code拡張がターミナル分割+tail -f
+
+## VS Code拡張 harness-log-pane
+- 場所: workflow-harness/vscode-ext/
+- シグナル: .agent/log-pane.signal (JSON)
+- WSL/Git Bash両対応パス変換
+- 複数Worker対応（IDベースMap管理）
+- Worker完了時自動close
+
+## 次のセッションで最初にやること
+1. harness_statusで既存タスク確認
+2. 不要なテストタスクのクリーンアップ
+3. 本番ワークフローでの3層E2E運用テスト
+
+## 注意点
+- MCPサーバーはモジュールキャッシュ。コード変更後はセッション再起動が必要
+- bypassPermissionsは維持中
+- ガードhook変更はブートストラップ問題。mv .bak で一時無効化

@@ -1,0 +1,54 @@
+%% State Machine: docs-workflows-refactoring-v2
+%% taskId: 5127ee0c-0fad-4088-a2bc-e7c590595738
+%%
+%% decisions:
+%%   D1: Use rmdir (not rm -rf) for empty dir deletion - prevents accidental data loss
+%%   D2: Delete inner-most nested dirs before outer dirs - avoids "directory not empty" errors
+%%   D3: Baseline file count captured before any mutation - enables AC-6 zero-loss verification
+%%   D4: Separate empty-root-dir and empty-category-dir phases - isolates failure domains
+%%   D5: CreateTargetDirs before MoveFiles - ensures destination exists, prevents move failures
+%%   D6: MoveDirs uses git mv for uncategorized dirs - preserves git history
+%%   D7: Verify phase compares file count against baseline - deterministic L1 gate
+
+stateDiagram-v2
+    [*] --> Baseline
+
+    Baseline: Capture file count (expect 1902)
+    Baseline --> DeleteEmptyRootDirs: count == 1902
+
+    DeleteEmptyRootDirs: rmdir 9 empty duplicate root dirs
+    DeleteEmptyRootDirs --> DeleteEmptyCategoryDirs: 9 dirs removed, 0 files lost
+
+    DeleteEmptyCategoryDirs: rmdir 13 empty category-side dirs
+    DeleteEmptyCategoryDirs --> MoveDirs: 13 dirs removed, inner-first order
+
+    MoveDirs: git mv 7 uncategorized dirs to categories
+    MoveDirs --> CreateTargetDirs: 7 dirs relocated under feature/investigation/fix
+
+    CreateTargetDirs: mkdir target dirs for loose .md files
+    CreateTargetDirs --> MoveFiles: destination dirs exist
+
+    MoveFiles: git mv 19 loose .md files into category dirs
+    MoveFiles --> Verify: 19 files moved
+
+    Verify: Recount files, validate structure
+    Verify --> [*]: file count == 1902 AND no loose files remain
+
+    Baseline --> FailBaseline: count != 1902
+    DeleteEmptyRootDirs --> FailRmdir: dir not empty (unexpected files)
+    DeleteEmptyCategoryDirs --> FailNested: ordering error or non-empty dir
+    MoveDirs --> FailMove: target category missing
+    MoveFiles --> FailMove: destination dir missing
+    Verify --> FailVerify: file count mismatch or loose files remain
+
+    FailBaseline: Abort - baseline assumption violated
+    FailRmdir: Abort - investigate unexpected contents
+    FailNested: Abort - re-check nesting order
+    FailMove: Rollback via git checkout
+    FailVerify: Rollback via git checkout
+
+    FailBaseline --> [*]
+    FailRmdir --> [*]
+    FailNested --> [*]
+    FailMove --> [*]
+    FailVerify --> [*]

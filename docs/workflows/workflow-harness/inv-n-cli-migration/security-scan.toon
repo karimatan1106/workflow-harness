@@ -1,0 +1,53 @@
+phase: security_scan
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+summary: CLI移行(cli.ts + handler-shared.ts)のOWASP Top 10観点セキュリティスキャン。コマンドインジェクション・認証バイパス・入力バリデーションすべて適切に防御済み。npm audit高リスクはdev依存のみでランタイム影響なし。
+
+scanScope:
+  files: src/cli.ts, src/tools/handler-shared.ts
+  methodology: OWASP Top 10 manual review + npm audit
+  toolVersions: npm 10.x audit, Node.js parseArgs
+
+vulnerabilities[7]{id,category,severity,finding,mitigation}:
+  SS-V1,A03:Injection,low,parseArgsのstrict:trueが未知フラグを拒否しコマンドインジェクションを防御,対策済み-追加不要
+  SS-V2,A07:AuthBypass,low,validateSessionが両ハンドラで状態変更前に呼ばれ認証バイパス不可,対策済み-追加不要
+  SS-V3,A03:InputValidation,low,status値がホワイトリスト検証済み(open/held/violated),対策済み-追加不要
+  SS-V4,A03:TypeCoercion,info,proofTierのas ProofTierキャストは保存のみで実行パスなし,リスクなし-型制約はTS層で担保
+  SS-V5,A06:DepVuln-hono,high,hono<=4.12.3にCookie注入+SSE注入+任意ファイルアクセス(GHSA-5pq2/p6xx/q5qw),npm audit fixで修正可-CLI実行パスに影響なし
+  SS-V6,A06:DepVuln-esbuild,moderate,esbuild<=0.24.2に開発サーバーリクエスト読取(GHSA-67mh),devDependency-本番影響なし
+  SS-V7,A06:DepVuln-rate-limit,high,express-rate-limit 8.2.0-8.2.1にIPv4-mapped IPv6バイパス(GHSA-46wh),npm audit fixで修正可-CLI実行パスに影響なし
+
+owaspCoverage[10]{id,category,result}:
+  OW-1,A01:BrokenAccessControl,pass-validateSessionが全コマンドで認証強制
+  OW-2,A02:CryptoFailures,n/a-暗号機能未使用
+  OW-3,A03:Injection,pass-parseArgs strict:true+ホワイトリスト検証
+  OW-4,A04:InsecureDesign,pass-最小権限でStateManager経由のみ
+  OW-5,A05:SecurityMisconfiguration,pass-strict:trueで未知オプション拒否
+  OW-6,A06:VulnerableComponents,warn-dev依存に7件(ランタイム影響なし)
+  OW-7,A07:AuthFailures,pass-sessionToken必須チェック済み
+  OW-8,A08:DataIntegrity,pass-入力はparseArgsでパース後型チェック
+  OW-9,A09:Logging,info-エラーはstderrにJSON出力
+  OW-10,A10:SSRF,n/a-外部リクエスト未実行
+
+npmAuditSummary:
+  total: 7
+  high: 3
+  moderate: 4
+  low: 0
+  runtimeImpact: none-全件dev/infra依存
+  recommendation: npm audit fixを推奨するがCLI機能にブロッキング影響なし
+
+decisions[6]{id,statement,rationale}:
+  SS-1,parseArgs strict:trueによるコマンドインジェクション防御は十分,Node.js標準APIが未知フラグをERR_PARSE_ARGS_UNKNOWN_OPTIONで拒否
+  SS-2,validateSessionが両ハンドラの状態変更前に配置され認証バイパスなし,handleAddInvariantとhandleUpdateInvariantStatusの両方でsm.loadTask直後にvalidateSession呼び出し
+  SS-3,statusホワイトリスト検証がインジェクションとデータ汚染を防御,includes配列で3値のみ許可しそれ以外はエラー返却
+  SS-4,npm audit高リスク脆弱性はCLIランタイムパスに影響しない,hono/esbuild/express-rate-limitはHTTPサーバー/ビルドツール用でCLI実行に無関係
+  SS-5,proofTierのas ProofTierキャストはセキュリティリスクなし,値は保存のみで条件分岐や実行パスに使用されない
+  SS-6,タイミングセーフ比較は不要,sessionTokenはローカルプロセス内のみで使用されネットワーク越しのタイミング攻撃は不可能
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/security-scan.toon,report,OWASP Top 10観点セキュリティスキャン結果
+
+next:
+  criticalDecisions[2]: SS-1, SS-2
+  readFiles[2]: src/cli.ts, src/tools/handler-shared.ts
+  warnings[1]: npm audit高リスク3件はdev依存だがnpm audit fixでの早期修正を推奨

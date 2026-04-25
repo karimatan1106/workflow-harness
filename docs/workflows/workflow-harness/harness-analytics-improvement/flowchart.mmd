@@ -1,0 +1,94 @@
+flowchart TD
+    A["buildAnalytics()開始"] --> B["readErrorToon(docsDir)"]
+    B -->|phase-errors.toonから<br/>エラーデータ読み込み| C["entries: DoDFailureEntry[]"]
+
+    C --> D{"entries配列が<br/>空か？"}
+    D -->|Yes| E["デフォルト値で初期化"]
+    D -->|No| F["buildErrorAnalysis(entries)実行"]
+
+    E --> T["結果オブジェクト構築"]
+
+    F --> G["failures配列を構築"]
+    G --> G1["count降順ソート実行"]
+    G1 --> G2["同count時はL1チェック後方配置"]
+    G2 --> H["topFailure決定"]
+
+    H --> I["buildErrorHistory構築"]
+    I --> I1["全entry全checksを展開"]
+    I1 --> I2["ErrorHistoryEntry配列生成"]
+
+    I2 --> J["findBottlenecks(task, errorAnalysis)実行"]
+
+    J --> K["timings情報抽出"]
+    K --> L{"timings<br/>存在か？"}
+    L -->|No| M["slowestPhase検出スキップ"]
+    L -->|Yes| N["phase_timings.secondsから<br/>最遅フェーズ特定"]
+
+    M --> O["detectOutliers(timings)呼び出し"]
+    N --> O
+
+    O --> P{"データ点<br/>4個未満か？"}
+    P -->|Yes| Q["空配列返却<br/>IQR計算スキップ"]
+    P -->|No| R["IQR計算実行"]
+
+    R --> R1["Q1/Q3/IQR算出"]
+    R1 --> R2["上限 = Q3 + 1.5 * IQR"]
+    R2 --> R3["外れ値フラグ付与<br/>isOutlier判定"]
+
+    Q --> S["BottleneckResult構築"]
+    R3 --> S1["outlierPhases配列セット"]
+    S1 --> S
+
+    S --> T1["classifyErrors(errorHistory)呼び出し"]
+
+    T1 --> U["チェック名ごとの<br/>出現フェーズ集計"]
+
+    U --> V{"同一checkが<br/>3回以上か？"}
+    V -->|Yes| W["recurringに追加"]
+    V -->|No| X["check別処理継続"]
+
+    W --> Y["フェーズ番号抽出<br/>パターン: d+$"]
+    X --> Y
+
+    Y --> Z{"連続フェーズ<br/>存在か？"}
+    Z -->|Yes| Z1["cascading配列に追加"]
+    Z -->|No| Z2["one-off候補"]
+
+    Z1 --> AA["categorized集合更新"]
+    Z2 --> AA
+
+    AA --> AB["one-off: 未分類チェック"]
+    AB --> AC["ErrorClassification返却"]
+
+    AC --> AD["generateAdvice()呼び出し"]
+
+    AD --> AE["ADVICE_RULES適用"]
+    AE --> AF["tdd_red_evidence検出"]
+    AF --> AG["閾値ルール評価<br/>同一チェック5回以上"]
+
+    AG --> AH{"外れ値フェーズ<br/>存在か？"}
+    AH -->|Yes| AI["セッション中断可能性アドバイス生成"]
+    AH -->|No| AJ["advice完成"]
+
+    AI --> AJ
+
+    AJ --> AK["writeAnalyticsToon(result)実行"]
+
+    AK --> AL["AnalyticsResult構築"]
+    AL --> AM["outlierPhases出力"]
+    AM --> AN["errorClassification出力"]
+    AN --> AO["toon形式で書き込み"]
+
+    AO --> AP["buildAnalytics()終了"]
+    T --> AP
+
+    style A fill:#e1f5ff
+    style AP fill:#c8e6c9
+    style D fill:#fff9c4
+    style L fill:#fff9c4
+    style P fill:#fff9c4
+    style V fill:#fff9c4
+    style Z fill:#fff9c4
+    style AH fill:#fff9c4
+    style Q fill:#ffccbc
+    style M fill:#ffccbc

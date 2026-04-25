@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> GitignoreUpdate: 開始
+    GitignoreUpdate --> ParentUntrack: .gitignore 3行追加完了
+    ParentUntrack --> SubmoduleUntrackDist: 親リポ git rm --cached 完了
+    SubmoduleUntrackDist --> SubmoduleUntrackState: dist/ untrack完了
+    SubmoduleUntrackState --> SubmoduleCommit: state/ untrack完了
+    SubmoduleCommit --> ParentCommit: サブモジュールコミット完了
+    ParentCommit --> Verification: 親リポコミット完了
+    Verification --> [*]: 全AC検証合格

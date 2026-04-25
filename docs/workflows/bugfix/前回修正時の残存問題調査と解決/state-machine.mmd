@@ -1,0 +1,72 @@
+%% ステートマシン図: 誤配置テストファイル削除プロセス
+%% 目的: RCA-1タスクで誤って作成された verify-sync.test.ts ファイルを削除し、
+%% ディレクトリ構造を正規の状態に戻す。本図は削除前確認、削除実施、削除後確認、
+%% テスト実行というフロー全体を表現する。
+%% 主要な決定事項: 削除対象は workflow-plugin/mcp-server/src/verify-sync.test.ts のみ。
+%% git未追跡ファイルのため rm コマンドで対応。test_impl実装後のステップ1〜3を状態遷移で表現。
+%% 次フェーズで必要な情報: 削除前後のディレクトリ確認コマンド、git status確認、
+%% テストスイート実行コマンド（vitest）、期待される結果（テスト897件前後、失敗ゼロ）、
+%% テスト実行前のベースライン状態の記録が回帰確認に必須となることを認識すること。
+
+stateDiagram-v2
+    Start --> PreCheck: 作業開始
+
+    PreCheck --> ConfirmTarget: ls実行で削除対象の存在確認
+    ConfirmTarget --> Deleting: ファイル位置確認完了
+
+    Deleting --> PostDeleteCheck: rm "workflow-plugin/mcp-server/src/verify-sync.test.ts"
+    PostDeleteCheck --> ValidateFileRemoval: ls確認で削除完了を検証
+
+    ValidateFileRemoval --> GitStatusCheck: ファイル削除が完了
+    GitStatusCheck --> VerifyGitStatus: git -C workflow-plugin status --short実行
+
+    VerifyGitStatus --> TestPrep: git状態がクリーン確認
+    TestPrep --> TestExecution: cd workflow-plugin/mcp-server && npm test実行開始
+
+    TestExecution --> EvaluateResults: テストスイート実行完了
+    EvaluateResults --> SuccessPath: 失敗件数ゼロ、テスト897件前後のテスト数を記録
+
+    EvaluateResults --> ErrorPath: テスト失敗発生時のハンドリング
+    ErrorPath --> AnalyzeFailure: 失敗原因を詳細に確認
+    AnalyzeFailure --> RetryTest: 誤配置ファイル削除の影響か環境問題か判別
+    RetryTest --> TestExecution: リトライ実行
+
+    SuccessPath --> End: 全ステップ完了、品質基準達成
+
+    note right of PreCheck
+        Step 1の事前確認フェーズ。
+        削除対象の確実な特定が目的。
+        正規テストファイルの位置確認も同時実施。
+    end note
+
+    note right of Deleting
+        rm コマンドで削除実行。
+        git rm ではなく通常の rm を使用。
+        git未追跡ファイルのため通常削除が適切。
+    end note
+
+    note right of GitStatusCheck
+        Step 2の git状態確認フェーズ。
+        誤配置ファイルはgit未追跡であるため、
+        削除後の git status がクリーンであることを確認。
+    end note
+
+    note right of TestExecution
+        Step 3のテスト実行フェーズ。
+        削除によるリグレッション確認が目的。
+        ベースライン852件から897件への増分は
+        別タスクで追加されたテストカバレッジ。
+    end note
+
+    note right of EvaluateResults
+        テスト総数の変動記録が必須。
+        失敗件数ゼロが合否判断基準。
+        誤配置ファイルがテストランナーに拾われていた
+        場合、削除後にテスト数が減少する可能性を考慮。
+    end note
+
+    note right of ErrorPath
+        テスト失敗は削除作業とは独立した
+        環境問題の可能性。ただしテスト実行環境の
+        安定性を重視し、詳細確認後にリトライ判断。
+    end note

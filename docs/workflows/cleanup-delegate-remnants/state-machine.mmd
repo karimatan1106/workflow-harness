@@ -1,0 +1,44 @@
+stateDiagram-v2
+    %% cleanup-delegate-remnants state machine
+    %% taskId: 7005fe0b-7a44-4496-9bd1-4bd7218944c2
+
+    [*] --> EditToolGate
+    EditToolGate --> EditStreamTracker
+    EditStreamTracker --> DeleteStaleFiles
+    DeleteStaleFiles --> Rebuild
+    Rebuild --> Verify
+    Verify --> Done
+    Done --> [*]
+
+    EditToolGate: Edit tool-gate.js
+    EditToolGate: HARNESS_LIFECYCLE allowlist修正
+
+    EditStreamTracker: Edit stream-progress-tracker.ts
+    EditStreamTracker: JSDoc修正
+
+    DeleteStaleFiles: Delete dist/ stale files
+    DeleteStaleFiles: delegate関連の古いビルド成果物を除去
+
+    Rebuild: npm run build
+    Rebuild: クリーンビルドで整合性確認
+
+    Verify: grep残存参照 + vitest
+    Verify: delegate参照が完全に除去されたことを検証
+
+    Done: 全ステップ完了
+
+    %% decisions
+    %% D-1: tool-gate.js の allowlist から delegate 関連エントリを除去する（不要な許可を残さない）
+    %% D-2: stream-progress-tracker.ts の JSDoc から delegate_work 参照を除去する（実在しないAPIへの言及を排除）
+    %% D-3: dist/ 内の stale files は個別削除ではなくリビルドで再生成する（手動削除漏れリスク回避）
+    %% D-4: Verify ステップで grep と vitest を併用する（静的検索とランタイム検証の両面で残存参照を検出）
+    %% D-5: 状態遷移は厳密に直列とする（並列実行すると編集競合やビルド不整合が発生するため）
+
+    state Verify {
+        [*] --> GrepCheck
+        GrepCheck --> VitestRun
+        VitestRun --> [*]
+
+        GrepCheck: grep残存delegate参照
+        VitestRun: vitest実行
+    }

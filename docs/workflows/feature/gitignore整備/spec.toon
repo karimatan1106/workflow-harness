@@ -1,0 +1,32 @@
+phase: planning
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T08:30:00+09:00"
+decisions[7]{id,statement,rationale}:
+  PL-001,gitignore追記を git rm --cached より先に実行する,gitignoreにパターンが存在しない状態でgit rm --cachedを行うと削除後の再追加リスクがある
+  PL-002,親リポジトリの git rm --cached は単一ファイル指定で実行する,.claude-phase-guard-log.jsonは1ファイルのみのため-rオプションは不要
+  PL-003,サブモジュール内の git rm -r --cached はディレクトリ単位で2回に分けて実行する,mcp-server/dist/とmcp-server/.claude/state/は異なるディレクトリであり個別実行により各操作の結果を確認できる
+  PL-004,サブモジュールの .gitignore には変更を加えない,researchフェーズR-005で確認済みのとおりdist/とmcp-server/.claude/state/は既に記載済み
+  PL-005,コミットは親リポジトリとサブモジュールで別々に行う,サブモジュール内の変更はサブモジュール内でコミットし親リポジトリではサブモジュール参照の更新とgitignore変更を一括コミットする
+  PL-006,Git履歴からの秘密鍵削除は本タスクのスコープ外とする,BFG等による履歴書き換えは破壊的操作であり別タスクとして慎重に計画すべき
+  PL-007,実装完了後に git ls-files で untrack 確認を行う,git statusだけでは追跡状態の変化を見落とす可能性がある
+implementationSteps[6]{order,target,action,detail}:
+  1,.gitignore(親リポジトリ),3行追加,".claude-phase-guard-log.json と .claude/settings.local.json と .claude/generated-files.json を末尾に追記"
+  2,親リポジトリ,git rm --cached,".claude-phase-guard-log.json を追跡対象から除去"
+  3,workflow-harness/,git rm -r --cached mcp-server/dist/,"サブモジュール内でビルド成果物192ファイルを追跡対象から除去"
+  4,workflow-harness/,git rm -r --cached mcp-server/.claude/state/,"サブモジュール内で3ファイルを追跡対象から除去"
+  5,workflow-harness/,git add + git commit,"サブモジュール内の変更をコミット"
+  6,親リポジトリ,git add + git commit,".gitignore変更とサブモジュール参照更新を一括コミット"
+verificationSteps[4]{ac,command,expected}:
+  AC-1,"grep -c phase-guard .gitignore と grep -c settings.local .gitignore と grep -c generated-files .gitignore で各1件",各コマンドが1を返すこと
+  AC-2,"cd workflow-harness && git ls-files mcp-server/dist/ mcp-server/.claude/state/ | wc -l",0
+  AC-3,"git ls-files .claude-phase-guard-log.json | wc -l",0
+  AC-4,git status,対象ファイルがstagingに反映されていること
+artifacts[5]{path,role,summary}:
+  docs/workflows/gitignore整備/spec.toon,spec,実装仕様チェックポイント
+  docs/workflows/gitignore整備/spec.md,spec,変更仕様の詳細記述
+  docs/workflows/gitignore整備/threat-model.md,report,脅威分析
+  docs/workflows/gitignore整備/state-machine.mmd,diagram,状態遷移図
+  docs/workflows/gitignore整備/flowchart.mmd,diagram,実装フローチャート
+next:
+  readFiles[3]: .gitignore,workflow-harness/.gitignore,docs/workflows/gitignore整備/requirements.toon
+  warnings[1]: サブモジュール内でのgit rm --cached実行時はサブモジュールディレクトリにcdしてから実行すること

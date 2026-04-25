@@ -1,0 +1,36 @@
+entries[1]:
+  - timestamp: "2026-04-25T08:21:27.957Z"
+    phase: scope_definition
+    retryCount: 1
+    errors[2]: "[L1] Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\test-standard-mode\\hearing.md","[L4] Forbidden patterns found: ダミー"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,"File exists: C:\\ツール\\Workflow\\docs\\workflows\\test-standard-mode\\scope-definition.md",L1,null,null
+      input_files_exist,false,"Missing input files: C:\\ツール\\Workflow\\docs\\workflows\\test-standard-mode\\hearing.md",L1,前フェーズの成果物が不足しています。前フェーズを完了させてから再実行してください。,null
+      spec_paths_exist,true,"@spec path check not required for phase: scope_definition",L1,null,null
+      exit_code_zero,true,No L2 proof required for this phase,L2,null,null
+      artifact_quality,true,Markdown section check passed,L3,null,null
+      toon_safety,true,TOON pre-parse safety OK,L4,null,null
+      content_validation,false,"Forbidden patterns found: ダミー",L4,指摘された禁止語を削除し、具体的な実例に置き換えてください。,null
+      rtm_completeness,true,"RTM completeness check not required for phase: scope_definition",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: scope_definition",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: scope_definition",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: scope_definition",L3,null,null
+      ac_format,true,"ac_format check not required for phase: scope_definition",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: scope_definition",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: scope_definition",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: scope_definition",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: scope_definition",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format OK: 5 decision items in Markdown artifact",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: scope_definition",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: scope_definition",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: scope_definition",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: scope_definition",L3,null,null
+      artifact_drift,true,"Artifact drift check not applicable for phase: scope_definition",L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,true,"TDD Red evidence check not required for phase: scope_definition",L2,null,null
+      test_results_exist,true,"Test results check not required for phase: scope_definition",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: scope_definition",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: scope_definition",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: scope_definition",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null

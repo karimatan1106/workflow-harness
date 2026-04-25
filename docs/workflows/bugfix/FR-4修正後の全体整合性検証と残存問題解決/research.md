@@ -1,0 +1,122 @@
+# researchフェーズ - FR-4修正後の全体整合性検証と残存問題解決
+
+## サマリー
+
+commit 5b99d04においてci_verificationのBashコマンド許可カテゴリがFR-4で正しく修正されたことを確認しました。
+CLAUDE.md全体の169-183行のフェーズ別Bashコマンド許可カテゴリテーブルでは全25フェーズがdefinitions.tsのPHASE_GUIDESと完全に一致しており、許可カテゴリテーブルの整合性は適切に維持されています。
+重大な欠落問題が新たに発見されました。
+141-163行のフェーズ別subagent設定テーブルには21フェーズのみが記載されているのに対し、definitions.tsには25フェーズが定義されています。
+design_review、regression_test、ci_verification、deployの4フェーズがこのテーブルから脱落しており、これは全フェーズの16パーセントに相当します。
+このテーブル間の不統一は、Orchestratorが手動でCLAUDE.mdを参照する場合に誤ったデフォルト設定を適用する潜在的なリスクを生じさせます。
+さらに、workflow-plugin/CLAUDE.mdにも同一の欠落問題が存在することが確認され、プロジェクト全体で一貫性が損なわれた状況です。
+
+- 目的: FR-4修正後の全体整合性を検証し、残存する欠落問題を特定する
+- 主要な決定事項: BashコマンドカテゴリテーブルはOK、subagent設定テーブルに4フェーズの欠落あり
+- 次フェーズで必要な情報: 欠落4フェーズ（design_review、regression_test、ci_verification、deploy）の追記が必要
+
+## 調査結果
+
+### 1. FR-4修正の適用確認と正確性検証
+
+commit 5b99d04ではCLAUDE.md 181行目のci_verificationエントリが「readonly, testing」から「readonly」に修正されました。workflow-plugin/mcp-server/src/phases/definitions.tsのci_verificationを確認すると、allowedBashCategoriesがreadonlyのみとして定義されており、修正内容が完全に一致しています。この修正によってci_verificationフェーズでtestingカテゴリのBashコマンド（npm testなど）がブロックされるようになり、検証ツール実行という本来の責務に正確に限定されました。
+
+### 2. Bashコマンド許可カテゴリテーブルの完全性照合
+
+CLAUDE.md 169-183行のテーブルに記載されているフェーズ別Bashコマンド許可カテゴリを行ごとにdefinitions.tsと照合しました。調査対象フェーズは以下の通りです。
+
+research、requirements、threat_modeling、planningの各フェーズでは許可カテゴリがreadonlyのみと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+state_machine、flowchart、ui_designの各フェーズでは許可カテゴリがreadonlyのみと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+design_review、test_designの各フェーズでは許可カテゴリがreadonlyのみと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+code_review、manual_test、docs_updateの各フェーズでは許可カテゴリがreadonlyのみと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+test_implフェーズでは許可カテゴリがreadonly、testingを含むと定義されており、CLAUDE.md 175行の記載と完全に一致しています。FR-3で分割された後、このカテゴリは正確に反映されています。
+
+implementation、refactoringの各フェーズでは許可カテゴリがreadonly、testing、implementationを含むと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+build_checkフェーズでは許可カテゴリがreadonly、testing、implementationを含むと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+testing、regression_testの各フェーズでは許可カテゴリがreadonly、testingを含むと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+security_scan、performance_test、e2e_testの各フェーズでは許可カテゴリがreadonly、testingを含むと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+commit、pushの各フェーズでは許可カテゴリがreadonly、gitを含むと定義されており、ここでgitカテゴリはbash-whitelist.jsのgetWhitelistForPhase関数により自動追加される設計となっています。CLAUDE.mdのテーブル記載にも同じく自動追加後の値が記載されており、完全に一致しています。
+
+deployフェーズでは許可カテゴリがreadonlyのみと定義されており、CLAUDE.mdのテーブル記載と完全に一致しています。
+
+照合結果として全25フェーズについてBashコマンド許可カテゴリテーブルのすべてが完全に一致することが確認されました。Bashコマンド許可カテゴリテーブルの整合性は現在適切に維持されています。
+
+### 3. subagent設定テーブルの欠落問題の詳細発見
+
+CLAUDE.md 141-163行のフェーズ別subagent設定テーブルをdefinitions.tsのPHASE_GUIDESと照合しました。CLAUDE.mdのテーブルには21フェーズのエントリが記載されているのに対し、definitions.tsには25フェーズ分の完全な設定が存在します。
+
+欠落フェーズ1はdesign_reviewです。CLAUDE.mdのテーブルではui_design（149行）の直後がtest_design（150行）となっており、その間にdesign_reviewが記載されていません。definitions.tsではdesign_reviewがgeneral-purposeサブエージェントタイプでsonnetモデルとして定義されています。
+
+欠落フェーズ2はregression_testです。CLAUDE.mdのテーブルではtesting（156行）の直後がmanual_test（157行）となっており、その間にregression_testが記載されていません。definitions.tsではregression_testがgeneral-purposeサブエージェントタイプでhaikuモデルとして定義されています。
+
+欠落フェーズ3はci_verificationです。CLAUDE.mdのテーブルはpush（163行）で終了しており、ci_verificationの行が存在しません。definitions.tsではci_verificationがgeneral-purposeサブエージェントタイプでhaikuモデルとして定義されています。
+
+欠落フェーズ4はdeployです。ci_verificationと同様にCLAUDE.mdのテーブルに含まれていません。definitions.tsではdeployがgeneral-purposeサブエージェントタイプでhaikuモデルとして定義されています。
+
+これら4フェーズは全フェーズ25個中の16パーセントを占める重大な欠落です。
+
+### 4. 複数ファイルでの欠落問題の確認
+
+workflow-plugin/CLAUDE.mdのフェーズ別subagent設定テーブルも同一の問題を持っています。このファイルのテーブル構成はルートCLAUDE.mdと同じ21フェーズのみであり、design_review、regression_test、ci_verification、deployの4フェーズが同様に欠落しています。
+
+テーブル間の不統一は2つのドキュメントファイルに共通して存在し、同じ根本原因から生じていることが確認されました。
+
+### 5. bash-whitelist.jsのカテゴリ検証
+
+bash-whitelist.jsに定義されているBashコマンドカテゴリはreadonlyカテゴリ、testingカテゴリ、implementationカテゴリ、gitカテゴリの4つです。これらすべてがCLAUDE.md 169-183行のフェーズ別Bashコマンド許可カテゴリテーブルで参照されており、整合性が取れています。
+
+gitカテゴリはcommit、pushフェーズにおいてgetWhitelistForPhase関数の特殊処理により自動追加されます。CLAUDE.mdではこの自動追加される値をテーブルに明示的に記載しており、コード実装と説明ドキュメントが一致しています。この設計は適切に文書化されています。
+
+### 6. 前回タスクからの発展的発見
+
+前回タスク（20260218_075632）のresearch.mdではci_verificationとdeployの2フェーズの欠落をNI-2（低優先度）として報告していました。今回の詳細調査で、design_reviewとregression_testも同様にsubagent設定テーブルから欠落していることが判明しました。
+
+前回報告が不完全であったのは、設計フェーズとテスト実行フェーズという異なる関心領域のフェーズが連続していないため、テーブルを行ごとに機械的に検証する過程で見落とされたと考えられます。
+
+4フェーズすべての欠落を今回発見したことで、前回報告の範囲を拡張することができました。
+
+### 7. 根本原因の構造的分析
+
+CLAUDE.mdのフェーズ別subagent設定テーブル（141-163行）は手動で管理されているドキュメントです。definitions.tsの変更と自動同期する仕組みが存在せず、初期作成時に記載されたエントリのみが現在も記載されたままとなっています。
+
+フェーズ追加または仕様変更時には、definitions.tsのPHASE_GUIDESオブジェクトとCLAUDE.mdのテーブルの両方を同時に更新する必要があります。しかし、この同期要件が明示的に文書化されておらず、design_review・regression_test・ci_verification・deployの4フェーズがテーブルに記載漏れとなったまま現在に至っています。
+
+対照的に、Bashコマンド許可カテゴリテーブル（169-183行）には全25フェーズが記載されています。このため、2つのテーブル間で網羅フェーズ数に21と25の差が生じており、テーブル間の不統一が明らかになっています。
+
+### 8. システム動作への影響度評価
+
+MCPサーバーのbuildPrompt関数は、subagentPromptTemplateの生成時にdefinitions.tsから直接フェーズ情報を読み込みます。CLAUDE.mdのテーブル欠落がbuildPrompt関数の動作に直接影響することはありません。
+
+ただし、以下のシナリオでは欠落が実際の問題となります。Orchestratorがpromptsディレクトリから該当フェーズのテンプレートファイルを探し、見つからない場合のフォールバック処理としてCLAUDE.mdを参照するケースです。このような場合、テーブルに記載されていないフェーズ（design_review等）に対してデフォルトの誤ったsubagent設定が適用される可能性があります。
+
+さらに、人間のOrchestratorが設計判断時に参考としてCLAUDE.mdのテーブルを読む場合、4フェーズが欠落していることにより、不完全な情報に基づいて判断してしまうリスクが生じます。
+
+## 既存実装の分析
+
+### definitions.ts における25フェーズの完全な定義
+
+definitions.tsのPHASE_GUIDESオブジェクトには、以下の25フェーズが定義されています。
+
+research、requirements、threat_modeling、planning、state_machine、flowchart、ui_design、design_review、test_design、test_impl、implementation、refactoring、build_check、code_review、testing、regression_test、manual_test、security_scan、performance_test、e2e_test、docs_update、commit、push、ci_verification、deployの25フェーズが順序通りに定義されており、各フェーズにはサブエージェントの種別、使用モデル、許可されるBashコマンドカテゴリが正確に設定されています。
+
+### Bashコマンド許可カテゴリテーブルの包括性
+
+CLAUDE.md 169-183行のテーブルにはこれら25フェーズすべてが記載されており、各フェーズの許可カテゴリが正確に対応しています。Bashコマンド許可カテゴリテーブルは設計上の網羅性が達成されています。
+
+### subagent設定テーブルの不完全性
+
+CLAUDE.md 141-163行のテーブルには21フェーズのみが記載されており、以下の4フェーズが欠落しています。design_review、regression_test、ci_verification、deployの4フェーズが定義されているにもかかわらずテーブルから脱落しています。
+
+このテーブル間の差は、ドキュメント内の異なるセクション間での信頼性に問題を生じさせます。テーブルAに記載されているフェーズをテーブルBで参照しようとしたときに、テーブルBに同じフェーズが無いという矛盾が発生する可能性があります。
+
+### workflow-plugin/CLAUDE.md での重複
+
+workflow-plugin/CLAUDE.mdにも同じ21フェーズのテーブルが存在します。この重複により、2つのドキュメントで同じ欠落問題が繰り返されています。プロジェクト全体の一貫性を損なう状況です。
+

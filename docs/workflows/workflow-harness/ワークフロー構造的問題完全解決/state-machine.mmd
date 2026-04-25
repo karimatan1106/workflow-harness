@@ -1,0 +1,188 @@
+stateDiagram-v2
+    %% State Machine for Workflow Structural Problem Resolution
+    %% Three main subsystems: HMAC Verification, Approval Gate, Session Token
+
+    %% ===== SUBSYSTEM 1: HMAC署名検証 =====
+    state HMAC_Verification {
+        [*] --> Check_HMAC_Strict_Env
+        Check_HMAC_Strict_Env --> Relaxed_Mode: HMAC_STRICT==false
+        Check_HMAC_Strict_Env --> Strict_Mode: HMAC_STRICT!=false<br/>(default)
+
+        Relaxed_Mode --> Accept_Signature: Always return true
+
+        Strict_Mode --> Check_Signature_Exists
+        Check_Signature_Exists --> Reject_No_Signature: No signature or<br/>empty string
+        Check_Signature_Exists --> Validate_Base64
+
+        Validate_Base64 --> Decode_Base64_Success: Valid base64
+        Validate_Base64 --> Reject_Invalid_Base64: Invalid format
+
+        Decode_Base64_Success --> Compare_Length
+        Compare_Length --> Reject_Length_Mismatch: Length != expected
+        Compare_Length --> Timing_Safe_Compare
+
+        Timing_Safe_Compare --> Accept_Signature: Signatures match
+        Timing_Safe_Compare --> Reject_Signature_Mismatch: Signatures differ
+
+        Accept_Signature --> [*]
+        Reject_No_Signature --> [*]
+        Reject_Invalid_Base64 --> [*]
+        Reject_Length_Mismatch --> [*]
+        Reject_Signature_Mismatch --> [*]
+    }
+
+    %% ===== SUBSYSTEM 2: 承認ゲート =====
+    state Approval_Gate {
+        [*] --> Check_Current_Phase
+        Check_Current_Phase --> Is_Review_Phase: requirements,<br/>design_review,<br/>test_design,<br/>code_review
+        Check_Current_Phase --> Not_Review_Phase: Other phases
+
+        Is_Review_Phase --> Check_Approval_Status
+        Check_Approval_Status --> Unapproved_State
+        Check_Approval_Status --> Approved_State
+
+        Unapproved_State --> Waiting_For_Approval: requiresApproval()=true
+        Waiting_For_Approval --> Receive_Approval_Command: /workflow approve {type}
+        Receive_Approval_Command --> Validate_Approval_Type
+        Validate_Approval_Type --> Type_Matches_Phase: approve type in<br/>APPROVE_TYPE_MAPPING
+        Validate_Approval_Type --> Type_Mismatch: Invalid type
+
+        Type_Mismatch --> [*]
+        Type_Matches_Phase --> Update_Approval_Flag
+        Update_Approval_Flag --> Approved_State
+
+        Approved_State --> Can_Proceed_To_Next: approval=true
+        Not_Review_Phase --> Can_Proceed_To_Next: Bypass approval
+
+        Can_Proceed_To_Next --> [*]
+    }
+
+    %% ===== SUBSYSTEM 3: セッショントークン =====
+    state Session_Token {
+        [*] --> Check_SESSION_TOKEN_REQUIRED
+        Check_SESSION_TOKEN_REQUIRED --> Token_Disabled: SESSION_TOKEN_REQUIRED==false
+        Check_SESSION_TOKEN_REQUIRED --> Token_Enabled: default or true
+
+        Token_Disabled --> Skip_Token_Validation: No validation
+
+        Token_Enabled --> Check_Task_Creation
+        Check_Task_Creation --> New_Task: /workflow start
+        Check_Task_Creation --> Existing_Task: /workflow next, approve, reset
+
+        New_Task --> Generate_Token: crypto.randomBytes(32)
+        Generate_Token --> Store_Token: Save to TaskState.sessionToken
+        Store_Token --> Return_Token: Return in response
+        Return_Token --> Token_Created
+
+        Existing_Task --> Check_Token_Parameter: sessionToken in request
+        Check_Token_Parameter --> No_Token_Provided: Missing
+        Check_Token_Parameter --> Token_Provided: Present
+
+        No_Token_Provided --> Legacy_Task_Warning: Old task without token
+        Legacy_Task_Warning --> Allow_With_Warning
+
+        Token_Provided --> Decode_Token
+        Decode_Token --> Decode_Success: Valid hex string
+        Decode_Token --> Decode_Failed: Invalid format
+
+        Decode_Failed --> Reject_Invalid_Token
+        Decode_Success --> Compare_Token_Value
+        Compare_Token_Value --> Token_Match: taskState.sessionToken<br/>== provided token
+        Compare_Token_Value --> Token_Mismatch: Tokens differ
+
+        Token_Match --> Token_Valid
+        Token_Mismatch --> Reject_Invalid_Token
+
+        Token_Valid --> Allow_Operation
+        Reject_Invalid_Token --> Block_Operation: Return error
+        Allow_With_Warning --> Allow_Operation
+        Skip_Token_Validation --> Allow_Operation
+        Token_Created --> Allow_Operation
+
+        Allow_Operation --> [*]
+        Block_Operation --> [*]
+    }
+
+    %% ===== Main Workflow Flow =====
+    state Main_Workflow {
+        [*] --> Phase_Idle
+
+        Phase_Idle --> Phase_Research: /workflow start
+        Phase_Research --> HMAC_Verification: Verify state signature
+        HMAC_Verification --> Phase_Research_Complete: Signature valid
+
+        Phase_Research_Complete --> Phase_Requirements
+        Phase_Requirements --> Check_Requirements_Approval: requirements phase
+        Check_Requirements_Approval --> Approval_Gate: Require approval
+        Approval_Gate --> Phase_Requirements_Complete: Approved
+
+        Phase_Requirements_Complete --> Session_Token: Check token
+        Session_Token --> Phase_Analysis: Token valid
+        Phase_Analysis --> Phase_Design
+        Phase_Design --> Phase_Design_Review: design_review phase
+        Phase_Design_Review --> Check_Design_Approval: Require approval
+        Check_Design_Approval --> Approval_Gate
+
+        Phase_Design_Review --> Phase_Test_Design
+        Phase_Test_Design --> Check_Test_Design_Approval: test_design phase
+        Check_Test_Design_Approval --> Approval_Gate
+
+        Phase_Test_Design --> Phase_Test_Impl
+        Phase_Test_Impl --> Phase_Implementation
+        Phase_Implementation --> Phase_Refactoring
+        Phase_Refactoring --> Phase_Quality
+        Phase_Quality --> Phase_Testing
+
+        Phase_Testing --> Phase_Regression: Check test baseline
+        Phase_Regression --> Phase_Verification
+        Phase_Verification --> Phase_Docs
+
+        Phase_Docs --> Phase_Commit: Scope validation
+        Phase_Commit --> Check_Code_Review_Approval: code_review required
+        Check_Code_Review_Approval --> Approval_Gate
+
+        Phase_Code_Review_Approval --> Phase_Push
+        Phase_Push --> Phase_CI
+        Phase_CI --> Phase_Deploy
+        Phase_Deploy --> Phase_Complete
+        Phase_Complete --> [*]
+    }
+
+    %% ===== Error Recovery =====
+    state Error_Handling {
+        [*] --> HMAC_Failure: Signature invalid
+        HMAC_Failure --> Warn_or_Reject: HMAC_STRICT mode
+        Warn_or_Reject --> Recover_or_Fail: Admin action
+
+        Approval_Blocked: Approval required
+        Token_Blocked: Invalid session token
+        Scope_Violation: Scope mismatch
+        Test_Regression: Test count decreased
+
+        Approve_or_Reset: /workflow approve or<br/>/workflow reset
+
+        Approval_Blocked --> Approve_or_Reset
+        Token_Blocked --> [*]
+        Scope_Violation --> Scope_Review: SCOPE_STRICT mode
+        Test_Regression --> Retest_or_Accept: Manual review
+    }
+
+    %% ===== Approval Type Mapping =====
+    note right of Approval_Gate
+        APPROVE_TYPE_MAPPING:
+        - requirements → parallel_analysis
+        - design → test_design
+        - test_design → test_impl
+        - code_review → testing
+    end note
+
+    %% ===== Environment Variable Summary =====
+    note right of HMAC_Verification
+        HMAC_STRICT=false: Relaxed (dev only)
+        Default (true): Strict mode
+    end note
+
+    note right of Session_Token
+        SESSION_TOKEN_REQUIRED=false: Disabled
+        Default (true): Enabled
+    end note

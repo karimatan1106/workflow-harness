@@ -1,0 +1,11 @@
+[2026-03-11T13:42:05.052Z] COMPLETED: scope_definition → NEXT: research | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 1 phases
+[2026-03-11T13:45:44.960Z] COMPLETED: research → NEXT: requirements | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 2 phases
+[2026-03-11T13:48:18.285Z] COMPLETED: requirements → NEXT: planning | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 3 phases
+[2026-03-11T13:53:51.173Z] COMPLETED: planning → NEXT: test_design | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 4 phases
+[2026-03-11T13:59:50.810Z] COMPLETED: test_design → NEXT: test_impl | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 5 phases
+[2026-03-11T14:06:23.257Z] COMPLETED: test_impl → NEXT: implementation | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 6 phases
+[2026-03-11T14:10:21.195Z] COMPLETED: implementation → NEXT: build_check | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 7 phases
+[2026-03-11T14:11:21.619Z] COMPLETED: build_check → NEXT: testing | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 8 phases
+[2026-03-11T14:12:31.289Z] COMPLETED: testing → NEXT: commit | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 9 phases
+[2026-03-11T14:13:07.023Z] COMPLETED: commit → NEXT: push | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 10 phases
+[2026-03-11T14:13:37.620Z] COMPLETED: push → NEXT: completed | Task: harness-stale-task-cleanup-and-hmac-recovery | Done: 11 phases

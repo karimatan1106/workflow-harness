@@ -1,0 +1,92 @@
+task: tier-b-gaps-n08-n15
+phase: planning
+intent: Tier B 5項目(N-08 Oxlint, N-09 Biome, N-10 jscpd, N-11 eslint-plugin-security, N-12 ast-grep)の技術仕様と実装計画
+riskScore: 4
+
+architecture:
+  pattern: hook-extension + archgate-plugin
+  description: 既存PostToolUseフック(post-tool-lint.sh)にoxlint/biome formatブロックを追加し、archgate.tsにduplicate_code/ast_grep_pattern checkTypeを拡張する。CLI実行ロジックはlinter-runner.tsに分離しarchgate.tsの行数制限(200行)を遵守する。eslint-plugin-securityはworkflow-plugin側のeslint.config.jsに統合する。
+  layers: "shell-hook(post-tool-lint.sh) → TypeScript-module(linter-runner.ts) → archgate-engine(archgate.ts) → eslint-config(eslint.config.js)"
+
+implementationOrder[6]{step,target,description,dependsOn,estimatedLines}:
+  1, "npm install (mcp-server)", "oxlint@1.52.0 + @biomejs/biome@2.4.6 + jscpd@4.0.8 + @ast-grep/napi@0.41.0 の4パッケージをdevDependenciesに追加。pnpm installでlockfile更新。", none, 0
+  2, "npm install (workflow-plugin)", "eslint-plugin-security@4.0.0をdevDependenciesに追加。npm installでlockfile更新。", none, 0
+  3, "post-tool-lint.sh修正", "oxlint --deny-onlyブロック追加(biome checkブロックと独立したif/fi)。既存biome checkブロック内にbiome format --check --no-errors-on-unmatched追記。各ツールcommand -vチェックとtimeout 3s付き。", "step-1", 85
+  4, "linter-runner.ts新規作成", "jscpd CLI実行ラッパーとJSON出力パーサーを実装。runJscpd(targetGlobs, threshold)→JscpdResult型を返す。execSyncにtimeout 10sとtry-catchでgraceful degradation。ast-grep napi実行ラッパーrunAstGrepPattern(pattern, glob)→AstGrepResult型も同モジュールに配置。", "step-1", 110
+  5, "archgate.ts拡張", "ArchCheckType型にduplicate_code|ast_grep_patternを追加。runArchGateChecks内にduplicate_code分岐(linter-runner.tsのrunJscpdを呼出し閾値比較)とast_grep_pattern分岐(runAstGrepPatternを呼出しマッチ数判定)を追加。", "step-4", 190
+  6, "eslint.config.js修正", "eslint-plugin-securityをimportしJavaScript設定ブロックとTypeScript設定ブロックの両方にsecurity.configs.recommendedを追加。13セキュリティルールがwarnレベルで有効化される。", "step-2", 125
+
+fileChanges[7]{path,changeType,currentLines,estimatedLines,description}:
+  workflow-harness/mcp-server/package.json, modify, 27, 31, "devDependenciesにoxlint/@biomejs/biome/jscpd/@ast-grep/napiの4パッケージ追加"
+  workflow-plugin/package.json, modify, 58, 59, "devDependenciesにeslint-plugin-security追加"
+  .claude/hooks/post-tool-lint.sh, modify, 63, 85, "oxlint --deny-onlyブロック(独立if/fi)追加とbiome format --check追記。graceful degradation維持。"
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, create, 0, 110, "jscpd CLI実行+JSONパースとast-grep napi実行の2関数を提供するモジュール"
+  workflow-harness/mcp-server/src/tools/archgate.ts, modify, 157, 190, "ArchCheckType拡張(duplicate_code/ast_grep_pattern)とrunArchGateChecks内2分岐追加"
+  workflow-plugin/eslint.config.js, modify, 114, 125, "eslint-plugin-security importとsecurity.configs.recommended追加(JS/TS両ブロック)"
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, create, 0, 75, "runJscpdとrunAstGrepPatternのユニットテスト(モック環境でのexit code検証含む)"
+
+typeDesign:
+  newTypes: "JscpdResult{percentage: number, duplicates: number, passed: boolean} / AstGrepMatch{filePath: string, line: number, text: string} / AstGrepResult{matches: AstGrepMatch[], count: number, passed: boolean}"
+  extendedTypes: "ArchCheckType union拡張: 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern'"
+  archRuleUsage: "duplicate_codeルールはthresholdフィールドを重複率%(デフォルト5)として使用。ast_grep_patternルールはpatternフィールドにast-grepパターン文字列、globフィールドに対象ファイルglob、thresholdフィールドにマッチ上限数(0=禁止)を使用。"
+
+shellHookDesign:
+  oxlintBlock: "biome checkブロックと完全独立のif/fiブロック。command -v npxチェック→timeout 3 npx oxlint --deny-only --silent FILE_PATH。exit 127→サイレントスキップ、exit 124→タイムアウト警告、exit非0→oxlint警告出力(head -20)。"
+  biomeFormatBlock: "既存biome checkブロック内に追記。biome check実行後にbiome format --check --no-errors-on-unmatched FILE_PATH実行。format結果は警告のみで処理継続(exit codeは既存動作維持)。タイムアウトは既存3sを共有。"
+  executionOrder: "tsc(5s) → biome check+format(3s) → oxlint(3s)の順。合計最大11s。各ブロック独立でエラー伝播なし。"
+
+linterRunnerDesign:
+  runJscpd: "execSync('npx jscpd --format json --threshold N --min-lines 5 GLOB', {timeout: 10000})でCLI実行。stdout JSONをパースしstatistics.total.percentageを取得。try-catchで未インストール/タイムアウト時はpassed:true(graceful degradation)を返却。"
+  runAstGrepPattern: "@ast-grep/napiのparse(source)→root.findAll(pattern)でASTマッチ。globパッケージまたはfs.readdirSyncで対象ファイルを列挙し各ファイルを順次解析。try-catchで未インストール時はpassed:true返却。マッチ数がthreshold以下ならpassed:true。"
+  moduleExports: "runJscpd / runAstGrepPattern / JscpdResult型 / AstGrepResult型 / AstGrepMatch型"
+
+archgateExtensionDesign:
+  duplicateCodeBranch: "rule.checkType === 'duplicate_code'の分岐。linter-runner.tsのrunJscpd(rule.glob, rule.threshold)を呼出し。result.passed===falseならchecksにpush。evidenceにpercentageと閾値を記載。"
+  astGrepPatternBranch: "rule.checkType === 'ast_grep_pattern'の分岐。linter-runner.tsのrunAstGrepPattern(rule.pattern, rule.glob)を呼出し。result.count > (rule.threshold ?? 0)ならchecksにpush。evidenceにマッチ数とファイルパスを記載。"
+  importStrategy: "archgate.tsの先頭にimport { runJscpd, runAstGrepPattern } from './linter-runner.js'を追加。linter-runner.tsはarchgate.tsと同階層(src/tools/)に配置。"
+
+eslintSecurityDesign:
+  importStatement: "import pluginSecurity from 'eslint-plugin-security'"
+  jsBlockExtension: "JavaScript設定ブロック(hooks用)のextendsにpluginSecurity.configs.recommendedを追加"
+  tsBlockExtension: "TypeScript設定ブロック(mcp-server用)のextendsにpluginSecurity.configs.recommendedを追加"
+  enabledRules: "detect-eval-with-expression / detect-no-csrf-before-method-override / detect-non-literal-fs-filename / detect-non-literal-regexp / detect-non-literal-require / detect-object-injection / detect-possible-timing-attacks / detect-pseudoRandomBytes / detect-unsafe-regex / detect-buffer-noassert / detect-child-process / detect-disable-mustache-escape / detect-new-buffer の13ルール(全てwarnレベル)"
+  testBlockExclusion: "テスト設定ブロック(JS/TS両方)にはsecurity推奨を追加しない。テストコードではevalやchild_processの使用が正当なケースがあるため。"
+
+gracefulDegradation:
+  shellLayer: "command -v npxチェック→未インストール時サイレントスキップ。exit code 127検出→ツール未インストール判定。timeout超過→警告メッセージ出力しexit 0継続。"
+  typescriptLayer: "try-catch囲みでexecSync/napi呼出し。catch内でpassed:trueのデフォルト結果を返却。エラーログはconsole.warnで出力(本番動作に影響なし)。"
+  archgateLayer: "linter-runner.tsの各関数がgraceful degradation済み結果を返すため、archgate.ts側は追加のエラーハンドリング不要。"
+
+testStrategy:
+  linterRunnerTests: "execSyncモック/napi モックで正常系(重複検出/パターンマッチ)と異常系(未インストール/タイムアウト)をテスト。JscpdResultとAstGrepResultの型検証。"
+  archgateExtensionTests: "既存archgate.test.tsにduplicate_codeとast_grep_patternのテストケースを追加。linter-runner.tsをvi.mockしてrunJscpd/runAstGrepPatternの戻り値を制御。"
+  eslintTests: "workflow-plugin側でnpx eslint --print-config実行しsecurityルールが有効であることをL2検証。"
+  hookTests: "post-tool-lint.shの手動実行でoxlint/biome format出力を目視確認(L2検証)。"
+
+decisions[7]{id,statement,rationale}:
+  PL-1, "linter-runner.tsはsrc/tools/配下に配置しarchgate.tsと同階層にする", "archgate.tsからの相対importが単純('./linter-runner.js')になり依存関係が明確になる。tools/ディレクトリはアーキテクチャ検証ツール群の標準配置先である。"
+  PL-2, "jscpdはexecSyncによるCLI呼出しで実装しNode APIは使用しない", "jscpd@4.0.8のNode APIはドキュメントが不十分でインターフェースが不安定。CLI出力(--format json)は安定しておりJSONパースで型安全に結果を取得できる。execSyncのtimeout引数でタイムアウト制御も容易。"
+  PL-3, "ast-grepは@ast-grep/napi(Node API)で実装しCLI呼出しを回避する", "@ast-grep/napiはparse/findAllメソッドで直接TypeScriptオブジェクトとしてマッチ結果を取得できる。CLI呼出し+JSONパースが不要で型安全性が高い。Windows x64 prebuiltバイナリが提供されており環境互換性も確保済み。"
+  PL-4, "oxlintフックブロックはbiome checkブロックと完全独立のif/fi構造にする", "独立ブロックにすることで一方の追加・削除・障害が他方に影響しない。各ツールのgraceful degradation(command -vチェック+exit code判定)を個別管理でき保守性が向上する。"
+  PL-5, "eslint-plugin-securityはテスト設定ブロックには適用しない", "テストコードではeval/child_process/非リテラルrequire等がテストデータ生成やモック目的で正当に使用される。テストブロックへの適用はfalse positiveが大量発生し開発効率を低下させる。本番コード(hooks/mcp-server)のみに適用することでセキュリティ検出の精度を維持する。"
+  PL-6, "archgate.tsへのimport追加は静的importで行いdynamic importは使用しない", "linter-runner.tsはarchgate.tsの必須依存であり遅延読込の必要がない。静的importによりTypeScriptの型チェックがビルド時に適用され型安全性が保証される。tree-shakingにも対応する。"
+  PL-7, "post-tool-lint.shの実行順序はtsc→biome check+format→oxlintの固定順とする", "tscは型エラー検出が最重要で最初に実行する。biome check+formatは同一ツールの2コマンドで連続実行が効率的。oxlintは補助的lint(deny-onlyモード)で最後に実行する。各ブロック独立のため順序変更は将来容易。"
+
+riskMitigation[4]{risk,probability,impact,mitigation}:
+  "@ast-grep/napi Windows x64バイナリの動作不良", low, high, "npm install時にprebuiltバイナリのダウンロード成功をL1検証。失敗時はgraceful degradationでast_grep_pattern checkTypeをスキップし他機能に影響を与えない。"
+  "jscpd実行時間が大規模コードベースで10秒超過", medium, low, "execSyncのtimeout引数で10秒制限を設定。タイムアウト時はpassed:trueを返却しアーキテクチャゲートをブロックしない。--min-lines 5オプションで解析対象を絞り実行時間を短縮。"
+  "eslint-plugin-securityのfalse positiveによる既存コードへの警告", medium, low, "recommendedは全ルールwarnレベルのため既存ビルド/テストに影響なし。false positive多発時は個別ルールoffで対応可能。テストブロック除外によりテストコードのfalse positiveは発生しない。"
+  "archgate.tsの行数が200行制限を超過する", low, medium, "linter-runner.tsへのCLI実行/パース処理の委譲により、archgate.tsは判定ロジック(if分岐+checks.push)のみ追加で約33行増。現在157行+33行=190行で200行以内に収まる設計。"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/requirements.toon, input, 機能要件5件/非機能要件4件/受入基準5件の完全な要件定義
+  docs/workflows/tier-b-gaps-n08-n15/research.toon, reference, 5ツールの技術調査結果(npm情報/統合方針/API情報)
+  docs/workflows/tier-b-gaps-n08-n15/scope-definition.toon, reference, 8ツール実用性分析とスコープ決定(5件in-scope)
+  docs/workflows/tier-b-gaps-n08-n15/planning.toon, output, 技術仕様/実装計画/型設計/フック設計/リスク軽減策
+
+next:
+  criticalDecisions: "PL-2(jscpd CLI呼出し)とPL-3(ast-grep napi採用)がlinter-runner.tsの実装パターンを規定。PL-4(oxlint独立ブロック)がpost-tool-lint.shの構造を決定。PL-6(静的import)がarchgate.ts拡張方針を確定。"
+  readFiles: "archgate.ts(157行/拡張対象), post-tool-lint.sh(63行/修正対象), eslint.config.js(114行/修正対象), linter-runner.ts(新規作成), archgate.test.ts(147行/テスト追加対象)"
+  warnings: "@ast-grep/napiのWindows x64 prebuiltバイナリ動作確認がinstall時に必要。jscpd --format jsonの出力スキーマがバージョン間で変更される可能性がありパーサーの堅牢性が重要。eslint-plugin-security@4.0.0はESLint v9 flat config対応済みだがsecurity.configs.recommendedの構造をinstall後に検証すること。"
+
+result{phase,status,artifact,lines}: planning, complete, docs/workflows/tier-b-gaps-n08-n15/planning.toon, 92

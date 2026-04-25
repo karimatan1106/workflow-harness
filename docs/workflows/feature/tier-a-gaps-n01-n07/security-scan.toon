@@ -1,0 +1,47 @@
+phase: security_scan
+task: tier-a-gaps-n01-n07
+intent: "記事ギャップ分析 Tier A 7項目のセキュリティ脆弱性スキャン"
+timestamp: 2026-03-10T00:00:00Z
+status: complete
+
+scan_scope: "シェルスクリプト4件、TypeScript2件、ドキュメント1件、npm audit"
+methodology: "静的コード分析(インジェクション/パストラバーサル/入力検証) + npm audit + OWASP Top10照合"
+
+shell_analysis: "4シェルスクリプト全てでJSON入力をgrep+sedで解析するパターンを使用。変数展開は概ね適切にクォートされている"
+ts_analysis: "reflector.tsとretry.tsはeval/exec不使用。外部入力は長さ制限(500文字)で切り詰め済み"
+npm_audit_summary: "7脆弱性検出(high:3, moderate:4)。@hono/node-server, esbuild, express-rate-limit, honoが対象"
+
+findings[6]{id,severity,file,line,category,description,recommendation}:
+  SS-F01, medium, .claude/hooks/stop-test-enforcer.sh, 16, command-injection, "npx vitest --related $CHANGED_FILESで変数未クォート。スペースやグロブ文字を含むファイルパスでワードスプリッティング発生の可能性", "\"$CHANGED_FILES\"のように二重引用符で囲むか、配列として展開する"
+  SS-F02, high, npm-audit, -, dependency-vuln, "@hono/node-server <1.19.10: エンコードスラッシュによる認可バイパス(GHSA-wc8c-qw6v-h7f6)", "npm audit fixで1.19.10以上に更新"
+  SS-F03, high, npm-audit, -, dependency-vuln, "hono <=4.12.3: setCookieのCookie属性インジェクション+serveStaticの任意ファイルアクセス(GHSA-5pq2/q5qw)", "npm audit fixで4.12.4以上に更新"
+  SS-F04, high, npm-audit, -, dependency-vuln, "express-rate-limit 8.2.0-8.2.1: IPv4マッピングIPv6アドレスによるレート制限バイパス(GHSA-46wh)", "npm audit fixで8.2.2以上に更新"
+  SS-F05, moderate, npm-audit, -, dependency-vuln, "esbuild <=0.24.2: 開発サーバーへの任意リクエスト送信(GHSA-67mh)。vite/vitest経由の間接依存", "npm audit fix --forceでvitest更新(破壊的変更あり)、または開発環境限定として受容"
+  SS-F06, low, workflow-harness/mcp-server/src/tools/reflector.ts, 15, path-traversal, "process.env.STATE_DIRによるファイルパス構築。環境変数を制御できる攻撃者が任意パスに読み書き可能", "STATE_DIRの値をホワイトリスト検証するか、パス正規化後に許可ディレクトリ内であることを確認する"
+
+clean_files[4]{path,result,notes}:
+  .claude/hooks/post-tool-lint.sh, clean, "FILE_PATHは全箇所で二重引用符囲み。case文での拡張子チェックにインジェクションリスクなし"
+  .claude/hooks/pre-tool-config-guard.sh, clean, "basenameとcase文のみで変数使用。CONFIG_GUARD_DISABLEは文字列比較のみ"
+  .claude/hooks/handoff-reader.sh, clean, "全パスがハードコード定数。cat/bash呼び出しも全てクォート済み。stat引数もクォート済み"
+  AGENTS.md, clean, "ドキュメントファイル。実行可能コードを含まない"
+
+risk_assessment: "全体リスク: MEDIUM。本番コードに直接影響する脆弱性はなし。npm依存の3件のhighは開発サーバー/MCP用途に限定されるが早期修正推奨"
+production_exposure: "MCPサーバーはローカル開発専用。hono/express-rate-limitの脆弱性はインターネット公開時のみ実害あり"
+immediate_action_required: "npm audit fix実行(非破壊的修正3件)。stop-test-enforcer.shのCHANGED_FILES変数クォート修正"
+
+decisions[5]{id,statement,rationale}:
+  SS-D01, "npm audit highの3件は早期修正対象とする", "開発専用でも既知の高リスク脆弱性を放置するとサプライチェーンリスクが残存する"
+  SS-D02, "esbuild/vite/vitestのmoderate脆弱性は受容可能と判定", "開発環境限定の使用であり破壊的変更を伴うため、次回メジャーアップデート時に対応する"
+  SS-D03, "stop-test-enforcer.shのCHANGED_FILES未クォートは修正必須", "git diff出力にスペース含むパスが含まれる場合にテスト実行が失敗する実害がある"
+  SS-D04, "reflector.tsのSTATE_DIR環境変数は低リスクと判定", "ローカルMCPサーバーの環境変数を攻撃者が制御できるシナリオは現実的でない"
+  SS-D05, "シェルスクリプトのJSON解析パターンは現状維持とする", "grep+sedによるJSON解析は堅牢でないがhook入力は信頼できるClaude Code内部JSONのみ"
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n01-n07/security-scan.toon, security-scan-report, "7対象ファイルのセキュリティスキャン結果。脆弱性6件検出(high3+medium1+moderate1+low1)"
+
+next:
+  criticalDecisions: "SS-D01(npm高リスク修正)、SS-D03(シェル変数クォート修正)"
+  readFiles: "workflow-harness/mcp-server/package.json, .claude/hooks/stop-test-enforcer.sh"
+  warnings: "npm audit fix --forceはvitestのメジャーバージョン変更を伴うためテスト互換性確認が必要"
+
+result{phase,status,artifact,lines}: security_scan, complete, docs\workflows\tier-a-gaps-n01-n07/security-scan.toon, 55

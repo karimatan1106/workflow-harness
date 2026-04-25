@@ -1,0 +1,91 @@
+stateDiagram-v2
+    Start --> Group1_Entry: initialize
+
+    Group1_Entry --> PL01_Execute: start_vscode_ext_delete
+    Group1_Entry --> PL03_Execute: start_hook_backup_delete
+    Group1_Entry --> PL04_Execute: start_dead_code_delete
+    Group1_Entry --> PL06_Execute: start_serena_mcp_setup
+
+    PL01_Execute --> PL01_Success: delete_success
+    PL01_Execute --> PL01_Retry1: error_retry_1
+    PL01_Retry1 --> PL01_Execute: retry_attempt_1
+    PL01_Retry1 --> PL01_Failed: max_retries_exceeded
+    PL01_Success --> Group1_Sync: mark_complete_1
+
+    PL03_Execute --> PL03_Success: delete_success
+    PL03_Execute --> PL03_Retry1: error_retry_1
+    PL03_Retry1 --> PL03_Execute: retry_attempt_1
+    PL03_Retry1 --> PL03_Failed: max_retries_exceeded
+    PL03_Success --> Group1_Sync: mark_complete_3
+
+    PL04_Execute --> PL04_Success: compile_success
+    PL04_Execute --> PL04_Retry1: error_retry_1
+    PL04_Retry1 --> PL04_Execute: retry_attempt_1
+    PL04_Retry1 --> PL04_Failed: max_retries_exceeded
+    PL04_Success --> Group1_Sync: mark_complete_4
+
+    PL06_Execute --> PL06_Success: config_and_template_success
+    PL06_Execute --> PL06_Retry1: error_retry_1
+    PL06_Retry1 --> PL06_Execute: retry_attempt_1
+    PL06_Retry1 --> PL06_Failed: max_retries_exceeded
+    PL06_Success --> Group1_Sync: mark_complete_6
+
+    Group1_Sync --> Group2_Entry: all_group1_complete
+
+    Group2_Entry --> PL02_Execute: start_vscode_ext_cleanup
+    PL02_Execute --> PL02_Success: cleanup_success
+    PL02_Execute --> PL02_Retry1: error_retry_1
+    PL02_Retry1 --> PL02_Execute: retry_attempt_1
+    PL02_Retry1 --> PL02_Failed: max_retries_exceeded
+    PL02_Success --> Group2_End: pl02_done
+
+    Group2_End --> Group3_Entry: pl02_complete
+
+    Group3_Entry --> PL05_Execute: start_hearing_dod_checks
+    PL05_Execute --> PL05_Success: build_and_test_pass
+    PL05_Execute --> PL05_Retry1: error_retry_1
+    PL05_Retry1 --> PL05_Execute: retry_attempt_1
+    PL05_Retry1 --> PL05_Failed: max_retries_exceeded
+    PL05_Success --> Group3_End: pl05_done
+
+    Group3_End --> Group4_Entry: pl05_complete
+
+    Group4_Entry --> PL07_Execute: start_skill_doc_update
+    PL07_Execute --> PL07_Success: doc_update_success
+    PL07_Execute --> PL07_Retry1: error_retry_1
+    PL07_Retry1 --> PL07_Execute: retry_attempt_1
+    PL07_Retry1 --> PL07_Failed: max_retries_exceeded
+    PL07_Success --> Group4_End: pl07_done
+
+    Group4_End --> Group5_Entry: pl07_complete
+
+    Group5_Entry --> PL08_Execute: start_mcp_tool_verification
+    PL08_Execute --> PL08_Success: verification_complete
+    PL08_Execute --> PL08_Retry1: error_retry_1
+    PL08_Retry1 --> PL08_Execute: retry_attempt_1
+    PL08_Retry1 --> PL08_Failed: max_retries_exceeded
+    PL08_Success --> Verification_Entry: pl08_done
+
+    Verification_Entry --> PL09_Execute: start_build_validation
+    PL09_Execute --> PL09_Success: build_success
+    PL09_Execute --> PL09_Retry1: error_retry_1
+    PL09_Retry1 --> PL09_Execute: retry_attempt_1
+    PL09_Retry1 --> PL09_Failed: max_retries_exceeded
+    PL09_Success --> PL10_Execute: pl09_done
+
+    PL10_Execute --> PL10_Success: all_tests_pass
+    PL10_Execute --> PL10_Retry1: error_retry_1
+    PL10_Retry1 --> PL10_Execute: retry_attempt_1
+    PL10_Retry1 --> PL10_Failed: max_retries_exceeded
+    PL10_Success --> End: refactoring_complete
+
+    PL01_Failed --> Abort: pl01_fatal_error
+    PL03_Failed --> Abort: pl03_fatal_error
+    PL04_Failed --> Abort: pl04_fatal_error
+    PL06_Failed --> Abort: pl06_fatal_error
+    PL02_Failed --> Abort: pl02_fatal_error
+    PL05_Failed --> Abort: pl05_fatal_error
+    PL07_Failed --> Abort: pl07_fatal_error
+    PL08_Failed --> Abort: pl08_fatal_error
+    PL09_Failed --> Abort: pl09_fatal_error
+    PL10_Failed --> Abort: pl10_fatal_error

@@ -1,0 +1,56 @@
+flowchart TD
+    Start((バグ修正実施開始)) --> Decision{修正順序の確認}
+
+    Decision -->|優先度最高| FQ1Start(FQ-1: testingフェーズ ハッシュチェック修正)
+    FQ1Start --> FQ1Edit(next.tsを編集 line 267-275に条件分岐追加\ncurrentPhase が testing または regression_test のときスキップ)
+    FQ1Edit --> FQ1Verify(修正内容確認\ntestingフェーズでの自己参照的な重複検出防止\nregression_testは既存スキップロジックを維持)
+    FQ1Verify --> FQ1Complete{FQ-1修正完了?}
+
+    FQ1Complete -->|Yes| FQ3Start(FQ-3とFQ-4: definitions.tsを同一セッションで修正してビルドコストを削減)
+
+    FQ3Start --> FQ3Step1(FQ-3: commitフェーズ修正\nline 942の allowedBashCategories を\nreadonly と git に変更)
+    FQ3Step1 --> FQ3Step2(FQ-3: pushフェーズ修正\nline 950の allowedBashCategories を\nreadonly と git に変更)
+    FQ3Step2 --> FQ3Verify(FQ-3修正確認\nドキュメントとフックとフェーズ定義の三者が\nreadonly と git に統一されていることを確認)
+    FQ3Verify --> FQ3Complete{FQ-3修正完了?}
+
+    FQ3Complete -->|Yes| FQ4Start(FQ-4: pushフェーズ subagentTemplate修正\nブランチ確認手順の追加)
+    FQ4Start --> FQ4Edit(line 953の subagentTemplateに手順を追加\ngit branch --show-current でカレントブランチ名を確認してから push を実行)
+    FQ4Edit --> FQ4SubModule(サブモジュール対応手順を追加\ngit submodule foreach git branch --show-current を実行\n各サブモジュールのブランチを個別に確認)
+    FQ4SubModule --> FQ4SafeGuard(detached HEAD状態の検出手順を追加\nコマンド出力が空の場合はpushを中止してエラーを報告)
+    FQ4SafeGuard --> FQ4Verify(FQ-4修正確認\nブランチ名を動的に確認する手順が含まれること\nmain や master をハードコードしない設計を維持)
+    FQ4Verify --> FQ4Complete{FQ-4修正完了?}
+
+    FQ4Complete -->|Yes| BuildStart(npm run build 実行\nTypeScriptをトランスパイルして\nnext.ts と definitions.ts の変更を dist に反映)
+    BuildStart --> BuildVerify(ビルド成功確認\ndist 以下のファイルの更新日時が新しいことを確認)
+    BuildVerify --> ServerRestart(MCPサーバー再起動\nClaude Desktopの再起動ボタンを使用\nまたはプロセスを終了して起動)
+    ServerRestart --> ServerCheck(workflow_status を実行してフェーズが返されることを確認)
+    ServerCheck --> FQ2Start(FQ-2: bash-whitelist.js の hasRedirection関数修正\n比較演算子の誤検出を排除する正規表現への変更)
+
+    FQ2Start --> FQ2Edit(line 268-270 の hasRedirection 関数を正規表現ベースに変更)
+    FQ2Edit --> FQ2Regex(二重大なり記号はリダイレクトとして常に検出\n大なり記号の直後が等号の場合は比較演算子として除外\n大なり記号の後ろにスペースがある場合はリダイレクトとして検出)
+    FQ2Regex --> FQ2Verify(修正確認\nawk や node で大なりイコール演算子を含むコマンドがブロックされないことを確認\necho でファイルへのリダイレクトは引き続き検出されることを確認)
+    FQ2Verify --> FQ2Complete{FQ-2修正完了?}
+
+    FQ2Complete -->|Yes| SessionRestart(Claude Code セッション再起動\nフックキャッシュをリフレッシュして bash-whitelist.js の変更を反映)
+    SessionRestart --> AllVerify(全修正の動作検証を実施)
+    AllVerify --> V1(FQ-1検証: testingフェーズで record_test_result を呼んだ後に workflow_next が成功するか確認)
+    V1 --> V2(FQ-2検証: 大なりイコール演算子を含むコマンドがブロックされないことを確認)
+    V2 --> V3(FQ-3検証: commitとpushフェーズの subagent プロンプトに git カテゴリが表示されることを確認)
+    V3 --> V4(FQ-4検証: pushフェーズの subagent プロンプトにブランチ確認コマンドが含まれることを確認)
+    V4 --> FinalCheck{全修正の完了と検証が完了したか}
+
+    FinalCheck -->|Yes| End((バグ修正実施完了))
+    FinalCheck -->|No| Investigation(問題を調査して修正漏れまたは検証漏れを特定)
+    Investigation --> Decision
+
+    FQ1Complete -->|No| FQ1Debug(FQ-1修正を再確認\n条件分岐が正しく追加されたか検査)
+    FQ1Debug --> FQ1Start
+
+    FQ3Complete -->|No| FQ3Debug(allowedBashCategories の値を再確認\ngit カテゴリに正しく変更されたかを検査)
+    FQ3Debug --> FQ3Start
+
+    FQ4Complete -->|No| FQ4Debug(subagentTemplate を再確認\nブランチ確認手順が正しく追加されたかを検査)
+    FQ4Debug --> FQ4Start
+
+    FQ2Complete -->|No| FQ2Debug(正規表現パターンを再確認\n否定先読みと否定後読みの記述が正しいかを検査)
+    FQ2Debug --> FQ2Start

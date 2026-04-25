@@ -1,0 +1,26 @@
+phase: test_selection
+task: harness-stale-task-cleanup-and-hmac-recovery
+status: complete
+created: 2026-03-11
+
+selectedTests[1]{path,reason}:
+  workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts, TD-D-07準拠の単一テストファイルに全AC(1-4)の15テストケースを集約
+
+relatedTests[2]{path,reason}:
+  workflow-harness/mcp-server/src/__tests__/hmac.test.ts, HMAC署名・検証の基盤ロジックテスト。AC-3/AC-4がverifyStateWithRotation等に依存
+  workflow-harness/mcp-server/src/__tests__/dod-basic.test.ts, DoDゲート基本テスト。completedフィルタ変更がゲート判定に影響しないことの回帰確認
+
+decisions[5]{id,statement,rationale}:
+  TS-001, "テストファイルを1つに限定しAC別describeブロックで構造化", "TD-D-07の設計判断に従い共通setup/teardown共有で実行速度と保守性を両立"
+  TS-002, "hmac.test.tsを関連テストとして回帰実行対象に含める", "AC-3/AC-4のHMAC検証変更がsignState/verifyState基盤に影響しないことを保証するため"
+  TS-003, "dod-basic.test.tsを関連テストとして回帰実行対象に含める", "completedフィルタ導入(AC-2)がDoD判定ロジックに副作用を与えないことを確認するため"
+  TS-004, "テスト実行順序はAC番号順(AC-1→AC-4)とする", "依存関係が低→高(NFR→フィルタ→HMAC→マイグレーション)の順で失敗原因特定を容易にするため"
+  TS-005, "選択テスト15件+関連テスト2ファイルの全件を実行対象とする", "smallタスクのため選択的スキップは不要であり全件実行が品質保証に最も効果的"
+
+artifacts[1]{path,role}:
+  docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/test-selection.toon, phase_output
+
+next:
+  criticalDecisions[2]: TS-001, TS-002
+  readFiles[2]: docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/test-design.toon, workflow-harness/mcp-server/src/__tests__/hmac.test.ts
+  warnings[1]: "全15テストケースはTDD Red(実装未存在による失敗)となる。test_implフェーズで実装と並行してGreenへ遷移"

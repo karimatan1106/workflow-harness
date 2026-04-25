@@ -1,0 +1,116 @@
+stateDiagram-v2
+    state "開始" as Start
+    state "終了" as End
+
+    Start --> Initialization
+
+    %% FIX-1: loop-detector ファイルエントリのライフサイクル
+    Initialization --> FileEntryCreation: ファイル初回編集時
+
+    FileEntryCreation --> TimestampAccumulation: entry.timestamps配列初期化
+
+    TimestampAccumulation --> TimestampAccumulation: checkLoop実行時に\ntimestampを蓄積
+    TimestampAccumulation --> TimestampExpiration: タイムスタンプが\n有効期限を超える
+
+    TimestampExpiration --> FilterOldTimestamps: checkLoop関数内で\nfilterOldTimestamps実行
+
+    FilterOldTimestamps --> PruningJudgment: 古いタイムスタンプ削除後\n削除判定条件を評価
+
+    PruningJudgment --> EntryActive: timestamps.length > 0\nまたはlastWarning設定済み
+    PruningJudgment --> EntryDelete: timestamps.length === 0\nかつlastWarning非設定
+
+    EntryActive --> TimestampAccumulation: ファイルが再度編集された場合
+
+    EntryDelete --> CleanupPhase1: checkLoop関数内で\ndelete演算子でエントリ削除
+
+    CleanupPhase1 --> SaveStateCleanup: saveState関数へ制御移動
+
+    SaveStateCleanup --> CleanupPhase2: saveState関数内で\nObject.fromEntriesで\n空エントリを一括フィルタリング
+
+    CleanupPhase2 --> FileWriteAfterCleanup: フィルタリング後\nfs.writeFileSyncで状態ファイル書き込み
+
+    FileWriteAfterCleanup --> EntryRemoved: 状態ファイルから\nエントリが削除される
+
+    EntryRemoved --> End: ライフサイクル完了
+
+    %% FIX-2: CLAUDE.md改善フロー
+    CLAUDE_Improvement --> GetValidationRules: subagent起動テンプレートで\nバリデーションルール参照
+
+    GetValidationRules --> CheckDuplicateLines: 重複行禁止の具体例を確認
+    GetValidationRules --> CheckSectionDensity: セクション密度要件の\n具体例を確認
+    GetValidationRules --> CheckMandatorySections: フェーズ別必須セクション\n一覧を確認
+    GetValidationRules --> CheckForbiddenPatterns: 禁止パターンの具体例を確認
+
+    CheckDuplicateLines --> ValidateContent: subagent成果物の\n重複行チェック
+
+    CheckSectionDensity --> ValidateContent: サマリーとセクション行数\nの確認
+
+    CheckMandatorySections --> ValidateContent: 必須セクションの\n存在確認
+
+    CheckForbiddenPatterns --> ValidateContent: ブラケット記法やNA等\n禁止ワードの非使用確認
+
+    ValidateContent --> ValidationPass: 全ルール合致時
+
+    ValidationPass --> End: バリデーション成功
+
+    %% FIX-3: preExistingChanges処理とスコープチェック
+    WorkflowStart --> GitDiffExecution: start.ts実行
+    GitDiffExecution --> GitDiffSuccess: git diff成功時
+
+    GitDiffSuccess --> PreExistingRecording: preExistingChangesに\n変更件数を記録
+
+    PreExistingRecording --> LogPreExistingCount: console.logで\n記録件数と先頭5件を出力
+
+    LogPreExistingCount --> ScopeCheckInit: scope-validator実行時
+
+    %% Git diff失敗時の処理
+    GitDiffExecution --> GitDiffFailure: git diff失敗時\n(HEADが存在しない等)
+
+    GitDiffFailure --> SetEmptyArray: preExistingChanges\n空配列に確実に設定
+
+    SetEmptyArray --> LogInitialCommit: 初回コミット前という\ninfo logを出力
+
+    LogInitialCommit --> ScopeCheckInit
+
+    %% スコープチェックでのEXCLUDE_PATTERNS適用
+    ScopeCheckInit --> EvaluateExcludePatterns: EXCLUDE_PATTERNS評価
+
+    EvaluateExcludePatterns --> CheckConfigFiles: .mcp.json, .gitignore,\n.env.example, tsconfig.json,\nvitest.config.ts,\nvite.config.tsのパターン確認
+
+    CheckConfigFiles --> ExcludeMatched: パターンマッチの変更ファイル
+
+    ExcludeMatched --> ScopeValidationPass: preExistingChangesに\n含まれる変更を除外
+
+    ScopeValidationPass --> CommitPhaseAvailable: commitフェーズへの\n遷移がブロックされない
+
+    CommitPhaseAvailable --> End: フェーズ遷移完了
+
+    %% 三つの修正の統合効果
+    EntryRemoved -.->|FIX-1完了| SystemStable: loop-detector安定化
+    ValidationPass -.->|FIX-2完了| AutomationLevel: 自動化レベル向上
+    CommitPhaseAvailable -.->|FIX-3完了| AutomationLevel
+
+    SystemStable --> FinalIntegration: 全3修正統合テスト
+    AutomationLevel --> FinalIntegration
+
+    FinalIntegration --> End: ワークフロー実行成功
+
+    %% コメント
+    %% FIX-1: loop-detector-state.jsonのファイルサイズ管理
+    %% - entry.timestamps配列: ファイル編集時刻のタイムスタンプ群
+    %% - lastWarning: 警告抑止期間の管理フラグ
+    %% - 削除判定: timestamps.length===0かつlastWarning非設定の2条件両立時
+    %% - 初回実行: 肥大化した状態ファイル(107KB→数KB〜数十KB)が自動クリーンアップ
+    %% - 新規実行: 古いエントリが段階的に削除され肥大化を防止
+
+    %% FIX-2: artifact-validatorとの一貫性維持
+    %% - 重複行禁止: 3行以上の同一行がエラー
+    %% - セクション密度: 実質行が5行以上必須
+    %% - 必須セクション: サマリー+フェーズ固有セクション
+    %% - 禁止パターン: ブラケット記法、決定保留を示すN/A等
+
+    %% FIX-3: 初期化時のエラーハンドリング強化
+    %% - git diff失敗: HEADなし(初回コミット前)またはgit環境エラー
+    %% - preExistingChanges: 常に配列型を保証(undefined回避)
+    %% - EXCLUDE_PATTERNS: 設定ファイルで自動除外
+    %% - 効果: 手動のworkflow_set_scopeが不要

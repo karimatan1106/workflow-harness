@@ -1,0 +1,94 @@
+%% ワークフロー並列タスク対応 - フローチャート
+%% ツール呼び出しとHookのファイルパス推論
+
+flowchart TD
+    subgraph ToolExecution["ツール呼び出し処理"]
+        T1[ツール呼び出し受信]
+        T2{taskId指定あり?}
+        T3[discoverTasks で全タスク取得]
+        T4{taskIdが存在?}
+        T5[タスク状態を取得]
+        T6[操作を実行]
+        T7[エラー: TASK_NOT_FOUND]
+        T8[タスク一覧を返す]
+
+        T1 --> T2
+        T2 -->|Yes| T3
+        T2 -->|No: status/list| T3
+        T3 --> T4
+        T4 -->|Yes| T5
+        T4 -->|No| T7
+        T5 --> T6
+        T3 -->|list/status引数なし| T8
+    end
+
+    subgraph DiscoverTasks["discoverTasks処理"]
+        D1[.claude/state/workflows/ を走査]
+        D2[各サブディレクトリを列挙]
+        D3[workflow-state.json を読み込み]
+        D4{phase == completed?}
+        D5[結果配列に追加]
+        D6[スキップ]
+        D7[全タスク配列を返す]
+
+        D1 --> D2
+        D2 --> D3
+        D3 --> D4
+        D4 -->|No| D5
+        D4 -->|Yes| D6
+        D5 --> D7
+        D6 --> D7
+    end
+
+    subgraph HookProcessing["Hook処理（ファイルパス推論）"]
+        H1[ファイル編集検出]
+        H2[discoverTasks で全タスク取得]
+        H3[ファイルパスとタスクをマッチング]
+        H4{マッチするタスクあり?}
+        H5[最長一致のタスクを選択]
+        H6[タスクのフェーズルールを適用]
+        H7[編集を許可（緩和方針）]
+        H8{編集許可?}
+        H9[編集を許可]
+        H10[編集をブロック]
+
+        H1 --> H2
+        H2 --> H3
+        H3 --> H4
+        H4 -->|Yes| H5
+        H4 -->|No| H7
+        H5 --> H6
+        H6 --> H8
+        H8 -->|Yes| H9
+        H8 -->|No| H10
+    end
+
+    subgraph PathMatching["ファイルパスマッチング"]
+        P1[入力: filePath, tasks]
+        P2[bestMatch = null, bestLength = 0]
+        P3[各タスクをループ]
+        P4{filePath.startsWith<br/>task.docsDir?}
+        P5{docsDir.length > bestLength?}
+        P6[bestMatch = task<br/>bestLength = docsDir.length]
+        P7{filePath.startsWith<br/>task.workflowDir?}
+        P8{workflowDir.length > bestLength?}
+        P9[bestMatch = task<br/>bestLength = workflowDir.length]
+        P10[次のタスクへ]
+        P11[bestMatch を返す]
+
+        P1 --> P2
+        P2 --> P3
+        P3 --> P4
+        P4 -->|Yes| P5
+        P4 -->|No| P7
+        P5 -->|Yes| P6
+        P5 -->|No| P7
+        P6 --> P7
+        P7 -->|Yes| P8
+        P7 -->|No| P10
+        P8 -->|Yes| P9
+        P8 -->|No| P10
+        P9 --> P10
+        P10 --> P3
+        P3 -->|ループ終了| P11
+    end

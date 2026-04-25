@@ -1,0 +1,57 @@
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> PhaseCheck
+    PhaseCheck --> IdleCompleted: idle/completed判定
+    PhaseCheck --> ResolvePhaseGuide: 標準フェーズ
+
+    IdleCompleted --> ResponseComplete: phaseGuideなし
+    ResponseComplete --> End
+
+    ResolvePhaseGuide --> ExtractPhaseGuide: phaseGuideを解決
+    ExtractPhaseGuide --> GuideValidation: 解決成功確認
+
+    GuideValidation --> ApplySlimGuide: phaseGuide存在
+    GuideValidation --> ResponseComplete: phaseGuideなし
+
+    ApplySlimGuide --> RemoveMainFields: 主フィールド除外
+    RemoveMainFields --> CheckSubPhases: サブフェーズ確認
+
+    CheckSubPhases --> CleanSubPhases: サブフェーズあり
+    CheckSubPhases --> ConstructResponse: サブフェーズなし
+
+    CleanSubPhases --> RemoveSubFields: 各サブフェーズ処理
+    RemoveSubFields --> SubFieldsDone: 全サブフェーズ完了
+
+    SubFieldsDone --> ConstructResponse
+    ConstructResponse --> SetPhaseGuide: slimGuideをセット
+    SetPhaseGuide --> ResponseComplete
+
+    ResponseComplete --> End
+
+    note right of Start
+        workflow_statusレスポンス処理開始
+    end note
+
+    note right of PhaseCheck
+        現在のフェーズがidleまたはcompletedか判定
+    end note
+
+    note right of ResolvePhaseGuide
+        resolvePhaseGuideで
+        フェーズガイドを取得
+    end note
+
+    note right of RemoveMainFields
+        subagentTemplate、content、
+        claudeMdSectionsを除外
+    end note
+
+    note right of CleanSubPhases
+        subPhasesの各エントリから
+        同じ3フィールドを除外
+    end note
+
+    note right of End
+        削減されたレスポンス返却
+    end note

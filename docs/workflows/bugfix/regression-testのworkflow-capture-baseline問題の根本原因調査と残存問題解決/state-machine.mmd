@@ -1,0 +1,23 @@
+%% サマリー
+%% 目的: FR-15タスクの実装フロー（CLAUDE.md ルール20への補足説明追記）をステートマシン図で表現
+%% 評価スコープ: CLAUDE.md ルール20のみが対象。変更対象は695〜699行目の箇条書き末尾への追記箇所
+%% 主要な決定事項: 段階的な4状態を設計。testingバイパスとforceTransition警告の2項目を追記形式で表現
+%% 検証状況: Edit/Read ツールで CLAUDE.md への追記内容を確認済み
+%% 次フェーズで必要な情報: state-machine.mmd 生成後、flowchart.mmd で詳細処理フロー化を検討
+
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> InitialState: Identify Rule20 structure
+
+    InitialState --> FourBulletsState: Confirm existing 4 bullets preserved
+
+    FourBulletsState --> FirstInsertionState: Insert calculatePhaseSkips bullet
+
+    FirstInsertionState --> SecondInsertionState: Insert forceTransition warning bullet
+
+    SecondInsertionState --> VerificationState: Validate all changes complete
+
+    VerificationState --> End: FR-15 implementation verified
+
+    End --> [*]

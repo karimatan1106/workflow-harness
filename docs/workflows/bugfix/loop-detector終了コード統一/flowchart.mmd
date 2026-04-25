@@ -1,0 +1,74 @@
+flowchart TD
+    Start([Start: loop-detector.js]) --> RegisterHandlers["Register Global Error Handlers"]
+    RegisterHandlers --> UncaughtHandler["process.on('uncaughtException')<br/>Currently: exit(1)"]
+    UncaughtHandler --> UnhandledHandler["process.on('unhandledRejection')<br/>Currently: exit(1)"]
+    UnhandledHandler --> Timeout["Set timeout: 3 seconds<br/>(Fail-closed)<br/>Currently: exit(2)"]
+
+    Timeout --> StdinInit["Initialize stdin<br/>Set encoding to utf8"]
+    StdinInit --> StdinListen["Listen for stdin events"]
+
+    StdinListen --> DataEvent{"Data event?"}
+    DataEvent -->|Yes| ReadData["Accumulate input data"]
+    ReadData --> StdinListen
+    DataEvent -->|No| ErrorEvent{"Error event?"}
+
+    ErrorEvent -->|Yes| HandleStdinError["Clear timeout<br/>Exit(0)"]
+    ErrorEvent -->|No| EndEvent{"End event?"}
+
+    EndEvent -->|Yes| TimeoutCheck{"Timeout expired?"}
+    TimeoutCheck -->|Yes| TimeoutExit["Clear timeout<br/>Exit(2)<br/>Security fail-closed"]
+    TimeoutCheck -->|No| ParseJSON["Parse JSON from input data"]
+
+    ParseJSON --> JSONValid{"Valid JSON?"}
+    JSONValid -->|No| InvalidJSON["Exit(0)<br/>Permit - no input"]
+    JSONValid -->|Yes| ValidateInput["Validate input structure<br/>Check: tool_name, tool_input, file_path"]
+
+    ValidateInput --> InputValid{"Valid input?"}
+    InputValid -->|No| PermitNoInput["Exit(0)<br/>Permit - no input"]
+    InputValid -->|Yes| CheckTool{"Tool is Edit or Write?"}
+
+    CheckTool -->|No| PermitOther["Exit(0)<br/>Permit - non-restricted tool"]
+    CheckTool -->|Yes| CheckPath{"FilePath exists?"}
+
+    CheckPath -->|No| PermitNoPath["Exit(0)<br/>Permit - no file path"]
+    CheckPath -->|Yes| RunDetection["Execute: checkLoop(filePath)"]
+
+    RunDetection --> LoadState["Load state file<br/>loop-detector-state.json"]
+    LoadState --> NormalizeFile["Normalize file path:<br/>lowercase + slash unification"]
+    NormalizeFile --> ProcessTimestamps["Filter old timestamps<br/>Remove > 5min old entries"]
+    ProcessTimestamps --> AppendTimestamp["Append current timestamp"]
+
+    AppendTimestamp --> CheckThreshold{"Edit count >= Threshold?"}
+    CheckThreshold -->|No| SaveState["Save updated state"]
+    SaveState --> PermitContinue["Exit(0)<br/>Permit - allow edit"]
+
+    CheckThreshold -->|Yes| CheckSuppression{"Warning suppression<br/>active?"}
+    CheckSuppression -->|Yes| UpdateSuppression["Update suppression state<br/>Skip warning"]
+    UpdateSuppression --> SaveState
+
+    CheckSuppression -->|No| DisplayWarning["Display warning message<br/>with analysis hints"]
+    DisplayWarning --> LogWarning["Log warning to:<br/>loop-detection-log.json"]
+    LogWarning --> RecordTimestamp["Record warning timestamp<br/>for suppression"]
+    RecordTimestamp --> SaveStateBlock["Save updated state"]
+    SaveStateBlock --> BlockEdit["Exit(2)<br/>BLOCK - infinite loop detected<br/>UNIFIED exit code"]
+
+    HandleStdinError --> End([End])
+    InvalidJSON --> End
+    PermitNoInput --> End
+    PermitOther --> End
+    PermitNoPath --> End
+    PermitContinue --> End
+    BlockEdit --> End
+    TimeoutExit --> End
+
+    style Start fill:#e1f5e1
+    style End fill:#ffe1e1
+    style BlockEdit fill:#ffcccc,stroke:#cc0000,stroke-width:3px
+    style TimeoutExit fill:#ffcccc,stroke:#cc0000,stroke-width:3px
+    style UncaughtHandler fill:#fff3cd,stroke:#ff6600,stroke-width:2px
+    style UnhandledHandler fill:#fff3cd,stroke:#ff6600,stroke-width:2px
+    style Timeout fill:#fff3cd,stroke:#ff6600,stroke-width:2px
+
+    Note["NOTE: Modification target<br/>─────────────────<br/>1. uncaughtException: exit(1) → exit(2)<br/>2. unhandledRejection: exit(1) → exit(2)<br/>Ensures consistent error handling<br/>exit code 2 = hook validation failure"]
+    Note -.->|Reference| UncaughtHandler
+    Note -.->|Reference| UnhandledHandler

@@ -1,0 +1,186 @@
+task: harness-stale-task-cleanup-and-hmac-recovery
+phase: test_design
+status: complete
+created: 2026-03-11
+
+TD-D-01_id: TD-D-01
+TD-D-01_title: vitest + tmpdir戦略でファイルシステム依存テストを隔離
+TD-D-01_rationale: hmac.test.tsの既存パターン(mkdtempSync+afterEach rmSync)に準拠。STATE_DIR環境変数でテスト用ディレクトリを注入し本番状態を汚染しない
+TD-D-02_id: TD-D-02
+TD-D-02_title: HMAC署名済みTaskStateヘルパー関数でテストデータ生成を統一
+TD-D-02_rationale: 各テストケースで署名付きTaskStateが必要。createSignedState(overrides)ヘルパーで重複を排除しテストの可読性を維持
+TD-D-03_id: TD-D-03
+TD-D-03_title: completedフィルタはlistTasksFromDiskの戻り値件数で検証
+TD-D-03_rationale: completed/activeの混在データを作成し戻り値の長さとphaseフィールドで判定。内部実装ではなく外部振る舞いをテスト
+TD-D-04_id: TD-D-04
+TD-D-04_title: HMAC検証失敗テストは意図的にキーを変更して再現
+TD-D-04_rationale: signState(state, keyA)で署名後にhmac-keys.jsonをkeyBで上書きすることでキー不整合を再現
+TD-D-05_id: TD-D-05
+TD-D-05_title: レガシー配列マイグレーションは要素数1/2/3の3パターンで網羅
+TD-D-05_rationale: 要素数1はpreviousなし、2はcurrent+previous、3は末尾2つのみ。境界値で変換ロジック正確性を保証
+TD-D-06_id: TD-D-06
+TD-D-06_title: レスポンスサイズ検証はBuffer.byteLengthで測定
+TD-D-06_rationale: JSON.stringify().lengthはマルチバイト文字で不正確。Buffer.byteLength使用でエンコーディング差異を考慮
+TD-D-07_id: TD-D-07
+TD-D-07_title: 単一テストファイルにAC別describeブロックで集約
+TD-D-07_rationale: AC-1~4は同一モジュール群対象。共通setup/teardown共有で実行速度と保守性を両立
+
+TC-1-01_id: TC-1-01
+TC-1-01_ac: AC-1
+TC-1-01_title: harness_status(taskId省略)の応答サイズが10KB以下
+TC-1-01_description: 5 active + 10 completedタスク作成、handleHarnessStatus({}, sm)呼出、Buffer.byteLength(JSON.stringify(result))<=10240を検証
+TC-1-01_test_type: integration
+TC-1-01_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-1-01_arrange: tmpdir作成、STATE_DIR設定、5 active + 10 completed署名済みTaskState書き込み
+TC-1-01_act: handleHarnessStatus({ taskId: undefined }, sm)
+TC-1-01_assert: Buffer.byteLength(JSON.stringify(result)) <= 10240
+TC-1-01_traces: F-001
+TC-1-02_id: TC-1-02
+TC-1-02_ac: AC-1
+TC-1-02_title: 大量タスク(50件active)でも応答サイズが10KB以下
+TC-1-02_description: 50件activeタスク作成(タスク名30-50文字)、sm.listTasks()結果のバイト長<=10240を検証
+TC-1-02_test_type: integration
+TC-1-02_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-1-02_arrange: tmpdir作成、50件active署名済みTaskState書き込み
+TC-1-02_act: sm.listTasks()
+TC-1-02_assert: Buffer.byteLength(JSON.stringify(result)) <= 10240
+TC-1-02_traces: F-001
+TC-2-01_id: TC-2-01
+TC-2-01_ac: AC-2
+TC-2-01_title: completedタスクがlistTasksFromDiskのデフォルト結果から除外される
+TC-2-01_description: active 3件 + completed 2件作成、listTasksFromDisk()が3件のみ返しcompleted除外を検証
+TC-2-01_test_type: unit
+TC-2-01_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-2-01_arrange: tmpdir作成、3 active(research/planning/implementation) + 2 completed署名済みTaskState
+TC-2-01_act: listTasksFromDisk()
+TC-2-01_assert: result.length === 3 かつ result.every(t => t.phase !== "completed")
+TC-2-01_traces: F-002
+TC-2-02_id: TC-2-02
+TC-2-02_ac: AC-2
+TC-2-02_title: 全タスクがcompletedの場合listTasksFromDiskは空配列を返す
+TC-2-02_description: completed 5件のみ作成しlistTasksFromDisk()が空配列を返すことを検証
+TC-2-02_test_type: unit
+TC-2-02_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-2-02_arrange: tmpdir作成、5件completed署名済みTaskState
+TC-2-02_act: listTasksFromDisk()
+TC-2-02_assert: result.length === 0
+TC-2-02_traces: F-002
+TC-2-03_id: TC-2-03
+TC-2-03_ac: AC-2
+TC-2-03_title: buildTaskIndexはcompletedタスクも含めて返す
+TC-2-03_description: active 2 + completed 3作成、buildTaskIndex(stateDir)が5件返却しcompleted 3件のstatus="completed"を検証
+TC-2-03_test_type: unit
+TC-2-03_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-2-03_arrange: tmpdir作成、2 active + 3 completed署名済みTaskState
+TC-2-03_act: buildTaskIndex(stateDir)
+TC-2-03_assert: result.length === 5 かつ result.filter(t => t.status === "completed").length === 3
+TC-2-03_traces: F-002, F-003
+TC-3-01_id: TC-3-01
+TC-3-01_ac: AC-3
+TC-3-01_title: HMAC検証失敗時にloadTaskFromDiskがnullではなくintegrityWarning付きデータを返す
+TC-3-01_description: keyAで署名保存後hmac-keys.jsonをkeyBに変更、loadTaskFromDiskがintegrityWarning=true付きで返却を検証
+TC-3-01_test_type: unit
+TC-3-01_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-3-01_arrange: keyAでTaskState署名保存、hmac-keys.jsonをkeyBで上書き
+TC-3-01_act: loadTaskFromDisk(taskId)
+TC-3-01_assert: result !== null かつ result.integrityWarning === true かつ result.taskId === 元のtaskId
+TC-3-01_traces: F-004
+TC-3-02_id: TC-3-02
+TC-3-02_ac: AC-3
+TC-3-02_title: HMAC検証成功時はintegrityWarningが付与されない
+TC-3-02_description: 正しいキーで署名したTaskStateへのloadTaskFromDiskがintegrityWarningなしで返却を検証
+TC-3-02_test_type: unit
+TC-3-02_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-3-02_arrange: 正しいキーでTaskState署名保存
+TC-3-02_act: loadTaskFromDisk(taskId)
+TC-3-02_assert: result !== null かつ result.integrityWarning === undefined
+TC-3-02_traces: F-004
+TC-3-03_id: TC-3-03
+TC-3-03_ac: AC-3
+TC-3-03_title: integrityWarning付きタスクへの書き込み操作がブロックされる
+TC-3-03_description: integrityWarning=trueタスクへのadvancePhase/approveGate/recordFeedback全てエラー返却を検証
+TC-3-03_test_type: unit
+TC-3-03_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-3-03_arrange: HMAC不一致状態のタスクを作成(TC-3-01と同じ手法)
+TC-3-03_act: sm.advancePhase(taskId), sm.approveGate(taskId, "user"), sm.recordFeedback(taskId, "test")
+TC-3-03_assert: 全てsuccess=falseまたはfalseを返す。エラーメッセージにintegrity関連の警告を含む
+TC-3-03_traces: F-004, F-005
+TC-3-04_id: TC-3-04
+TC-3-04_ac: AC-3
+TC-3-04_title: handleHarnessStatusがintegrityWarning付きタスクの情報を警告付きで返す
+TC-3-04_description: HMAC不一致タスクへのhandleHarnessStatus呼出でintegrityWarning付き基本情報を返却し"Task not found"でないことを検証
+TC-3-04_test_type: integration
+TC-3-04_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-3-04_arrange: HMAC不一致状態のタスク作成
+TC-3-04_act: handleHarnessStatus({ taskId }, sm)
+TC-3-04_assert: レスポンスにintegrityWarning=trueが含まれ、"Task not found"エラーではない
+TC-3-04_traces: F-004, F-005
+TC-4-01_id: TC-4-01
+TC-4-01_ac: AC-4
+TC-4-01_title: レガシー配列(2要素)マイグレーションでpreviousキーが保持される
+TC-4-01_description: hmac-keys.jsonに[{key:"oldKey",createdAt:"..."},{key:"newKey",createdAt:"..."}]を書き込みloadHmacKeysを呼び出す。current="newKey", previous="oldKey"を検証
+TC-4-01_test_type: unit
+TC-4-01_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-4-01_arrange: tmpdir作成、2要素レガシー配列をhmac-keys.jsonに書き込み
+TC-4-01_act: loadHmacKeys(tmpdir)
+TC-4-01_assert: result.current === "newKey" かつ result.previous === "oldKey"
+TC-4-01_traces: F-006
+TC-4-02_id: TC-4-02
+TC-4-02_ac: AC-4
+TC-4-02_title: レガシー配列(1要素)マイグレーションでpreviousが未設定
+TC-4-02_description: hmac-keys.jsonに[{key:"onlyKey",createdAt:"..."}]を書き込みloadHmacKeysを呼び出す。current="onlyKey", previous=undefinedを検証
+TC-4-02_test_type: unit
+TC-4-02_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-4-02_arrange: tmpdir作成、1要素レガシー配列をhmac-keys.jsonに書き込み
+TC-4-02_act: loadHmacKeys(tmpdir)
+TC-4-02_assert: result.current === "onlyKey" かつ result.previous === undefined
+TC-4-02_traces: F-006
+TC-4-03_id: TC-4-03
+TC-4-03_ac: AC-4
+TC-4-03_title: レガシー配列(3要素)マイグレーションで末尾2つのみ使用
+TC-4-03_description: hmac-keys.jsonに3要素配列を書き込みloadHmacKeysを呼び出す。current=末尾key, previous=末尾-1 keyを検証。最古のキーは破棄
+TC-4-03_test_type: unit
+TC-4-03_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-4-03_arrange: tmpdir作成、3要素レガシー配列[{key:"oldest"},{key:"middle"},{key:"newest"}]
+TC-4-03_act: loadHmacKeys(tmpdir)
+TC-4-03_assert: result.current === "newest" かつ result.previous === "middle"
+TC-4-03_traces: F-006
+TC-4-04_id: TC-4-04
+TC-4-04_ac: AC-4
+TC-4-04_title: レガシー配列マイグレーション後にhmac-keys.jsonが新形式で上書き保存される
+TC-4-04_description: loadHmacKeys変換後のhmac-keys.json再読み込みで新形式({current,previous,rotatedAt})を検証
+TC-4-04_test_type: unit
+TC-4-04_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-4-04_arrange: tmpdir作成、2要素レガシー配列をhmac-keys.jsonに書き込み
+TC-4-04_act: loadHmacKeys(tmpdir)後にhmac-keys.jsonを直接読み込み
+TC-4-04_assert: JSON.parse結果が{current,previous,rotatedAt}形式でArray.isArray===false
+TC-4-04_traces: F-006, F-007
+TC-4-05_id: TC-4-05
+TC-4-05_ac: AC-4
+TC-4-05_title: マイグレーション後のpreviousキーでverifyStateWithRotationが成功する
+TC-4-05_description: レガシー配列の旧キーで署名したTaskStateに対しマイグレーション後のverifyStateWithRotation成功を検証
+TC-4-05_test_type: integration
+TC-4-05_target_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+TC-4-05_arrange: oldKeyでTaskState署名、[{key:"oldKey"},{key:"newKey"}]をhmac-keys.jsonに書き込み、loadHmacKeysでマイグレーション実行
+TC-4-05_act: verifyStateWithRotation(state, tmpdir)
+TC-4-05_assert: result === true
+TC-4-05_traces: F-006, F-007
+
+test_file: workflow-harness/mcp-server/src/__tests__/stale-task-hmac.test.ts
+test_framework: vitest
+test_count: 15
+coverage_summary: AC-1(2件) AC-2(3件) AC-3(4件) AC-4(5件) 境界値+正常+異常パス網羅
+
+decisions[7]{id,statement,rationale}:
+  TD-D-01, "tmpdir隔離パターンでファイルシステムテストを実行", "hmac.test.tsの実績あるパターンに準拠し環境汚染を防止"
+  TD-D-02, "署名済みTaskStateヘルパーでテストデータ重複を排除", "15テストケース中12件がHMAC署名済み状態を必要とし共通化効果が高い"
+  TD-D-03, "completedフィルタは戻り値の件数とphaseフィールドで検証", "内部実装への結合を避け振る舞い駆動テストを維持"
+  TD-D-04, "HMAC不一致はhmac-keys.json上書きで再現", "実際のキーローテーションシナリオに最も近い再現手法"
+  TD-D-05, "レガシー配列は要素数1/2/3の3パターンで境界値テスト", "変換ロジックの全分岐をカバーしリグレッションを防止"
+  TD-D-06, "レスポンスサイズはBuffer.byteLengthで測定", "JSON.stringify().lengthはマルチバイト文字で不正確になるためバイト長を使用"
+  TD-D-07, "テストファイルを単一ファイルに集約しdescribeでAC別グループ化", "共通setup/teardown共有と実行速度の両立"
+
+artifacts[1]{path}:
+  docs/workflows/harness-stale-task-cleanup-and-hmac-recovery/test-design.toon
+
+next: test_impl

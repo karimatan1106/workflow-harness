@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> NoKnownBugs: タスク開始
+
+    NoKnownBugs --> Recording: workflow_record_known_bug
+    Recording --> HasKnownBugs: 記録成功
+    Recording --> NoKnownBugs: エラー（フェーズ違反等）
+
+    HasKnownBugs --> Recording: 追加記録
+    HasKnownBugs --> [*]: タスク完了
+
+    note right of Recording
+        regression_testフェーズでのみ
+        記録可能
+    end note

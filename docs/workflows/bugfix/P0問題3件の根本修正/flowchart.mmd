@@ -1,0 +1,49 @@
+flowchart TD
+    Start((ワークフロー実行開始)) --> P0Check{P0問題判定}
+
+    P0Check -->|P0-3検出| P03Flow(P0-3: task-index.jsonアトミック化)
+    P0Check -->|P0-2検出| P02Flow(P0-2: PHASE_TO_ARTIFACT拡張)
+    P0Check -->|P0-1検出| P01Flow(P0-1: researchスコープ設定)
+
+    P03Flow --> P03Cache(writeTaskIndexCache関数実行)
+    P03Cache --> P03Temp(一時ファイルを同一ディレクトリに生成する)
+    P03Temp --> P03CacheCheck{既存キャッシュの更新時刻確認}
+    P03CacheCheck -->|1秒以内に更新| P03Skip(処理をスキップして終了)
+    P03CacheCheck -->|1秒以上経過| P03Write(一時ファイルに書き込み実行)
+    P03Write --> P03Rename(fs.renameSyncでアトミック置き換え)
+    P03Rename --> P03Success{置き換え成功}
+    P03Success -->|成功| P03Complete(P0-3修正完了)
+    P03Success -->|失敗| P03Cleanup(一時ファイルを削除試行)
+    P03Cleanup --> P03Error(エラーをログして継続)
+
+    P02Flow --> P02Check(PHASE_TO_ARTIFACTの登録状態確認)
+    P02Check --> P02Current{現在の登録状況}
+    P02Current -->|research/requirements/test_designのみ| P02Add(parallel_analysisエントリを追加)
+    P02Current -->|既に追加済み| P02Verify(既存登録を確認)
+    P02Add --> P02Artifacts(spec.mdとthreat-model.mdをマッピング)
+    P02Artifacts --> P02Complete(P0-2修正完了)
+    P02Verify --> P02Complete
+
+    P01Flow --> P01Model(researchのmodelをsonnetに変更)
+    P01Model --> P01Checklist(checklistの末尾に5番目項目を追加)
+    P01Checklist --> P01CheckDetail(workflow_set_scope呼び出し指示を記述)
+    P01CheckDetail --> P01Template(subagentTemplateにスコープ設定セクション追加)
+    P01Template --> P01NextWarning(next.tsにresearch→requirements遷移警告を追加)
+    P01NextWarning --> P01ScopeCheck{スコープ設定状態確認}
+    P01ScopeCheck -->|affectedFilesとaffectedDirsが両方0| P01Warn(遷移警告をクライアントに返す)
+    P01ScopeCheck -->|スコープが設定されている| P01Allow(フェーズ遷移を許可)
+    P01Warn --> P01Complete(P0-1修正完了)
+    P01Allow --> P01Complete
+
+    P03Skip --> Merge{全修正完了確認}
+    P03Error --> Merge
+    P03Complete --> Merge
+    P02Complete --> Merge
+    P01Complete --> Merge
+
+    Merge -->|全修正成功| TaskIndexSync(syncTaskIndex関数でtask-index.jsonを同期更新)
+    TaskIndexSync --> Validation(成果物品質バリデーション実行)
+    Validation --> ValidationCheck{バリデーション結果}
+    ValidationCheck -->|合格| Final((修正完了・ワークフロー終了))
+    ValidationCheck -->|不合格| Retry(修正内容を見直し)
+    Retry --> P0Check

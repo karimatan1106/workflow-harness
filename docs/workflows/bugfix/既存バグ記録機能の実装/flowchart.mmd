@@ -1,0 +1,22 @@
+flowchart TD
+    A[regression_testフェーズ] --> B{テスト失敗}
+    B -->|なし| C[テスト成功]
+    B -->|あり| D{ベースラインと比較}
+
+    D -->|ベースラインにある| E[既存の失敗 - 許容]
+    D -->|新規失敗| F{今回の変更が原因?}
+
+    F -->|YES| G[実装を修正]
+    G --> A
+
+    F -->|NO| H[既存バグと判断]
+    H --> I[workflow_record_known_bug]
+
+    I --> J[bugId自動生成]
+    J --> K[TaskStateに保存]
+    K --> L[テストをskip化]
+    L --> M[別タスクで修正予定]
+
+    C --> N[regression_test完了]
+    E --> N
+    M --> N

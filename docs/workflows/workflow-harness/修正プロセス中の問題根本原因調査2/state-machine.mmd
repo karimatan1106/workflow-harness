@@ -1,0 +1,48 @@
+stateDiagram-v2
+    [*] --> "Issue Detected"
+
+    "Issue Detected" --> "FR-A: manual_test Template"
+    "Issue Detected" --> "FR-B: performance_test Template"
+    "Issue Detected" --> "FR-C1: e2e_test Template Forbidden Words"
+    "Issue Detected" --> "FR-C2: e2e_test Template Summary"
+    "Issue Detected" --> "FR-D: CLAUDE.md AICommand"
+
+    "FR-A: manual_test Template" --> "Building definitions.ts"
+    "FR-B: performance_test Template" --> "Building definitions.ts"
+    "FR-C1: e2e_test Template Forbidden Words" --> "Building definitions.ts"
+    "FR-C2: e2e_test Template Summary" --> "Building definitions.ts"
+
+    "Building definitions.ts" --> "Build Verification"
+    "Build Verification" --> "MCP Server Restart"
+
+    "FR-D: CLAUDE.md AICommand" --> "CLAUDE.md Updated"
+    "CLAUDE.md Updated" --> "Documentation Verification"
+
+    "MCP Server Restart" --> "Test Execution"
+    "Documentation Verification" --> "Test Execution"
+
+    "Test Execution" --> "FR-E: Verify Fix Applied"
+    "FR-E: Verify Fix Applied" --> "All Tests Passed"
+
+    "All Tests Passed" --> [*]
+
+    note right of "Issue Detected"
+        Problems A-E detected in previous workflow
+        manual_test, performance_test, e2e_test templates
+        and CLAUDE.md documentation require updates
+    end
+
+    note right of "Building definitions.ts"
+        TypeScript compilation of updated template strings
+        Changes to FR-A, FR-B, FR-C1, FR-C2 implementations
+    end
+
+    note right of "MCP Server Restart"
+        Node.js module cache cleared
+        New validator rules loaded into memory
+    end
+
+    note right of "FR-E: Verify Fix Applied"
+        Verify commits 153587a and related fixes
+        Confirm existing tests pass with new logic
+    end

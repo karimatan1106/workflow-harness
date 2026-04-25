@@ -1,0 +1,69 @@
+flowchart TD
+    Start(開発環境整合性修正開始) --> S1(Step1: workflow-plugin内の整理とコミット)
+
+    S1 --> S1A("bash-whitelist.js確認<br/>getWhitelistForPhase関数内の<br/>verificationPhases配列を確認")
+    S1A --> S1B("bash-whitelist.jsに<br/>parallel_verificationを追加")
+    S1B --> S1C(".gitignoreにmcp-server/hooks/lib/を追加")
+    S1C --> S1D(".gitignoreにmcp-server/src/verify-sync.test.tsを追加")
+    S1D --> S1E("workflow-pluginでgit add実行")
+    S1E --> S1F("コミット実行<br/>メッセージ: parallel_verification追加と<br/>不要ファイル除外")
+
+    S1F --> S1Check{git statusが<br/>クリーン?}
+    S1Check -->|No| S1Error("修正結果確認<br/>未追跡ファイルを検出")
+    S1Error --> S1Fix("不要ファイルが.gitignoreに<br/>正しく記録されているか確認<br/>必要に応じて修正")
+    S1Fix --> S1Check
+    S1Check -->|Yes| S1Conf("git show HEADで変更ファイルを確認<br/>bash-whitelist.jsと.gitignoreが<br/>表示されていることを確認")
+
+    S1Conf --> S2("Step2: 親リポジトリへの<br/>.gitmodulesファイル作成")
+
+    S2 --> S2A("親リポジトリルートに<br/>.gitmodulesファイルを作成")
+    S2A --> S2B("submodule workflow-pluginブロックを記述")
+    S2B --> S2C("path = workflow-pluginを記述")
+    S2C --> S2D("url = https://github.com/karimatan1106/workflow-pluginを記述")
+    S2D --> S2E{.gitmodulesが<br/>正しく作成された?}
+    S2E -->|No| S2Error("ファイル形式を確認<br/>インデント4スペース確認<br/>必要に応じて修正")
+    S2Error --> S2E
+    S2E -->|Yes| S3("Step3: 親リポジトリのサブモジュール<br/>ポインタ更新とコミット")
+
+    S3 --> S3A("git add .gitmodules実行")
+    S3A --> S3B("git add workflow-plugin実行<br/>workflow-pluginのgitlinkを更新")
+    S3B --> S3C("親リポジトリでコミット実行<br/>メッセージ: .gitmodules追加と<br/>workflow-pluginポインタ更新")
+    S3C --> S3Check1{git submodule status<br/>が成功?}
+    S3Check1 -->|No| S3Error1("エラー出力を確認<br/>submodule初期化状態を確認<br/>必要に応じて修正")
+    S3Error1 --> S3Check1
+    S3Check1 -->|Yes| S3Check2{git ls-files --stage<br/>でポインタが<br/>更新されている?}
+    S3Check2 -->|No| S3Error2("workflow-pluginのコミットハッシュ確認<br/>親リポジトリのポインタが<br/>最新を指しているか確認")
+    S3Error2 --> S3A
+    S3Check2 -->|Yes| S4("Step4: check_ocr.py削除状態確認")
+
+    S4 --> S4A("settings.jsonを開く")
+    S4A --> S4B{"UserPromptSubmitエントリが<br/>存在しない?"}
+    S4B -->|Yes, 存在しない| S4C("check_ocr.pyへの参照を検索")
+    S4B -->|No, 存在する| S4Error1("settings.jsonから<br/>UserPromptSubmitエントリ削除")
+    S4Error1 --> S4C
+    S4C --> S4D{check_ocr.pyへの<br/>参照が存在?}
+    S4D -->|Yes| S4Error2("settings.jsonから<br/>check_ocr.pyへの参照削除")
+    S4Error2 --> S4A
+    S4D -->|No| S4E("登録フックを確認<br/>PreToolUse, Write, Bash,<br/>PostToolUseのみ存在することを確認")
+
+    S4E --> FinalCheck("最終検証<br/>親リポジトリgit status確認<br/>workflow-plugingit status確認<br/>両方がクリーン状態")
+
+    FinalCheck --> FinalCheck1{すべての検証が<br/>成功?}
+    FinalCheck1 -->|No| RootCause("失敗原因分析<br/>各Stepで行った修正内容<br/>確認して修正")
+    RootCause --> S1Check
+    FinalCheck1 -->|Yes| End(開発環境整合性修正完了 - Gitリポジトリが正常状態に復帰)
+
+    style Start fill:#90EE90
+    style End fill:#90EE90
+    style S1 fill:#87CEEB
+    style S2 fill:#87CEEB
+    style S3 fill:#87CEEB
+    style S4 fill:#87CEEB
+    style S1Check fill:#FFB6C1
+    style S2E fill:#FFB6C1
+    style S3Check1 fill:#FFB6C1
+    style S3Check2 fill:#FFB6C1
+    style S4B fill:#FFB6C1
+    style S4D fill:#FFB6C1
+    style FinalCheck1 fill:#FFB6C1
+    style FinalCheck fill:#FFE4B5

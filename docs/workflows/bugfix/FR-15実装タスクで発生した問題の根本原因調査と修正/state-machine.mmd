@@ -1,0 +1,117 @@
+%% ## サマリー
+%% このステートマシン図はMCPサーバーの3つの修正（FR-16・FR-17・FR-18）の実装対象となる状態遷移を表す。
+%% - FR-16: e2e_testテンプレートのサマリーガイダンス改善により、サブエージェントの出力品質が向上（バリデーション成功率向上）
+%% - FR-17: testingテンプレートへの必須警告追加により、workflow_record_test_result省略によるフェーズ遷移ブロックを防止
+%% - FR-18: workflow_statusレスポンスへのsessionToken追加により、セッション継続時のトークン復元が可能化（Orchestrator可用性向上）
+
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> TaskInitialization: workflow_start
+    note right of Start
+        タスク初期化
+        sessionToken生成・返却
+        (FR-18関連: 初回トークン供給)
+    end note
+
+    TaskInitialization --> Research: phase=research開始
+
+    Research --> Requirements: 調査完了
+
+    Requirements --> ParallelAnalysis: 要件定義完了
+
+    ParallelAnalysis --> ThreatModeling: threat_modeling実行
+    ParallelAnalysis --> Planning: planning実行
+
+    ThreatModeling --> AnalysisWait: threat_modeling完了
+    Planning --> AnalysisWait: planning完了
+
+    AnalysisWait --> ParallelDesign: 並列分析完了
+
+    ParallelDesign --> StateMachine: state_machine実行
+    ParallelDesign --> Flowchart: flowchart実行
+    ParallelDesign --> UIDesign: ui_design実行
+
+    StateMachine --> DesignWait: state_machine完了
+    Flowchart --> DesignWait: flowchart完了
+    UIDesign --> DesignWait: ui_design完了
+
+    DesignWait --> DesignReview: 並列設計完了
+
+    DesignReview --> TestDesign: 設計レビュー承認
+
+    TestDesign --> TestImpl: テスト設計完了
+
+    TestImpl --> Implementation: テスト実装完了
+
+    Implementation --> Refactoring: 実装完了
+
+    Refactoring --> ParallelQuality: リファクタリング完了
+
+    ParallelQuality --> BuildCheck: build_check実行
+    ParallelQuality --> CodeReview: code_review実行
+
+    BuildCheck --> QualityWait: build_check完了
+    CodeReview --> QualityWait: code_review完了
+
+    QualityWait --> Testing: 品質チェック完了
+
+    Testing --> RecordTestResult: テスト実行
+    note right of Testing
+        テスト実行フェーズ
+        (FR-17関連: workflow_record_test_result必須)
+        省略時はworkflow_nextがブロック
+    end note
+
+    RecordTestResult --> RegressionTestWait: テスト結果記録
+
+    RegressionTestWait --> RegressionTest: regression_testへ遷移
+    note right of RegressionTestWait
+        sessionToken存続確認
+        (FR-18関連: セッション継続時の
+         トークン復元ポイント)
+    end note
+
+    RegressionTest --> ParallelVerification: リグレッションテスト完了
+
+    ParallelVerification --> ManualTest: manual_test実行
+    ParallelVerification --> SecurityScan: security_scan実行
+    ParallelVerification --> PerformanceTest: performance_test実行
+    ParallelVerification --> E2ETest: e2e_test実行
+    note right of E2ETest
+        E2Eテストフェーズ
+        (FR-16関連: サマリーガイダンス改善)
+        実質行5行以上の出力確保
+    end note
+
+    ManualTest --> VerificationWait: manual_test完了
+    SecurityScan --> VerificationWait: security_scan完了
+    PerformanceTest --> VerificationWait: performance_test完了
+    E2ETest --> VerificationWait: e2e_test完了
+
+    VerificationWait --> DocsUpdate: 並列検証完了
+
+    DocsUpdate --> Commit: ドキュメント更新完了
+
+    Commit --> Push: コミット完了
+
+    Push --> CIVerification: プッシュ完了
+
+    CIVerification --> Deploy: CI検証完了
+
+    Deploy --> Completed: デプロイ完了
+
+    Completed --> End: タスク完了
+    note right of End
+        セッションとsessionTokenの完全終了
+        (FR-18関連: 最終的なトークン消失)
+    end note
+
+    RegressionTestWait --> SessionRecovery: セッション喪失時
+    note right of SessionRecovery
+        セッション中断が発生
+        workflow_statusを再呼び出し
+        (FR-18対応: tokenの再取得)
+    end note
+
+    SessionRecovery --> RegressionTest: sessionToken復元

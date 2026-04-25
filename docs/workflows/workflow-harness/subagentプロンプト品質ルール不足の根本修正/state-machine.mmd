@@ -1,0 +1,108 @@
+stateDiagram-v2
+    Start --> FetchPhaseGuide: buildPrompt()呼び出し
+
+    FetchPhaseGuide --> ReadGlobalRules: PhaseGuide取得成功
+
+    ReadGlobalRules --> ReadBashWhitelist: CLAUDE.md読み込み
+
+    ReadBashWhitelist --> BuildQualitySection: bash-whitelist読み込み
+
+    BuildQualitySection --> AddBracketPlaceholderWarning: 行数・密度要件セクション生成
+
+    AddBracketPlaceholderWarning --> AddBracketFenceWarning: 括弧禁止エッジケース警告追加
+
+    AddBracketFenceWarning --> AddPartialMatchWarning: コードフェンス内検出警告追加
+
+    AddPartialMatchWarning --> BuildForbiddenPatterns: 禁止パターン部分一致警告追加
+
+    BuildForbiddenPatterns --> BuildLineBreakInstruction: 禁止パターン（完全リスト）セクション生成
+
+    BuildLineBreakInstruction --> AddParagraphInstruction: 句点ごと改行行動指示追加
+
+    AddParagraphInstruction --> BuildDuplicateRule: セクション密度要件セクション生成
+
+    BuildDuplicateRule --> BuildStructuralLines: 同一行重複禁止ルール記載
+
+    BuildStructuralLines --> BuildRequiredSections: 構造要素除外ルール記載
+
+    BuildRequiredSections --> BuildMermaidRequirement: 必須セクション定義記載
+
+    BuildMermaidRequirement --> BuildProhibitedPatterns: Mermaidステートマシン要件記載
+
+    BuildProhibitedPatterns --> AddEdgeCaseWarnings: 禁止語リスト記載
+
+    AddEdgeCaseWarnings --> CompletePrompt: 3つのエッジケース警告確認
+
+    CompletePrompt --> ReturnPrompt: プロンプト組み立て完了
+
+    ReturnPrompt --> End: buildPrompt()終了
+
+    End --> Start2: buildRetryPrompt()呼び出し
+
+    Start2 --> ParseErrorMessage: エラーメッセージ受け取り
+
+    ParseErrorMessage --> CheckBracketPlaceholder: エラーメッセージ解析
+
+    CheckBracketPlaceholder --> BracketFound: プレースホルダー括弧検出判定
+
+    BracketFound -->|括弧エラー| AddBracketImprovement: 角括弧専用修正指示追加
+
+    AddBracketImprovement --> CheckForbiddenPattern: includes()による部分一致代替表現追加
+
+    CheckForbiddenPattern -->|禁止パターン検出| AddForbiddenImprovement: 禁止パターンエラー判定
+
+    BracketFound -->|括弧エラーではない| CheckForbiddenPattern: プレースホルダー括弧なし
+
+    AddForbiddenImprovement --> CheckDensityError: 禁止パターン修正指示追加
+
+    CheckDensityError -->|密度不足| AddDensityImprovement: セクション密度不足判定
+
+    CheckDensityError -->|密度正常| CheckDuplicateError: 密度修正指示追加
+
+    AddDensityImprovement --> CheckDuplicateError: 実質行数追加指示追加
+
+    CheckDuplicateError -->|重複行検出| AddDuplicateImprovement: 同一行繰り返し判定
+
+    CheckDuplicateError -->|重複行なし| CheckLineCountError: 繰り返し行書き換え指示追加
+
+    AddDuplicateImprovement --> CheckLineCountError: 各行に固有情報追加指示追加
+
+    CheckLineCountError -->|行数不足| AddLineCountImprovement: 最小行数不足判定
+
+    CheckLineCountError -->|行数充分| CheckMissingSection: 行数増加指示追加
+
+    AddLineCountImprovement --> CheckMissingSection: 成果物行数増加指示追加
+
+    CheckMissingSection -->|セクション欠落| AddMissingSectionImprovement: 必須セクション欠落判定
+
+    CheckMissingSection -->|セクション完備| BuildRetryPrompt: セクションヘッダー追加指示追加
+
+    AddMissingSectionImprovement --> BuildRetryPrompt: 欠落セクション名を示す指示追加
+
+    BuildRetryPrompt --> IncludeErrorContext: 前回バリデーション失敗理由セクション生成
+
+    IncludeErrorContext --> IncludeImprovementInstructions: エラーメッセージ全文を引用
+
+    IncludeImprovementInstructions --> IncludeQualityRequirements: 改善要求セクション生成
+
+    IncludeQualityRequirements --> IncludeBashCategories: 成果物品質要件セクション記載
+
+    IncludeBashCategories --> ReturnRetryPrompt: Bashコマンド制限セクション記載
+
+    ReturnRetryPrompt --> End2: buildRetryPrompt()終了
+
+    End2 --> End: システム終了
+
+    note right of CompletePrompt
+        3つのエッジケース:
+        1. コードフェンス内も括弧検出対象
+        2. includes()による部分一致検索
+        3. 句点ごとの改行による行数確保
+    end note
+
+    note right of CheckBracketPlaceholder
+        エラー種別の優先順位:
+        bracket > forbidden > density
+        > duplicate > line_count
+        > missing_section
+    end note

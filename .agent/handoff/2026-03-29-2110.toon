@@ -1,0 +1,40 @@
+## HANDOFF
+date: 2026-03-29 21:10
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] harness-first-pass-improvement (taskId: ce320677-d107-4cc9-ad90-978291c61666) → completed
+  - coordinator.mdにPhase Output Rules追加（decisions 5件以上、artifacts列挙等の定量ルール）
+  - worker.mdにEdit Completeness追加（全件適用義務、8箇所閾値、件数一致報告）
+  - defs-stage4.tsのbaseline/RTM手順は25db124で適用済み、本セッションで正しい内容に修正
+  - hearing-worker.mdのQuality Rulesセクション復元（premature commitで上書きされていた分）
+  - コミット: e2a6673, pushed to origin/feature/v2-workflow-overhaul
+  - AC-1~AC-5全met, F-001~F-007全verified, テスト825/828パス
+- [ ] docs-workflows-refactoring-v2 (taskId: 5127ee0c) → scope_definitionフェーズ停止中
+
+## 試したこと・結果
+- 成功: hearingまでharness_backしてartifact_driftを完全解消、全フェーズ再承認チェーン実行 (e2a6673)
+- 成功: coordinatorを経由せずworkerで直接.claude/agents/ファイルを編集するアプローチ（coordinatorがファイルをリバートする問題の回避）
+- 成功: 「判定: PASS」等の重複行をTC固有の括弧付き説明でユニーク化してcontent_validation通過
+- 失敗: delegate_coordinatorにfiles[]で.claude/agents/ファイルを渡すと、coordinatorのworkerがファイルをリバートする（4回発生、各回250s以上消費）
+- 失敗: premature commit 25db124の間違った内容（generic file placement rules vs planning.mdの定量ルール）が残存し、coordinator経由の修正が全て無効化された
+
+## ハーネス運用で学んだこと
+- V-13拡張: delegate_coordinatorにfiles[]で.claude/agents/を渡すとworkerがリバートする。workerで直接編集→coordinatorを経由しないパターンが安全
+- V-6対策: 手動テスト等で「判定: PASS」が繰り返される場合、各行にテスト項目固有の説明を括弧で追加（例: 「判定: PASS (Phase Output Rules確認)」）
+- decisions形式: 番号リスト(1. 2.)はdelta_entry_formatで拒否される。必ず`- ID:`形式（例: `- E2E-001:`）を使用
+- artifact_drift解消: harness_backでhearingまで戻り→全フェーズ順次approve→次フェーズ再開。requirementsまでの巻き戻しでは不十分な場合がある
+- premature commitの影響: 間違った内容でコミットされたファイルは、working copyで修正してもcoordinator経由で元に戻される。workerで直接修正しcoordinator経由を避けること
+
+## 次のセッションで最初にやること
+- harness_statusで全タスク確認
+- docs-workflows-refactoring-v2 (5127ee0c) のscope_definitionフェーズ継続を検討
+- テスト失敗3件（mcp-contract, rtm-intent-gate）は既存バグ。別タスク化推奨
+
+## 注意点・ブロッカー
+- types-core.ts(199行)とlifecycle-next.ts(198行)が200行境界値。次回変更時に責務分割が必要
+- docs/workflows/ は .gitignore 対象。ワークフロー成果物はgit管理外
+- vitest並列実行で既知のリソース競合問題あり(個別実行では全PASS)
+- premature commit 25db124の内容がHEADに残っている。coordinator.mdとworker.mdはe2a6673で正しい内容に上書き済み

@@ -1,0 +1,90 @@
+task: harness-stale-task-cleanup-and-hmac-recovery
+phase: requirements
+status: complete
+created: 2026-03-11
+
+REQ-FR-01_id: FR-01
+REQ-FR-01_title: completedタスク除外フィルタ
+REQ-FR-01_description: listTasksFromDiskおよびbuildTaskIndexにstatusフィルタを追加し、デフォルトでphase=completedのタスクをディスク走査対象から除外する
+REQ-FR-01_ac: AC-1, AC-2
+REQ-FR-01_source: R-01, R-02, R-05
+REQ-FR-01_priority: must
+
+REQ-FR-02_id: FR-02
+REQ-FR-02_title: includeCompletedオプション
+REQ-FR-02_description: listTasks/buildTaskIndexにincludeCompleted:booleanパラメータを追加する。デフォルトfalse。trueの場合は従来通り全件走査する
+REQ-FR-02_ac: AC-2
+REQ-FR-02_source: R-02
+REQ-FR-02_priority: must
+
+REQ-FR-03_id: FR-03
+REQ-FR-03_title: task-index.jsonキャッシュ活用による走査回避
+REQ-FR-03_description: buildTaskIndexの全件readdirSync+readFileSyncをtask-index.jsonのキャッシュ読み取りで代替する。writeTaskIndex時にインデックスを更新し、読み取り時はキャッシュから取得する
+REQ-FR-03_ac: AC-1
+REQ-FR-03_source: R-05, R-PAT-01, R-PAT-03
+REQ-FR-03_priority: should
+
+REQ-FR-04_id: FR-04
+REQ-FR-04_title: HMAC検証失敗時の警告付き返却
+REQ-FR-04_description: loadTaskFromDiskでverifyStateWithRotation失敗時にnullではなくタスクデータにintegrityWarning:trueフラグを付与して返却する。呼び出し元で警告メッセージを表示する
+REQ-FR-04_ac: AC-3
+REQ-FR-04_source: R-06
+REQ-FR-04_priority: must
+
+REQ-FR-05_id: FR-05
+REQ-FR-05_title: HMAC不一致ログ出力
+REQ-FR-05_description: HMAC検証失敗時にstderr/ログへtaskId、検証試行キーgeneration、失敗理由を出力する
+REQ-FR-05_ac: AC-3
+REQ-FR-05_source: R-06
+REQ-FR-05_priority: must
+
+REQ-FR-06_id: FR-06
+REQ-FR-06_title: レガシー配列形式hmac-keys.json自動マイグレーション
+REQ-FR-06_description: loadHmacKeysでArray.isArray判定時に末尾要素をcurrent、それ以前の要素のキーをpreviousとして新形式オブジェクトに変換する。変換結果をhmac-keys.jsonに上書き保存する
+REQ-FR-06_ac: AC-4
+REQ-FR-06_source: R-03, R-04
+REQ-FR-06_priority: must
+
+REQ-FR-07_id: FR-07
+REQ-FR-07_title: マイグレーション後のpreviousキーフォールバック検証
+REQ-FR-07_description: 自動マイグレーションで保持されたpreviousキーがverifyStateWithRotationのフォールバック分岐(keys.previous)で正常に検証されることを保証する
+REQ-FR-07_ac: AC-4
+REQ-FR-07_source: R-03, R-PAT-02
+REQ-FR-07_priority: must
+
+REQ-NFR-01_id: NFR-01
+REQ-NFR-01_title: harness_status応答サイズ上限
+REQ-NFR-01_description: taskId省略時のharness_status応答JSONが10KB以下であること
+REQ-NFR-01_metric: JSON.stringify(response).length <= 10240
+
+REQ-NFR-02_id: NFR-02
+REQ-NFR-02_title: 後方互換性
+REQ-NFR-02_description: 既存のactiveタスク(phase!=completed)の読み書きが変更前と同一の動作を維持すること。既存テストが全てパスすること
+
+REQ-NFR-03_id: NFR-03
+REQ-NFR-03_title: マイグレーション冪等性
+REQ-NFR-03_description: レガシー形式の自動マイグレーションが複数回実行されても同一結果を返すこと。新形式ファイルに対してマイグレーションが再実行されないこと
+
+not_in_scope:
+  - HMACキーローテーション自動スケジューリング(expiresAt到達時の自動更新)
+  - completedタスクのアーカイブ・物理削除機能
+  - task-index.jsonのインメモリキャッシュ(LRU等)
+  - HMAC再署名の自動実行(警告表示のみ、再署名は別タスク)
+  - writeTaskIndexの差分更新(全件書き直しの最適化は別タスク)
+
+open_questions:
+  - OQ-1: integrityWarning付きタスクへの書き込み操作(advancePhase等)を許可するか、読み取り専用に制限するか
+  - OQ-2: task-index.jsonキャッシュとディスク実体の不整合検出・自動修復の頻度とトリガー条件
+  - OQ-3: completedタスクの除外基準をphase===completedのみとするか、最終更新日時も考慮するか
+
+decisions[7]{id,statement,rationale}:
+  REQ-D-01, "completedフィルタはディレクトリ走査レベルで実装", "readFileSync+JSON.parse前にスキップすることでI/Oコスト最大89件分を削減"
+  REQ-D-02, "HMAC検証失敗はnull→警告付きオブジェクトに変更", "タスクデータ自体は正常な場合にTask not foundは過剰な失敗。ユーザーが状況を判断できる情報を提供"
+  REQ-D-03, "レガシー形式マイグレーションは検出時に即時実行・上書き", "遅延マイグレーションはセッションごとにレガシー分岐を通過するコスト。即時変換で以後のセッションを簡素化"
+  REQ-D-04, "integrityWarningフラグはTaskState型に追加", "既存のinterfaceを拡張し、型安全にwarning状態を伝播"
+  REQ-D-05, "not_in_scopeに自動再署名を含める", "再署名はセキュリティポリシーの変更を伴うため別タスクで慎重に設計する"
+  REQ-D-06, "FR-03(キャッシュ活用)はshouldとし初期リリースではbuildTaskIndexフィルタのみ実装", "キャッシュ不整合リスクを避け、フィルタだけで92→3件の効果を先に確保"
+  REQ-D-07, "includeCompletedのデフォルトをfalseとする", "99%のユースケースはactiveタスクのみ参照。completedが必要な場合は明示指定"
+
+artifacts: requirements.toon
+next: design

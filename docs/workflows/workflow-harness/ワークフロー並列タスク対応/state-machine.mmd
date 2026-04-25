@@ -1,0 +1,50 @@
+%% ワークフロー並列タスク対応 - ステートマシン図
+%% タスク状態の遷移とツール呼び出しの関係
+
+stateDiagram-v2
+    %% タスクのライフサイクル
+    [*] --> NotFound: タスク未作成
+
+    state "タスク発見" as Discovery {
+        NotFound --> Active: workflow_start(taskName)
+        Active --> Active: ディレクトリスキャン
+        Active --> Completed: 全フェーズ完了
+        Completed --> [*]
+    }
+
+    state "アクティブタスク操作" as Active {
+        state "フェーズ進行" as PhaseProgress {
+            research --> requirements: workflow_next(taskId)
+            requirements --> parallel_analysis: workflow_next(taskId)
+            parallel_analysis --> parallel_design: workflow_next(taskId)
+            parallel_design --> design_review: workflow_next(taskId)
+            design_review --> test_design: workflow_approve(taskId, "design")
+            test_design --> test_impl: workflow_next(taskId)
+            test_impl --> implementation: workflow_next(taskId)
+            implementation --> refactoring: workflow_next(taskId)
+            refactoring --> parallel_quality: workflow_next(taskId)
+            parallel_quality --> testing: workflow_next(taskId)
+            testing --> regression_test: workflow_next(taskId)
+            regression_test --> parallel_verification: workflow_next(taskId)
+            parallel_verification --> docs_update: workflow_next(taskId)
+            docs_update --> commit: workflow_next(taskId)
+            commit --> push: workflow_next(taskId)
+            push --> ci_verification: workflow_next(taskId)
+            ci_verification --> deploy: workflow_next(taskId)
+            deploy --> completed: workflow_next(taskId)
+        }
+
+        state "リセット" as Reset {
+            [*] --> research: workflow_reset(taskId)
+        }
+    }
+
+    note right of Discovery
+        タスクはディレクトリスキャンで発見
+        .claude/state/workflows/ を走査
+    end note
+
+    note right of PhaseProgress
+        全ツールにtaskIdが必須
+        グローバル状態には依存しない
+    end note

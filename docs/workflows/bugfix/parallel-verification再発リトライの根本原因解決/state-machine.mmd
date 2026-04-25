@@ -1,0 +1,40 @@
+stateDiagram-v2
+    state Start {
+        direction LR
+    }
+
+    Start --> ReadCurrentCLAUDE: 修正対象の確認
+
+    ReadCurrentCLAUDE --> ApplyFR1: 禁止語リスト確認
+
+    ApplyFR1 --> ApplyFR2: 禁止語を数値参照に置き換え
+
+    ApplyFR2 --> ApplyFR3: 角括弧制約の詳細説明追加
+
+    ApplyFR3 --> ApplyFR4: 実質行カウント仕様を明示
+
+    ApplyFR4 --> ApplyFR5: 複合語回避表現を拡充
+
+    ApplyFR5 --> ApplyFR6: commitフェーズガイダンス追加
+
+    ApplyFR6 --> SyncPluginCLAUDE: プロジェクトルート修正完了
+
+    SyncPluginCLAUDE --> ValidateChanges: workflow-pluginファイル同期修正
+
+    ValidateChanges --> VerifyGrepTests: 修正内容検証
+
+    VerifyGrepTests --> VerifyBothFiles: 禁止語リスト除去確認
+
+    VerifyBothFiles --> VerifyDetailNotes: 詳細説明追加確認
+
+    VerifyDetailNotes --> VerifyCommitGuidance: commitフェーズ設定確認
+
+    VerifyCommitGuidance --> ConfirmIntegrity: 両ファイル整合性確認
+
+    ConfirmIntegrity --> DocumentChanges: 修正内容をドキュメント記録
+
+    DocumentChanges --> End
+
+    state End {
+        direction LR
+    }

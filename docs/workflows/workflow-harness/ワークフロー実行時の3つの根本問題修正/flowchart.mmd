@@ -1,0 +1,123 @@
+flowchart TD
+    %% ========================
+    %% FIX-1: loop-detector.js
+    %% ========================
+    subgraph FIX1_MAIN(FIX-1: checkLoop関数のpruning処理)
+        A1(checkLoop関数内で処理実行) --> A2(checkLoop内でfilterOldTimestamps関数を呼び出し)
+        A2 --> A3(古いタイムスタンプを削除)
+        A3 --> A4{{削除判定: timestamps.length === 0 かつ lastWarning非設定?}}
+        A4 -->|YES| A5(delete演算子で該当エントリを完全削除)
+        A4 -->|NO| A6(エントリを保持: 警告抑止期間が有効)
+        A5 --> A7(saveState関数を呼び出し状態を永続化)
+        A6 --> A7
+        A7 --> A8(return処理終了)
+    end
+
+    subgraph FIX1_SAVE(FIX-1: saveState関数の一括クリーンアップ)
+        B1(saveState関数内で処理実行) --> B2(ensureStateDir呼び出しで出力ディレクトリを準備)
+        B2 --> B3(fs.writeFileSync実行前のフィルタリング処理)
+        B3 --> B4(Object.entries state.filesをループ処理開始)
+        B4 --> B5{{エントリの保持判定: timestamps.length > 0 OR lastWarningがtruthy?}}
+        B5 -->|YES| B6(エントリを保持リストに追加)
+        B5 -->|NO| B7(エントリをスキップしフィルタ除外)
+        B6 --> B8(Object.fromEntriesで保持エントリのみの新objectを生成)
+        B7 --> B8
+        B8 --> B9(state.files = フィルタ結果で状態を更新)
+        B9 --> B10(JSON.stringifyしてfs.writeFileSyncで書き込み)
+        B10 --> B11(処理完了: セーフティネットが機能)
+    end
+
+    subgraph FIX1_EFFECT(FIX-1: 期待される効果)
+        C1(修正後の初回実行) --> C2(肥大化したloop-detector-state.json読み込み: 3000個以上のエントリ約107KB)
+        C2 --> C3(Object.fromEntriesによる一括フィルタリング方式でエントリを削除)
+        C3 --> C4(3秒以内のタイムアウト内にクリーンアップ完了)
+        C4 --> C5(クリーンアップ後のサイズ: 数KB〜数十KBに削減)
+        C5 --> C6(新ワークフロー実行時に古いエントリが自動削除され肥大化しない状態を維持)
+    end
+
+    %% ========================
+    %% FIX-2: CLAUDE.md改善
+    %% ========================
+    subgraph FIX2_MAIN(FIX-2: subagent成果物生成フロー)
+        D1(subagent起動時) --> D2(CLAUDE.mdのテンプレートを読み込み)
+        D2 --> D3(成果物品質要件セクションを参照)
+        D3 --> D4(バリデーションルール実装を確認: artifact-validator.ts)
+        D4 --> D5{{成果物生成計画}}
+        D5 -->|テスト結果の記述| D6(各行に固有情報を含める: 応答時間、ステータスコード、検証内容等で差別化)
+        D5 -->|セクション記述| D7(最低6行以上の実質行を確保し密度の低い短いセクションを回避)
+        D5 -->|セクション構成| D8(共通: サマリー / manual_test: テストシナリオ+テスト結果 / security_scan: 脆弱性スキャン結果+検出された問題)
+        D5 -->|禁止パターン| D9(角括弧記法を使用せず散文で説明し略語や決定保留表現を避け具体的な調査結果を記述)
+        D6 --> D10(成果物を生成)
+        D7 --> D10
+        D8 --> D10
+        D9 --> D10
+        D10 --> D11(artifact-validator検証を実行)
+        D11 --> D12{{バリデーション結果}}
+        D12 -->|成功| D13(成果物が条件を満たす)
+        D12 -->|失敗| D14(バリデーションエラー: 再調整と再生成)
+    end
+
+    subgraph FIX2_EFFECT(FIX-2: 期待される効果)
+        E1(subagentが具体例を参照) --> E2(バリデーション成功率向上)
+        E2 --> E3(Orchestratorによる手動修正の頻度が大幅減少)
+        E3 --> E4(成果物の品質が安定的に向上)
+        E4 --> E5(ワークフロー自動化レベルが向上)
+        E5 --> E6(subagent成果物の同一行繰り返しが減少し各行がコンテキストで差別化)
+    end
+
+    %% ========================
+    %% FIX-3: workflow_start
+    %% ========================
+    subgraph FIX3_MAIN(FIX-3: workflow_start時のpreExistingChanges記録フロー)
+        F1(workflow_start実行) --> F2(git diff HEADを実行しタスク開始前の変更を検出)
+        F2 --> F3{{git diff実行結果}}
+        F3 -->|成功| F4(差分ファイル一覧を取得)
+        F3 -->|失敗| F5(エラーハンドリング: Errorインスタンスをcatch)
+        F4 --> F6(preExistingChanges = 差分リスト: 各ファイルパスを記録)
+        F5 -->|HEAD非検出: 通常エラー| F7(エラーメッセージをログ出力: 具体的な原因を記録)
+        F5 -->|HEAD検出: 初回コミット前| F8(情報ログ出力: 初回コミット前のためpreExistingChangesは空)
+        F6 --> F9(console.logでpreExistingChanges件数を出力し先頭5件をリスト表示)
+        F7 --> F10(preExistingChanges = 空配列を明示的に代入)
+        F8 --> F10
+        F9 --> F11(scope-validator実行準備)
+        F10 --> F11
+        F11 --> F12(workflow_set_scope実行: preExistingChangesが除外対象として機能)
+    end
+
+    subgraph FIX3_SCOPE(FIX-3: scope-validator.ts拡張)
+        G1(EXCLUDE_PATTERNS配列に6個の設定ファイルパターンを追加) --> G2(追加パターン: .mcp.json, .gitignore, .env.example, tsconfig.json, vitest.config.ts, vite.config.ts)
+        G2 --> G3(各パターンに末尾一致を使用した正規表現を適用し既存実装方式に準拠)
+        G3 --> G4(scope-validator実行時)
+        G4 --> G5(EXCLUDE_PATTERNSをループ処理)
+        G5 --> G6{{ファイルパスがEXCLUDE_PATTERNSにマッチするか?}}
+        G6 -->|YES| G7(スコープチェックから除外)
+        G6 -->|NO| G8(スコープチェック対象に含める)
+        G7 --> G9(preExistingChangesのファイルが自動的に除外される)
+    end
+
+    subgraph FIX3_EFFECT(FIX-3: 期待される効果)
+        H1(タスク開始前の変更が自動除外) --> H2(commitフェーズへの遷移がブロックされない)
+        H2 --> H3(workflow_start時のログ出力でpreExistingChanges記録件数を確認)
+        H3 --> H4(記録が正しく行われていることを検証可能)
+        H3 --> H5(設定ファイル変更が常にスコープから除外)
+        H5 --> H6(意図しないブロックが発生しない)
+        H6 --> H7(手動workflow_set_scopeが不要になりワークフロー自動化レベル向上)
+    end
+
+    %% ========================
+    %% 整合性リンク
+    %% ========================
+    FIX1_MAIN --> FIX1_SAVE
+    FIX1_SAVE --> FIX1_EFFECT
+    FIX2_MAIN --> FIX2_EFFECT
+    FIX3_MAIN --> FIX3_SCOPE
+    FIX3_SCOPE --> FIX3_EFFECT
+
+    style FIX1_MAIN fill:#e1f5ff
+    style FIX1_SAVE fill:#e1f5ff
+    style FIX1_EFFECT fill:#b3e5fc
+    style FIX2_MAIN fill:#f3e5f5
+    style FIX2_EFFECT fill:#e1bee7
+    style FIX3_MAIN fill:#e8f5e9
+    style FIX3_SCOPE fill:#e8f5e9
+    style FIX3_EFFECT fill:#c8e6c9

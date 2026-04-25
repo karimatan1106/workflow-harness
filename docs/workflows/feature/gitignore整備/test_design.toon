@@ -1,0 +1,24 @@
+phase: test_design
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T09:00:00+09:00"
+decisions[6]{id,statement,rationale}:
+  TD-001,ユニットテストではなくgitコマンドベースの検証とする,本タスクはgit操作のみでありアプリケーションコードの変更を伴わないため
+  TD-002,git ls-files で追跡状態を検証する,git status は表示が文脈依存だが git ls-files はパイプ処理に適した確定的出力を返すため
+  TD-003,grep で .gitignore のエントリ存在を検証する,パターンマッチにより追加行の有無を正確に判定できるため
+  TD-004,各ACに対して最低1件のテストケースを割り当てる,受入基準の網羅性を担保するため
+  TD-005,サブモジュール内の検証はサブモジュールディレクトリにcdしてから実行する,親リポジトリからの相対パスでは git ls-files が正しく動作しない可能性があるため
+  TD-006,wc -l の出力が 0 であることを期待値とする,git ls-files の出力行数が0であればファイルが追跡対象外であることを意味するため
+testCases[7]{id,acRef,description,verification}:
+  TC-AC1-01,AC-1,.gitignore に .claude-phase-guard-log.json が含まれること,grep .claude-phase-guard-log.json .gitignore
+  TC-AC1-02,AC-1,.gitignore に .claude/settings.local.json が含まれること,grep settings.local .gitignore
+  TC-AC1-03,AC-1,.gitignore に .claude/generated-files.json が含まれること,grep generated-files .gitignore
+  TC-AC2-01,AC-2,mcp-server/dist/ が追跡対象外であること,"cd workflow-harness && git ls-files mcp-server/dist/ | wc -l で 0 を返すこと"
+  TC-AC2-02,AC-2,mcp-server/.claude/state/ が追跡対象外であること,"cd workflow-harness && git ls-files mcp-server/.claude/state/ | wc -l で 0 を返すこと"
+  TC-AC3-01,AC-3,.claude-phase-guard-log.json が追跡対象外であること,git ls-files .claude-phase-guard-log.json | wc -l で 0 を返すこと
+  TC-AC4-01,AC-4,git status で対象ファイルが追跡対象として表示されないこと,git status で .claude-phase-guard-log.json や dist/ がstaged/trackedに含まれないこと
+artifacts[3]{path,role,summary}:
+  docs/workflows/gitignore整備/test_design.toon,test_design,テスト設計TOON成果物
+  docs/workflows/gitignore整備/test-design.md,test_design,テスト設計詳細ドキュメント
+  docs/workflows/gitignore整備/spec.toon,input,実装仕様(先行成果物)
+next:
+  readFiles[2]: .gitignore,workflow-harness/.gitignore

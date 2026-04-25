@@ -1,0 +1,124 @@
+task: tier-b-gaps-n08-n15
+phase: research
+intent: Tier B 5項目(N-08 Oxlint, N-09 Biome, N-10 jscpd, N-11 eslint-plugin-security, N-12 ast-grep)の技術調査
+riskScore: 4
+
+environment:
+  nodeVersion: v22.15.0
+  npmVersion: 10.9.2
+  tscVersion: 5.9.3
+  platform: win32 (MSYS_NT-10.0-26200)
+  packageManager: npm (mcp-server), npm (workflow-plugin)
+
+existingDeps:
+  mcpServer: "@modelcontextprotocol/sdk@1.27.1, @toon-format/toon@2.1.0, zod@3.25.76, typescript@5.9.3, vitest@1.6.1"
+  workflowPlugin: "eslint@9.39.2, @eslint/js@9.39.2, typescript-eslint@8.55.0, globals@15.15.0, vitest@2.1.9"
+
+toolResearch[5]{id,npmPackage,latestVersion,installCmd,binName,installTarget,description}:
+  N-08, oxlint, 1.52.0, "npm install -D oxlint", oxlint, workflow-harness/mcp-server, "Rust製TypeScript/React高速リンター。ESLintの50-100倍高速。--deny-onlyモードでエラーのみ報告可能。"
+  N-09, @biomejs/biome, 2.4.6, "npm install -D @biomejs/biome", biome, workflow-harness/mcp-server, "Rust製format+lint統合ツール。post-tool-lint.shで既にbiome check統合済み。format --checkの追加のみ。"
+  N-10, jscpd, 4.0.8, "npm install -D jscpd", jscpd, workflow-harness/mcp-server, "コード重複検出ツール。--format jsonでJSON出力可能。--threshold Nで重複率閾値を指定。"
+  N-11, eslint-plugin-security, 4.0.0, "npm install -D eslint-plugin-security", n/a, workflow-plugin, "ESLintセキュリティルールプラグイン。eval/child_process/非安全正規表現を静的検出。ESLint flat config対応。"
+  N-12, @ast-grep/cli, 0.41.0, "npm install -D @ast-grep/cli", "ast-grep (sg)", workflow-harness/mcp-server, "Rust製AST認識パターンマッチングツール。構文構造を理解した正確な検索・置換が可能。"
+
+integrationPoints[5]{id,target,hookOrModule,currentState,changeRequired}:
+  N-08, .claude/hooks/post-tool-lint.sh, PostToolUseフック, "tsc --noEmit + biome checkの2段構成", "oxlint --deny-only実行ブロックを追加。command -v npxチェックでgraceful degradation。timeout 3sで実行。"
+  N-09, .claude/hooks/post-tool-lint.sh, PostToolUseフック, "biome checkのみ実行中", "biome format --check --no-errors-on-unmatchedを追加。既存のbiome checkブロック内に追記する形式。"
+  N-10, workflow-harness/mcp-server/src/tools/archgate.ts, archgateルール, "line_count/pattern_absent/pattern_requiredの3種checkType", "duplicate_code型を新設。jscpd --format json --threshold N --output /dev/nullの出力をパースしてviolation判定。"
+  N-11, workflow-plugin/eslint.config.js, ESLint設定, "ESLint 9 flat config構成済み。typescript-eslint統合済み", "eslint-plugin-securityをimportしconfigsのrecommendedをextendsに追加。TypeScript/JSの両設定ブロックに適用。"
+  N-12, workflow-harness/mcp-server/src/tools/archgate.ts, archgateルール, "pattern_absent/pattern_requiredがRegExpベース", "ast_grep_pattern型を新設。ast-grep --pattern P --lang tsを実行しJSON出力をパースして構文認識パターンマッチを実行。"
+
+n08OxlintDetail:
+  cliUsage: "npx oxlint --deny-only ファイルパス"
+  denyOnlyBehavior: warningは無視しdeny(error)レベルのルール違反のみ報告する
+  exitCodes: "0=問題なし, 1=エラーあり, 127=未インストール"
+  hookTimeout: 3秒（biomeと同一）
+  gracefulDegradation: "command -v npxチェック + exit code 127でサイレントスキップ"
+  parallelExecution: "biome checkとoxlintは独立実行。片方の失敗が他方に影響しない。"
+  ruleCategories: "correctness, suspicious, pedantic, style, nursery"
+  defaultDenyRules: "correctnessカテゴリの全ルールがデフォルトでdeny"
+
+n09BiomeDetail:
+  currentIntegration: "post-tool-lint.sh L49-61でbiome check --no-errors-on-unmatchedを実行"
+  formatCheckCmd: "npx @biomejs/biome format --check --no-errors-on-unmatched ファイルパス"
+  changeScope: "既存biome checkブロックにformat --checkを追加する1行変更"
+  biomeConfig: "biome.jsonが存在しない場合はデフォルト設定で実行される"
+  formatVsCheck: "checkはlint、format --checkはフォーマット整合性検証"
+
+n10JscpdDetail:
+  cliUsage: "npx jscpd --format json --threshold 5 --output /dev/null 対象ディレクトリ"
+  jsonOutputSchema: "statistics.total.percentage（全体重複率）とduplicates配列（個別重複箇所）"
+  thresholdDefault: 5（重複率5%以上でviolation）
+  archgateIntegration: "runArchGateChecksにduplicate_code分岐を追加。execSyncでjscpdを実行しJSON出力をパース。"
+  fileTargets: "workflow-harness/mcp-server/src/**/*.tsとworkflow-plugin/mcp-server/src/**/*.ts"
+  performanceNote: "大規模ディレクトリでは10秒以上かかる場合がある。archgateチェック時のみ実行しフック統合は行わない。"
+
+n11EslintSecurityDetail:
+  flatConfigImport: "import security from 'eslint-plugin-security'"
+  configUsage: "security.configs.recommendedをextendsに追加"
+  targetFiles: "workflow-plugin配下のJS/TSファイル（hooks/**/*.js, mcp-server/src/**/*.ts）"
+  keyRules: "detect-eval-with-expression, detect-child-process, detect-non-literal-regexp, detect-object-injection, detect-unsafe-regex"
+  ruleCount: "推奨設定で13ルールが有効化される"
+  eslintVersion: "ESLint 9.x flat config互換。eslint-plugin-security@4.0.0で公式サポート。"
+  noMcpServerTarget: "workflow-harness/mcp-serverにはESLint未導入のため適用対象外"
+
+n12AstGrepDetail:
+  cliUsage: "npx ast-grep --pattern 'パターン' --lang typescript --json 対象ディレクトリ"
+  napiAlternative: "@ast-grep/napi@0.41.0はNode.js APIとして直接呼び出し可能。CLIよりもJSON出力パースが不要で型安全。"
+  archgateIntegration: "ast_grep_pattern型を新設。pattern文字列をast-grepに渡してAST認識マッチング実行。"
+  patternExamples: "console.log($$$), eval($ARG), require($MOD)"
+  advantageOverRegex: "文字列リテラル内のconsole.logを誤検出しない。コメント内のパターンも除外可能。"
+  installChoice: "CLI(@ast-grep/cli)とNative API(@ast-grep/napi)の2択。archgate.tsからの呼び出しには@ast-grep/napiが適切（execSync不要、型安全）。"
+  napiUsage: "import { parse, lang } from '@ast-grep/napi'; const root = parse(lang.TypeScript, code); root.find('console.log($$$)')"
+
+magicNumbers[8]{id,value,unit,source,rationale}:
+  MN-1, 3, seconds, post-tool-lint.sh L39/L51, "フック実行タイムアウト値。tscは5秒、biome/oxlintは3秒。ユーザー体感への影響を最小化。"
+  MN-2, 20, lines, post-tool-lint.sh L59, "biome出力の表示上限。長大な警告リストを抑制しフック出力の可読性を維持。"
+  MN-3, 5, percent, jscpd threshold, "コード重複率の許容閾値。5%以上で警告。業界標準は3-10%の範囲。"
+  MN-4, 200, lines, archgate line_count threshold, "ファイル行数上限。プロジェクト全体のファイルサイズ制約と整合。"
+  MN-5, 13, rules, eslint-plugin-security recommended, "推奨設定で有効化されるセキュリティルール数。全13ルールを一括適用。"
+  MN-6, 127, exitCode, command not found, "UNIXの慣例によるコマンド未発見終了コード。graceful degradationの判定基準。"
+  MN-7, 3000, milliseconds, lifecycle.ts L40, "git status実行のタイムアウト値。既存のexecSync呼び出しと同一基準。"
+  MN-8, 50, chars, defs-b.ts L43, "テスト出力の最小文字数。空出力によるDoD誤通過を防止。"
+
+installPlan[5]{id,package,target,devDep,installCmd}:
+  IP-1, oxlint@1.52.0, workflow-harness/mcp-server, true, "cd workflow-harness/mcp-server && npm install -D oxlint"
+  IP-2, @biomejs/biome@2.4.6, workflow-harness/mcp-server, true, "cd workflow-harness/mcp-server && npm install -D @biomejs/biome"
+  IP-3, jscpd@4.0.8, workflow-harness/mcp-server, true, "cd workflow-harness/mcp-server && npm install -D jscpd"
+  IP-4, eslint-plugin-security@4.0.0, workflow-plugin, true, "cd workflow-plugin && npm install -D eslint-plugin-security"
+  IP-5, @ast-grep/napi@0.41.0, workflow-harness/mcp-server, true, "cd workflow-harness/mcp-server && npm install -D @ast-grep/napi"
+
+architectureImpact:
+  archgateTypeExpansion: "ArchCheckTypeをline_count|pattern_absent|pattern_required|duplicate_code|ast_grep_patternに拡張"
+  newFileRequired: "linter-runner.tsを新設しjscpd/ast-grepの実行とJSON出力パースを一元化"
+  hookModification: "post-tool-lint.shにoxlint --deny-onlyブロックとbiome format --checkを追加"
+  eslintConfigChange: "workflow-plugin/eslint.config.jsにeslint-plugin-securityのimportとextends追加"
+  napiVsCli: "@ast-grep/napiを採用しCLI呼び出しを回避。archgate.ts内で直接AST解析を実行できるため速度と型安全性が向上。"
+
+riskAssessment[5]{id,risk,likelihood,impact,mitigation}:
+  RA-1, "ast-grepのRustバイナリがWindows環境で動作しない可能性", medium, high, "npm installでプラットフォーム固有バイナリが自動選択される。@ast-grep/napiはprebuiltバイナリを提供しWindows x64対応済み。"
+  RA-2, "oxlintのデフォルトdenyルールがプロジェクトコードで大量エラーを出す可能性", low, medium, "--deny-onlyモードで段階的導入。初回実行で警告量を確認し必要に応じて--allowで個別除外。"
+  RA-3, "jscpd実行時間がarchgateチェック全体を遅延させる可能性", medium, medium, "対象ディレクトリを限定し--min-lines 10で小規模重複を除外。タイムアウト10秒を設定。"
+  RA-4, "eslint-plugin-securityがeslint 9 flat configで互換性問題を起こす可能性", low, low, "eslint-plugin-security@4.0.0はflat config公式対応済み。security.configs.recommendedがそのまま使用可能。"
+  RA-5, "biome format --checkが既存コードで大量警告を出す可能性", medium, low, "フック内の出力は警告表示のみ（exit 0で終了）。フォーマット修正は強制しない。"
+
+decisions[7]{id,statement,rationale}:
+  R-1, "N-12 ast-grepは@ast-grep/napi（Node.js API）を採用しCLI呼び出しを回避する", "archgate.tsはTypeScriptで実装されておりnapi経由で直接AST操作が可能。execSyncによるCLI呼び出しはJSON出力パースが必要で型安全性が低い。napiはparse/findメソッドで直接マッチ結果を取得できる。"
+  R-2, "N-10 jscpdはarchgateのduplicate_code checkTypeとして統合しPostToolUseフックには入れない", "jscpdはディレクトリ全体をスキャンするため実行時間が3-10秒かかる。ファイル単位で実行するPostToolUseフックには不適合。DoDチェック時のarchgateで実行する設計が適切。"
+  R-3, "N-08 Oxlintのフック統合はbiomeと並列実行し片方の失敗で他方をブロックしない", "独立したツールの結果を分離することでgraceful degradationを維持する。biomeが未インストールでもoxlintは実行され、逆も同様。"
+  R-4, "N-11 eslint-plugin-securityはworkflow-pluginの既存ESLint設定にplugin追加する形で統合する", "workflow-pluginはESLint 9 flat config構成済み。security.configs.recommendedを各設定ブロックのextendsに追加するだけで13ルールが有効化される。MCPサーバーはESLint未導入のため対象外。"
+  R-5, "全ツールのインストール先は既存package.jsonのdevDependenciesに限定する", "新規package.jsonの作成やルートへのインストールはプロジェクト規約で禁止されている。oxlint/biome/jscpd/ast-grepはmcp-serverのdevDependencies、eslint-plugin-securityはworkflow-pluginのdevDependenciesに追加。"
+  R-6, "archgate.tsのArchCheckType拡張はduplicate_codeとast_grep_patternの2型を追加する", "既存3型(line_count/pattern_absent/pattern_required)に2型追加で計5型。各型は独立した検証ロジックを持ちrunArchGateChecks内の分岐として実装。ArchRuleインターフェースにthreshold(jscpd用)とpattern(ast-grep用)フィールドは既存で対応可能。"
+  R-7, "linter-runner.tsを新設しjscpdのCLI実行とJSON出力パースを一元管理する", "archgate.tsに直接CLI実行ロジックを入れると行数が200行を超える。linter-runner.tsでexecSync呼び出しとJSON出力パースを分離し、archgate.tsはパース結果を受け取って判定ロジックに集中する。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/scope-definition.toon, input, スコープ定義。8ツール分析の結果5件をin-scopeとして採用。
+  docs/workflows/tier-b-gaps-n08-n15/research.toon, output, 技術調査結果。5ツールのnpmパッケージ情報と統合方針とMagic Number一覧。
+  docs/workflows/tier-b-gaps-n08-n15/requirements.toon, next, 受入基準と要件定義。研究結果に基づくAC-N定義。
+
+next:
+  criticalDecisions: "R-1（ast-grep napi採用）がarchgate.tsの実装アーキテクチャを決定。R-2（jscpdのarchgate限定統合）がフック設計の範囲を確定。"
+  readFiles: "archgate.ts, post-tool-lint.sh, eslint.config.js, linter-runner.ts(新規), defs-b.ts"
+  warnings: "@ast-grep/napiのWindows x64 prebuiltバイナリの動作確認が実装フェーズで必要。jscpdの実行時間が10秒を超える場合は--min-linesオプションで調整が必要。"
+
+result{phase,status,artifact,lines}: research, complete, docs/workflows/tier-b-gaps-n08-n15/research.toon, 124

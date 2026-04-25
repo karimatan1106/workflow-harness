@@ -1,0 +1,55 @@
+flowchart TD
+    Start((修正開始)) --> OpenFile(definitions.tsファイル確認)
+
+    OpenFile --> FR1(FR-R1: testing/regression_test<br/>テンプレート修正実装<br/>862行・871行)
+
+    FR1 --> FR1Detail(出力形式指示を追記:<br/>標準出力をそのまま転送<br/>集計行形式の具体例提示<br/>日本語翻訳禁止の明記)
+
+    FR1Detail --> FR2(FR-R2: manual_test<br/>テンプレート修正実装<br/>889行)
+
+    FR2 --> FR2Detail(サマリー行数ガイダンス追記:<br/>ラベル後にコンテンツ必須<br/>5行以上の実質行確保<br/>NG/OK例示を記述)
+
+    FR2Detail --> FR3(FR-R3: security_scan<br/>テンプレート修正実装<br/>902行)
+
+    FR3 --> FR3Detail(重複行回避ガイダンス追加:<br/>FR識別子を行に含める<br/>評価対象名と判断根拠を同行<br/>3回以上の完全一致でエラー)
+
+    FR3Detail --> FR4(FR-R4: performance_test<br/>テンプレート修正実装<br/>914行)
+
+    FR4 --> FR4Detail(サマリー密度ガイダンス追記:<br/>計測対象処理を記述<br/>計測条件を明記<br/>計測結果の数値を含める)
+
+    FR4Detail --> BuildStart(npm run build実行)
+
+    BuildStart --> BuildCheck{ビルド成功?}
+
+    BuildCheck -->|失敗| BuildError(ビルドエラー内容確認<br/>構文チェック実施)
+
+    BuildError --> BuildFix(エラー箇所を修正<br/>ファイル再保存)
+
+    BuildFix --> BuildStart
+
+    BuildCheck -->|成功| DiskVerify(dist/definitions.js<br/>更新を確認)
+
+    DiskVerify --> ServerRestart(MCPサーバー再起動<br/>プロセス終了・再起動)
+
+    ServerRestart --> StatusCheck(workflow_status実行<br/>フェーズ表示確認)
+
+    StatusCheck --> VerifyCheck{変更が反映?}
+
+    VerifyCheck -->|未反映| NotReflect(キャッシュ問題の確認<br/>再起動時のエラーログ確認)
+
+    NotReflect --> Investigate(サーバーログを分析<br/>モジュール読み込み状態確認)
+
+    Investigate --> ServerRestart
+
+    VerifyCheck -->|反映済み| Complete(修正完了<br/>全テンプレート変更反映確認)
+
+    Complete --> End((作業終了))
+
+    style Start fill:#90EE90
+    style End fill:#90EE90
+    style FR1 fill:#B0E0E6
+    style FR2 fill:#B0E0E6
+    style FR3 fill:#B0E0E6
+    style FR4 fill:#B0E0E6
+    style BuildCheck fill:#FFD700
+    style VerifyCheck fill:#FFD700

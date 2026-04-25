@@ -1,0 +1,29 @@
+%% decisions: D-PL-1 serial execution by single worker chain
+%% decisions: D-PL-2 W-1..W-5 are copy ops (idempotent, resumable)
+%% decisions: D-PL-3 W-6 edits .mcp.json cwd after copies land
+%% decisions: D-PL-4 W-7 commit+push only after all AC pass
+%% decisions: D-PL-5 no parallelization (file conflicts risk)
+%% decisions: D-PL-6 each step tied to single AC-N / F-NNN
+%% decisions: D-PL-7 fail-fast: any worker failure halts chain
+flowchart TD
+    Start([Start Phase A])
+    W1[W-1 Copy ADR 27 files<br/>AC-1 F-001]
+    W2[W-2 Copy phases 27 files<br/>AC-2 F-002]
+    W3[W-3 Copy hooks 12 files<br/>AC-3 F-003]
+    W4[W-4 Copy commands 3 files<br/>AC-4 F-004]
+    W5[W-5 Copy rules 2 files<br/>AC-5 F-005]
+    W6[W-6 Fix .mcp.json cwd<br/>AC-6 F-006]
+    W7[W-7 Commit and Push<br/>AC-7 F-007]
+    DoD{All AC pass?}
+    End([End Phase A])
+    Fail([Halt: fix and retry])
+    Start --> W1
+    W1 --> W2
+    W2 --> W3
+    W3 --> W4
+    W4 --> W5
+    W5 --> W6
+    W6 --> DoD
+    DoD -- yes --> W7
+    DoD -- no --> Fail
+    W7 --> End

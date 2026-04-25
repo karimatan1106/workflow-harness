@@ -1,0 +1,47 @@
+phase: scope_definition
+taskName: tier-a-gaps-n26-n32
+userIntent: 記事第2回ギャップ分析Tier A 7項目のスコープ定義。N-26〜N-32の全項目はコードレベルの変更であり外部依存追加なし。
+riskScore: 2
+riskRationale: 全7項目がコードレベルの定数追加・関数追加・lint設定変更であり既存APIの破壊的変更を含まない。npm installも不要。
+taskSize: small
+
+scopeFiles[10]{path, action, reason}:
+  workflow-harness/mcp-server/src/tools/handlers/retry.ts, edit, N-26 buildRetryPrompt内でclassifyComplexity結果をsuggestedModelに連動させる
+  workflow-harness/mcp-server/src/tools/handlers/retry.ts, edit, N-28 ERROR_ADR_MAP定数を追加しエラーパターン→ADR IDの直接対応を実装
+  workflow-harness/mcp-server/src/gates/archgate.ts, edit, N-27 FEEDBACK_SPEED_LAYERS定数を追加し4層(ms/s/min/h)を定義
+  workflow-harness/mcp-server/src/gates/archgate.ts, edit, N-32 ArchCheckType unionにghost_file checkTypeを追加
+  workflow-harness/mcp-server/src/gates/dod-helpers.ts, edit, N-29 checkFileLineLimit関数を追加し200行超過ファイルを検出
+  workflow-harness/mcp-server/src/gates/dod-helpers.ts, edit, N-30 checkBrokenPointers関数を追加しTOON artifacts[]のパス存在を検証
+  workflow-harness/mcp-server/src/hooks/post-tool-lint.sh, edit, N-31 oxlintに--deny no-explicit-anyルールを追加
+  workflow-harness/mcp-server/src/__tests__/retry.test.ts, edit, N-26 classifyComplexity連動テストを追加
+  workflow-harness/mcp-server/src/__tests__/archgate.test.ts, edit, N-27 FEEDBACK_SPEED_LAYERSテストとN-32 ghost_fileテストを追加
+  workflow-harness/mcp-server/src/__tests__/dod-helpers.test.ts, edit, N-29 checkFileLimitテストとN-30 checkBrokenPointersテストを追加
+
+scopeDirs[3]{path, reason}:
+  workflow-harness/mcp-server/src/gates, archgate.tsとdod-helpers.tsの変更
+  workflow-harness/mcp-server/src/tools/handlers, retry.tsの変更
+  workflow-harness/mcp-server/src/hooks, post-tool-lint.shの変更
+
+decisions[7]{id, statement, rationale}:
+  SD-1, N-27 FEEDBACK_SPEED_LAYERSはarchgate.tsに配置する, ArchCheckTypeと同じゲート層に速度層定数を置くことで参照の一貫性を保つ
+  SD-2, N-28 ERROR_ADR_MAPはretry.ts内に配置する, エラーリトライ時にADR参照が必要でありretry.tsのbuildRetryPromptから直接参照できる位置が最適
+  SD-3, N-29とN-30の2関数はdod-helpers.tsに追加する, 既存のFORBIDDEN_PATTERNS等のチェック関数群と同じモジュールに統一しDoD L4チェックとして一貫性を保つ
+  SD-4, N-31はpost-tool-lint.shの既存oxlintブロックにオプション追加のみとする, 新規スクリプト作成は不要でありoxlintの--denyフラグ1行追加で実現可能
+  SD-5, N-32 ghost_fileチェックはArchCheckType unionの拡張で実装する, 既存の6 checkTypesに1つ追加する形で型安全にghost_file検出を統合できる
+  SD-6, N-26のモデル切替はtrivial→haiku/moderate→sonnet/critical→opusの3段階とする, classifyComplexityの3分類と1対1対応させることでルーティングロジックが単純明快になる
+  SD-7, 全7項目を1タスクで実装する, 全項目がコードレベル変更かつ相互依存がないため個別タスク化のオーバーヘッドの方が大きい
+
+artifacts[2]{path, format, description}:
+  docs/workflows/tier-a-gaps-n26-n32/scope-definition.toon, toon, スコープ定義成果物
+  docs/workflows/tier-a-gaps-n26-n32/research.toon, toon, 調査結果成果物
+
+notInScope[5]{item, reason}:
+  N-33以降のTier B/C項目, 本タスクはTier A 7項目(N-26〜N-32)のみが対象
+  npm依存の追加, oxlintは既にdevDependenciesに存在しNode.js標準APIで十分
+  classifyComplexity関数自体の変更, 既存の3分類(trivial/moderate/critical)をそのまま利用する
+  CLAUDE.mdの行数削減, N-29は200行超過検出機能の追加であり既存ファイルの行数削減は別タスク
+  archgateの既存checkType動作変更, ghost_fileは純粋な追加でありexisting_file等の既存チェックには影響しない
+
+next: research
+
+dependencyAnalysis: retry.tsはN-26とN-28の2項目が同一ファイルだが変更箇所(buildRetryPrompt内モデル選択とERROR_ADR_MAP定数追加)は独立。archgate.tsもN-27とN-32の2項目が同一ファイルだがFEEDBACK_SPEED_LAYERS定数追加とArchCheckType拡張は独立。dod-helpers.tsはN-29とN-30の2関数追加で現在73行のため200行以下に収まる。post-tool-lint.shは1行追加のみ。

@@ -1,0 +1,44 @@
+## HANDOFF
+date: 2026-03-28 17:33
+
+## 使用ツール
+tool: Claude Code (Opus 4.6)
+
+## 現在のタスクと進捗
+- [x] article-insights-harness-improvements (taskId: 232ed9ec-4af7-4cdf-b147-97cb18b1716c) → completed
+  - P3: AI slopパターンL4正規表現チェック(5カテゴリ: hedging/empty_emphasis/redundant_preamble/vague_connectors/ai_buzzwords)
+  - P4: planningフェーズのコードフェンス警告(noCodeFencesフラグ, .mmd除外)
+  - P5: retry改善vs方向転換判断ロジック(pivot-advisor, 3回連続検出)
+  - P6: AC最低数3→5(MIN_ACCEPTANCE_CRITERIA定数化, ガイダンス4ファイル更新)
+  - P7: L4重複行チェック構造パターン除外(コードフェンス/Mermaid/テーブル)
+  - RTMバグ修正: applyUpdateRTMStatus find→filter(全マッチ更新)
+  - コミット: 3f428c1 (submodule, 22files +636/-108), 7555013 (parent)
+  - AC-1~AC-23全met, F-001~F-009全tested, vitest 822/822 PASS
+- [ ] docs-workflows-refactoring-v2 (taskId: 5127ee0c) → scope_definition phase, size: large
+
+## 試したこと・結果
+- 成功: P3~P7の5改善+RTMバグ修正を1タスクで全30フェーズ完走。822テスト全パス
+- 成功: RTM重複エントリ問題をapplyUpdateRTMStatus(find→filter)修正+MCPサーバー再起動(/mcp)で解決
+- 成功: code-review.mdのdecisionsをTOON形式→Markdownリスト形式(- CR-N: ...)に変更してdelta_entry_format通過
+- 失敗: RTM update_rtm_statusが重複IDの最初のエントリのみ更新(find)し2番目がpending残存 → ソースコード修正+リビルド+/mcp再接続で解消
+- 失敗: HMAC整合性破壊(前セッション) → harness_resetでscope_definitionから再走行
+- 失敗: 成果物の「Status: PASS」「ファイル数: 1」等テンプレ的行が重複検出(V-6) → 各行を固有表現に書き換え
+
+## ハーネス運用で学んだこと
+- V-10: RTM重複エントリはharness_backで発生。find()→filter()修正済みだがMCPサーバー再起動(/mcp)が必須
+- V-11: code-review.mdのdecisionsセクションはTOON形式(key:value)ではなくMarkdownリスト(- ID: ...)が必須。delta_entry_formatチェックがリスト項目を要求
+- V-6拡張: テスト結果報告の「ファイル数: 1」「結果: 全件 PASS」等のテンプレ的記述も3回以上で重複検出される
+- Worker生成の成果物は重複行パターンに陥りやすい。プロンプトに「重複行(同一テキスト3回以上)禁止」を明示すること
+- MCP server再ビルド(npm run build)後、実行中プロセスは旧コードのまま。/mcp で再接続が必要
+
+## 次のセッションで最初にやること
+- harness_statusで全タスク確認
+- ADR-013(article-insights-harness-improvements)の内容確認・必要に応じて加筆
+- docs-workflows-refactoring-v2 (5127ee0c) のscope_definitionフェーズ継続を検討
+- Worker/Coordinatorプロンプトの重複行禁止ルールをテンプレートに組み込む検討
+
+## 注意点・ブロッカー
+- types-core.ts(199行)とlifecycle-next.ts(198行)が200行境界値。次回変更時に責務分割が必要
+- subagentプロンプトはTOON形式で統一する方針が決まっているが、実装はまだ(フィードバック記録済み)
+- docs/workflows/ は .gitignore 対象。ワークフロー成果物はgit管理外
+- vitest並列実行で既知のリソース競合問題あり(個別実行では全PASS)

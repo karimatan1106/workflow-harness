@@ -1,0 +1,41 @@
+flowchart TD
+    A[開始] --> B[Step 1: 仕様書ファイル移動]
+    B --> B1[docs/specs/domains/workflow/mcp-server.md]
+    B1 --> B2[docs/product/features/workflow-mcp-server.md へ移動]
+
+    B2 --> C[Step 2: フックファイル修正]
+    C --> C1[spec-first-guard.js]
+    C --> C2[check-spec-sync.js]
+    C --> C3[check-spec.js]
+    C --> C4[check-workflow-artifact.js]
+    C --> C5[その他フックの @spec コメント]
+
+    C1 & C2 & C3 & C4 & C5 --> D[Step 3: 設定ファイル修正]
+    D --> D1[settings.json]
+    D --> D2[.claude-plugin/plugin.json]
+
+    D1 & D2 --> E[Step 4: ドキュメント修正]
+    E --> E1[README.md]
+    E --> E2[README.en.md]
+    E --> E3[workflow-phases/*.md]
+
+    E1 & E2 & E3 --> F[Step 5: MCPサーバー修正]
+    F --> F1[src/**/*.ts の @spec コメント]
+    F --> F2[テストファイルのパス定義]
+
+    F1 & F2 --> G[Step 6: 確認]
+    G --> H{grep docs/specs}
+    H -->|ヒットあり| I[修正漏れを修正]
+    I --> G
+    H -->|ゼロヒット| J[完了]
+
+    J --> K[テスト実行]
+    K --> L{テスト通過?}
+    L -->|Yes| M[ビルド確認]
+    L -->|No| N[修正]
+    N --> K
+
+    M --> O{ビルド成功?}
+    O -->|Yes| P[終了]
+    O -->|No| Q[修正]
+    Q --> M

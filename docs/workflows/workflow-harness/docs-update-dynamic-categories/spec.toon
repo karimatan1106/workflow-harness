@@ -1,0 +1,97 @@
+phase: planning
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "docs_updateテンプレートの動的カテゴリ選択機能の技術仕様。ProjectTraits interface(6 booleanフラグ)をtypes-core.tsに定義し、TaskStateに永続化。buildSubagentPromptにprojectTraits引数を追加し、buildDocCategories純粋関数でフラグからカテゴリリスト文字列を生成、{docCategories}プレースホルダー経由でdocs_updateテンプレートに注入する。全変更は後方互換でprojectTraits未設定時は現行固定5項目をフォールバック出力。8ファイル変更、200行制限遵守のため3ファイルで行数圧縮を先行実施。"
+
+decisions[9]{id,statement,rationale}:
+  PL-1, "ProjectTraits interfaceはtypes-core.tsのRiskScore直後(L78)に6フィールド+exportで定義する", "RiskScoreもプロジェクト特性を表す型であり論理グルーピングが自然。types-core.tsは194行のためRiskScore.factorsを3行に圧縮して余裕を確保する"
+  PL-2, "buildSubagentPromptに第7引数projectTraits?: Record<string,boolean>をオプショナルで追加する", "既存呼び出し元(query.ts L58)はundefined渡しで動作継続。ProjectTraits型への直接依存を避けRecord型で疎結合を維持"
+  PL-3, "buildDocCategories(traits?: Record<string,boolean>): string純粋関数をdefinitions.tsに追加する", "テンプレート文字列内に条件分岐を埋め込むと可読性が低下。ヘルパー関数で生成した番号付きリストをプレースホルダーに注入"
+  PL-4, "projectTraits未設定時は現行docs_updateテンプレートの固定5項目と完全一致する文字列をフォールバック出力する", "後方互換性を保証。既存タスク・scope_definition未経由の復旧シナリオでも動作が変わらない"
+  PL-5, "scope-nav.ts内でsm.loadTask→task.projectTraits設定→sm.addProofによる2段階永続化パターンを採用する", "manager.tsは196行で余裕4行のためupdateScope引数追加が困難。handleHarnessSetScope内で直接フィールド設定しsignAndPersistを経由する"
+  PL-6, "重複排除はbuildDocCategories内でSet<string>を使い同一パスは1回のみ出力する(OQ-2解決済み)", "hasUIとhasDesignSystemの両方がtrueの場合、docs/spec/components/が重複するためSetで自動排除"
+  PL-7, "出力形式は番号付きリスト(1. path -- 説明)を採用する(OQ-1解決済み)", "現行docs_updateテンプレートの番号付きリスト形式との一貫性を維持。サブエージェントが自然に解釈可能"
+  PL-8, "defs-stage6.tsの200行制限対応として、commit/push/ci_verification/deployテンプレートの不要空行を削減し8-10行確保する", "現在197行で余裕3行。docs_updateテンプレート変更で固定リストをプレースホルダー1行に置換すると純減するが安全マージンが必要"
+  PL-9, "scope_definitionテンプレートにStep 3.5としてプロジェクト性質判定ステップを追加し、具体的な判定基準を記載する", "サブエージェントがpackage.json/tsconfig/ディレクトリ構造からhasUI/hasAPI等を判定できるよう明示的な基準が必要"
+
+rtmEntries[8]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001, "ProjectTraits interface定義(hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystem)", "spec.toon PL-1", "src/state/types-core.ts", "types-core interface存在確認", "pending"
+  F-002, "TaskState.projectTraitsオプショナルフィールド追加", "spec.toon PL-2", "src/state/types.ts", "npm run build型チェック", "pending"
+  F-003, "harness_set_scope inputSchemaにprojectTraitsプロパティ追加", "spec.toon PL-5", "src/tools/defs-a.ts", "MCP定義の目視確認", "pending"
+  F-004, "handleHarnessSetScopeでprojectTraits永続化", "spec.toon PL-5", "src/tools/handlers/scope-nav.ts", "harness_set_scope呼び出し後のTaskState検証", "pending"
+  F-005, "buildDocCategories純粋関数の実装", "spec.toon PL-3/PL-6/PL-7", "src/phases/definitions.ts", "フラグ組み合わせ別の出力検証", "pending"
+  F-006, "buildSubagentPromptへのprojectTraits引数追加と{docCategories}展開", "spec.toon PL-2", "src/phases/definitions.ts", "テンプレート展開結果の検証", "pending"
+  F-007, "docs_updateテンプレートの固定リストを{docCategories}プレースホルダーに置換", "spec.toon PL-4/PL-8", "src/phases/defs-stage6.ts", "フォールバック出力の一致確認", "pending"
+  F-008, "scope_definitionテンプレートにプロジェクト性質判定ステップ追加", "spec.toon PL-9", "src/phases/defs-stage1.ts", "テンプレート内容の目視確認", "pending"
+
+architecture:
+  layers: "3層変更: 型定義層(types-core.ts/types.ts) → API受付層(defs-a.ts/scope-nav.ts) → テンプレート注入層(definitions.ts/defs-stage6.ts/defs-stage1.ts/query.ts)"
+  dataFlow: "scope_definitionサブエージェント → harness_set_scope(projectTraits) → TaskState.projectTraits永続化 → harness_get_subphase_template → buildSubagentPrompt(projectTraits) → buildDocCategories(traits) → {docCategories}展開 → docs_updateサブエージェント"
+  fallbackChain: "projectTraits未設定 → buildDocCategories(undefined) → 現行固定5項目リスト返却"
+
+buildDocCategoriesSpec:
+  signature: "buildDocCategories(traits?: Record<string, boolean>): string"
+  location: "src/phases/definitions.ts(buildSubagentPrompt直前に配置)"
+  traitToCategories: "hasUI→screens/wireframes/components/interactions/responsive/accessibility, hasAPI→api, hasDB→database, hasEvents→events/messages, hasI18n→i18n/seo/sitemap.md, hasDesignSystem→design-system/components"
+  deduplication: "Set<string>で同一パス排除。hasUIとhasDesignSystemの両方trueでもdocs/spec/components/は1回のみ"
+  fallbackOutput: "traitsがundefined時は現行固定5項目を返却: 1. docs/architecture/overview.md 2. docs/operations/ 3. CHANGELOG.md 4. README.md 5. docs/workflows/→永続パス反映"
+  dynamicOutput: "traitsがdefined時はフォールバック5項目+フラグ別カテゴリを番号付きリストで出力"
+
+scopeNavPersistenceSpec:
+  pattern: "handleHarnessSetScope内でsm.updateScope呼び出し後、args.projectTraitsが存在する場合に追加処理"
+  steps: "1. const traits = args.projectTraits as Record<string,boolean> | undefined  2. if (traits) { const t = sm.loadTask(taskId); if(t) { (t as any).projectTraits = traits; sm.addProof(taskId, proofEntry); } }"
+  rationale: "updateScopeシグネチャ変更を回避。addProofはsignAndPersistを内部で呼ぶため永続化が保証される"
+  backwardCompat: "projectTraitsパラメータ省略時は既存動作に影響なし"
+
+queryHandlerSpec:
+  change: "handleHarnessGetSubphaseTemplate(query.ts L50-52)でtaskからprojectTraitsを取得しbuildSubagentPromptに第7引数として渡す"
+  before: "buildSubagentPrompt(phase, taskName, docsDir, workflowDir, userIntent, taskId)"
+  after: "buildSubagentPrompt(phase, taskName, docsDir, workflowDir, userIntent, taskId, (task as any).projectTraits)"
+
+templateChanges[2]{file,description}:
+  defs-stage6.ts, "docs_updateテンプレートL80-86の固定5項目リストを{docCategories}プレースホルダー1行に置換。配置ルールセクションは維持"
+  defs-stage1.ts, "scope_definitionテンプレートのStep 3(L57-60)の前にStep 3.5を挿入。内容: プロジェクト性質判定基準(React/Vue/Angular→hasUI, Express/Fastify/REST→hasAPI, Prisma/TypeORM/SQL→hasDB, EventEmitter/MQ→hasEvents, i18next/react-intl→hasI18n, Storybook/designTokens→hasDesignSystem)とharness_set_scopeのprojectTraitsパラメータ設定指示"
+
+lineConstraintPlan[3]{file,currentLines,requiredAdd,strategy,expectedFinal}:
+  types-core.ts, 194, 7, "RiskScore.factorsの7プロパティ(L68-77)を3行に圧縮(2-3プロパティ/行)し4行削減。純増=7-4=3行。最終197行", 197
+  defs-stage6.ts, 197, -2, "docs_updateの固定5項目(6行)を{docCategories}プレースホルダー(1行)に置換で5行削減。Step 3.5追加不要(defs-stage1.tsの担当)。最終192行", 192
+  defs-stage1.ts, 194, 5, "Step 0 Serenaチェック(L27-31)を2行に圧縮し3行削減。純増=5-3=2行。最終196行", 196
+
+implementationOrder[8]{step,file,change,dependency,fNNN}:
+  1, "src/state/types-core.ts", "RiskScore.factors圧縮(4行削減) + ProjectTraits interface追加(7行)", "なし(基盤型)", "F-001"
+  2, "src/state/types.ts", "import文にProjectTraits追加 + TaskState.projectTraits?フィールド追加", "step1(ProjectTraits型)", "F-002"
+  3, "src/tools/defs-a.ts", "harness_set_scope inputSchemaにprojectTraitsオブジェクトプロパティ追加(6行)", "なし(JSON Schema定義)", "F-003"
+  4, "src/tools/handlers/scope-nav.ts", "handleHarnessSetScope内にprojectTraits抽出+永続化ロジック追加(8行)", "step2(TaskState型)", "F-004"
+  5, "src/phases/definitions.ts", "buildDocCategories関数追加(20行) + buildSubagentPromptに第7引数と{docCategories}展開追加(3行)", "step2(ProjectTraits型参照不要、Record型で受渡)", "F-005/F-006"
+  6, "src/phases/defs-stage6.ts", "docs_updateテンプレートの固定5項目を{docCategories}プレースホルダーに置換", "step5(buildDocCategories関数)", "F-007"
+  7, "src/phases/defs-stage1.ts", "Step 0圧縮(3行削減) + scope_definitionテンプレートにStep 3.5追加(5行)", "step3(harness_set_scope API)", "F-008"
+  8, "src/tools/handlers/query.ts", "handleHarnessGetSubphaseTemplateでtask.projectTraitsをbuildSubagentPromptに渡す(1行変更)", "step5(buildSubagentPromptシグネチャ)", "F-006"
+
+inputSchemaSpec:
+  location: "src/tools/defs-a.ts harness_set_scope.inputSchema.properties"
+  addition: "projectTraits: { type: 'object', properties: { hasUI: { type: 'boolean' }, hasAPI: { type: 'boolean' }, hasDB: { type: 'boolean' }, hasEvents: { type: 'boolean' }, hasI18n: { type: 'boolean' }, hasDesignSystem: { type: 'boolean' } }, description: 'Project trait flags for dynamic doc categories.' }"
+
+riskMitigation[4]{risk,probability,impact,mitigation}:
+  "types-core.ts 200行超過", "medium", "ブロッカー(コンパイル不可)", "RiskScore.factors圧縮で4行確保を先行実施。圧縮後にwc -lで検証してからProjectTraits追加"
+  "buildSubagentPrompt呼び出し元の修正漏れ", "low", "コンパイルエラー", "query.ts(L58)が唯一の直接呼び出し元。テストファイルは間接呼び出しのため修正不要"
+  "フォールバック出力が現行と不一致", "low", "既存タスクの挙動変化", "buildDocCategories(undefined)の出力を現行テンプレートL80-86と文字列比較で検証"
+  "scope-nav.tsのaddProof経由永続化が不完全", "low", "projectTraitsが保存されない", "addProofはsignAndPersistを呼ぶためstate全体が永続化される。loadTask→フィールド設定→addProofの順序を厳守"
+
+testStrategy:
+  unit: "buildDocCategories関数の入出力テスト: undefinedフォールバック、全true、全false、部分true(hasUI+hasAPI)、重複排除(hasUI+hasDesignSystem)"
+  integration: "harness_set_scope(projectTraits付き)→harness_status→projectTraits存在確認。harness_get_subphase_template(docs_update)→動的カテゴリ含有確認"
+  regression: "projectTraits無しタスクでdocs_updateテンプレート取得→現行固定5項目と完全一致確認"
+  buildCheck: "npm run build成功 + 全ファイルwc -l 200行以下"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/spec.toon, spec, "planningフェーズ技術仕様書。アーキテクチャ3層設計、RTM 8エントリ(F-001〜F-008)、実装順序8ステップ、200行制限対策3ファイル"
+  docs/workflows/docs-update-dynamic-categories/requirements.toon, spec, "前フェーズ成果物。機能要件7件、非機能要件5件、受入基準6件"
+  docs/workflows/docs-update-dynamic-categories/research.toon, report, "前フェーズ成果物。8ファイル精査結果と200行制限対策"
+  docs/workflows/docs-update-dynamic-categories/scope-definition.toon, report, "前フェーズ成果物。影響範囲定義と7決定事項"
+
+next:
+  criticalDecisions: "PL-1(types-core.ts行数圧縮+ProjectTraits配置)とPL-5(scope-nav.ts 2段階永続化)が実装時の最初の検証対象。PL-8(defs-stage6.ts行数圧縮)は実装前にwc -lで現在行数を再確認すること"
+  readFiles: "src/state/types-core.ts(行数圧縮箇所の確認), src/phases/defs-stage6.ts(固定リスト置換箇所), src/tools/handlers/scope-nav.ts(永続化パターン挿入箇所)"
+  warnings: "types-core.ts/defs-stage1.tsは194行で余裕6行。行数圧縮が想定通り機能しない場合はブロッカーとなる。圧縮ステップを最優先で実施し、失敗時は代替案(定数の外部ファイル切り出し)を検討すること"

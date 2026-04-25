@@ -1,0 +1,56 @@
+stateDiagram-v2
+    Start --> ResearchPhase: workflow start
+
+    ResearchPhase --> ScopeInfoCheck: research complete
+    ScopeInfoCheck --> RequirementsPhase: scope未設定時は情報メッセージ表示
+
+    RequirementsPhase --> ScopeWarningCheck: requirements complete
+    ScopeWarningCheck --> ParallelAnalysisPhase: scope未設定時は警告メッセージ表示
+
+    ParallelAnalysisPhase --> ScopeBlockCheck: parallel_analysis complete
+    ScopeBlockCheck --> ParallelDesignPhase: scope設定済みで遷移可能
+    ScopeBlockCheck --> ScopeSetBlocked: scope未設定で遷移ブロック
+
+    ScopeSetBlocked --> WorkflowSetScopeCommand: workflow_set_scope コマンド実行
+    WorkflowSetScopeCommand --> ModuleNameInferred: dirs から moduleName を自動推定
+    ModuleNameInferred --> ScopeSet: scope に moduleName を保存
+    ScopeSet --> ParallelAnalysisPhase: workflow_next 再実行
+
+    ParallelDesignPhase --> ResolvingPhaseGuide: {moduleDir} プレースホルダー展開
+    ResolvingPhaseGuide --> DocumentHierarchy: docsDir/modules/{moduleName} へ解決
+
+    DocumentHierarchy --> ImplementationPhase: 設計フェーズ完了
+
+    ImplementationPhase --> End: task complete
+
+    note right of ScopeInfoCheck
+        FR-1-1: 情報レベル
+        「スコープが未設定です。
+        推奨します。」
+    end
+
+    note right of ScopeWarningCheck
+        FR-1-2: 警告レベル
+        「スコープが未設定です。
+        parallel_analysisでブロック
+        されます。設定してください。」
+    end
+
+    note right of ScopeBlockCheck
+        FR-1-3: ブロック
+        「スコープ（影響範囲）が未設定のため
+        parallel_designに進めません。
+        workflow_set_scopeで設定してください。」
+    end
+
+    note right of ModuleNameInferred
+        FR-2-2: moduleName自動推定
+        affectedDirsの先頭要素の
+        basename から推定
+    end
+
+    note right of ResolvingPhaseGuide
+        FR-2-1,FR-2-3: {moduleDir}プレースホルダー
+        moduleName設定時: docsDir/modules/{moduleName}
+        moduleName未設定時: docsDir (フォールバック)
+    end

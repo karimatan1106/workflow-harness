@@ -1,0 +1,207 @@
+# subagentプロンプト自動生成 - インターフェース設計
+
+## サマリー
+
+本ドキュメントはsubagentプロンプト自動生成機能のインターフェース設計を定義する。
+このタスクはバックエンドMCPサーバーの内部機能であり、エンドユーザー向けの画面UIは存在しない。
+代わりに、MCPツールが返すレスポンス構造、Orchestratorに返されるエラーメッセージの形式、
+resolvePhaseGuide関数が返すPhaseGuideオブジェクトの構造（subagentTemplate生成後）、
+PHASE_GUIDESにchecklistフィールドを追加した場合の設定構造の4つのインターフェースを設計する。
+
+主要な決定事項として、workflow_status MCPツールがsubagentTemplateフィールドにbuildPromptで生成した
+完全な9セクションプロンプトを含めること、ValidationResult型が構造化されたエラー情報を提供すること、
+PhaseGuide設定にchecklistを追加してフェーズ固有の作業指示を表現することを定める。
+
+次フェーズで必要な情報として、各インターフェースの型定義（types.tsへの反映内容）、
+buildPromptが生成する9セクションプロンプトの文字列形式の完全仕様、
+ValidationResult型の全エラー種別と対応するHTTPステータスコードが挙げられる。
+
+## CLIインターフェース設計
+
+### workflow_status MCPツールのレスポンス形式
+
+workflow_statusツールはOrchestratorがフェーズ情報を取得するために使用する主要なMCPツールである。
+buildPrompt実装後、レスポンス内のphaseGuideオブジェクトのsubagentTemplateフィールドには、
+固定文字列の代わりにbuildPromptが動的に生成した完全な9セクションプロンプトが格納される。
+
+subagentTemplateの内容は以下の9セクションを順番に連結した文字列となる。
+
+セクション1はフェーズ情報ヘッダーであり、フェーズ名・タスク名・ユーザーの意図・出力先パスを含む。
+セクション2は入力ファイルセクションであり、inputFileMetadataのメタデータ（重要度・readMode）を含む。
+セクション3は出力ファイルセクションであり、guide.outputFileの完全パスを含む。
+セクション4は必須セクションリストであり、guide.requiredSectionsの各要素をリスト表示する。
+セクション5は成果物品質要件セクションであり、GlobalRulesから展開した全品質ルールを含む。
+セクション6はBashコマンド制限セクションであり、BashWhitelistのexpandCategoriesで展開したコマンド一覧を含む。
+セクション7はファイル編集制限セクションであり、editableFileTypesの拡張子リストを含む。
+セクション8はフェーズ固有チェックリストセクションであり、guide.checklistが設定された場合のみ表示される。
+セクション9は重要事項セクションであり、出力先パス厳守・サマリー必須化・バリデーション対応について記載する。
+
+### workflow_statusレスポンスのフィールド構造
+
+workflow_statusが返すJSONオブジェクトのphaseGuideフィールドは以下の構造を持つ。
+
+phaseName フィールドは現在のフェーズ名を文字列で返す（例: "implementation"）。
+description フィールドはフェーズの説明を文字列で返す（例: "コードを実装するフェーズ"）。
+subagentType フィールドは使用するサブエージェント種別を返す（"general-purpose"・"Explore"・"Bash" の3種類）。
+model フィールドは使用するモデル名を返す（"haiku"・"sonnet"・"opus" の3種類）。
+allowedBashCategories フィールドは許可されたBashコマンドカテゴリ名の配列を返す。
+editableFileTypes フィールドは編集可能なファイル拡張子の配列を返す。
+requiredSections フィールドは必須セクション名の配列を返す（多言語対応セクション名を含む）。
+inputFiles フィールドは入力ファイルパスの配列を返す。
+inputFileMetadata フィールドはファイルパスをキーとし重要度・readModeをバリューとするオブジェクトを返す。
+outputFile フィールドは出力ファイルの完全パスを文字列で返す（設定されていない場合はnullを返す）。
+checklist フィールドはフェーズ固有の作業指示リストを返す（オプショナルフィールドであり未設定時はnullを返す）。
+subagentTemplate フィールドはbuildPromptが生成した完全な9セクションプロンプト文字列を返す。
+
+### Orchestratorの利用フロー
+
+Orchestratorはworkflow_statusを呼び出してphaseGuide.subagentTemplateを取得し、
+そのままTaskツールのpromptパラメータとして渡すことでsubagentを起動できる。
+従来のようにプレースホルダー置換を手動で行う必要がなく、完全なプロンプトが自動生成される点が重要である。
+
+## エラーメッセージ設計
+
+### ValidationResultオブジェクトの構造
+
+workflow_nextまたはworkflow_complete_subを呼び出した際に成果物バリデーションが失敗した場合、
+MCPサーバーはValidationResultオブジェクトを含むエラーレスポンスをOrchestratorに返す。
+
+isValid フィールドはバリデーション成功時にtrueを返し、失敗時にfalseを返す真偽値フィールドである。
+errors フィールドはエラー詳細オブジェクトの配列であり、各要素は errorType・message・details の3フィールドを持つ。
+warnings フィールドは警告詳細オブジェクトの配列であり、エラーではないが注意すべき情報を格納する。
+checkedFilePath フィールドはバリデーション対象のファイルパスを文字列で返す。
+executionTimeMs フィールドはバリデーション実行時間をミリ秒単位で返す数値フィールドである。
+
+### エラーオブジェクトの各フィールド
+
+errorType フィールドは以下の11種類のエラー種別識別子のいずれかを返す文字列フィールドである。
+
+"FORBIDDEN_PATTERN" はFORBIDDEN_PATTERNSに含まれる禁止語が検出された場合に設定される。
+"SECTION_DENSITY" はlineRatio（セクション密度）が最小閾値（0.3）を下回った場合に設定される。
+"DUPLICATE_LINE" はstructuralLine除外後に同一行が3回以上繰り返された場合に設定される。
+"MISSING_SECTION" はrequiredSectionsに定義された必須セクションが成果物に存在しない場合に設定される。
+"INSUFFICIENT_LINES" は成果物のlineCountが最小要件を下回った場合に設定される。
+"SHORT_LINE_RATIO" は短い行（10文字未満）のlineRatioが最大値（0.5）を超えた場合に設定される。
+"HEADER_ONLY" は特定セクションがヘッダーのみで本文が存在しない場合に設定される。
+"MERMAID_STRUCTURE" はMermaid図の状態数または遷移数が最小要件を下回った場合に設定される。
+"TEST_FILE_QUALITY" はテストファイルにアサーションまたはテストケースが不足している場合に設定される。
+"CODE_PATH_REFERENCE" はspec.mdにsrcまたはtestsパスへのpathReferenceが存在しない場合に設定される。
+"UNKNOWN_ERROR" は上記いずれにも分類できないエラーが発生した場合に設定される。
+
+message フィールドはOrchestratorが読み取れる日本語の説明文字列を返す。
+details フィールドはオプショナルであり、問題箇所の行番号・繰り返し内容・不足行数などの補足情報を格納する。
+
+### エラーメッセージの実際の出力例
+
+FORBIDDEN_PATTERN エラーの場合、message は「禁止パターンが3行目に検出されました」という形式で返される。
+detailsには対象行番号と検出されたパターン文字列が含まれる。
+
+DUPLICATE_LINE エラーの場合、message は「同一行 "- 概要:" が5行目・12行目・18行目に繰り返されています」という形式で返される。
+detailsには重複行の内容・出現位置・出現回数が含まれる。
+
+MISSING_SECTION エラーの場合、message は「必須セクション "## テスト結果" が成果物に存在しません」という形式で返される。
+detailsには欠落しているセクションヘッダーの完全な文字列が含まれる。
+
+MERMAID_STRUCTURE エラーの場合、message は「Mermaid stateDiagram の状態数が2個で最小要件（3個）を下回っています」という形式で返される。
+detailsには検出された状態数・遷移数と要件値が含まれる。
+
+### buildRetryPromptへの入力として使用されるエラー情報
+
+OrchestratorはValidationResultのerrorsフィールドを受け取った後、
+buildRetryPromptを呼び出す際にerrorMessageパラメータとしてエラー情報全文を渡す。
+buildRetryPromptはerrorTypeフィールドを検査して対応する修正指示を自動生成するため、
+Orchestratorが手動でエラーを解析する必要がなくなる。
+
+## APIレスポンス設計
+
+### resolvePhaseGuide関数の戻り値（buildPrompt生成後）
+
+resolvePhaseGuide関数はPhaseGuideオブジェクトを返す既存の同期関数であり、
+buildPrompt実装後もシグネチャは変更されない（後方互換性確保の方針に従う）。
+ただし、返却されるPhaseGuideオブジェクトのsubagentTemplateフィールドの内容が変化する。
+
+変更前のsubagentTemplateはPHASE_GUIDES定数に直接記述されたハードコード文字列を返していた。
+変更後のsubagentTemplateはbuildPromptが動的に生成した完全な9セクション文字列を返す。
+
+### PhaseGuideオブジェクトの完全なフィールド構造
+
+resolvePhaseGuide関数が返すPhaseGuideオブジェクトは以下のフィールドを持つ。
+
+phaseName フィールドは対象フェーズの識別名を文字列で返す（例: "research"・"implementation"・"code_review"）。
+description フィールドはフェーズの目的を日本語で説明する文字列を返す（最大200文字程度）。
+subagentType フィールドはサブエージェントの実行種別を返す（"general-purpose"・"Explore"・"Bash"）。
+model フィールドは推奨モデルを返す（"haiku"は調査・確認系、"sonnet"は実装・設計系、"opus"は高度推論が必要な場合）。
+allowedBashCategories フィールドは許可BashカテゴリのstringArrayを返す（例: "readonly"・"testing"・"implementation"）。
+editableFileTypes フィールドは編集可能な拡張子のstringArrayを返す（例: ".md"・".ts"・".tsx"）。
+requiredSections フィールドは必須セクション名のstringArrayを返す（PHASE_GUIDESとPHASE_ARTIFACT_REQUIREMENTSが統合済み）。
+inputFiles フィールドはデフォルト入力ファイルパスのstringArrayを返す（docsDir相対パスで表現）。
+inputFileMetadata フィールドはファイルパスをキーとしたオブジェクトを返す（各値にimportanceとreadModeが含まれる）。
+outputFile フィールドは出力ファイルの相対パスを文字列で返す（設定されていない場合はundefinedを返す）。
+checklist フィールドはフェーズ固有の作業確認項目のstringArrayを返す（オプショナルフィールド）。
+subagentTemplate フィールドはbuildPromptが生成した完全なプロンプト文字列を返す（5000から8000文字程度）。
+
+### サブフェーズを持つ並列フェーズのレスポンス構造
+
+parallel_analysis・parallel_design・parallel_quality・parallel_verification の各フェーズでは、
+resolvePhaseGuide関数はparentGuideフィールドとsubPhaseGuidesフィールドを追加で返す。
+
+parentGuide フィールドは並列フェーズ全体を表すPhaseGuideオブジェクトを返す。
+subPhaseGuides フィールドは各サブフェーズ名をキーとしPhaseGuideオブジェクトをバリューとするオブジェクトを返す。
+各サブフェーズのPhaseGuideにも独立したsubagentTemplateが含まれており、
+Orchestratorは各サブフェーズのsubagentTemplateを独立したTaskツール呼び出しのpromptとして使用できる。
+
+### importanceフィールドの設計
+
+inputFileMetadataオブジェクトの各エントリが持つimportanceフィールドは以下の3段階の値を取る。
+"critical" は成果物作成に必須の入力ファイルを示し（例: spec.mdはimplementation フェーズで必須）、
+サブエージェントは必ず全文を読み込む必要があることを意味する。
+"high" は重要な参照ファイルを示し（例: test-design.mdはtest_implフェーズで高重要度）、
+サブエージェントは少なくとも概要セクションを読み込む必要があることを意味する。
+"medium" は補足的な参照ファイルを示し（例: research.mdはrequirements フェーズで中重要度）、
+サブエージェントはサマリーセクションのみ読み込めば十分であることを意味する。
+
+## 設定ファイル設計
+
+### PHASE_GUIDESへのchecklistフィールド追加後の構造
+
+definitions.tsのPHASE_GUIDES定数にchecklistフィールドを追加した後の設定構造を示す。
+checklistフィールドはオプショナルなstringArrayであり、各要素はフェーズで確認すべき作業項目を日本語で記述する。
+
+researchフェーズのchecklist設定例として、以下の4項目が定義される。
+「既存コードの構造とモジュール間の依存関係を把握する」という項目は調査の出発点となる重要な確認事項である。
+「問題の発生箇所を特定し、影響を受けるファイルをリストアップする」という項目は変更スコープを明確にする。
+「workflow_capture_baselineで既存テストのベースライン結果を記録する」という項目はリグレッション防止の必須手順である。
+「技術的制約（パフォーマンス要件・セキュリティ要件・後方互換性確保）を文書化する」という項目は後続フェーズの制約として引き継ぐ情報を整理する。
+
+implementationフェーズのchecklist設定例として、以下の5項目が定義される。
+「spec.mdを読み込み実装すべき機能の一覧を確認する」という項目は設計との整合性を保つための必須手順である。
+「state-machine.mmdを読み込み全状態遷移のパターンを把握する」という項目はビジネスロジックの正確な実装を確保する。
+「flowchart.mmdを読み込み全処理フローのパスを把握する」という項目はエッジケースの見落としを防ぐ。
+「ui-design.mdを読み込み全UIコンポーネントと画面レイアウトを確認する」という項目はフロントエンド実装の完全性を確保する。
+「test-design.mdを読み込み全テストケースとspec.mdのトレーサビリティを確認する」という項目は全要件への対応を検証する。
+
+### 設定オブジェクトのフィールド一覧（代表的なフェーズ）
+
+PHASE_GUIDESの各フェーズエントリは以下のフィールドで構成されるオブジェクトである。
+
+phaseNameフィールドはフェーズの識別文字列を持ち、ワークフロー内でユニークである必要がある。
+descriptionフィールドは30文字から100文字程度の日本語説明文を持つ。
+subagentTypeフィールドは"general-purpose"・"Explore"・"Bash"の3種類から1つを選択する。
+modelフィールドは"haiku"・"sonnet"・"opus"の3種類から1つを選択する。
+allowedBashCategoriesフィールドはBashWhitelistのcategoriesオブジェクトに定義されたキー名のstringArrayを持つ。
+editableFileTypesフィールドは拡張子文字列のstringArrayを持ち、アスタリスクのみの場合は全ファイル編集可能を意味する。
+requiredSectionsフィールドは成果物の検証に使用されるセクション名のstringArrayを持つ。
+inputFilesフィールドはデフォルト入力ファイルパスのstringArrayを持つ（省略可能）。
+outputFileフィールドはデフォルト出力ファイルパスの文字列を持つ（省略可能）。
+checklistフィールドは作業確認項目のstringArrayを持つオプショナルフィールドである。
+subagentTemplateフィールドはresolvePhaseGuide呼び出し時にbuildPromptで上書きされる文字列フィールドである（PHASE_GUIDES内の初期値はbuildPromptの生成物に置き換えられる）。
+
+### チェックリスト設計のガイドライン
+
+各フェーズのchecklistは5項目以上10項目以下で記述することを推奨する。
+各項目は「何を・どのように・なぜ行うか」が明確な具体的な作業指示として記述する。
+抽象的な指示（例: 「コードを確認する」）ではなく、具体的な指示（例: 「spec.mdの全機能リストと実装ファイルを照合する」）を記述する。
+Exploreサブエージェント（subagentType: "Explore"）を使用するresearchフェーズのchecklistには、
+workflow_capture_baseline呼び出しの具体的な手順を必ず含める。
+test-designフェーズのchecklistにはspec.mdとのトレーサビリティ確認・fixturesデータ準備・引き継ぎ情報整理を含める。
+code_reviewフェーズのchecklistには設計との整合性確認・pathReference検証・未実装項目の差し戻し判断を含める。

@@ -1,0 +1,52 @@
+flowchart TD
+    Start(("開始")) --> Step1("ステップ1: ルートCLAUDE.mdの事前確認 141-165行をRead")
+
+    Step1 --> Step2A("ステップ2: FR-5-A実行 design_review行をui_design行直後に挿入")
+
+    Step2A --> Step3B("ステップ3: FR-5-B実行 regression_test行をtesting行直後に挿入")
+
+    Step3B --> Step4C("ステップ4: FR-5-C実行 ci_verificationとdeploy行をpush行直後に挿入")
+
+    Step4C --> Check5{"ステップ5: ルート検証 テーブル行数が25行か"}
+
+    Check5 -->|NG| Rollback1("Edit失敗時の差し戻し old_string不一致をspec.mdで確認")
+    Rollback1 --> Step1
+
+    Check5 -->|OK| Step6("ステップ6: workflow-plugin CLAUDE.mdの事前確認 179-205行をRead")
+
+    Step6 --> Step7A("ステップ7: FR-6-A実行 design_review行を挿入 入力ファイル重要度は高")
+
+    Step7A --> Step8B("ステップ8: FR-6-B実行 regression_test行を挿入 入力ファイル重要度は中")
+
+    Step8B --> Step9C("ステップ9: FR-6-C実行 ci_verificationとdeploy行を挿入 入力ファイル重要度は低")
+
+    Step9C --> Check10{"ステップ10: 整合性検証 PHASE_SEQUENCEと順序一致か"}
+
+    Check10 -->|NG| Rollback2("修正内容を再確認 definitions.tsと照合")
+    Rollback2 --> Step6
+
+    Check10 -->|OK| Verify1("検証1: ルートフェーズ数25行であることを確認")
+
+    Verify1 --> Verify2("検証2: プラグインフェーズ数25行と6列構成を確認")
+
+    Verify2 --> Verify3("検証3: subagent設定確認 design_review sonnet他3フェーズ haiku")
+
+    Verify3 --> Verify4("検証4: フェーズ定義順序をPHASE_SEQUENCEと照合")
+
+    Verify4 --> Verify5("検証5: git diffで追記4行のみが差分であることを確認")
+
+    Verify5 --> FinalCheck{"全検証合格か"}
+
+    FinalCheck -->|NG| Investigate("root cause分析しエラー内容を把握")
+    Investigate --> Step1
+
+    FinalCheck -->|OK| End(("完了 3ファイル整合性達成 4フェーズ正式追加"))
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style Check5 fill:#FFE4B5
+    style Check10 fill:#FFE4B5
+    style FinalCheck fill:#FFE4B5
+    style Rollback1 fill:#FFA07A
+    style Rollback2 fill:#FFA07A
+    style Investigate fill:#FFA07A

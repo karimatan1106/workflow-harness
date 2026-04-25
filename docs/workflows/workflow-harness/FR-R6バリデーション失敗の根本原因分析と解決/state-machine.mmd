@@ -1,0 +1,127 @@
+stateDiagram-v2
+    Start --> QualitySectionCurrent: 初期状態確認
+
+    Start --> QualitySectionCurrent: 初期状態確認
+    note right of Start
+        qualitySectionの現在の状態
+        グループ分類名のみが記述
+        禁止語の実体リストなし
+    end note
+
+    QualitySectionCurrent --> FR_R6_1_Applied: FR-R6-1適用
+    note right of QualitySectionCurrent
+        状態: 初期状態（行1093-1114）
+        - 禁止語の実体がコードフェンス内に未記述
+        - subagentが回避対象を把握できない状況
+    end note
+
+    FR_R6_1_Applied --> FR_R6_3_Applied: FR-R6-3適用（並行）
+    note right of FR_R6_1_Applied
+        状態: FR-R6-1完了後
+        - 禁止語の実体リストをコードフェンス内に追加
+        - 部分一致検出の警告を明記
+        - テンプレートリテラルで動的生成
+    end note
+
+    FR_R6_3_Applied --> SubagentTemplatesReady: FR-R6-2とFR-R6-4適用（並行）
+    note right of FR_R6_3_Applied
+        状態: FR-R6-3完了後
+        - 安全な代替表現リストをqualitySectionに追加
+        - 複合語汚染の警告を記述
+        - 3つのケース別に代替表現を提供
+    end note
+
+    SubagentTemplatesReady --> DefinitionsTsReady: 全subagentTemplate修正完了
+    note right of SubagentTemplatesReady
+        状態: FR-R6-2とFR-R6-4適用後
+        - manual_test: 行数カウント仕様と転記防止ガイダンス追加
+        - security_scan: 行902にガイダンス追加
+        - e2e_test: 行926にガイダンス追加
+        - code_review: 設計整合性チェック項目を追加
+    end note
+
+    DefinitionsTsReady --> BuildProcess: TypeScriptビルド実行
+    note right of DefinitionsTsReady
+        状態: definitions.ts全修正完了
+        - FR-R6-1: qualitySectionへ禁止語実体追加
+        - FR-R6-3: 安全な代替表現リスト追加
+        - FR-R6-2とFR-R6-4: 全subagentTemplate修正
+    end note
+
+    BuildProcess --> BuildSuccess: ビルド成功確認
+    note right of BuildProcess
+        プロセス: npm run build実行
+        確認項目:
+        - コンパイルエラーがないこと
+        - dist/phases/definitions.jsが更新されたこと
+    end note
+
+    BuildSuccess --> MCPServerRestart: MCPサーバー再起動
+    note right of BuildSuccess
+        状態: ビルド完了後
+        - dist/*.jsファイルが更新された
+        - Node.jsモジュールキャッシュをクリアが必要
+    end note
+
+    MCPServerRestart --> MCPServerRunning: MCPサーバー起動完了
+    note right of MCPServerRestart
+        プロセス: Claude Desktop再起動または手動再起動
+        結果: 新しいバイナリが初期化される
+    end note
+
+    MCPServerRunning --> ClaudeMdReady: CLAUDE.md修正実施
+    note right of MCPServerRunning
+        状態: MCPサーバー再起動後
+        - プロセス内で古いモジュールがメモリ上に存在しない
+        - 新しいqualitySectionが参照可能になった状態
+    end note
+
+    ClaudeMdReady --> VerificationReady: 検証前準備完了
+    note right of ClaudeMdReady
+        変更内容:
+        - 「安全な代替表現パターン」セクション追加
+        - リトライプロンプトテンプレート強化
+        - subagent起動テンプレート追記
+    end note
+
+    VerificationReady --> QualitySectionValidation: qualitySectionの出力確認
+    note right of VerificationReady
+        状態: 全修正とビルド・再起動完了
+        - buildPromptを実行可能
+        - コードフェンス内の禁止語実体リストが含まれることを確認
+    end note
+
+    QualitySectionValidation --> SubagentTemplateValidation: subagentTemplate確認
+    note right of QualitySectionValidation
+        検証項目:
+        - 禁止語実体が動的生成されている
+        - 部分一致検出の警告が含まれている
+        - 転記防止警告が記述されている
+    end note
+
+    SubagentTemplateValidation --> ParallelVerificationExecution: parallel_verificationフェーズ実行
+    note right of SubagentTemplateValidation
+        検証項目:
+        - manual_test: 行890の修正確認
+        - security_scan: 行902の修正確認
+        - e2e_test: 行926の修正確認
+        - 全テンプレートに行数カウント仕様記述
+    end note
+
+    ParallelVerificationExecution --> FirstAttemptPassed: 初回パス確認（リトライなし）
+    note right of ParallelVerificationExecution
+        プロセス: 修正後のenvでサブフェーズ再実行
+        - manual_test初回パス
+        - security_scan初回パス
+        - e2e_test初回パス
+        - performance_test初回パス
+    end note
+
+    FirstAttemptPassed --> End: タスク完了
+    note right of FirstAttemptPassed
+        最終状態: 検証完了
+        成功基準:
+        - parallel_verificationフェーズ全サブフェーズが初回パス
+        - バリデーション失敗がリトライなしで解消
+        - 再発防止が確認された状態
+    end note

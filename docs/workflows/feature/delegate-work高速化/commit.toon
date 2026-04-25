@@ -1,0 +1,10 @@
+success: true
+phase: commit
+task: coordinator-worker-progress
+files-changed: delegate-work.ts
+changes-applied: 2
+details: "変更1) buildCoordinatorPrompt()に進捗出力指示を2行追加。progress-output / worker-progressキー追加。変更2) spawnAsync()の stdout ハンドラを改善。[PROGRESS]マーカー検出ロジック追加、progress notification に message フィールド追加"
+validation-status: passed
+type-check: "npx tsc --noEmit → No errors"
+target-file: "/c/ツール/Workflow/workflow-harness/mcp-server/src/tools/handlers/delegate-work.ts"
+worker-agentId: ab9676490a9d0bee1

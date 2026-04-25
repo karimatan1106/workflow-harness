@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> Normal: loop-detector.js起動
+
+    Normal --> LoopDetected: 5分以内に同一ファイルが閾値回以上編集された
+    Normal --> Timeout: 3秒以内に処理が完了しなかった
+    Normal --> ErrorHandling_UncaughtException: uncaughtExceptionイベント発生（42行目）
+    Normal --> ErrorHandling_UnhandledRejection: unhandledRejectionイベント発生（47行目）
+    Normal --> Allowed: 正常に処理が完了し許可
+
+    LoopDetected --> ExitBlock_Loop: process.exit(2) REQ-C4 Fail-Closed
+    Timeout --> ExitBlock_Timeout: process.exit(2) FR-2 Timeout Fail-Closed
+    ErrorHandling_UncaughtException --> ExitBlock_Error1: process.exit(2) に統一（修正箇所1）
+    ErrorHandling_UnhandledRejection --> ExitBlock_Error2: process.exit(2) に統一（修正箇所2）
+    Allowed --> ExitSuccess: process.exit(0) 正常終了
+
+    ExitBlock_Loop --> [*]
+    ExitBlock_Timeout --> [*]
+    ExitBlock_Error1 --> [*]
+    ExitBlock_Error2 --> [*]
+    ExitSuccess --> [*]

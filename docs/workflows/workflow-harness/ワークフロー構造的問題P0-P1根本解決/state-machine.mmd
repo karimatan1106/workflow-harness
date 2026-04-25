@@ -1,0 +1,74 @@
+stateDiagram-v2
+    direction LR
+    state "初期状態" as Init
+    Init --> Idle: システム起動
+
+    state "タスク管理" as TaskMgmt {
+        Idle --> Active: workflow_start
+        Active --> Active: workflow_record_feedback
+        Active --> WithSubtasks: workflow_create_subtask
+        WithSubtasks --> WithSubtasks: workflow_create_subtask
+        WithSubtasks --> WithSubtasks: workflow_link_tasks
+    }
+
+    state "フェーズ遷移" as PhaseTransition {
+        state "事前検証" as PreValidate {
+            state "検証開始" as PV_Start
+            PV_Start --> Validating: workflow_pre_validate
+            Validating --> Passed: 全検証合格
+            Validating --> Failed: エラー検出
+            Failed --> Validating: 修正後再検証
+            Passed --> PV_Done: 検証完了
+            state "検証終了" as PV_Done
+        }
+
+        state "フェーズ進行" as PhaseProgress {
+            state "遷移開始" as PP_Start
+            PP_Start --> CheckingArtifacts: workflow_next
+            CheckingArtifacts --> CheckingSemantics: 成果物合格
+            CheckingSemantics --> CheckingKeywords: セマンティック合格
+            CheckingKeywords --> Transitioning: キーワード合格
+            Transitioning --> SyncingIndex: フェーズ更新
+            SyncingIndex --> PP_Done: task_index同期完了
+            CheckingArtifacts --> Rejected: 成果物不合格
+            CheckingSemantics --> Rejected: セマンティック不合格
+            CheckingKeywords --> WarningOnly: カバレッジ低で非厳格モード
+            WarningOnly --> Transitioning
+            state "遷移終了" as PP_Done
+        }
+    }
+
+    state "CLAUDE.md配信" as CLAUDEDelivery {
+        state "配信開始" as CD_Start
+        CD_Start --> Parsing: resolvePhaseGuide
+        Parsing --> Cached: キャッシュヒット
+        Parsing --> Reading: キャッシュミス
+        Reading --> Extracting: ファイル読み込み完了
+        Extracting --> Cached: セクション抽出完了
+        Cached --> Delivered: PhaseGuideにcontent設定
+        Reading --> ErrorState: ファイル読み込みエラー
+        ErrorState --> Delivered: contentフィールドは空値で設定
+    }
+
+    state "親子関係管理" as ParentChild {
+        state "関係構築開始" as PC_Start
+        PC_Start --> CheckingCycle: workflow_link_tasks
+        CheckingCycle --> Linking: 循環なし
+        CheckingCycle --> CycleDetected: 循環検出
+        Linking --> Updated: 双方向リンク完了
+        Updated --> PC_Done: リンク成功
+        CycleDetected --> PC_Done: エラー返却
+        state "関係構築終了" as PC_Done
+    }
+
+    state "task-index同期" as IndexSync {
+        state "同期開始" as IS_Start
+        IS_Start --> Reading_Index: updateTaskIndexForSingleTask
+        Reading_Index --> Updating: インデックス読み込み完了
+        Updating --> WritingIndex: エントリ更新完了
+        WritingIndex --> IS_Done: 書き込み完了
+        Reading_Index --> Warning: 読み込みエラー
+        WritingIndex --> Warning: 書き込みエラー
+        Warning --> IS_Done: 警告ログ出力して処理継続
+        state "同期終了" as IS_Done
+    }

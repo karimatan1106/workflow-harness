@@ -1,0 +1,24 @@
+stateDiagram-v2
+    Start --> ReadDefinitions: definitions.tsを開く
+
+    ReadDefinitions --> ModifyFRR1: テンプレート読み込み完了
+
+    ModifyFRR1 --> ModifyFRR2: 862行目と871行目を変更（testingおよびregression_testのテスト出力形式ガイダンス）
+
+    ModifyFRR2 --> ModifyFRR3: 889行目を追記（manual_testサマリー行数ガイダンス）
+
+    ModifyFRR3 --> ModifyFRR4: 902行目を追記（security_scan重複行回避ガイダンス）
+
+    ModifyFRR4 --> BuildCheck: 914行目を追記（performance_testサマリーガイダンス）
+
+    BuildCheck --> BuildSuccess: npm run build実行
+    BuildSuccess --> RestartMCP: ビルド成功
+    BuildCheck --> BuildError: ビルドエラー検出
+    BuildError --> ModifyFRR1: エラー修正後に戻る
+
+    RestartMCP --> VerifyChanges: MCPサーバープロセスを再起動
+
+    VerifyChanges --> VerifySuccess: workflow_statusで確認
+    VerifySuccess --> End: 全変更が実装され反映された
+    VerifyChanges --> VerifyFail: 変更が反映されない
+    VerifyFail --> RestartMCP: MCP再起動を再実施

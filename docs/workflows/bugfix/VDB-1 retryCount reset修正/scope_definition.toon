@@ -1,0 +1,14 @@
+phase: scope_definition
+taskId: c17eeac4-7e5c-4b57-a1ac-16744ac776bb
+ts: "2026-03-02T10:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  SD-001,manager.ts の resetTask が retryCount を初期化しない,harness_reset 後もカウンターが残存しハーネスが永続的にブロックされる
+  SD-002,manager.ts の goBack がロールバック先フェーズの retryCount をゼロ化しない,同一フェーズに戻った直後に RLM-1 ブロックが発生して再実行できない
+  SD-003,修正は manager.ts の resetTask と goBack の2メソッドのみ対象,他ファイルへの影響なくバグ修正を最小範囲に限定できる
+  SD-004,"types.ts の retryCount?: Record<string number> 型定義は変更不要",オプショナル型として正しく空オブジェクト代入と互換している
+  SD-005,テスト追加は manager-lifecycle.test.ts の既存 resetTask ブロックに隣接して行う,resetTask 後の retryCount 全クリアと goBack 後の対象フェーズクリアをそれぞれ検証する
+artifacts[2]{path,role,summary}:
+  docs/workflows/VDB-1 retryCount reset修正/scope-definition.md,report,修正対象ファイル・変更内容・影響範囲・スコープ外を記述したスコープ定義レポート
+  docs/workflows/VDB-1 retryCount reset修正/scope_definition.toon,checkpoint,TOONフォーマットチェックポイントファイル
+next:
+  readFiles[2]: workflow-harness/mcp-server/src/state/manager.ts,workflow-harness/mcp-server/src/__tests__/manager-lifecycle.test.ts

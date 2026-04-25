@@ -1,0 +1,56 @@
+stateDiagram-v2
+    [*] --> InitialState: タスク開始
+
+    InitialState --> BUG002_tsconfig: BUG-002修正開始\n(tsconfig.json exclude設定)
+
+    BUG002_tsconfig --> BUG002_build: npm run build実行\nテストファイル除外確認
+    BUG002_build --> BUG002_success: dist/にテストファイル\nなし確認\n(find dist -name *.test.js)
+    BUG002_success --> BUG001_vitest: BUG-001修正開始\n(ルートvitest.config.ts作成)
+
+    BUG001_vitest --> BUG001_config: vitest.config.ts\n新規作成\nglobals: true設定
+    BUG001_config --> BUG001_setup: include設定\nmcp-server/src/**/*.test.ts\nmcp-server/tests/**/*.test.ts\nhooks/__tests__/*.test.js
+    BUG001_setup --> BUG003_mock: BUG-003修正開始\n(DesignValidatorモック修正)
+
+    BUG003_mock --> BUG003_token: session-token.test.ts\nvi.fn().mockImplementation()\nに変更
+    BUG003_token --> BUG003_skip: skip-env-removal.test.ts\nvi.fn().mockImplementation()\nに変更
+    BUG003_skip --> BUG003_next: next.test.ts\nvi.fn().mockImplementation()\nに変更
+    BUG003_next --> BUG003_format: コンストラクタ互換形式\nアロー関数 → vi.fn()実装
+
+    BUG003_format --> SubdirValidation: mcp-server/テスト実行\nnpx vitest run\n(732テスト全合格確認)
+    SubdirValidation --> RootValidation: workflow-plugin/テスト実行\nnpx vitest run\n(全フェーズテスト合格確認)
+    RootValidation --> HooksValidation: hooks/__tests__\nテスト実行確認\n(describe/test/expect利用可能)
+
+    HooksValidation --> AllPassState: 全テスト合格状態\n(BUG-001/002/003完全修正)
+    AllPassState --> [*]: タスク完了
+
+    note right of BUG002_tsconfig
+        変更対象:
+        mcp-server/tsconfig.json
+        exclude配列に追加
+    end note
+
+    note right of BUG001_vitest
+        変更対象:
+        workflow-plugin/vitest.config.ts
+        (新規作成)
+    end note
+
+    note right of BUG003_mock
+        変更対象:
+        3つのテストファイル:
+        - session-token.test.ts
+        - skip-env-removal.test.ts
+        - next.test.ts
+    end note
+
+    note right of SubdirValidation
+        確認項目:
+        732テスト全合格
+        テストファイル除外確認
+    end note
+
+    note right of RootValidation
+        確認項目:
+        全フェーズテスト合格
+        モック互換性確認
+    end note

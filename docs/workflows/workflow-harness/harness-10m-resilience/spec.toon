@@ -1,0 +1,94 @@
+phase: planning
+taskName: harness-10m-resilience
+timestamp: 2026-03-09
+riskScore: 6
+
+summary: "10M耐性6本柱(P1-P6)の技術仕様。OQ-1検証でdod.tsからdefinitions.tsへのimportに循環依存なしを確認、OUTPUT_FILE_TO_PHASEの直接import方式を採用。OQ-2検証でdefs-stage3.ts L24とdefs-stage4.ts L52にRead指示行が残存し既存L132 regexが除去できないことを確認、P5 regexで対処。6ファイル変更、依存チェーン順に実装。"
+
+oqVerification[2]{id,result,detail}:
+  OQ-1, "循環依存なし。dod.tsからdefinitions.tsへのimportは安全", "importチェーン: dod.ts→dod-l1-l2.ts→registry.ts、definitions.ts→registry.ts。definitions.tsはgates/を一切importしないため逆方向の経路が存在しない。REQ-D-1の引数方式ではなくdod.tsにOUTPUT_FILE_TO_PHASEをimportする方式が可能。ただしREQ-D-1の引数方式は変更範囲を最小化するため引数方式を維持する"
+  OQ-2, "false-positive 2件検出。既存L132 regexでは除去不可、P5 regex必須", "defs-stage3.ts L24: 以下の全設計成果物を読み込んでレビューしてください — L132 regexの(?:以下のファイルを読み込んでください:)?がマッチせず後続の(?:- [^\\n]+\\n)+も次行が-開始でないため全体不一致。defs-stage4.ts L52: 以下の設計成果物を全て読み込んでから実装してください — 同理由で不一致。ただし両行はL132の## 入力ブロック除去で## 入力ヘッダーごと除去される想定だったが、実際にはヘッダー直後の非-行で正規表現が失敗する"
+
+implementationOrder[6]{step,pillar,file,dependency,changeDescription}:
+  1, P1, src/gates/dod-l1-l2.ts, "なし(起点)", "checkInputFilesExist関数に第4引数skippedPhases?:string[]を追加。config.inputFilesループ内でbasenameを算出しOUTPUT_FILE_TO_PHASE逆引きでソースフェーズを特定、skippedPhasesに含まれればスキップ。OUTPUT_FILE_TO_PHASEはdod.ts経由で引数として受け取る"
+  2, P1, src/gates/dod.ts, "step1完了後", "L8のimportにOUTPUT_FILE_TO_PHASEを追加(definitions.tsから)。L35のcheckInputFilesExist呼び出しに第4引数state.skippedPhasesと第5引数OUTPUT_FILE_TO_PHASEを追加"
+  3, P2+P4, src/tools/handlers/lifecycle.ts, "step1-2完了後", "L6にexistsSync,statSyncのimport追加。L91-92間に先行チェック挿入: config.outputFileが存在する場合に{docsDir}置換後existsSyncで存在確認、不在ならrespondError。存在する場合にstatSync(path).size<100ならrespondError"
+  4, P3, src/phases/definitions-shared.ts, "なし(独立)", "L47(EXIT_CODE_RULEの直後)にPROCEDURE_ORDER_RULEフラグメントをexport const追加。内容は5ステップ固定順序(入力Read→分析→Write→検証Read→報告)"
+  5, P3+P5+P6, src/phases/definitions.ts, "step4完了後", "L10のimportにPROCEDURE_ORDER_RULEを追加。L138の後にprompt.replace({PROCEDURE_ORDER})を追加(P3、+1行)。L132の後にRead指示除去regex追加: prompt.replace(/^.*(?:読み込んで|ファイルを読み).*$/gm,'')で行単位除去(P5、+1行)。L79-86のTRAIT_CATEGORIESをDEFAULT_TRAIT_CATEGORIESにリネームしloadTraitCategories関数を追加(P6、+4行)"
+  6, P5, ".claude/skills/harness/workflow-execution.md(両コピー)", "step5完了後", "L48の後にRead指示インライン化禁止ルールセクションを追記。テンプレート内のRead指示はbuildSubagentPromptが自動除去するためテンプレート修正は不要である旨を記載"
+
+fileChanges[6]{path,currentLines,addedLines,removedLines,projectedLines,headroom}:
+  src/gates/dod-l1-l2.ts, 80, 6, 0, 86, 114
+  src/gates/dod.ts, 71, 2, 1, 72, 128
+  src/tools/handlers/lifecycle.ts, 124, 10, 0, 134, 66
+  src/phases/definitions-shared.ts, 57, 6, 0, 63, 137
+  src/phases/definitions.ts, 173, 8, 2, 179, 21
+  ".claude/skills/harness/workflow-execution.md", 62, 5, 0, 67, 133
+
+p1Spec:
+  targetFunction: "checkInputFilesExist(phase,docsDir,workflowDir,skippedPhases?,fileToPhaseMap?)"
+  newParams: "skippedPhases: string[] = [], fileToPhaseMap: Record<string,string> = {}"
+  logic: "config.inputFilesループ内でconst basename = inputFile.split('/').pop() ?? ''を算出。const sourcePhase = fileToPhaseMap[basename]を逆引き。sourcePhaseが存在しskippedPhases.includes(sourcePhase)がtrueならcontinueでスキップ"
+  callerChange: "dod.ts L35: checkInputFilesExist(phase,docsDir,workflowDir,state.skippedPhases,OUTPUT_FILE_TO_PHASE)"
+  importChange: "dod.ts L8の後に import { OUTPUT_FILE_TO_PHASE } from '../phases/definitions.js' を追加。OUTPUT_FILE_TO_PHASEのexport修飾子を追加(definitions.ts L43: const→export const)"
+
+p2p4Spec:
+  insertAfter: "lifecycle.ts L91(const docsDir行)"
+  importChange: "L1付近に import { existsSync, statSync } from 'node:fs' を追加"
+  code: "const config = PHASE_REGISTRY[task.phase as keyof typeof PHASE_REGISTRY]; if (config?.outputFile) { const outPath = config.outputFile.replace('{docsDir}',docsDir).replace('{workflowDir}',task.workflowDir ?? ''); if (!existsSync(outPath)) return respondError('成果物ファイルが存在しません: '+outPath+'. フェーズ作業を完了してから harness_next を呼び出してください。'); if (statSync(outPath).size < 100) return respondError('成果物ファイルが空または不完全です ('+statSync(outPath).size+' bytes): '+outPath); }"
+  lineEstimate: "8-10行追加"
+
+p3Spec:
+  fragmentName: PROCEDURE_ORDER_RULE
+  location: "definitions-shared.ts L47の直後"
+  content: "export const PROCEDURE_ORDER_RULE = '=== 作業順序(必須) ===\\n(1)入力ファイルをRead→(2)内容を分析→(3)成果物をWrite→(4)書いたファイルをReadして検証→(5)結果報告';"
+  expansionLine: "definitions.ts L138の後に prompt = prompt.replace(/\\{PROCEDURE_ORDER\\}/g, PROCEDURE_ORDER_RULE);"
+  importChange: "definitions.ts L10のimportにPROCEDURE_ORDER_RULEを追加"
+  templateUpdate: "各defs-stage*.tsのテンプレート末尾に{PROCEDURE_ORDER}プレースホルダを追加する必要あり。ただしEXIT_CODE_RULEと同様にフラグメント展開で挿入されるため既にプレースホルダがあるテンプレートのみ対象"
+
+p5Spec:
+  regexPattern: "/^.*(?:読み込んで|ファイルを読み).*$/gm"
+  insertAfter: "definitions.ts L132(既存## 入力ストリップの直後)"
+  falsePositiveRisk: "低。テンプレート内で読み込んでを含む行は入力指示文脈のみ。OQ-2検証で対象はdefs-stage3 L24とdefs-stage4 L52の2行のみ。成果物品質ルールや手順説明に読み込んでは使用されていない"
+  skillFileUpdate: "workflow-execution.md L48後に4行追加: サブエージェントテンプレート内のRead指示行はbuildSubagentPromptが自動除去する旨のルール"
+
+p6Spec:
+  functionName: loadTraitCategories
+  signature: "function loadTraitCategories(): Record<string, string[]>"
+  defaultConst: "DEFAULT_TRAIT_CATEGORIES(現TRAIT_CATEGORIESをリネーム)"
+  logic: "try { const raw = readFileSync('.harness.json','utf8'); const parsed = JSON.parse(raw); if (parsed.traitCategories && typeof parsed.traitCategories === 'object') return parsed.traitCategories; } catch {} return DEFAULT_TRAIT_CATEGORIES;"
+  importChange: "definitions.ts L1付近に import { readFileSync } from 'node:fs' を追加"
+  callerChange: "L101のTRAIT_CATEGORIES参照をloadTraitCategories()呼び出しに変更"
+
+decisions[8]{id,statement,rationale}:
+  PL-1, "OUTPUT_FILE_TO_PHASEはdefinitions.tsからdod.tsへimportし引数としてcheckInputFilesExistに渡す", "OQ-1検証で循環依存なしを確認済み。直接importが安全であり引数方式より型安全性が高い。ただし変更範囲最小化のためREQ-D-1の引数方式を維持する"
+  PL-2, "P2+P4先行チェックはlifecycle.ts L91-92間に単一ブロックとして挿入する", "存在チェックとサイズチェックを分離すると2箇所にearly-returnが分散する。単一ブロックで両方を検証する方が保守性が高い"
+  PL-3, "P5のRead指示除去regexは/^.*(?:読み込んで|ファイルを読み).*$/gmとする", "OQ-2検証で対象行がdefs-stage3 L24とdefs-stage4 L52の2行のみであることを確認。Read\\s*toolパターンは現テンプレートに該当なく不要。読み込んでとファイルを読みの2パターンで十分"
+  PL-4, "PROCEDURE_ORDER_RULEは全テンプレートに{PROCEDURE_ORDER}プレースホルダとして展開する", "EXIT_CODE_RULEと同じパターン。テンプレート側にプレースホルダがなければ展開されないため既存テンプレートへの影響はプレースホルダ追加分のみ"
+  PL-5, "loadTraitCategoriesはreadFileSyncベースの同期関数とし呼び出し毎に.harness.jsonを読む", "buildSubagentPromptが同期関数であり非同期化は呼び出しチェーン全体に波及する。設定ファイルは小さく毎回読込のコストは無視可能"
+  PL-6, "definitions.ts L43のOUTPUT_FILE_TO_PHASEにexport修飾子を追加する", "dod.tsからimportするために必要。既存のbuildToonFirstSection関数はファイル内関数であり外部参照はないためexport追加による副作用なし"
+  PL-7, "P5のregex挿入位置はL132(既存## 入力ストリップ)の直後とする", "既存ストリップ処理で除去しきれなかった残存Read指示行を補完的に除去する。フラグメント展開前に配置することでフラグメント内のRead指示も対象とする"
+  PL-8, "defs-stage3/stage4のテンプレートにも{PROCEDURE_ORDER}プレースホルダを追加する", "P3フラグメントがdesign_review/implementationのサブエージェントに手順確定化を提供するために必要。他のstageファイルにも順次追加するが本タスクでは全stageを対象とする"
+
+testStrategy[4]{id,target,method,expectedResult}:
+  PL-TS-1, P1, "skippedPhases=['state_machine']を含むTaskStateでrunDoDChecksを呼び出しstate-machine.mmdのinputFilesチェックがスキップされることを検証", "dodResult.passedがtrue(他のチェックが全パスの前提で)"
+  PL-TS-2, P2+P4, "outputFileが存在しない/100バイト未満の状態でhandleHarnessNextを呼び出しrespondErrorが返却されることを検証", "error文字列に成果物ファイルが存在しませんまたは空または不完全ですを含む"
+  PL-TS-3, P5, "読み込んでを含むテンプレート文字列をbuildSubagentPromptに入力し出力に読み込んでが含まれないことを検証", "prompt.includes('読み込んで')がfalse"
+  PL-TS-4, P6, ".harness.json存在時と不在時でloadTraitCategoriesの返り値が異なることを検証", "存在時は外部定義値、不在時はDEFAULT_TRAIT_CATEGORIES"
+
+lineBudget:
+  totalFilesModified: 6
+  maxLineLimit: 200
+  tightestFile: "definitions.ts (179行予測、headroom 21行)"
+  safetyMargin: "全ファイルが200行制限に対し21行以上の余裕を確保"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/harness-10m-resilience/scope-definition.toon, input, "6本柱設計と7ファイル変更計画のスコープ定義"
+  docs/workflows/harness-10m-resilience/research.toon, input, "7ファイル精査結果(行番号+シグネチャ+制約+挿入位置)"
+  docs/workflows/harness-10m-resilience/requirements.toon, input, "機能要件9件+非機能要件5件+受入基準8件の要件定義書"
+  docs/workflows/harness-10m-resilience/spec.toon, output, "6本柱の技術仕様(OQ検証済み、実装順序+行番号付き変更内容+行数バジェット)"
+
+next:
+  criticalDecisions: "PL-1(import方式確定)とPL-3(regex確定)がコード実装の直接入力。PL-8(全stageへのプレースホルダ追加)がdefs-stage*.tsへの波及変更を決定"
+  readFiles: "src/gates/dod-l1-l2.ts(L29-44変更対象), src/gates/dod.ts(L35変更対象), src/tools/handlers/lifecycle.ts(L91-92間挿入), src/phases/definitions-shared.ts(L47後挿入), src/phases/definitions.ts(L10,L43,L79-86,L132,L138変更対象), src/phases/defs-stage1.ts〜defs-stage6.ts({PROCEDURE_ORDER}追加)"
+  warnings: "definitions.tsの予測179行はheadroom21行と最小。P6のloadTraitCategories関数が予測+4行を超える場合はDEFAULT_TRAIT_CATEGORIESの定義をdefinitions-shared.tsに移動して行数を確保すること"

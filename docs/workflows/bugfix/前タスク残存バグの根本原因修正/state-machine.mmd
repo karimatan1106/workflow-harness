@@ -1,0 +1,59 @@
+## サマリー
+
+本ドキュメントは、BUG-1〜BUG-4の修正プロセスをステートマシン図として表現し、各バグに対応する「修正前状態」から「修正後状態」への遷移フローを可視化する。修正対象は3つのファイル（definitions.ts、set-scope.ts、semantic-checker.ts）に跨っており、各バグは相互に独立した修正である。修正の実装順序はBUG-2、BUG-4、BUG-3、BUG-1の優先度で実施し、最終的にnpm run buildでのコンパイル成功を確認する。次フェーズのtest_designでは、各バグ修正に対するユニットテストケースを設計し、TDD（Red → Green → Refactor）サイクルを通じて修正内容を検証する。
+
+---
+
+## ステートマシン図
+
+各バグ修正のライフサイクルを、「不正な状態」→「修正実施」→「検証」→「正常な状態」の遷移フローで表現します。修正プロセスは以下の4つの独立した状態機械によって構成されており、各バグに対して同一の検証パターンが適用されます。
+
+```mermaid
+stateDiagram-v2
+    [*] --> BugDetected
+
+    BugDetected --> Bug2Fixing: BUG-2修正開始\n(set-scope.ts)
+    BugDetected --> Bug4Fixing: BUG-4修正開始\n(definitions.ts)
+    BugDetected --> Bug3Fixing: BUG-3修正開始\n(semantic-checker.ts)
+    BugDetected --> Bug1Fixing: BUG-1修正開始\n(definitions.ts)
+
+    Bug2Fixing --> Bug2Verification: moduleName\nフィールド追加
+    Bug4Fixing --> Bug4Verification: スキップ理由\nメッセージ追加
+    Bug3Fixing --> Bug3Verification: 関数名・JSDoc\n実装実態に整合
+    Bug1Fixing --> Bug1Verification: replaceAll化\n(8箇所)
+
+    Bug2Verification --> Bug2BuildCheck: 返却値構造確認\nOK
+    Bug4Verification --> Bug4BuildCheck: スキップ理由\n設定確認OK
+    Bug3Verification --> Bug3BuildCheck: 関数シグネチャ\n確認OK
+    Bug1Verification --> Bug1BuildCheck: 置換処理\n確認OK
+
+    Bug2BuildCheck --> FinalBuildCheck: set-scope.ts\nコンパイルOK
+    Bug4BuildCheck --> FinalBuildCheck: definitions.ts\nコンパイルOK
+    Bug3BuildCheck --> FinalBuildCheck: semantic-checker.ts\nコンパイルOK
+    Bug1BuildCheck --> FinalBuildCheck: 全修正ファイル\nコンパイルOK
+
+    FinalBuildCheck --> AllTestsPassed: npm run build\n成功確認
+    AllTestsPassed --> [*]
+```
+
+---
+
+## 状態遷移の説明
+
+### 初期状態：BugDetected
+前タスクのコードレビューで4件のバグが指摘された状態です。各バグは相互に独立しており、並行して修正を開始することが可能です。ただし推奨順序はBUG-2、BUG-4、BUG-3、BUG-1です。
+
+### 修正実施フェーズ：Bug*Fixing
+各バグに対応する修正を実施します。BUG-2はset-scope.tsの返却値にmoduleNameフィールドを追加し、messageフィールドにもモジュール名情報を追記します。BUG-4はcalculatePhaseSkips関数の早期リターンブロックに3件のスキップ理由メッセージを追加し、userIntentオーバーライドロジックを統合します。BUG-3はsemantic-checker.tsの関数名をvalidateKeywordSemanticTraceabilityに変更し、インターフェース名とJSDocを実装実態に合わせます。BUG-1はresolvePhaseGuide関数内の8箇所の.replace()を.replaceAll()に統一します。
+
+### 検証フェーズ：Bug*Verification
+各バグの修正内容が仕様書の受け入れ基準を満たしているか確認します。BUG-2ではscope.moduleNameフィールドが返却値に含まれ、未設定時にもundefinedで返されることを確認します。BUG-4ではscope.affectedFilesが空配列の場合に3つのスキップ理由が設定されることを確認します。BUG-3では関数名がLLMを含まないkeywordSemanticTraceabilityに統一されることを確認します。BUG-1では全8箇所のreplaceがreplaceAllに変更されることを確認します。
+
+### ビルドチェックフェーズ：Bug*BuildCheck
+各修正ファイルがTypeScriptコンパイルエラーなく変換されることを確認します。特にBUG-3の関数名変更後はエクスポート宣言含むすべての参照が新しい名前に更新されていることを確認し、コンパイルエラーが発生しないことを検証します。replaceAllメソッドはTypeScript 4.9以降で型定義が提供されているため、tsconfigのlib設定がES2021以上であることを前提とします。
+
+### 最終ビルド検証：FinalBuildCheck
+workflow-plugin/mcp-serverディレクトリで npm run build を実行し、全修正ファイルの統合ビルドが成功することを確認します。個別ビルルチェックではなく、プロジェクト全体での一貫性を検証します。すべてのTypeScriptコンパイルエラーが解決され、3つのファイルの修正が相互に矛盾していないことを確認します。
+
+### 成功状態：AllTestsPassed
+npm run build の実行が成功し、すべての修正がコンパイル可能な正常な状態に到達しました。このステートで実装フェーズ完了のゲートが開かれ、次フェーズのrefactoringへ進むための準備が整います。

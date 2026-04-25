@@ -1,0 +1,67 @@
+phase: requirements
+taskName: harness-10m-resilience
+timestamp: 2026-03-08
+riskScore: 6
+
+summary: "10Mステップ耐性6本柱(P1-P6)の機能要件・非機能要件・受入基準を定義。P1:skippedPhases除外、P2+P4:成果物存在+サイズ先行検証、P3:手順確定化フラグメント、P5:Read指示自動除去、P6:TRAIT_CATEGORIES外部化。全変更は200行制限内に収まり既存テストを破壊しない。"
+
+functionalRequirements[9]{id,pillar,description,targetFile,verificationMethod}:
+  REQ-FR-1, P1, "checkInputFilesExistに第4引数skippedPhases:string[]を追加しスキップされたフェーズの出力ファイルを検証対象から除外する", src/gates/dod-l1-l2.ts, "smallタスクでdesign_reviewのinputFilesチェックがforceTransitionなしで通過することを確認"
+  REQ-FR-2, P1, "runDoDChecksからcheckInputFilesExist呼び出し時にstate.skippedPhasesを第4引数として渡す", src/gates/dod.ts, "skippedPhasesを含むTaskStateでrunDoDChecksを呼び出しskipped出力のチェックがスキップされることを確認"
+  REQ-FR-3, P2, "handleHarnessNext内のDoDチェック前にoutputFileのexistsSyncによる存在確認を挿入する", src/tools/handlers/lifecycle.ts, "outputFileが存在しない状態でharness_nextを呼び出し即時エラーが返却されることを確認"
+  REQ-FR-4, P4, "P2の先行チェック内にstatSync(path).size>=100バイトの検証を統合する", src/tools/handlers/lifecycle.ts, "100バイト未満の成果物ファイルでharness_nextを呼び出し空ファイル検出エラーが返却されることを確認"
+  REQ-FR-5, P3, "PROCEDURE_ORDER_RULEフラグメントをdefinitions-shared.tsにexport定数として定義する", src/phases/definitions-shared.ts, "フラグメントがRead→分析→Write→検証Read→報告の5ステップ順序を規定していることを文字列検査で確認"
+  REQ-FR-6, P3, "buildSubagentPrompt内でPROCEDURE_ORDER_RULEフラグメントを{PROCEDURE_ORDER}プレースホルダに展開する", src/phases/definitions.ts, "生成されたプロンプトにPROCEDURE_ORDER_RULEの内容が含まれることを確認"
+  REQ-FR-7, P5, "buildSubagentPrompt内でフラグメント展開後にRead指示行を除去するregexを適用する", src/phases/definitions.ts, "テンプレートにRead指示を含む入力を与え生成プロンプトからRead指示が除去されていることを確認"
+  REQ-FR-8, P6, "loadTraitCategories同期関数を追加し.harness.jsonからTRAIT_CATEGORIESを読み込みフォールバックとしてデフォルト値を返す", src/phases/definitions.ts, ".harness.json存在時に外部カテゴリが使用され不在時にデフォルトが使用されることを確認"
+  REQ-FR-9, P5, "workflow-execution.mdにRead指示インライン化禁止ルールを追記する", .claude/skills/harness/workflow-execution.md, "ファイル内にインライン化ルールセクションが存在することを確認"
+
+nonFunctionalRequirements[5]{id,category,description,threshold}:
+  REQ-NF-1, size, "変更対象の全ファイルは200行以下を維持する", "各ファイルのwc -lが200以下"
+  REQ-NF-2, compatibility, "既存のvitestテストスイートが全パスする", "vitest run --reporter=verbose でfailure=0"
+  REQ-NF-3, compatibility, "MCPツールのスキーマ(inputSchema)に変更を加えない", "harness_start/harness_nextのパラメータ定義が変更前と同一"
+  REQ-NF-4, performance, "loadTraitCategoriesのファイル読込は同期関数で実装しbuildSubagentPromptの同期呼び出しチェーンを維持する", "readFileSyncベースで非同期変換なし"
+  REQ-NF-5, resilience, "P6の.harness.json不在時にデフォルトTRAIT_CATEGORIESへフォールバックしエラーを発生させない", ".harness.jsonを削除した状態でdocs_updateフェーズが正常完了"
+
+decisions[8]{id,statement,rationale}:
+  REQ-D-1, "P1のskippedPhases除外はOUTPUT_FILE_TO_PHASEの逆引きマッピングを引数として渡す方式で実装する", "definitions-shared.tsへのマッピング移動は既存のbuildToonFirstSection関数にも影響するため引数方式が変更範囲を最小化する"
+  REQ-D-2, "P2+P4先行チェックはforceTransition判定ブロックの後かつDoDチェック前(L91-92間)に配置する", "forceTransition時はDoDチェック自体がスキップされるためP2+P4も不要。forceTransitionガードの外に配置することでガードの恩恵を受ける"
+  REQ-D-3, "PROCEDURE_ORDER_RULEはEXIT_CODE_RULEと同じexport constパターンで5行以内に定義する", "既存フラグメントとの一貫性を維持しテンプレート展開後のトークン消費を最小化する"
+  REQ-D-4, "P5のRead指示除去regexはフラグメント展開後かつ変数置換前の位置でL131-133の既存ストリップ処理と集約する", "ストリップ処理が一箇所に集約されコード可読性が向上する"
+  REQ-D-5, "P6のloadTraitCategoriesはreadFileSyncベースの同期関数で実装する", "buildSubagentPromptが同期関数であり非同期化は呼び出しチェーン全体に波及するため同期を維持する"
+  REQ-D-6, "先行チェックのファイルサイズ閾値は100バイトとする", "TOON形式の最小有効成果物(phase+timestamp+summary)が約80バイトであり100バイトは空ファイルのみを検出し正当な小さい成果物を誤検出しない"
+  REQ-D-7, "definitions.tsの合計行数は変更後180行を見込みP3(+1行)P5(+2行)P6(+4行)の配分とする", "200行制限に対し20行の余裕を確保し将来の微修正に対応可能にする"
+  REQ-D-8, "dod.tsからdefinitions.tsへのOUTPUT_FILE_TO_PHASEインポートは循環依存がないことを実装前に確認する", "research.toon R-1の警告に基づきimport経路の安全性をdesign_reviewフェーズで検証する"
+
+acceptanceCriteria[8]{id,pillar,criterion,evidenceType}:
+  AC-1, P1, "smallタスクのdesign_reviewフェーズでforceTransitionを使用せずにharness_nextが成功する", "vitestテストケースの実行結果"
+  AC-2, P2, "outputFileが存在しない状態でharness_nextを呼び出すとDoDチェック前に明確なエラーメッセージが返却される", "vitestテストケースの実行結果"
+  AC-3, P3, "buildSubagentPromptの出力にPROCEDURE_ORDER_RULEの内容(Read→分析→Write→検証→報告)が含まれる", "vitestテストケースの文字列検査結果"
+  AC-4, P4, "100バイト未満のファイルが成果物として存在する場合にharness_nextがサイズ不足エラーを返却する", "vitestテストケースの実行結果"
+  AC-5, P5, "テンプレートにRead指示行を含む入力を与えた場合にbuildSubagentPromptの出力からRead指示行が除去されている", "vitestテストケースの文字列検査結果"
+  AC-6, P6, ".harness.json存在時にloadTraitCategoriesが外部定義のカテゴリを返却し不在時にデフォルト値を返却する", "vitestテストケースの実行結果"
+  AC-7, all, "変更対象の全ファイル(6ファイル)が200行以下を維持する", "wc -lコマンドの実行結果"
+  AC-8, all, "既存のvitestテストスイートが全パスしregressionが発生しない", "vitest run --reporter=verboseの実行結果"
+
+notInScope[5]{item,reason}:
+  "L5(LLM判断)チェックの新規追加", "L5は設計上禁止済みであり本タスクは既存L1-L4の構造的強化のみを対象とする"
+  "テンプレート内容(defs-stage1-6.ts)の個別書き直し", "テンプレート構造改善はP3のフラグメント挿入で対応し個別内容の見直しは別タスクとする"
+  "harness_start/harness_nextのMCPスキーマ変更", ".harness.jsonファイル方式を採用しAPIパラメータ変更を回避する(SD-5準拠)"
+  "Orchestrator直接編集防止hookの変更", "hookは.claude/hooks/の設定変更でありハーネスコード変更とは独立したタスクである"
+  "impact_analysisフェーズの新規実装", "本タスクのriskScore=6であり閾値(7以上)未満のためimpact_analysisは不要"
+
+openQuestions[0]{id,question,impact,proposedResolution}:
+
+resolvedQuestions[2]{id,answer}:
+  REQ-OQ-1, "designフェーズでimportチェーンを検証し循環依存があればdefinitions-shared.tsに移動する"
+  REQ-OQ-2, "designフェーズで全テンプレートをスキャンしfalse-positiveを検証する"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/harness-10m-resilience/scope-definition.toon, input, "6本柱設計と7ファイル変更計画のスコープ定義"
+  docs/workflows/harness-10m-resilience/research.toon, input, "7ファイル精査結果(行番号+シグネチャ+制約+挿入位置)"
+  docs/workflows/harness-10m-resilience/requirements.toon, output, "機能要件9件+非機能要件5件+受入基準8件の要件定義書"
+
+next:
+  criticalDecisions: "REQ-D-1(マッピング引数方式)とREQ-D-2(先行チェック配置)がdesignフェーズの起点。REQ-OQ-1(循環依存確認)がP1設計のブロッカー"
+  readFiles: "src/gates/dod-l1-l2.ts, src/gates/dod.ts, src/tools/handlers/lifecycle.ts, src/phases/definitions-shared.ts, src/phases/definitions.ts"
+  warnings: "definitions.tsの行数余裕が20行と少なくdesignフェーズでの実装詳細化時に各Pillarの行数配分を厳密に管理する必要がある"

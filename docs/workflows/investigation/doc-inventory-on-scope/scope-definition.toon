@@ -1,0 +1,34 @@
+→purpose: scope_definitionフェーズで既存ドキュメント棚卸しを行い、docs_updateが既存プロジェクトのドキュメントも正しく更新対象にする
+→task: doc-inventory-on-scope
+→size: small
+→risk_score: 12
+→risk_factors: 型定義変更(低), テンプレート修正(低), カテゴリ生成ロジック(中)
+
+## 影響範囲
+
+→scope_files[7]{path,role}:
+  workflow-harness/mcp-server/src/state/types-core.ts,ProjectTraitsにdocPaths追加
+  workflow-harness/mcp-server/src/state/types.ts,再エクスポート確認
+  workflow-harness/mcp-server/src/phases/definitions.ts,buildDocCategoriesにdocPaths統合
+  workflow-harness/mcp-server/src/phases/defs-stage1.ts,scope_definitionテンプレートにドキュメント探索Step追加
+  workflow-harness/mcp-server/src/phases/defs-stage6.ts,docs_updateテンプレート確認
+  workflow-harness/mcp-server/src/tools/defs-a.ts,harness_set_scopeスキーマにdocPaths追加
+  workflow-harness/mcp-server/src/tools/handlers/scope-nav.ts,docPaths受け渡し
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,ProjectTraitsにdocPaths?: string[]を追加,既存6フラグと同じ構造体に格納し一貫性を保つ
+  D-2,scope_definitionテンプレートにStep 3.7追加,既存Step 3.5(プロジェクト性質判定)の直後にドキュメント探索を配置
+  D-3,buildDocCategoriesがdocPathsも出力,FALLBACK_ITEMS + trait categories + docPathsの3層構成
+  D-4,harness_set_scopeのprojectTraitsスキーマにdocPaths追加,MCPツール経由で設定可能にする
+  D-5,docPathsは任意フィールド,既存プロジェクトでは空配列または未設定のまま動作
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/doc-inventory-on-scope/scope-definition.toon,created
+
+## next
+
+→next: research（スキップ → requirements）

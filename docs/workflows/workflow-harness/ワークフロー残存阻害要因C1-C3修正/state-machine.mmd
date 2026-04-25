@@ -1,0 +1,31 @@
+stateDiagram-v2
+    [*] --> PhaseUndefined: ワークフロー初期状態
+
+    %% enforce-workflow.js: PHASE_EXTENSIONS追加（C-1, C-2）
+    PhaseUndefined --> DocsUpdateAdded: C-1: docs_update拡張子定義を追加
+    DocsUpdateAdded --> CiVerificationAdded: C-2: ci_verification拡張子定義を追加
+
+    %% bash-whitelist.js: パターンマッチタイプ変更（C-3）
+    CiVerificationAdded --> PatternContains: パターン「> 」のcontains型を検出
+    PatternContains --> PatternRegex: C-3: regex型に変更しアロー関数を除外
+
+    %% phase-edit-guard.js: PHASE_RULES追加（H-1a, H-1b, H-1c）
+    PatternRegex --> RegressionTestAdded: H-1a: regression_testルールを追加
+    RegressionTestAdded --> CiVerificationRuleAdded: H-1b: ci_verificationルールを追加
+    CiVerificationRuleAdded --> DeployRuleAdded: H-1c: deployルールを追加
+
+    DeployRuleAdded --> AllPhasesControlled: 全フェーズの定義が完了
+    AllPhasesControlled --> [*]: 修正完了（fail-closed原則維持）
+
+    %% エラーハンドリング経路（ロールバック）
+    DocsUpdateAdded -.->|ファイルI/Oエラー| PhaseUndefined
+    PatternRegex -.->|regex変換エラー| PatternContains
+    DeployRuleAdded -.->|ルール定義不完全| RegressionTestAdded
+
+    note right of PhaseUndefined
+        初期状態: docs_update未定義、ci_verification未定義、regression_test/deploy未登録。PHASE_EXTENSIONSに2件欠落、PHASE_RULESに3件欠落。
+    end note
+
+    note right of AllPhasesControlled
+        完了状態: PHASE_EXTENSIONS完成（docs_update + ci_verification追加）、BASH_BLACKLIST精密化（regex型）、PHASE_RULES完全化（3フェーズ追加）。
+    end note

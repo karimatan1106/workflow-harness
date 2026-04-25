@@ -1,0 +1,64 @@
+stateDiagram-v2
+    %% Workflow Orchestrator → Coordinator → Worker → Phase Execution
+    %% decisions: SM-001 (harness_start) → SM-002 (task decomposition) → SM-003 (coordinator analysis) → SM-004 (worker edit) → SM-005 (phase execution)
+
+    %% Initial state
+    [*] --> Orchestrator_TaskDecompose
+
+    %% Layer 1: Orchestrator
+    Orchestrator_TaskDecompose: Orchestrator: Task Decompose\n(harness_start triggered)
+
+    Orchestrator_TaskDecompose --> Coordinator_Analysis: harness_delegate_coordinator\n(input files prepared)
+
+    %% Layer 2: Coordinator
+    Coordinator_Analysis: Coordinator: Analyze\n(Read requirements, plan tasks)
+
+    Coordinator_Analysis --> Coordinator_OutputRules: Apply Phase Output Rules\n(File placement, naming, format)
+
+    Coordinator_OutputRules: Phase Output Rules Applied\n(.md for structured data,\n.mmd for diagrams,\ndocs/workflows/{phase-name})
+
+    Coordinator_OutputRules --> Worker_Ready: harness_delegate_worker\n(Task instructions, auth list)
+
+    %% Layer 3: Worker
+    Worker_Ready: Worker: Edit\n(direct-edit or edit-preview mode)
+
+    Worker_Ready --> Worker_EditMode: Select Edit Mode\n(direct-edit → immediate file changes\nedit-preview → [EDIT] blocks, auth-txt)
+
+    Worker_EditMode: Edit Completeness Checked\n(All [EDIT] blocks valid,\n.agent/edit-auth.txt registered)
+
+    Worker_EditMode --> Phase_TestImpl: Worker returns\n(direct-edit: files changed\nedit-preview: blocks+auth)
+
+    %% Layer 4: Phase Execution
+    Phase_TestImpl: Phase: test_impl\n(Run test suite, capture baseline)
+
+    Phase_TestImpl --> Phase_Implementation: All tests PASS\n(harness_capture_baseline called)
+
+    Phase_Implementation: Phase: implementation\n(@spec compliance, baseline check)
+
+    Phase_Implementation --> Phase_Refactoring: Code quality verified
+
+    Phase_Refactoring: Phase: refactoring\n(Optimize, simplify, maintainability)
+
+    Phase_Refactoring --> Phase_BuildCheck: Refactoring complete
+
+    Phase_BuildCheck: Phase: build_check\n(Compilation, runtime checks)
+
+    Phase_BuildCheck --> Phase_CodeReview: Build successful
+
+    Phase_CodeReview: Phase: code_review\n(RTM F-NNN verification)
+
+    Phase_CodeReview --> RTMVerification: RTM Update Called\n(harness_update_rtm_status for all F-NNN)
+
+    RTMVerification: RTM Verification Complete\n(F-NNN: implemented, tested, verified)
+
+    RTMVerification --> [*]: Phase complete\n(All AC met, all F-NNN verified)
+
+    %% decisions section
+    %% - SM-001: harness_start is triggered by "〜して" keyword in user prompt
+    %% - SM-002: Coordinator receives task decomposition input from Orchestrator
+    %% - SM-003: Phase Output Rules applied before Worker execution (file placement/format)
+    %% - SM-004: Worker edit-preview mode: .agent/edit-auth.txt must be registered for Orchestrator's Edit hook-gate
+    %% - SM-005: Baseline capture (test_impl→implementation) and RTM verification (code_review) are mandatory phase checkpoints
+    %% - SM-006: Worker edit completeness: all [EDIT] blocks must use exact old_string matches from Read tool output
+    %% - SM-007: Phase transitions are linear (no skipping phases) and deterministic (L1-L4 gates only)
+    %% - SM-008: Complete state machine definition for harness-first-pass-improvement workflow

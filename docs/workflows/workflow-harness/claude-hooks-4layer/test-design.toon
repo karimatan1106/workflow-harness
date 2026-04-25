@@ -1,0 +1,88 @@
+phase: test_design
+task: claude-hooks-4layer
+intent: "Claude Code Hooks 4種(PostToolUse/PreToolUse/Stop/PreCompact)を実装し、ms単位フィードバック層を確立する"
+
+testStrategy:
+  framework: vitest
+  executionMethod: child_process.execSync/execでbashスクリプトをサブプロセス実行
+  stdinInjection: echo JSON | bash script.sh 形式でstdinを注入しexit codeとstdoutを検証
+  layers: unit(スクリプト単体動作) / integration(settings.json連携) / edge(境界値・異常系)
+  environment: MSYS2 bash on Windows。テスト内でbashスクリプトを直接実行
+  testDir: tests/hooks/
+
+acTcMapping[5]{ac,testCases,coverage}:
+  AC-1,"TC-AC1-01 TC-AC1-02",存在確認+実行権限
+  AC-2,"TC-AC2-01 TC-AC2-02 TC-AC2-03",4イベント登録+既存不変+hookEntryスキーマ
+  AC-3,"TC-AC3-01 TC-AC3-02 TC-AC3-03 TC-AC3-04 TC-AC3-05",tscエラー出力+exit 0+非対象スキップ+tsconfig探索+タイムアウト
+  AC-4,"TC-AC4-01 TC-AC4-02 TC-AC4-03 TC-AC4-04 TC-AC4-05",6パターンブロック+非保護通過+メッセージ形式+環境変数バイパス+Windowsパス
+  AC-5,"TC-AC5-01 TC-AC5-02 TC-AC5-03 TC-AC5-04",テスト失敗ブロック+テスト成功通過+テスト不在通過+メッセージ形式
+
+testCases[22]{id,title,ac,type,input,expectedOutput,expectedExitCode}:
+  TC-AC1-01,4本のスクリプトファイルが存在する,AC-1,unit,ls -la .claude/hooks/,post-tool-lint.sh / pre-tool-config-guard.sh / stop-test-enforcer.sh / pre-compact-context-save.sh が存在,N/A
+  TC-AC1-02,4本のスクリプトに実行権限(chmod +x)がある,AC-1,unit,stat各ファイル,全ファイルが実行可能フラグを持つ,N/A
+  TC-AC2-01,settings.jsonにPostToolUse/PreToolUse/Stop/Notificationの4イベントが登録されている,AC-2,integration,settings.jsonをJSON.parseしhooksキーを検証,4イベントキーが存在しそれぞれ配列にhookエントリを持つ,N/A
+  TC-AC2-02,既存UserPromptSubmit/PreToolCallエントリが変更されていない,AC-2,integration,settings.jsonの既存イベントキーを検証,UserPromptSubmit(2エントリ) / PreToolCall(1エントリ)が元の値と一致,N/A
+  TC-AC2-03,hookエントリがmatcher+command形式を持つ,AC-2,integration,各hookエントリのスキーマ検証,"matcher:string / command:string[] の形式。PostToolUse/PreToolUseはmatcher=""Write|Edit""",N/A
+  TC-AC3-01,構文エラーを含む.tsファイル編集後にtscエラーがstdoutに出力される,AC-3,unit,"{""tool_name"":""Write"",""file_path"":""/tmp/test-error.ts""}をstdinに注入",stdoutにtscエラーメッセージが含まれる,0
+  TC-AC3-02,正常な.tsファイル編集後はstdoutにエラーが出ない,AC-3,unit,"{""tool_name"":""Edit"",""file_path"":""/tmp/test-valid.ts""}をstdinに注入",stdoutにtscエラーなし,0
+  TC-AC3-03,非TypeScriptファイル(.md/.json等)はリンター実行をスキップする,AC-3,edge,"{""tool_name"":""Write"",""file_path"":""/tmp/readme.md""}をstdinに注入",stdoutにスキップメッセージまたは空出力,0
+  TC-AC3-04,tsconfig.jsonが存在しない場合はスキップしexit 0を返す,AC-3,edge,"{""tool_name"":""Write"",""file_path"":""/tmp/isolated/app.ts""}(tsconfig.jsonなしディレクトリ)",stdoutにtsconfig not foundメッセージ,0
+  TC-AC3-05,tsc実行が5秒を超過した場合タイムアウトしexit 0を返す,AC-3,edge,巨大プロジェクトのシミュレーション(timeout検証),stdoutにタイムアウト通知,0
+  TC-AC4-01,保護対象6パターン各々でexit 2ブロックが発生する,AC-4,unit,"{""tool_name"":""Write"",""tool_input"":{""file_path"":""tsconfig.json""}} 等6パターン",stdoutに[CONFIG-GUARD]メッセージ,2
+  TC-AC4-02,保護対象外ファイルはexit 0で通過する,AC-4,unit,"{""tool_name"":""Write"",""tool_input"":{""file_path"":""src/app.ts""}}",stdout空またはログなし,0
+  TC-AC4-03,[CONFIG-GUARD]プレフィックス付きメッセージがstdoutに出力される,AC-4,unit,保護対象file_pathをstdinに注入,stdout先頭が[CONFIG-GUARD],2
+  TC-AC4-04,CONFIG_GUARD_DISABLE=trueで保護が無効化される,AC-4,edge,環境変数CONFIG_GUARD_DISABLE=trueを設定し保護対象file_pathを注入,exit 0で通過,0
+  TC-AC4-05,Windowsパス形式(C:\path\tsconfig.json)が正規化されて保護判定される,AC-4,edge,"{""tool_name"":""Write"",""tool_input"":{""file_path"":""C:\\path\\tsconfig.json""}}",パス正規化後に保護対象と判定されexit 2,2
+  TC-AC5-01,テストファイル存在+vitest失敗時にexit 2で完了ブロック,AC-5,unit,テスト失敗状態のプロジェクトでStop stdinを注入,stdoutに[STOP-ENFORCER]メッセージ,2
+  TC-AC5-02,テストファイル存在+vitest成功時にexit 0で完了許可,AC-5,unit,テスト成功状態のプロジェクトでStop stdinを注入,stdout空またはパスメッセージ,0
+  TC-AC5-03,テストファイル不在時にexit 0で完了許可,AC-5,unit,テストファイルが存在しないディレクトリでStop stdinを注入,exit 0(ブロックなし),0
+  TC-AC5-04,[STOP-ENFORCER]プレフィックス付きメッセージがstdoutに出力される,AC-5,unit,テスト失敗状態でStop stdinを注入,stdout先頭が[STOP-ENFORCER],2
+  TC-AC1-G04-01,G-04スクリプトがNotification stdinを受け取りexit 0を返す,AC-1,unit,"{""type"":""compact""}をstdinに注入",exit 0(Notificationはブロック不可),0
+  TC-AC1-G04-02,G-04がtype=compact以外のNotificationをスキップする,AC-1,edge,"{""type"":""other""}をstdinに注入",exit 0で即座に終了,0
+  TC-AC1-G04-03,G-04がcheckpoint.toonにTOON形式でデータを退避する,AC-1,integration,CURRENT_TASK/CURRENT_PHASE環境変数設定+compact stdin注入,.agent/checkpoint.toonにtask/phase等が書き込まれる,0
+
+testData[4]{id,description,setup,teardown}:
+  TD-DATA-01,構文エラーを含むTypeScriptファイル,"const x: number = ""string""; をtmpディレクトリに作成しtsconfig.jsonも配置",tmpディレクトリを削除
+  TD-DATA-02,保護対象ファイルパス6種のJSON stdin配列,"tsconfig.json / .eslintrc.json / .mcp.json / package.json / .claude/settings.json / .gitignore の各file_pathをJSON形式で準備",なし(メモリ上のテストデータ)
+  TD-DATA-03,vitest失敗プロジェクトの一時ディレクトリ,"tmpディレクトリにpackage.json + vitest.config.ts + fail.test.ts(expect(1).toBe(2))を作成",tmpディレクトリを削除
+  TD-DATA-04,vitest成功プロジェクトの一時ディレクトリ,"tmpディレクトリにpackage.json + vitest.config.ts + pass.test.ts(expect(1).toBe(1))を作成",tmpディレクトリを削除
+
+edgeCases[8]{id,scenario,expectedBehavior,relatedTc}:
+  EDGE-01,stdinが空またはJSON不正の場合,パースエラーをハンドルしexit 0(ブロックしない),TC-AC3-03
+  EDGE-02,file_pathフィールドが存在しないJSON,対象ファイルなしとしてスキップ(exit 0),TC-AC3-03
+  EDGE-03,tool_nameがWrite/Edit以外(例: Read),G-01/G-02はmatcherでフィルタされるためスクリプト自体が呼ばれない,TC-AC2-03
+  EDGE-04,.eslintrc.ymlなど.eslintrc*のワイルドカードバリエーション,正規表現で.eslintrc始まりをすべて捕捉,TC-AC4-01
+  EDGE-05,tsconfig.build.jsonなどtsconfig*.jsonバリエーション,正規表現でtsconfig始まりの.jsonをすべて捕捉,TC-AC4-01
+  EDGE-06,テストファイルがサブディレクトリ深くにある場合,find -name再帰検索で検出される,TC-AC5-01
+  EDGE-07,node_modules配下のテストファイルは除外される,find実行時に-not -path */node_modules/*で除外,TC-AC5-03
+  EDGE-08,G-04実行時に.agent/ディレクトリが存在しない場合,mkdir -pで自動作成してからcheckpoint.toonに書き込む,TC-AC1-G04-03
+
+testFileStructure[3]{path,purpose,testCount}:
+  tests/hooks/hook-existence.test.ts,AC-1/AC-2: ファイル存在+権限+settings.json構造検証,5
+  tests/hooks/post-tool-lint.test.ts,AC-3: G-01 PostToolUseリンター動作検証,5
+  tests/hooks/pre-tool-config-guard.test.ts,AC-4: G-02 PreToolUse設定ファイル保護検証,5
+  tests/hooks/stop-test-enforcer.test.ts,AC-5: G-03 Stopテスト強制検証,4
+  tests/hooks/pre-compact-context-save.test.ts,AC-1(G-04): Notification退避動作検証,3
+
+testUtilities:
+  execHook: "child_process.execSyncでbashスクリプトを実行しexit code/stdout/stderrを取得するヘルパー関数"
+  createStdin: "tool_name/file_path/type等を受け取りJSON文字列を生成するヘルパー関数"
+  tmpProject: "一時ディレクトリにtsconfig.json/package.json/テストファイルを配置するセットアップユーティリティ"
+  signature: "execHook(scriptPath: string, stdinJson: string, env?: Record<string,string>): {exitCode: number, stdout: string, stderr: string}"
+
+decisions[6]{id,statement,rationale}:
+  TD-01,テストフレームワークはvitestを使用しchild_process経由でbashスクリプトを実行する,対象がbashスクリプトのためTypeScriptテストからサブプロセス実行が最適。vitestはプロジェクト既存のテストランナー
+  TD-02,各フックスクリプトに対応するテストファイルを個別に作成する,テスト実行の独立性を確保し障害分離を容易にする。1フック=1テストファイルの対応関係
+  TD-03,stdinのJSON注入はechoパイプ方式(echo JSON | bash script.sh)で実装する,実際のClaude Codeフック実行と同一のstdin注入方式を再現。テストの信頼性を担保
+  TD-04,G-01/G-03のtsc/vitest実行テストは一時ディレクトリに隔離プロジェクトを構築する,本番プロジェクトのソースやテスト結果に影響を与えない。テスト間の独立性を保証
+  TD-05,exit codeの検証にはexecSyncのtry/catchでstatus codeを取得する,"execSyncはexit code非0でErrorをthrowするため、catchブロックでerror.statusを検証する設計"
+  TD-06,G-04のテストではCURRENT_TASK/CURRENT_PHASE環境変数をテスト内で設定する,G-04が環境変数からタスク情報を取得する設計のため。テスト用の値を注入して退避内容を検証
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/claude-hooks-4layer/test-design.toon,deliverable,テスト戦略とテストケース22件の設計。AC5件の全カバレッジを保証
+  docs/workflows/claude-hooks-4layer/requirements.toon,input,AC5件の定義。テストケース設計の入力
+
+next:
+  criticalDecisions: TD-01(vitest+child_process) TD-03(echoパイプstdin注入) TD-04(一時ディレクトリ隔離) TD-05(exit code検証方式)
+  readFiles: docs/workflows/claude-hooks-4layer/requirements.toon docs/workflows/claude-hooks-4layer/research.toon
+  warnings: G-01/G-03のテストはtsc/vitest実行を伴うため実行時間が長い。CI環境ではtimeout設定が必要

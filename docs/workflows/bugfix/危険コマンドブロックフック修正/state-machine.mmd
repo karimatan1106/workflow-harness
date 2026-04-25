@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> WaitingInput: フック起動
+    
+    WaitingInput --> Parsing: stdin受信完了
+    WaitingInput --> Allowed: タイムアウト(3秒)
+    
+    Parsing --> Checking: パース成功
+    Parsing --> Allowed: パースエラー
+    
+    Checking --> Blocked: 危険パターン検出
+    Checking --> Allowed: パターン不一致
+    
+    Allowed --> [*]: exit(0)
+    Blocked --> [*]: exit(1)

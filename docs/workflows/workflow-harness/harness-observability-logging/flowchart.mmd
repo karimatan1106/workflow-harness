@@ -1,0 +1,69 @@
+flowchart TD
+    %% decisions
+    %% - FC-D01: hookとMCPの2系統を並列フローで表現し、共通の出力先(observability-events.toon)への合流を明示する
+    %% - FC-D02: パス検証(T-1)と10MB上限チェック(T-2)をガード条件として分岐に配置する
+    %% - FC-D03: 正常フローとエラーフロー(サイズ超過、パス不正)を色分けで区別する
+    %% - FC-D04: initTraceFileの初期化フローをharness_start起点で表現する
+    %% - FC-D05: DoD判定結果の記録フロー(PASS/FAIL分岐)を明示する
+
+    subgraph Init["初期化フロー"]
+        A[harness_start] --> B[initTraceFile]
+        B --> C{docsDir存在?}
+        C -->|Yes| D["ヘッダ書き込み<br/>traceVersion, taskId"]
+        C -->|No| E[mkdirSync recursive]
+        E --> D
+    end
+
+    subgraph Hook["Hook系統 bash"]
+        H1["pre-tool-guard.sh<br/>ツール判定"] --> H2{ALLOW or BLOCK?}
+        H2 -->|ALLOW| H3["trace-logger.sh<br/>log_trace_event ALLOW"]
+        H2 -->|BLOCK| H4["trace-logger.sh<br/>log_trace_event BLOCK"]
+        H3 --> H5["workflow-state.toonから<br/>docsDir取得"]
+        H4 --> H5
+        H5 --> H6{ファイルサイズ<br/> > 10MB?}
+        H6 -->|No| H7["echo >> toon"]
+        H6 -->|Yes| H8["stderr警告<br/>追記スキップ"]
+    end
+
+    subgraph MCP["MCP系統 TypeScript"]
+        M1["lifecycle-next.ts<br/>phase-enter"] --> M2["recordPhaseEvent<br/>durationMs記録"]
+        M2 --> M3["runDoDChecks"]
+        M3 --> M4{DoD PASS?}
+        M4 -->|Yes| M5["phase-exit + duration"]
+        M4 -->|No| M6["recordDoDResults<br/>FAIL + evidence"]
+        M6 --> M7{retryCount<br/>>= 3?}
+        M7 -->|Yes| M8["VDB-1警告ログ"]
+        M7 -->|No| M3
+
+        M9["delegate-coordinator.ts<br/>spawn-start"] --> M10["記録: sizeBytes"]
+        M10 --> M11["claude CLI実行"]
+        M11 --> M12{成功?}
+        M12 -->|Yes| M13["spawn-complete<br/>+ duration + stdout"]
+        M12 -->|No| M14["spawn-fail イベント"]
+    end
+
+    subgraph Writer["共通書き込み基盤"]
+        W1["appendTrace<br/>docsDir, entry"] --> W2{パス検証<br/>T-1}
+        W2 -->|OK| W3{ファイルサイズ<br/>T-2: > 10MB?}
+        W2 -->|NG| W4["パストラバーサル<br/>拒否"]
+        W3 -->|No| W5["appendFileSync<br/>1行追記"]
+        W3 -->|Yes| W6["追記スキップ<br/>stderr警告"]
+        W5 --> W7["observability-events.toon"]
+        W6 --> W7
+    end
+
+    H7 --> W1
+    H8 --> W1
+    M5 --> W1
+    M6 --> W1
+    M8 --> W1
+    M13 --> W1
+    M14 --> W1
+
+    style Init fill:#e1f5ff
+    style Hook fill:#fff3e0
+    style MCP fill:#f3e5f5
+    style Writer fill:#e8f5e9
+    style W4 fill:#ffcdd2
+    style W6 fill:#ffcdd2
+    style H8 fill:#ffcdd2

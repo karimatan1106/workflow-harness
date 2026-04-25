@@ -1,0 +1,71 @@
+## サマリー
+
+本タスクの変更対象は `workflow-plugin/mcp-server/src/phases/definitions.ts` の単一ファイルのみであり、具体的な変更内容は各フェーズの `subagentTemplate` 文字列への文言追記・変更に限定される。
+ユーザーが直接操作するCLIコマンド体系、エラーメッセージの形式、APIレスポンスの構造、設定ファイルのスキーマのいずれも変更を受けない。
+FR-R1はtestingおよびregression_testフェーズのテスト出力形式に関するガイダンス文を更新するものであり、subagentが受け取るプロンプト内容が変化するだけで外部インターフェースへの波及は一切ない。
+FR-R2はmanual_testフェーズのサマリー実質行数ガイダンスを追記するものであり、ユーザーが実行するコマンドや受け取るレスポンスには影響しない。
+FR-R3はsecurity_scanフェーズに重複行回避の指示セクションを追加し、FR-R4はperformance_testフェーズにサマリー行数ガイダンスを追記するものであるが、どちらの変更もsubagentTemplate内部の文字列操作であり、ユーザー向けインターフェースの設計変更を必要としない。
+
+---
+
+## CLIインターフェース設計
+
+本タスクにより変更されるCLIコマンドは存在しない。ユーザーがワークフローを操作する際に使用する `/workflow start`、`/workflow next`、`/workflow status`、`/workflow approve`、`/workflow list` の各コマンドは、FR-R1からFR-R4の変更前後で同一の引数仕様・オプション仕様を維持する。
+FR-R1の変更はtestingフェーズのsubagentTemplateにテスト出力形式ガイダンスを追記する操作であり、ユーザーが `/workflow next` を実行したときの引数の渡し方やコマンドの構文には何ら変更を加えない。
+FR-R2のmanual_testテンプレートへの実質行ガイダンス追記は、subagentが内部的に生成する成果物の品質を向上させることを目的とするものであり、ユーザー側のCLI操作手順に新しいステップや制約を追加しない。
+FR-R3のsecurity_scanテンプレートへの重複行回避セクション追加は、subagentが複数のFRを評価する際の記述スタイルを改善するためのものであり、ユーザーが `/workflow complete-sub security_scan` を実行する手順自体には影響しない。
+FR-R4のperformance_testテンプレートへのサマリーガイダンス追記についても、ユーザーが実行するCLIコマンドの種類・順序・引数の形式は変化しない。本タスクの完了後もワークフローのCLI操作手順は既存ドキュメントに記載された手順のとおりである。
+
+---
+
+## エラーメッセージ設計
+
+FR-R1からFR-R4の変更は、artifact-validator.tsが出力するエラーメッセージの文言や形式を変更しない。バリデーション失敗時に返されるエラーメッセージ（セクション密度不足、重複行検出、必須セクション欠落など）のテキストは変更前後で完全に同一である。
+FR-R1はworkflow_record_test_resultの真正性チェック（validateTestAuthenticity）が返すエラーの内容を変更しない。このエラーメッセージはstate-manager.tsまたはnext.tsが生成するものであり、これらのファイルは本タスクの変更対象外である。
+FR-R2およびFR-R4はcheckSectionDensityが返す「セクション密度不足」エラーの文言を変更しない。artifact-validator.tsの実装は一切手を触れないため、バリデーターが出力するすべてのエラーメッセージは現行のまま維持される。
+FR-R3はduplicate行検出エラーのメッセージ形式を変更しない。artifact-validator.tsのisStructuralLine判定ロジックおよびduplicate検出閾値（3回以上）はそのまま維持され、エラーメッセージのテキストも変化しない。
+MCPサーバーが返すHTTPレスポンスやJSON構造中のエラーフィールドも変更されない。すべてのエラーメッセージはartifact-validator.ts・state-manager.ts・next.tsが保持する既存のエラー定義に基づいて生成され続ける。
+
+---
+
+## APIレスポンス設計
+
+本タスクが変更するdefinitions.tsはフェーズ定義とsubagentTemplateを保持するデータファイルであり、MCPサーバーが外部に公開するAPIエンドポイントの定義を含まない。したがってFR-R1からFR-R4の変更によりAPIレスポンスの構造が変化することはない。
+workflow_startが返すレスポンスのJSONスキーマ（taskId、taskName、phase、docsDir等のフィールド構成）は変更前後で同一である。FR-R1の変更はtestingフェーズのテンプレート文字列を更新するものであり、workflow_startのレスポンスに新しいフィールドが追加されたり既存フィールドの型が変更されたりすることはない。
+workflow_nextが返すレスポンスのスキーマも変更されない。FR-R2のmanual_testテンプレート追記はsubagentが参照するプロンプト文字列を変更するだけであり、workflow_nextのレスポンスに含まれるphase、nextPhase、validationResultなどのフィールドの定義は維持される。
+workflow_complete_subが返すレスポンスについても変化はない。FR-R3のsecurity_scanテンプレートへの重複行回避セクション追加は、subagentが成果物を作成する際の指針を提供するためのものであり、workflow_complete_subのAPIシグネチャには影響しない。
+FR-R4のperformance_testテンプレート変更後も、workflow_capture_baseline・workflow_record_test_result・workflow_get_test_infoなどの関連APIのレスポンス構造は変更前のスキーマを維持する。
+
+---
+
+## 設定ファイル設計
+
+本タスクの変更対象はdefinitions.tsのsubagentTemplate文字列のみであり、ユーザーが編集する設定ファイル（.claude/settings.json、.mcp.json、package.jsonなど）のスキーマやデフォルト値に変更を加えない。
+FR-R1の変更はtestingおよびregression_testフェーズのsubagentTemplateを修正するものであり、.claude/settings.jsonに定義されているフック設定（enforce-workflow、phase-edit-guard、artifact-validatorなど）の設定項目を変更しない。
+FR-R2のmanual_testテンプレートへの追記はsubagentTemplateの内部文字列を拡張するものであり、.mcp.jsonに定義されているMCPサーバーの接続設定（コマンド、引数、環境変数）には影響しない。
+FR-R3のsecurity_scanテンプレートへの重複行回避ガイダンス追加は、workflow-plugin/mcp-serverのpackage.jsonが定義するnpmスクリプトやdependenciesを変更しない。npmビルドコマンド（npm run build）は変更前と同じコマンドを使用してdefinitions.tsをトランスパイルできる。
+FR-R4のperformance_testテンプレートへのサマリーガイダンス追記後も、tsconfig.json・.gitignore・.env等のプロジェクト設定ファイルは変更されない。本タスクの完了後に必要なオペレーション（npm run buildとMCPサーバー再起動）は既存の設定ファイルに記載された手順の範囲内で完結する。
+設定ファイルの観点から見た本タスクの位置づけを整理すると、本タスクはワークフロープラグインの内部動作を改善するものであり、MCP設定・フック設定・npmスクリプトなどの外部設定項目を変更する必要が生じない設計を維持している。
+変更対象が単一ファイルのsubagentTemplate文字列に限定されていることにより、設定ファイルのバックアップや移行手順の策定も不要であり、オペレーション負荷を最小に抑えた修正計画となっている。
+
+---
+
+## 運用手順への影響
+
+本タスクの変更は、ワークフローの日常的な運用手順に追加の作業ステップを発生させない。
+ユーザーがタスクを開始する際に使用する `/workflow start` コマンドの引数や実行手順は変更前後で完全に同一である。
+フェーズ間の遷移に使用する `/workflow next` や `/workflow complete-sub` の実行手順にも変更が加わらない。
+subagentTemplate の変更は MCP サーバー内部でフェーズ実行時のプロンプト生成に反映されるが、この処理は完全に自動化されておりユーザーの介入を必要としない。
+唯一の運用上の注意点として、definitions.ts の変更を反映するためには npm run build によるトランスパイルと MCP サーバーの再起動が必要であるが、これは既存の開発運用フローに含まれている手順であり新規の作業ステップではない。
+再起動後はワークフローの全機能が即座に利用可能となり、ユーザーは変更を意識することなく通常のワークフロー操作を継続できる。
+
+---
+
+## 互換性と移行計画
+
+本タスクの変更は完全な後方互換性を維持する設計となっている。
+definitions.ts の subagentTemplate 文字列は MCP サーバーの起動時にメモリにロードされる内部定義であり、外部クライアントが直接参照するインターフェースではない。
+したがって、変更の適用はサーバー再起動のタイミングで自動的に行われ、クライアント側でのコード変更やバージョンアップ手順は不要である。
+既存のワークフローセッション（進行中のタスク）への影響も限定的であり、再起動後は新しいテンプレートが次回のフェーズ実行から適用される。
+移行計画としては、実装完了後の npm run build と MCP サーバー再起動のみで変更が完了し、ロールバック手順も git revert による単一コミットの取り消しで対応可能である。
+本タスクのスコープが definitions.ts 単一ファイルの subagentTemplate 文字列変更に限定されていることが、移行の簡素化と互換性の維持を同時に実現する設計上の利点となっている。

@@ -1,0 +1,57 @@
+→purpose: DCI (Design-Code Index) 要件定義
+→task: dci-design-code-index
+
+## 機能要件
+
+→functional_requirements[5]{id,requirement}:
+  FR-1,workflow_build_index MCPツール: プロジェクトルートをスキャンし、4ソース(@spec/設計書@related/RTM/ディレクトリ推論)からdesign-code-index.jsonを生成
+  FR-2,workflow_query_docs_for_file MCPツール: コードファイルパスから関連設計書リストとlayer1サマリーを返す
+  FR-3,workflow_query_files_for_doc MCPツール: 設計書パスから実装コードファイルとテストファイルを返す
+  FR-4,workflow_validate_index MCPツール: 孤立コード(specなし)・孤立設計書(実装なし)・壊れたリンクを検出
+  FR-5,@specコメント検出: 正規表現でコードファイル内の@specコメントを解析しマッピング生成
+
+## 非機能要件
+
+→non_functional_requirements[3]{id,requirement}:
+  NFR-1,1000ファイル以下のプロジェクトで10秒以内にインデックス生成完了
+  NFR-2,全新規ファイルが200行以内
+  NFR-3,既存MCPツール(harness_*)の動作に影響しない
+
+## 受入基準
+
+AC-1: workflow_build_indexが@specコメントからcodeToDesignマッピングを生成する
+AC-2: workflow_query_docs_for_fileがコードパスから関連設計書を返す
+AC-3: workflow_query_files_for_docが設計書パスから実装コードを返す
+AC-4: workflow_validate_indexが孤立コード・孤立設計書を検出する
+AC-5: @specコメントのない.tsファイルがorphansに含まれる
+AC-6: 既存テスト(730件)が全て通過する
+
+## NOT_IN_SCOPE
+
+→not_in_scope[4]{item}:
+  implementationフェーズDoD統合(@spec強制チェック) — 別タスクで対応
+  scope_definition/researchテンプレートへのDCIクエリ統合 — 別タスクで対応
+  設計書内の@related-filesブロック解析 — v2で対応
+  RTM F-xxx対応表からの自動マッピング — v2で対応
+
+## OPEN_QUESTIONS
+
+→open_questions: なし
+
+## decisions
+
+→decisions[5]{id,decision,rationale}:
+  D-1,初期実装は@specコメント解析のみ,他3ソースはv2で段階的追加。最小限で価値を出す
+  D-2,インデックスはJSON形式でメモリ版スキーマに準拠,設計書で定義済みのスキーマを流用
+  D-3,MCPツール名はharness_ではなくdci_プレフィックス,DCIは独立サブシステム。ただしハーネスサーバー内に同居
+  D-4,layer1サマリーはインデックス生成時に@specの次行コメントから抽出,追加のLLM呼び出し不要
+  D-5,docPathsとの統合: build_index実行時にTaskState.docPathsがあればorphans初期値として使用,前タスクの成果を活用
+
+## artifacts
+
+→artifacts[1]{path,status}:
+  docs/workflows/dci-design-code-index/requirements.toon,created
+
+## next
+
+→next: planning

@@ -1,0 +1,147 @@
+phase: metrics
+taskName: harness-report-fb-fixes
+startedAt: "2026-03-29T19:47:42.596Z"
+completedAt: "2026-03-30T02:33:15.862Z"
+totalRetries: 16
+totalDoDFailures: 16
+phases:
+  hearing:
+    durationSec: 14582
+    retries: 1
+    dodFailures: 2
+  scope_definition:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  research:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 8
+    retries: 4
+    dodFailures: 9
+  threat_modeling:
+    durationSec: 3
+    retries: 1
+    dodFailures: 1
+  planning:
+    durationSec: 4
+    retries: 1
+    dodFailures: 3
+  state_machine:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 7
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 8
+    retries: 0
+    dodFailures: 0
+  test_design:
+    durationSec: 9
+    retries: 1
+    dodFailures: 1
+  test_selection:
+    durationSec: 136
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 394
+    retries: 2
+    dodFailures: 2
+  implementation:
+    durationSec: 383
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 118
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 124
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 200
+    retries: 2
+    dodFailures: 3
+  testing:
+    durationSec: 280
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 160
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 5524
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 178
+    retries: 1
+    dodFailures: 2
+  security_scan:
+    durationSec: 183
+    retries: 1
+    dodFailures: 2
+  performance_test:
+    durationSec: 345
+    retries: 1
+    dodFailures: 1
+  e2e_test:
+    durationSec: 221
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 241
+    retries: 1
+    dodFailures: 2
+  commit:
+    durationSec: 303
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 85
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 259
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 155
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 399
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  hearing[2]: "[L4] decisions count: 2 < required 5\n修正方法: ## decisions にあと3件追加してください。","[L2] userResponse: key missing from hearing artifact"
+  requirements[9]: "[L3] Missing required sections: acceptanceCriteria, notInScope, openQuestions. Add ## headings for each.","[L4] Forbidden patterns found: 未定; Missing required Markdown sections: acceptanceCriteria, notInScope, openQuestions","[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-1, AC-2, AC-3, AC-4, AC-5","[L4] openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。","[L4] 意図整合性警告: 7語が requirements.md に未反映: ハーネスレポートFB-1+5, FB-2, FB-4, FB-6の4件を修正する, tsのreadonlyフェーズWrite/Edit制限\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。","[L3] Missing required sections: notInScope, openQuestions. Add ## headings for each.","[L4] Forbidden patterns found: 未定; Missing required Markdown sections: notInScope, openQuestions","[L4] 意図整合性警告: 5語が requirements.md に未反映: ハーネスレポートFB-1+5, FB-6の4件を修正する, tsのreadonlyフェーズWrite/Edit制限, tsのテストケース構造行除外, tsのRTM重複IDチェック\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。","[L3] RTM entries do not reference these ACs: AC-5, AC-5"
+  threat_modeling[1]: "[L4] Forbidden patterns found: 未定; Duplicate lines (3+ times): \"Severity: High...\" (3x); \"Severity: Medium...\" (4x); \"STRIDE: Tampering...\" (3x)"
+  planning[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  test_design[1]: "[L4] Approved artifacts modified since approval: hearing.md, requirements.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  test_impl[2]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+  code_review[3]: "[L4] Forbidden patterns found: 未定","[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending)","[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  manual_test[2]: "[L3] Missing required sections: artifacts, next. Add ## headings for each.","[L4] Duplicate lines (3+ times): \"method: 目視コードレビュー...\" (4x); Missing required Markdown sections: artifacts, next"
+  security_scan[2]: "[L4] Duplicate lines (3+ times): \"risk: low...\" (4x); \"verdict: safe...\" (4x)","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  performance_test[1]: "[L4] Duplicate lines (3+ times): \"- result: パフォーマンス影響なし...\" (4x)"
+  docs_update[2]: "[L3] Missing required sections: decisions. Add ## headings for each.","[L4] Missing required Markdown sections: decisions"

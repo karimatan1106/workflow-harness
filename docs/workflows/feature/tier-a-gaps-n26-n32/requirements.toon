@@ -1,0 +1,57 @@
+phase: requirements
+taskName: tier-a-gaps-n26-n32
+userIntent: 記事第2回ギャップ分析Tier A 7項目(N-26〜N-32)の受入基準定義。全項目にAC・機能要件・RTMを対応付ける。
+
+acceptanceCriteria[7]{id, description, priority}:
+  AC-1, classifyComplexityの結果がbuildRetryPromptのsuggestedModelに反映される(trivial→haiku/moderate→sonnet/critical→opus), must
+  AC-2, FEEDBACK_SPEED_LAYERS定数が4層(ms/s/min/h)を定義しexportされる, must
+  AC-3, ERROR_ADR_MAP定数がエラーパターン→ADR IDの対応を持ちretry時に該当ADRが優先表示される, must
+  AC-4, checkFileLineLimit関数が200行超過ファイルを検出しDoD L4チェックとして報告する, must
+  AC-5, checkBrokenPointers関数がTOON artifacts[]のパス存在を検証し壊れた参照を報告する, must
+  AC-6, post-tool-lint.shがno-explicit-anyルールをoxlintで強制する, must
+  AC-7, 全既存テスト(547件)+新規テストが全てパスする, must
+
+functionalRequirements[6]{id, description, acRef}:
+  F-001, retry.tsのbuildRetryPromptにcomplexityパラメータ(オプショナル/デフォルトmoderate)を追加しtrivial→haiku/moderate→sonnet/critical→opusのモデル切替を実装する, AC-1
+  F-002, archgate.tsにFEEDBACK_SPEED_LAYERS定数をas constオブジェクトで定義しms/s/min/hの4層をexportする, AC-2
+  F-003, retry.tsにERROR_ADR_MAP定数をRecord型で追加しbuildRetryPrompt内でエラーパターンマッチ時に該当ADR IDを優先表示する, AC-3
+  F-004, dod-helpers.tsにcheckFileLineLimit関数を追加しデフォルト200行上限でファイル行数を検証しDoD L4チェック結果として返す, AC-4
+  F-005, dod-helpers.tsにcheckBrokenPointers関数を追加しTOON artifacts[]に記載されたファイルパスの存在をfs.existsSyncで検証する, AC-5
+  F-006, post-tool-lint.shのoxlintブロックに--deny no-explicit-anyルールを追加する, AC-6
+
+nonFunctionalRequirements[3]{id, description}:
+  NFR-1, retry.tsのcomplexityパラメータはオプショナルとしデフォルト値moderateで既存動作を維持する
+  NFR-2, checkFileLimitの上限値は引数で変更可能とし200行以外の上限にも対応できる
+  NFR-3, 全変更対象ファイルが200行以下を維持する
+
+rtmMapping[6]{frId, acId, testMethod}:
+  F-001, AC-1, retry.test.tsでcomplexity=trivial/moderate/criticalの3パターンのsuggestedModelを検証
+  F-002, AC-2, archgate.test.tsでFEEDBACK_SPEED_LAYERSのキー4つとms値の型を検証
+  F-003, AC-3, retry.test.tsでERROR_ADR_MAPのパターンマッチとADR ID表示を検証
+  F-004, AC-4, dod-helpers.test.tsで200行超過ファイルと200行以下ファイルの検出結果を検証
+  F-005, AC-5, dod-helpers.test.tsで存在パスと不存在パスの検証結果を確認
+  F-006, AC-6, post-tool-lint.shの--deny no-explicit-any行の存在をgrep検証
+
+notInScope[4]{item, reason}:
+  N-33以降のTier B/C項目, 本タスクはTier A 7項目のみが対象
+  classifyComplexity関数の変更, 既存の3分類をそのまま利用しretry側で参照するのみ
+  既存CLAUDE.mdの行数削減, N-29は検出機能追加であり既存ファイルの修正は別タスク
+  archgateの既存checkType動作変更, ghost_fileは純粋な追加
+
+openQuestions: なし
+
+decisions[5]{id, statement, rationale}:
+  REQ-1, AC数は7件で全てmust優先度とする, 7項目それぞれに対応するACとAC-7で回帰テスト確認を含め網羅性を確保する
+  REQ-2, RTMはF-001〜F-006でAC-1〜AC-6に1対1対応させる, AC-7は回帰テスト確認であり個別FRは不要
+  REQ-3, complexityパラメータのデフォルト値はmoderateとする, 既存のretryCount>=3でsonnet切替という動作を維持し後方互換性を確保する
+  REQ-4, checkFileLimitとcheckBrokenPointersは同期関数として実装する, DoDチェックは同期フローで呼ばれるためasync化は不要であり実装が単純になる
+  REQ-5, post-tool-lint.shの変更は1行追加のみとする, oxlintの--denyフラグ追加は既存パターンと一致しており設定変更の影響範囲が最小
+
+artifacts[2]{path, role, summary}:
+  docs/workflows/tier-a-gaps-n26-n32/requirements.toon, spec, 受入基準と要件定義
+  docs/workflows/tier-a-gaps-n26-n32/research.toon, reference, 調査結果(前フェーズ成果物)
+
+next:
+  criticalDecisions[2]: REQ-3, REQ-4
+  readFiles[3]: docs/workflows/tier-a-gaps-n26-n32/requirements.toon, docs/workflows/tier-a-gaps-n26-n32/research.toon, docs/workflows/tier-a-gaps-n26-n32/scope-definition.toon
+  warnings[1]: retry.tsのcomplexityパラメータ追加時に既存呼び出し元がデフォルト値で動作することを必ずテストで確認すること

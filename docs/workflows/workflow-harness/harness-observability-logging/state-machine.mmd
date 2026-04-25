@@ -1,0 +1,27 @@
+stateDiagram-v2
+    %% decisions: Trace logging lifecycle spans harness_start → task completion.
+    %% Idle state = no trace file. Initialized = header written. Recording = events appended.
+    %% PhaseComplete = phase-exit recorded. SizeExceeded = 10MB limit hit, skip appends.
+    %% Finalized = task done, log sealed. Recording loops on DoD FAIL (retry).
+    %% SizeExceeded can transition to PhaseComplete when phase-exit occurs.
+    %% Each transition name matches harness action (initTraceFile, appendTrace, phase-enter, phase-exit).
+    %% States and transitions cover nominal flow, error recovery (DoD FAIL), size limits, completion.
+
+    Idle --> Initialized: harness_start (initTraceFile)
+
+    Initialized --> Recording: phase-enter event
+
+    Recording --> Recording: appendTrace (tool-access event)
+    Recording --> Recording: appendTrace (delegation event)
+    Recording --> Recording: appendTrace (context-size event)
+    Recording --> Recording: DoD FAIL + retry
+
+    Recording --> PhaseComplete: phase-exit event (DoD PASS)
+    Recording --> SizeExceeded: fileSize > 10MB limit
+
+    PhaseComplete --> Recording: next phase-enter
+
+    SizeExceeded --> SizeExceeded: appendTrace skipped (stderr warning)
+    SizeExceeded --> PhaseComplete: phase-exit event (DoD PASS)
+
+    PhaseComplete --> Finalized: task completed

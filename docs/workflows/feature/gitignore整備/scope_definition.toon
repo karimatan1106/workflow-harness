@@ -1,0 +1,9 @@
+taskName: gitignore整備
+phase: scope_definition
+decisions[1]{id,statement,rationale}: SD-001,"親リポの.gitignoreに3エントリ追加","自動生成ファイルをVCSから除外するため"
+decisions[2]{id,statement,rationale}: SD-002,"サブモジュールの追跡済みファイルをgit rm --cachedで除去","ビルド成果物と状態ファイルの追跡を停止するため"
+decisions[3]{id,statement,rationale}: SD-003,"サブモジュールの.gitignoreは既存エントリで十分なため追加不要","dist/とmcp-server/.claude/state/は既に記載済み"
+risks[1]{id,description,mitigation}: SR-001,"git rm --cachedで他開発者のプル時にファイル削除が発生する可能性","--cachedフラグでワーキングツリーのファイルは保持される。自動生成ファイルのため再生成で復元可能"
+risks[2]{id,description,mitigation}: SR-002,"mcp-server/.claude/state/にHMAC秘密鍵が含まれている可能性","untrackによりセキュリティリスクを低減。履歴からの除去は別タスクで対応"
+scope_files[2]: .gitignore,workflow-harness/.gitignore
+artifacts[1]{path,role,summary}: docs/workflows/gitignore整備/scope-definition.md,spec,gitignore整備タスクのスコープ定義

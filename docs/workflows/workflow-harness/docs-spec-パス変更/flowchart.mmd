@@ -1,0 +1,62 @@
+flowchart TD
+    Start([開始]) --> A[hooks/ディレクトリ]
+
+    subgraph hooks["1. hooks/ 変更"]
+        A --> A1[spec-first-guard.js]
+        A --> A2[check-spec.js]
+        A --> A3[check-spec-sync.js]
+        A --> A4[check-workflow-artifact.js]
+        A --> A5[その他hooks]
+    end
+
+    A1 & A2 & A3 & A4 & A5 --> B[mcp-server/src/]
+
+    subgraph mcp["2. mcp-server/ 変更"]
+        B --> B1[server.ts]
+        B --> B2[state/*.ts]
+        B --> B3[tools/*.ts]
+        B --> B4[phases/*.ts]
+        B --> B5[utils/*.ts]
+    end
+
+    B1 & B2 & B3 & B4 & B5 --> C[workflow-phases/]
+
+    subgraph phases["3. workflow-phases/ 変更"]
+        C --> C1[README.md]
+        C --> C2[planning.md]
+        C --> C3[state_machine.md]
+        C --> C4[その他*.md]
+    end
+
+    C1 & C2 & C3 & C4 --> D[設定ファイル]
+
+    subgraph config["4. 設定ファイル変更"]
+        D --> D1[settings.json]
+        D --> D2[plugin.json]
+    end
+
+    D1 & D2 --> E[ドキュメント]
+
+    subgraph docs["5. ドキュメント変更"]
+        E --> E1[CLAUDE.md - plugin]
+        E --> E2[CLAUDE.md - root]
+        E --> E3[README.md]
+        E --> E4[README.en.md]
+        E --> E5[SKILL.md]
+    end
+
+    E1 & E2 & E3 & E4 & E5 --> F{grep検証}
+
+    F -->|残存あり| G[追加置換]
+    G --> F
+    F -->|残存なし| H[ビルド確認]
+
+    H --> I{ビルド成功?}
+    I -->|Yes| J[テスト実行]
+    I -->|No| K[エラー修正]
+    K --> H
+
+    J --> L{テスト成功?}
+    L -->|Yes| End([完了])
+    L -->|No| M[テスト修正]
+    M --> J

@@ -1,0 +1,73 @@
+phase: planning
+task: context-engineering-improvements
+status: complete
+summary: "PhaseConfigへのinputFileModes追加とTaskState/CheckpointへのrefinedIntent追加に関する技術仕様と実装計画。6ファイル変更・8機能要件に対応するF-001〜F-008のRTMエントリを定義し、実装順序と依存関係を確定。"
+
+decisions[8]{id,statement,rationale}:
+  PL-1, "InputFileMode型をtypes-core.tsの156行目(DoDExemptionType定義直後)に挿入し既存コメント行1行を削除して200行制限を維持する", "156行目の`// ─── Phase Configuration ────────────────────────`コメントはPhaseConfig定義と分離されており削除しても構造把握に影響しない。この1行削除でInputFileMode(1行)+inputFileModes?(1行)+refinedIntent?(1行)の3行追加が吸収される"
+  PL-2, "buildSubagentPromptの第7パラメータとしてrefinedIntent?: stringをprojectTraitsの後に追加し、164行目のuserIntent変数参照を`refinedIntent ?? userIntent`に置換する", "既存シグネチャの末尾オプショナル追加なので全呼び出し元(未指定=undefined)は後方互換。164行目のheader構築部でのみ変数を切り替えればよく、変更範囲が最小化される"
+  PL-3, "inputFilesヘッダー生成(165行目)をmodesLookup関数経由に変更し、モード別サフィックス[full|summary|reference]をファイル名末尾に付与する。未設定ファイルはデフォルト'full'", "basename一致方式(path.basename)でPHASE_REGISTRYのinputFileModesキーと照合。{docsDir}解決後のフルパスからbasenameを取得するため、docsDir変更時も設定変更不要"
+  PL-4, "refreshCheckpointTraceabilityにstate.refinedIntentが存在する場合にcheckpoint.refinedIntentへコピーする1行を追加する", "この関数はapplyAddAC/applyAddRTM/applyUpdateACStatusの3経路全てから呼ばれるため、ここに集約することで漏れなく伝播が保証される。approval.tsでの直接書き込みは行わない"
+  PL-5, "approval.tsのIA-2チェック(AC≥3)通過直後にrefinedIntent生成ロジックを挿入する。生成値はtask.acceptanceCriteria.map(ac => ac.description).join(' / ')とする", "AC-N群のdescription文字列のみを結合することでハーネス内部生成値に限定(NFR-5)。id+descriptionではなくdescriptionのみとすることでsubagentプロンプトへの注入文字列を簡潔に保つ"
+  PL-6, "PHASE_REGISTRYのdesign_reviewにinputFileModesを追加する。state-machine.mmdとflowchart.mmdを'reference'、ui-design.toon・spec.toon・threat-model.toonを'summary'とする", "設計レビューでは状態遷移図とフローチャートは存在確認のみ(reference)で十分。ui-design/spec/threat-modelは内容を要約して読む必要があるためsummaryが適切。これがコンテキスト圧縮効果が最大のフェーズ"
+  PL-7, "acceptance_verificationのinputFilesにrequirements.toonとtest-design.toonが含まれる。requirements.toonを'summary'、test-design.toonを'full'とする", "acceptanceフェーズでrequirementsは要件確認(summary)で十分。test-designはテスト結果との照合に使うため完全読み込み(full)が必要"
+  PL-8, "docs_updateのinputFiles(spec.toon/requirements.toon/code-review.toon)は全て'summary'とする", "ドキュメント更新時は各成果物の概要把握が目的であり全文読み込みは不要。3ファイル全summaryでコンテキスト削減効果を確保"
+
+functional_requirements[8]{id,description,source}:
+  FR-1, "types-core.tsにInputFileMode型を追加する", "SD-1/AC-1"
+  FR-2, "PhaseConfigにinputFileModes?: Record<string, InputFileMode>を追加する", "SD-1/AC-1"
+  FR-3, "Checkpoint.refinedIntent?: stringをCheckpointインターフェースに追加する", "SD-2/AC-2"
+  FR-4, "types.tsのTaskStateにrefinedIntent?: stringをuserIntentの直後に追加し、InputFileMode型のre-exportを追加する", "SD-2/AC-2"
+  FR-5, "buildSubagentPromptの第7パラメータにrefinedIntent?: stringを追加し、refinedIntent ?? userIntentを使用してheaderを構築する", "SD-3/AC-1/AC-2"
+  FR-6, "buildSubagentPromptのinputFilesヘッダー生成部でmodesLookupによりモード別サフィックスを付与する", "SD-3/SD-4/AC-1"
+  FR-7, "refreshCheckpointTraceabilityにrefinedIntent伝播を追加する", "SD-5/AC-2"
+  FR-8, "approval.tsのIA-2チェック通過後にrefinedIntentを生成してstate.refinedIntentに格納する", "R-5/AC-2"
+
+rtm_entries[8]{id,requirement,designRef,codeRef,testRef,status}:
+  F-001, "InputFileMode型('full'|'summary'|'reference')の定義とexport", "PL-1", "workflow-harness/mcp-server/src/state/types-core.ts", "", "pending"
+  F-002, "PhaseConfigへのinputFileModes?: Record<string, InputFileMode>追加", "PL-1", "workflow-harness/mcp-server/src/state/types-core.ts", "", "pending"
+  F-003, "Checkpoint.refinedIntent?: string追加", "PL-4", "workflow-harness/mcp-server/src/state/types-core.ts", "", "pending"
+  F-004, "TaskState.refinedIntent?: string追加とInputFileModeのre-export", "PL-2", "workflow-harness/mcp-server/src/state/types.ts", "", "pending"
+  F-005, "buildSubagentPromptシグネチャへのrefinedIntentパラメータ追加とrefinedIntent ?? userIntent適用", "PL-2", "workflow-harness/mcp-server/src/phases/definitions.ts", "", "pending"
+  F-006, "buildSubagentPromptのinputFilesヘッダーにモード別サフィックス付与", "PL-3", "workflow-harness/mcp-server/src/phases/definitions.ts", "", "pending"
+  F-007, "refreshCheckpointTraceabilityへのrefinedIntent伝播追加", "PL-4", "workflow-harness/mcp-server/src/state/manager-write.ts", "", "pending"
+  F-008, "approval.tsのrequirements承認時refinedIntent生成とstate格納", "PL-5", "workflow-harness/mcp-server/src/tools/handlers/approval.ts", "", "pending"
+
+implementation_order[6]{step,files,rationale,dependencies}:
+  1, "workflow-harness/mcp-server/src/state/types-core.ts", "型定義の基盤。InputFileMode・inputFileModes?・Checkpoint.refinedIntent?を追加。他5ファイルが全てこのファイルの型に依存するため最初に実施", "なし"
+  2, "workflow-harness/mcp-server/src/state/types.ts", "re-exportの追加とTaskState.refinedIntent?追加。types-core.tsの型定義完了後に実施", "step 1"
+  3, "workflow-harness/mcp-server/src/state/manager-write.ts", "refreshCheckpointTraceabilityにrefinedIntent伝播を追加。Checkpointインターフェース変更完了後に実施", "step 1"
+  4, "workflow-harness/mcp-server/src/phases/definitions.ts", "buildSubagentPromptのシグネチャ変更とヘッダー生成ロジック更新。型定義完了後に実施。path.basenameのimport追加が必要", "step 1"
+  5, "workflow-harness/mcp-server/src/phases/registry.ts", "PHASE_REGISTRYのdesign_review/acceptance_verification/docs_updateにinputFileModes設定追加。型変更完了後に実施", "step 1, step 2"
+  6, "workflow-harness/mcp-server/src/tools/handlers/approval.ts", "IA-2チェック通過後のrefinedIntent生成と格納。manager-writeのrefreshCheckpointTraceability変更完了後に実施", "step 2, step 3"
+
+change_surface[6]{file,lines,change_type,detail}:
+  "workflow-harness/mcp-server/src/state/types-core.ts", "156-172", "modify", "156行目コメント削除、157行目にInputFileMode型追加、PhaseConfigにinputFileModes?追加、CheckpointにrefinedIntent?追加。200行制限は1行削除+3行追加=200行維持"
+  "workflow-harness/mcp-server/src/state/types.ts", "6-25,74-76", "modify", "export type listにInputFileModeを追加、TaskState.userIntentの直後にrefinedIntent?: stringを追加"
+  "workflow-harness/mcp-server/src/state/manager-write.ts", "77-82", "modify", "refreshCheckpointTraceabilityの78行目直後にrefinedIntent伝播1行を追加"
+  "workflow-harness/mcp-server/src/phases/definitions.ts", "126-183", "modify", "buildSubagentPrompt第7パラメータ追加、164行目変数置換、165行目ヘッダー生成にモード付与、path.basename import追加"
+  "workflow-harness/mcp-server/src/phases/registry.ts", "23,38,45", "modify", "design_review/acceptance_verification/docs_updateのPhaseConfig定義にinputFileModes追加"
+  "workflow-harness/mcp-server/src/tools/handlers/approval.ts", "54-61", "modify", "IA-2チェック後にrefinedIntent生成ロジックを3行挿入"
+
+key_constraints[4]{id,constraint,impact}:
+  KC-1, "types-core.tsは200行制限。156行目のコメント行削除で±0行を維持する", "削除対象行を事前確認済み(156行: コメント区切り線)"
+  KC-2, "TaskStateSchema(Zod)はpassthrough()設定済みのためrefinedIntent追加でZodスキーマ変更は不要", "移行リスクがゼロ。既存テスト723件への影響なし"
+  KC-3, "buildSubagentPromptの呼び出し元(推定5-7箇所)は全て末尾オプショナルパラメータ追加のため変更不要", "後方互換性を完全維持"
+  KC-4, "refinedIntentのキーはpath.basename使用。{docsDir}解決後のフルパスに対してbasenameを取得してinputFileModes辞書と照合する", "PHASE_REGISTRYの設定がdocsDir変更に依存しない可搬性を確保"
+
+acceptance_criteria[4]{id,description,verification}:
+  AC-1, "PhaseConfigにinputFileModes?が追加され、buildSubagentPromptがin: file[full]等のモード別ヘッダーを生成する", "registry.tsの3フェーズ定義にinputFileModes設定が存在し、definitions.tsのheader変数にモードサフィックスが付与されること"
+  AC-2, "TaskState/CheckpointにrefinedIntent?が追加され、buildSubagentPromptがrefinedIntent ?? userIntentを使用する", "types.ts・types-core.tsの型定義にrefinedIntent?が存在し、approval.ts通過後にstate.refinedIntentが設定されること"
+  AC-3, "design_review/acceptance_verification/docs_updateにsummary/referenceモード設定が存在する", "registry.tsの該当フェーズにinputFileModesオブジェクトが定義されていること"
+  AC-4, "types-core.tsが200行以下を維持し、既存テスト723件が全パスする", "wc -l実行で≤200確認、npmテスト全パス確認"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/context-engineering-improvements/scope-definition.toon, spec, "スコープ定義。対象6ファイルと設計決定8件を確定"
+  docs/workflows/context-engineering-improvements/research.toon, spec, "調査フェーズ出力。現状の行数・型構造・呼び出し元を確認"
+  docs/workflows/context-engineering-improvements/requirements.toon, spec, "機能要件8件・非機能要件6件・AC-1〜AC-4を定義"
+  docs/workflows/context-engineering-improvements/planning.toon, design, "本ファイル。技術仕様・RTM F-001〜F-008・実装順序6ステップを定義"
+
+next:
+  criticalDecisions: "definitions.tsへのpath.basenames importが既に存在するか確認(join/pathnameは既存だが basenameは未確認)。manager-write.tsにCheckpoint型のrefinedIntentプロパティが型エラーなくコンパイルされるかstep1完了後に確認。approval.tsでtask型にrefinedIntentが直接代入可能か(TaskState型変更後に型エラーなし確認)"
+  readFiles: "workflow-harness/mcp-server/src/phases/definitions.ts の先頭import部を再確認(basenameのimport有無)。workflow-harness/mcp-server/src/phases/definitions-shared.ts (buildSubagentPromptの呼び出し元探索)。workflow-harness/mcp-server/src/tools/handler.ts (buildSubagentPrompt呼び出し箇所の引数確認)"
+  warnings: "definitions.tsは184行。path.basename importとhelperFunction追加で200行超過リスクあり。インラインで`f.split('/').pop()`を使うことでimport不要・行数増加を回避する対応を推奨。registry.tsの各行はすでに200文字超の長行。inputFileModes追加で行長が問題になる場合は各フェーズ定義を複数行に展開する必要がある"

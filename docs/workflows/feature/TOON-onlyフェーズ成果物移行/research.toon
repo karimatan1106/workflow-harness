@@ -1,0 +1,17 @@
+phase: research
+taskId: toon-only-migration-2026-03-02
+ts: "2026-03-02T09:00:00+09:00"
+decisions[7]{id,statement,rationale}:
+  R-001,checkL1FileExistsはregistry.tsのoutputFile文字列値のみに依存しており拡張子変更だけでTOON対応が完結する,existsSyncはパス文字列を直接評価するためファイル形式に依存しない
+  R-002,analyzeArtifact関数はMarkdown見出し判定とコードフェンス追跡を前提としておりTOON形式では全面再実装が必要である,TOON形式にはMarkdown見出しとコードフェンスが存在しないためロジックが無効になる
+  R-003,checkDeltaEntryFormatはサマリーセクション区間検出とDELTA_ENTRY_REGEXの2段階で実装されておりTOONのdecisions[]テーブル検証に置き換えられる,TOONデコード後のdecisions配列lengthチェックが等価実装として成立する
+  R-004,dod-l4-requirements.tsの4関数はrequirements.mdをハードコードパスで参照しており要件フェーズのTOON移行時に個別改修が必要である,checkACFormat等がrequirements.mdのパスをdocsDir+'/requirements.md'で直接構築している
+  R-005,TOON-only移行後はbuildToonFirstSectionのフォールバック指示が不要になりdefinitions.tsから削除できる,TOONが唯一の成果物形式になればMDへのフォールバック案内は不要である
+  R-006,進行中タスクに対するフォールバック実装要否はSD-004の決定通りresearchフェーズで確定すべきだが現在進行中タスクが存在しない場合はフォールバックなし一括切り替えが最適である,フォールバックは複雑性を増すためタスクがない場合は不要
+  R-007,checkToonCheckpointはTOON-only化後にL1チェックと役割が重複するため廃止かL1統合の設計判断が必要である,L1でTOONファイルの存在とデコード可能性を同時確認すれば別途checkToonCheckpointを呼ぶ必要がない
+artifacts[1]{path,role,summary}:
+  docs/workflows/TOON-onlyフェーズ成果物移行/research.md,spec,調査結果・既存実装分析・Magic Number一覧・依存バージョン挙動を含む研究成果物
+next:
+  criticalDecisions[3]: R-002,R-003,R-004
+  readFiles[4]: workflow-harness/mcp-server/src/gates/dod-l3.ts,workflow-harness/mcp-server/src/gates/dod-l4-delta.ts,workflow-harness/mcp-server/src/phases/registry.ts,workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts
+  warnings[3]: analyzeArtifact関数の全面再実装がimpact_analysisで詳細コスト見積もりが必要,dod-l4-requirements.tsのハードコードパス問題はrequirementsフェーズTOON移行で別途対処,minLines・sectionDensityの閾値はTOON形式用に再定義が必要

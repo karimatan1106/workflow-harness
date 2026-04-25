@@ -1,0 +1,46 @@
+%% Summary
+%% task-index.jsonキャッシュ同期に関するステートマシン図
+%% - updateTaskPhase()による3つの状態遷移（修正前：古いキャッシュ経由、修正後：軽量更新）
+%% - task-index.jsonの状態: Latest（最新）/ Stale（古い）/ Inconsistent（不整合）
+%% - FIX-1: updateTaskIndexForSingleTask()によるdiscoverTasks()の迂回
+%% - FIX-2: phase-edit-guard.jsのB-2チェック優先化
+%% - Hook側のキャッシュ読み取りパスと整合性チェック
+
+stateDiagram-v2
+    [*] --> Latest
+
+    %% 修正前のフロー（古いキャッシュ経由で不整合発生）
+    Latest --> CacheReadOld: updateTaskPhase()呼び出し<br/>(修正前)
+    CacheReadOld --> Stale: discoverTasks()が<br/>古いキャッシュ返却
+    Stale --> Inconsistent: saveTaskIndex()で<br/>古いデータ書込
+    Inconsistent --> CacheInvalidate: taskCache.invalidate()実行<br/>(遅すぎる)
+
+    %% 修正後のフロー（FIX-1: 軽量更新で最新状態維持）
+    Latest --> UpdateSingleTask: updateTaskPhase()呼び出し<br/>(修正後 FIX-1)
+    UpdateSingleTask --> ReadIndexFile: task-index.json直接読込<br/>(discoverTasks()回避)
+    ReadIndexFile --> UpdatePhaseField: 該当タスクの<br/>phaseフィールド更新
+    UpdatePhaseField --> AtomicWrite: atomicWriteJson()で<br/>原子的に書込
+    AtomicWrite --> Latest: task-index.jsonを<br/>最新状態に保つ
+
+    %% FIX-2: B-2チェック優先化（commitフェーズでのgit操作許可）
+    Latest --> HookReadIndex: Bash実行時<br/>Hook呼び出し
+    HookReadIndex --> CheckPhase: phase取得<br/>(task-index.jsonから)
+
+    CheckPhase --> B2CheckFirst: commit/pushフェーズ?<br/>(FIX-2: B-2優先)
+    B2CheckFirst -->|Yes| AllowGitOp: git add/commit<br/>をB-2で許可
+    AllowGitOp --> Latest: フェーズ遷移確定
+
+    B2CheckFirst -->|No| WhitelistCheck: bash-whitelist<br/>チェック実行
+    WhitelistCheck -->|Pass| Latest: コマンド実行許可
+    WhitelistCheck -->|Fail| Blocked: コマンド実行<br/>ブロック
+
+    %% Staleからの回復（タイムアウト待機）
+    Stale --> WaitTTL: キャッシュTTL待機<br/>(デフォルト1時間)
+    WaitTTL --> Latest: TTL切れで<br/>キャッシュ無効化
+
+    %% 不整合状態からの回復
+    Inconsistent --> ManualSync: 手動で<br/>スキャン実行
+    ManualSync --> Latest: task-index.json<br/>再構築
+
+    Blocked --> [*]
+    Latest --> [*]

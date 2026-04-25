@@ -1,0 +1,24 @@
+%% state_machine: remove-minimax-settings
+%% decisions:
+%% - D-SM-1: 各対象ファイルは Initial -> Verified -> Executing -> Deleted -> VerifiedPost の 5 状態で遷移する
+%% - D-SM-2: 4 ファイル (CLAUDE.md, feedback_no-minimax.md, MEMORY.md, canboluk.md) の遷移は並列、最終 VerifiedPost で AC-5 検証ゲートに集約する
+%% - D-SM-3: 書き込み失敗時は Rollback 状態へ遷移し、git revert 相当で原状回復する
+%% - D-SM-4: Verified (precheck) は grep による MiniMax 言及の存在確認で成立する
+%% - D-SM-5: VerifiedPost は grep による MiniMax 言及ゼロ件確認で成立する (AC-5 と一致)
+
+stateDiagram-v2
+    [*] --> Initial
+    Initial --> Verified: precheck_grep_hit
+    Verified --> Executing: begin_edit_or_remove
+    Executing --> Deleted: write_success
+    Executing --> Rollback: write_fail
+    Deleted --> VerifiedPost: grep_zero_confirmed
+    VerifiedPost --> [*]
+    Rollback --> [*]
+
+    state Initial {
+        [*] --> CLAUDE_md_section
+        [*] --> feedback_no_minimax_file
+        [*] --> MEMORY_md_line
+        [*] --> canboluk_md_line
+    }

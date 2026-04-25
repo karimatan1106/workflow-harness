@@ -1,0 +1,75 @@
+task: tier-b-gaps-n08-n15
+phase: requirements
+intent: Tier B 5項目(N-08 Oxlint, N-09 Biome, N-10 jscpd, N-11 eslint-plugin-security, N-12 ast-grep)の機能要件・非機能要件定義と受入基準設定
+riskScore: 4
+
+acceptanceCriteria[5]{id,description,verificationMethod}:
+  AC-1, "oxlintがdevDependencyにインストールされPostToolUseフックで実行される（graceful degradation）", "post-tool-lint.shを手動実行しoxlint --deny-onlyブロックの出力を確認。未インストール時はサイレントスキップを確認。"
+  AC-2, "@biomejs/biomeがdevDependencyにインストールされN-01フックが実際に動作する", "post-tool-lint.shを手動実行しbiome format --check出力を確認。既存biome checkと両方実行されることを確認。"
+  AC-3, "jscpdがdevDependencyにインストールされコード重複検出がarchgate経由で実行可能", "archgateにduplicate_codeルールを登録しrunArchGateChecksで重複率判定が返されることを確認。"
+  AC-4, "@ast-grep/napiがdevDependencyにインストールされarchgateのast_grep_pattern checkTypeが動作する", "archgateにast_grep_patternルールを登録しNode API経由でASTマッチ結果が返されることを確認。"
+  AC-5, "全既存テスト(509件)が通過し新規テストも全て通過する", "vitest runを両サブモジュール(mcp-server, workflow-plugin)で実行し全件passを確認。"
+
+functionalRequirements[5]{id,title,description,relatedAC,relatedFeature}:
+  FR-1, "Oxlint PostToolUseフック統合", "post-tool-lint.shにoxlint --deny-onlyブロックを追加する。command -v npxチェックで未インストール時はサイレントスキップ。timeout 3sで実行しタイムアウト時は警告メッセージを出力。biome checkブロックと独立して実行し片方の失敗が他方に影響しない設計とする。", AC-1, F-001
+  FR-2, "@biomejs/biome format --check追加", "post-tool-lint.shの既存biome checkブロック内にbiome format --check --no-errors-on-unmatchedを追加する。check(lint)とformat(整形検証)の両方を実行しフォーマット不一致を警告として報告する。exit codeは既存動作を維持し警告のみで処理を継続する。", AC-2, F-002
+  FR-3, "jscpd archgate duplicate_code checkType統合", "archgate.tsのArchCheckType型にduplicate_codeを追加する。linter-runner.tsを新設しjscpd --format json --threshold N実行とJSON出力パースを実装する。runArchGateChecks内にduplicate_code分岐を追加しstatistics.total.percentageで閾値判定する。デフォルト閾値5%。対象: mcp-server/src/**/*.tsとworkflow-plugin配下。", AC-3, F-003
+  FR-4, "@ast-grep/napi archgate ast_grep_pattern checkType統合", "archgate.tsのArchCheckType型にast_grep_patternを追加する。@ast-grep/napiのparse/findメソッドでAST認識パターンマッチングを実行する。execSync不要で型安全にマッチ結果を取得する。pattern文字列はArchRuleのpatternフィールドで指定しglob対象ファイルを順次解析する。", AC-4, F-004
+  FR-5, "eslint-plugin-security workflow-plugin統合", "workflow-plugin/eslint.config.jsにeslint-plugin-securityをimportしsecurity.configs.recommendedを各設定ブロックのextendsに追加する。TypeScript/JavaScript両設定ブロックに適用し13セキュリティルールを有効化する。eval/child_process/非安全正規表現を静的検出可能にする。", AC-5, F-001
+
+nonFunctionalRequirements[4]{id,title,description,metric}:
+  NFR-1, "graceful degradation", "全ツール(oxlint/biome/jscpd/ast-grep)が未インストール状態でもフックおよびarchgateがエラー終了しないこと。command -vチェックまたはtry-catch で未インストール検出しサイレントスキップする。", "未インストール環境でexit code 0を返す"
+  NFR-2, "フック実行タイムアウト", "PostToolUseフック内の各ツール実行にtimeoutを設定し応答遅延を防止する。tsc: 5秒、biome/oxlint: 各3秒。合計最大11秒以内でフック全体が完了する。", "各ツール個別timeout 3-5秒"
+  NFR-3, "ファイル行数200行制限", "新規作成するlinter-runner.tsおよび変更後のarchgate.ts/post-tool-lint.shが各200行以下であること。archgate.tsが200行を超える場合はlinter-runner.tsへの処理委譲で分離する。", "全対象ファイル200行以下"
+  NFR-4, "テスト回帰なし", "既存509テスト全件通過かつ新規テスト(linter-runner.test.ts, archgate-jscpd.test.ts)も全件通過すること。eslint-plugin-security追加後のworkflow-plugin側テストも通過すること。", "vitest run全件pass"
+
+notInScope[5]{item,reason}:
+  N-13 Hurl APIテスト, MCPサーバーがstdio通信でありHTTPエンドポイント不在
+  N-14 Playwright CLI統合, e2eディレクトリ未整備のため別タスクで基盤構築後に導入
+  N-15 container-structure-test, プロジェクトにDockerfile不在でコンテナビルド未構築
+  ESLint新規導入(mcp-server), MCPサーバーはvitest+tsc--noEmitで品質保証済みでありESLint追加は過剰
+  biome.json設定ファイル作成, biomeはデフォルト設定で実行可能であり専用設定ファイルは不要
+
+openQuestions: なし（全技術選択はresearchフェーズで完了済み）
+
+featureTraceability[4]{featureId,requirement,acMapping,frMapping}:
+  F-001, "Oxlint devDependencyインストールとPostToolUseフック統合", AC-1, FR-1
+  F-002, "@biomejs/biome devDependencyインストール", AC-2, FR-2
+  F-003, "jscpd devDependencyインストールとarchgate duplicate_code checkType統合", AC-3, FR-3
+  F-004, "@ast-grep/napi devDependencyインストールとarchgate ast_grep_pattern checkType統合", AC-4, FR-4
+
+installSpec[5]{id,package,version,target,devDep}:
+  IP-1, oxlint, 1.52.0, workflow-harness/mcp-server, true
+  IP-2, @biomejs/biome, 2.4.6, workflow-harness/mcp-server, true
+  IP-3, jscpd, 4.0.8, workflow-harness/mcp-server, true
+  IP-4, eslint-plugin-security, 4.0.0, workflow-plugin, true
+  IP-5, @ast-grep/napi, 0.41.0, workflow-harness/mcp-server, true
+
+fileChangeSpec[7]{path,changeType,description}:
+  .claude/hooks/post-tool-lint.sh, modify, "oxlint --deny-onlyブロック追加(L52付近)とbiome format --check追加(L55付近)。現在63行→推定85行。"
+  workflow-harness/mcp-server/package.json, modify, "devDependenciesにoxlint/biome/jscpd/@ast-grep/napiの4パッケージ追加"
+  workflow-plugin/package.json, modify, "devDependenciesにeslint-plugin-securityを追加"
+  workflow-harness/mcp-server/src/tools/archgate.ts, modify, "ArchCheckTypeにduplicate_code|ast_grep_patternを追加。runArchGateChecksに2分岐追加。現在157行→推定185行。"
+  workflow-plugin/eslint.config.js, modify, "eslint-plugin-securityのimportとsecurity.configs.recommended追加。現在114行→推定125行。"
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, create, "jscpd CLI実行とJSON出力パースを一元管理するモジュール。推定80-120行。"
+  workflow-harness/mcp-server/src/__tests__/linter-runner.test.ts, create, "linter-runner.tsのユニットテスト。jscpd出力パースと閾値判定のテスト。推定60-80行。"
+
+decisions[6]{id,statement,rationale}:
+  REQ-1, "FR-1 oxlintフック統合はbiome checkブロックと完全独立のif/fiブロックで実装する", "独立ブロックにすることでoxlintの追加・削除がbiome側に影響しない。エラーハンドリングも個別に管理できgraceful degradationの信頼性が向上する。"
+  REQ-2, "FR-2 biome format --checkは既存biome checkブロック内に追記し別ブロックにしない", "同一ツールの2コマンド(check, format --check)は同一条件分岐内で実行する方がcommand -vチェックの重複を避けコードが簡潔になる。タイムアウトは3秒を共有する。"
+  REQ-3, "FR-3 jscpdの実行はlinter-runner.tsに委譲しarchgate.tsは判定ロジックのみ保持する", "archgate.tsは現在157行で200行制限に近い。CLI実行とJSON出力パースをlinter-runner.tsに分離することでarchgate.tsは閾値比較ロジックのみを追加し行数増加を最小化する。"
+  REQ-4, "FR-4 ast-grepは@ast-grep/napi(Node API)を採用しCLI呼び出しを回避する", "@ast-grep/napiはparse/findメソッドで直接ASTマッチ結果をTypeScriptオブジェクトとして取得できる。execSyncによるCLI呼び出しとJSON出力パースが不要になり型安全性と保守性が向上する。"
+  REQ-5, "FR-5 eslint-plugin-securityはsecurity.configs.recommendedをそのまま使用しルール個別設定は行わない", "推奨設定の13ルールは全てwarnレベルで適用される。プロジェクト固有のルール調整は運用開始後にfalse positive発生時に対応する方がコスト効率が高い。"
+  REQ-6, "全NFRの検証はtest_implフェーズのテストケースとして自動化する", "NFR-1(graceful degradation)はモック環境でのexit code検証、NFR-2(タイムアウト)はtimeout値の定数テスト、NFR-3(行数制限)はwc -lベースのarchgateルール、NFR-4(回帰なし)はvitest runで自動検証する。"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-b-gaps-n08-n15/scope-definition.toon, input, 8ツール実用性分析とスコープ決定(5件in-scope)
+  docs/workflows/tier-b-gaps-n08-n15/research.toon, input, 5ツールの技術調査結果(npm情報/統合方針/Magic Number)
+  docs/workflows/tier-b-gaps-n08-n15/requirements.toon, output, 機能要件5件/非機能要件4件/受入基準5件/決定事項6件
+
+next:
+  criticalDecisions: "REQ-3(archgate.ts行数制限によるlinter-runner.ts分離)とREQ-4(ast-grep napi採用)が設計フェーズのアーキテクチャを規定する"
+  readFiles: "archgate.ts, post-tool-lint.sh, eslint.config.js, defs-b.ts, linter-runner.ts(新規)"
+  warnings: "@ast-grep/napiのWindows x64 prebuiltバイナリ動作確認が実装フェーズで必要。jscpd実行時間が10秒超の場合は--min-linesオプションで調整が必要。"
+
+result{phase,status,artifact,lines}: requirements, complete, docs/workflows/tier-b-gaps-n08-n15/requirements.toon, 75

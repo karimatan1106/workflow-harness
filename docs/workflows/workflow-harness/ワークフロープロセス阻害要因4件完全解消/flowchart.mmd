@@ -1,0 +1,130 @@
+%% フローチャート: ワークフロー阻害要因修正（B-1, B-2, B-3）
+%% 本ファイルはB-1ソート処理、B-2 git操作判定、B-3ベースライン記録の3つのフローチャートを含む
+
+%% -------- B-1: discover-tasks.jsのソート処理フロー --------
+
+flowchart TD
+    B1_A["【開始】discoverTasks()関数の呼び出し"]
+    B1_B{".claude/state/workflowsディレクトリが<br/>存在するか？"}
+    B1_C["空配列[]を返却して終了"]
+    B1_D["fs.readdirSync()でディレクトリ一覧を取得"]
+    B1_E["取得したディレクトリリストから<br/>ファイルシステム依存の初期順序でスキャン"]
+    B1_F["isDirectory()で<br/>ディレクトリのみをフィルタリング"]
+    B1_G["正規表現/^\\d{8}_\\d{6}_(.+)$/で<br/>taskId形式をマッチング判定"]
+    B1_H["taskId, taskName, dirを含むオブジェクト<br/>の配列に変換処理を実施"]
+    B1_I["nullを除外してクリーンな配列に"]
+    B1_J["【新規追加】taskIdの降順ソート<br/>localeCompare()を使用して文字列比較"]
+    B1_K["ソート済みのタスク配列を返却"]
+    B1_L["【終了】discoverTasks()完了"]
+
+    B1_A --> B1_B
+    B1_B -->|No| B1_C
+    B1_C --> B1_L
+    B1_B -->|Yes| B1_D
+    B1_D --> B1_E
+    B1_E --> B1_F
+    B1_F --> B1_G
+    B1_G --> B1_H
+    B1_H --> B1_I
+    B1_I --> B1_J
+    B1_J --> B1_K
+    B1_K --> B1_L
+
+%% -------- B-2: analyzeBashCommand()のgit操作判定フロー --------
+
+    subgraph B2_SUB["B-2: analyzeBashCommand git操作判定"]
+    B2_A["【開始】analyzeBashCommand()の呼び出し<br/>コマンド文字列とフェーズを受け取る"]
+    B2_B["コマンドを小文字に正規化して<br/>パターンマッチングの準備"]
+    B2_C["既存のチェックロジックを実行<br/>ファイル編集許可判定など"]
+    B2_D{" 現在のフェーズが<br/>commitフェーズか？"}
+    B2_E{" git add コマンドか？"}
+    B2_F{" git commit コマンドか？"}
+    B2_G{" --amend オプションを含むか？"}
+    B2_H["許可を返却<br/>git addは安全な操作"]
+    B2_I["拒否を返却<br/>理由: git commit --amendは禁止"]
+    B2_J{" git tag コマンドか？"}
+    B2_K["許可を返却<br/>git tagは安全な操作"]
+    B2_L["許可を返却<br/>git commitは安全な操作"]
+    B2_M{" 現在のフェーズが<br/>pushフェーズか？"}
+    B2_N{" git push コマンドか？"}
+    B2_O{" --force または -f<br/>オプションを含むか？"}
+    B2_P["拒否を返却<br/>理由: git push --forceは禁止"]
+    B2_Q["許可を返却<br/>git pushは安全な操作"]
+    B2_R["その他のコマンドまたは<br/>フェーズ外の操作として処理"]
+    B2_S["【終了】analyzeBashCommand()完了<br/>許可/拒否を返却"]
+
+    B2_A --> B2_B
+    B2_B --> B2_C
+    B2_C --> B2_D
+    B2_D -->|Yes| B2_E
+    B2_E -->|Yes| B2_H
+    B2_E -->|No| B2_F
+    B2_F -->|Yes| B2_G
+    B2_G -->|Yes| B2_I
+    B2_G -->|No| B2_L
+    B2_F -->|No| B2_J
+    B2_J -->|Yes| B2_K
+    B2_J -->|No| B2_R
+    B2_D -->|No| B2_M
+    B2_M -->|Yes| B2_N
+    B2_N -->|Yes| B2_O
+    B2_O -->|Yes| B2_P
+    B2_O -->|No| B2_Q
+    B2_N -->|No| B2_R
+    B2_M -->|No| B2_R
+    B2_H --> B2_S
+    B2_I --> B2_S
+    B2_L --> B2_S
+    B2_K --> B2_S
+    B2_Q --> B2_S
+    B2_P --> B2_S
+    B2_R --> B2_S
+    end
+
+%% -------- B-3: captureBaseline()のフェーズ検証フロー --------
+
+    subgraph B3_SUB["B-3: captureBaseline フェーズ検証"]
+    B3_A["【開始】workflowCaptureBaseline()の呼び出し<br/>taskId, totalTests, passedTestsなどを受け取る"]
+    B3_B["taskIdが指定されているか確認<br/>未指定の場合はgetCurrentTaskId()を使用"]
+    B3_C{" taskIdは有効か？"}
+    B3_D["エラー返却<br/>taskIdが見つかりません"]
+    B3_E["taskStateをstateManagerから取得"]
+    B3_F{" taskStateは<br/>存在するか？"}
+    B3_G["エラー返却<br/>タスクが見つかりません"]
+    B3_H["現在のフェーズを取得<br/>taskState.phaseを参照"]
+    B3_I{" フェーズが<br/>research か<br/>testing か？"}
+    B3_J["エラー返却<br/>フェーズが許可範囲外"]
+    B3_K{" testingフェーズでの<br/>記録か？"}
+    B3_L["コンソール警告出力<br/>[警告] testingフェーズでのベースライン記録"]
+    B3_M["推奨メッセージ出力<br/>今後はresearchフェーズでの記録を推奨"]
+    B3_N["TestBaselineオブジェクトを構築<br/>totalTests, passedTests, failedTests, recordedAt"]
+    B3_O["recordedPhaseフィールドに<br/>現在のフェーズを記録"]
+    B3_P["taskState.testBaselineに割り当て"]
+    B3_Q["stateManager.saveTaskState()で<br/>状態をディスクに永続化"]
+    B3_R["成功結果を返却<br/>記録されたフェーズ情報を含める"]
+    B3_S["【終了】workflowCaptureBaseline()完了"]
+
+    B3_A --> B3_B
+    B3_B --> B3_C
+    B3_C -->|No| B3_D
+    B3_D --> B3_S
+    B3_C -->|Yes| B3_E
+    B3_E --> B3_F
+    B3_F -->|No| B3_G
+    B3_G --> B3_S
+    B3_F -->|Yes| B3_H
+    B3_H --> B3_I
+    B3_I -->|いずれでもない| B3_J
+    B3_J --> B3_S
+    B3_I -->|Yes research| B3_N
+    B3_I -->|Yes testing| B3_K
+    B3_K -->|Yes| B3_L
+    B3_L --> B3_M
+    B3_M --> B3_N
+    B3_K -->|No| B3_N
+    B3_N --> B3_O
+    B3_O --> B3_P
+    B3_P --> B3_Q
+    B3_Q --> B3_R
+    B3_R --> B3_S
+    end

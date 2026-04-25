@@ -1,0 +1,89 @@
+phase: research
+taskName: docs-update-template-rewrite
+intent: "docs_updateフェーズテンプレートをworkflow-docs.mdのドキュメント構造(docs/spec/features/, docs/architecture/等)に基づいて改修し、永続的なコードドキュメント生成を可能にする"
+riskScore: 4
+
+currentState:
+  template: "defs-stage6.tsのdocs_update.subagentTemplateは3行の汎用指示のみ。永続ドキュメントパスへの具体的誘導が皆無"
+  model: "haiku — 複雑な仕様理解には不足"
+  registry: "inputFiles=[], outputFile=null, requiredSections=[], minLines=0, bashCategories=[readonly]"
+  dodBypass: "outputFile=nullのためL1/L3/L4チェックが全スキップ。成果物品質保証なし"
+  templateLines: "subagentTemplate全体で12行(空行含む)。他フェーズ(performance_test等)は20-30行"
+
+targetState:
+  template: "workflow-docs.md Section3準拠の永続パス指示を含む詳細テンプレート"
+  model: "sonnet — 仕様理解と構造化に必要"
+  registry: "inputFiles=[先行成果物], outputFile=docs-update.toon, requiredSections=[decisions,artifacts,next], minLines=30"
+  dodEnabled: "L1ファイル存在/L3 TOONパース/L4禁止語・必須キー検証が自動適用"
+  bashCategories: "readonly + implementation(mkdirが必要な場合)"
+
+analysisFindings[8]{id,finding,source,impact}:
+  AF-1, "docs_update.subagentTemplateは## headers使用。buildSubagentPromptのL132で=== に自動変換されるが、テンプレート内の## タスク情報/## 作業内容はL94-96の正規表現で完全除去される", defs-stage6.ts+definitions.ts, "新テンプレートではこれらヘッダーを使わず、=== 形式で直接記述すべき"
+  AF-2, "registry.tsのdocs_updateにoutputFileがないため、checkL1FileExistsはpassed:trueを即返却。checkL3QualityもcheckL4ContentValidationも同様にスキップ", dod-l1-l2.ts+dod-l3.ts+dod-l4-content.ts, "outputFile設定だけでDoD検証パイプライン全体が有効化される"
+  AF-3, "OUTPUT_FILE_TO_PHASEにdocs-update.toonエントリがない。追加すると後続フェーズ(commit等)がACE TOON-firstでdocs_update成果物を参照可能になる", definitions.ts L43-61, "commit/pushフェーズは現在inputFiles=[]なので即効性はないが、将来の拡張で有用"
+  AF-4, "buildSubagentPromptのL109-114でcompact headerが自動生成される。inputFiles/outputFileを設定すればin:/out:行が自動付与される", definitions.ts, "テンプレート内に## 入力/## 出力セクションを書く必要がない"
+  AF-5, "PHASE_SKILLSのdocs_updateは[workflow-phases.md, workflow-docs.md]にルーティング済み。変更不要", handler-shared.ts L67, "サブエージェントはworkflow-docs.mdを自動参照できる"
+  AF-6, "SIZE_SKIP_MAPのsmallにdocs_updateが含まれる。smallタスクではスキップされるためテンプレート改修の影響はmedium/largeのみ", registry.ts L108, "mediumタスクでは実行されるため品質保証は重要"
+  AF-7, "bashCategoriesにimplementationを追加するとmkdir/rm/git addが使用可能になる。docs_updateではmkdir(ディレクトリ作成)のみ必要だが、個別制御は不可", definitions-shared.ts L52, "allowedExtensions=[.toon,.md,.mdx]がファイル種別を制約するため、implementationカテゴリ追加のリスクは限定的"
+  AF-8, "workflow-docs.md Section3のdocs_updateセクションは5項目を列挙: overview.md更新、operations/更新、CHANGELOG.md、README.md、workflowDocsは一時的", workflow-docs.md L118-120, "テンプレートはこの5項目を具体的指示として含める必要がある"
+
+templateDesignPattern:
+  headerStripping: "buildSubagentPromptは ## タスク情報/## 入力/## 出力 を正規表現で除去し、compact header(task:/in:/out:)に置換する"
+  fragmentExpansion: "SUMMARY_SECTION/BASH_CATEGORIES/ARTIFACT_QUALITY/EXIT_CODE_RULEの4フラグメントが{docsDir}/{phase}等の変数を含む"
+  expansionOrder: "フラグメント展開→変数置換の順。フラグメント内の{phase}等も変数置換される"
+  headerConversion: "最終段階で ## → === 、### → == に変換(L132)。テンプレート内のMarkdownヘッダーは全て変換される"
+  toonFirstInjection: "inputFilesがOUTPUT_FILE_TO_PHASEに登録されたファイルを含む場合、TOON入力(ACE)セクションが末尾に追加される"
+
+registryConstraints[6]{field,currentValue,proposedValue,rationale}:
+  model, haiku, sonnet, "永続ドキュメント生成は仕様理解と構造化が必要。haikuでは workflow-docs.mdの複雑なディレクトリ構造を正確に適用できない"
+  inputFiles, "[]", "[{docsDir}/spec.toon, {docsDir}/requirements.toon, {docsDir}/code-review.toon]", "docs_updateは実装結果を反映するため、仕様・要件・コードレビュー結果の参照が必要"
+  outputFile, null, "{docsDir}/docs-update.toon", "DoD検証パイプライン有効化。成果物品質保証の前提条件"
+  requiredSections, "[]", "[decisions, artifacts, next]", "他フェーズと同様の必須TOONキー。L4検証が自動適用される"
+  minLines, 0, 30, "実質的な内容を保証。docs_updateは複数ドキュメントの更新記録を含むため30行は妥当"
+  bashCategories, "[readonly]", "[readonly, implementation]", "永続ドキュメントディレクトリ(docs/spec/等)の初回作成にmkdirが必要。allowedExtensions制約で安全性確保"
+
+templateStructure:
+  section1: "永続ドキュメント更新指示 — workflow-docs.md Section3 docs_updateの5項目を具体的パスとともに列挙"
+  section2: "ドキュメント配置ルール — docs/spec/features/, docs/architecture/, docs/operations/の使い分け"
+  section3: "命名規則 — kebab-case、ターゲット名使用(タスク名でない)、workflow-docs.md Section2準拠"
+  section4: "一時ドキュメント注意 — docs/workflows/は.gitignore対象。永続パスにのみ反映"
+  section5: "先行成果物参照指示 — spec.toon/requirements.toon/code-review.toonから実装内容を抽出"
+
+magicNumbers[5]{value,usage,rationale}:
+  30, "minLines for docs_update output", "他のレポート系フェーズ(code_review=30, design_review=30)と同等。複数ドキュメント更新記録には30行で十分"
+  5, "decisions配列の最小エントリ数", "definitions-shared.tsのSUMMARY_SECTION_RULEで N>=5 と規定。全フェーズ共通"
+  200, "ハーネスソースファイルの行数上限", "CLAUDE.md Sec1で規定。defs-stage6.tsは現在200行で上限到達済み"
+  3, "SUMMARY_SECTION内のrole種別数(spec/design/test/impl/report/diagram)", "artifacts配列のroleフィールドの選択肢。docs_updateではreportを使用"
+  12, "現docs_updateテンプレートの総行数(空行含む)", "他フェーズ(performance_test=22行, acceptance_verification=30行)と比較して極端に短い"
+
+dependencyVersions:
+  node: v22.15.0
+  typescript: 5.9.3
+  npm: 10.9.2
+
+criticalConstraint:
+  defs_stage6_200lines: "defs-stage6.tsは現在200行(行制限到達済み)。docs_updateテンプレート拡充(現12行→推定25-30行)により上限超過する。対策: 他フェーズ(commit/push/ci_verification/deploy)のテンプレートが汎用的で短いため、行数増加は吸収可能。ただしtemplate文字列内の改行は行数にカウントされるため、テンプレートの簡潔さが重要"
+  compact_header_auto: "buildSubagentPromptが## タスク情報/## 入力/## 出力ブロックを自動除去する。新テンプレートではこれらを含めず、作業内容のみを記述する設計が最適"
+  fragment_dependency: "SUMMARY_SECTION内の{docsDir}/{phase}は変数置換で解決される。テンプレート内で直接パスを書く場合も{docsDir}を使用すること"
+
+decisions[7]{id,statement,rationale}:
+  R-1, "テンプレートからbuildSubagentPromptが自動除去するヘッダー(## タスク情報/## 入力/## 出力)を排除し、=== 区切りの作業指示のみ記述する", "AF-1/AF-4の分析結果。compact headerが自動生成されるため重複を避ける。他フェーズのテンプレートは旧形式(## headers)だが、新規設計では変換後の形式に合わせる"
+  R-2, "registry.tsのdocs_updateにoutputFile='{docsDir}/docs-update.toon'を設定し、requiredSections/minLinesを追加する", "AF-2の分析結果。outputFile設定だけでL1/L3/L4検証パイプラインが全て有効化される。追加コード変更なし"
+  R-3, "definitions.tsのOUTPUT_FILE_TO_PHASEに'docs-update.toon': 'docs_update'を追加する", "AF-3の分析結果。ACE TOON-firstの整合性確保。後続フェーズのinputFiles拡張時に自動連携"
+  R-4, "inputFilesにspec.toon/requirements.toon/code-review.toonの3ファイルを設定する", "docs_updateは実装完了後のドキュメント反映フェーズ。仕様(spec)、要件(requirements)、レビュー結果(code-review)の3成果物が内容の根拠となる"
+  R-5, "modelをhaikuからsonnetに昇格する", "workflow-docs.mdの複雑なディレクトリ構造をhaikuが正確に解釈してドキュメント配置する能力に制約がある。sonnetはタスク全体で1回の実行なのでコスト影響は軽微"
+  R-6, "bashCategoriesにimplementationを追加する", "AF-7の分析結果。docs/spec/features/等の永続ディレクトリが初回作成される場合にmkdirが必要。allowedExtensions=[.toon,.md,.mdx]がファイル種別を制約するためリスクは限定的"
+  R-7, "テンプレートにworkflow-docs.md Section3 docs_updateの5項目を具体的パス付きで列挙する", "AF-8の分析結果。現テンプレートの3行汎用指示では永続パスへの誘導が不可能。具体的パス(docs/architecture/overview.md等)を明示することでサブエージェントの出力精度を向上"
+
+artifacts[6]{path,role,summary}:
+  docs/workflows/docs-update-template-rewrite/research.toon, report, "本リサーチ成果物。現状分析・テンプレート設計パターン・registry制約・200行制限影響を記録"
+  docs/workflows/docs-update-template-rewrite/init.sh, impl, "ビルド・テスト・セットアップコマンド"
+  src/phases/defs-stage6.ts, impl, "docs_updateテンプレート改修対象。現200行で上限到達済み"
+  src/phases/registry.ts, impl, "docs_update PhaseConfig更新対象。model/inputFiles/outputFile/requiredSections/minLines/bashCategories変更"
+  src/phases/definitions.ts, impl, "OUTPUT_FILE_TO_PHASEマッピング追加対象"
+  .claude/skills/harness/workflow-docs.md, spec, "永続ドキュメント構造の権威仕様。テンプレート改修の参照元(変更対象外)"
+
+next:
+  criticalDecisions: "R-1(テンプレートheader排除設計), R-2(outputFile設定によるDoD有効化), R-5(model昇格)が設計フェーズの基盤"
+  readFiles: "src/phases/defs-stage6.ts, src/phases/registry.ts, src/phases/definitions.ts, src/phases/definitions-shared.ts, .claude/skills/harness/workflow-docs.md"
+  warnings: "defs-stage6.tsは200行制限に到達済み。テンプレート拡充時は既存テンプレート(commit/push/deploy等)の行数を削減せずに収まるか確認が必要。テンプレート文字列内の各改行が1行としてカウントされる"

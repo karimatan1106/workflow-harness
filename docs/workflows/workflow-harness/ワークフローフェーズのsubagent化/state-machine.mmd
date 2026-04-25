@@ -1,0 +1,39 @@
+stateDiagram-v2
+    [*] --> Idle: タスクなし
+
+    state "Orchestrator状態" as orch {
+        Idle --> PhaseExecution: workflow_start
+
+        state PhaseExecution {
+            [*] --> LaunchSubagent
+            LaunchSubagent --> WaitingResult: Task tool呼び出し
+            WaitingResult --> ProcessResult: subagent完了
+            ProcessResult --> CheckNext: 成果物検証
+            CheckNext --> LaunchSubagent: 次フェーズあり
+            CheckNext --> [*]: 全フェーズ完了
+        }
+
+        PhaseExecution --> Completed: workflow_next(completed)
+        PhaseExecution --> Error: エラー発生
+        Error --> PhaseExecution: 再実行
+    }
+
+    state "subagent状態" as sub {
+        [*] --> ReadInput: 起動
+        ReadInput --> Execute: 入力読み込み完了
+        Execute --> WriteOutput: 作業完了
+        WriteOutput --> [*]: 成果物保存
+        Execute --> Failed: エラー
+        Failed --> [*]: エラー返却
+    }
+
+    state "並列フェーズ" as parallel {
+        [*] --> fork
+        fork --> SubPhase1
+        fork --> SubPhase2
+        fork --> SubPhase3
+        SubPhase1 --> join
+        SubPhase2 --> join
+        SubPhase3 --> join
+        join --> [*]: 全サブフェーズ完了
+    }

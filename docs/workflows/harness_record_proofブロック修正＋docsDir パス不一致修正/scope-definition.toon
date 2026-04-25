@@ -1,0 +1,24 @@
+title: harness_record_proof ブロック修正 + docsDir パス不一致修正
+type: scope_definition
+
+entry_points: pre-tool-guard.sh, manager-read.ts
+target_files: workflow-harness/hooks/pre-tool-guard.sh, workflow-harness/mcp-server/src/state/manager-read.ts
+
+changes[2]{id,description,current,fix}:
+  CHG-1, "is_lifecycle_mcp が harness_* 全般を許可しない", "case文で harness_start/next/back/reset/status/approve の6つだけ明示列挙。harness_record_proof, harness_add_ac, harness_add_rtm 等の録系ツールがオーケストレーターからブロックされる", "case文のパターンを mcp__harness__harness_* ワイルドカードに変更し、harness_ プレフィクスを持つ全MCPツールを一括許可する"
+  CHG-2, "getDocsPath が返す docsDir がプロジェクトルート相対パスだが DoD検証の resolveProjectPath と組み合わせた時にパス不一致が発生しうる", "getDocsPath は docs/workflows/{taskName} を返す。resolveProjectPath は getProjectRoot() (superproject root) を基準に解決する。MCP server の cwd がサブモジュール内の場合、process.env.DOCS_DIR 未設定時にサブモジュール内の docs/workflows/ を指してしまう可能性がある", "getDocsPath 内で resolveProjectPath を使い、常にプロジェクトルート基準の絶対パスを返すように修正する。DoD検証側は既に resolveProjectPath を使っているため、docsDir が絶対パスなら二重解決は発生しない（resolveProjectPath は isAbsolute チェック済み）"
+
+decisions[5]{id,statement,rationale}:
+  SD-1, "harness_* ワイルドカード許可を採用し、個別列挙をやめる", "MCPツール追加のたびに pre-tool-guard.sh を更新する必要がなくなり、保守コストが下がる。harness_ プレフィクスは全てハーネス制御系であり、オーケストレーターが呼べて問題ない"
+  SD-2, "getDocsPath で絶対パスを返す方式を採用する", "DoD検証の resolveProjectPath は isAbsolute チェックを持ち、絶対パスならそのまま返す。docsDir を生成時点で絶対パスにすれば、下流の全消費箇所で一貫したパス解決が保証される"
+  SD-3, "ensureStateDirs や progress-json 等の docsDir 消費箇所は変更不要", "docsDir が絶対パスになっても join() や existsSync() は正常動作する。resolveProjectPath は isAbsolute ガードがあるため二重解決しない"
+  SD-4, "DoD検証側のパス解決ロジックは変更しない", "docsDir生成側を修正すれば消費側は自動的に正しいパスを受け取る。両側を変更するとリグレッションリスクが増す"
+  SD-5, "harness_set_scope等のライフサイクル外ツールもオーケストレーターから呼べるようにする", "harness_set_scopeはharness_start直後に呼ばれるツールでオーケストレーター操作が前提"
+
+impact: pre-tool-guard.sh は bash の case 文1箇所のみ変更。manager-read.ts は getDocsPath 関数の1行変更。既存テストへの影響は docsDir が相対パス前提のテストがあれば修正が必要。変更は2ファイル、合計2箇所の小規模修正。
+
+artifacts[2]{id,path}:
+  A-1, "workflow-harness/hooks/pre-tool-guard.sh"
+  A-2, "workflow-harness/mcp-server/src/state/manager-read.ts"
+
+next: implementation

@@ -1,0 +1,91 @@
+timestamp: 2026-03-28T13:16:40.416Z, axis: phase-time, layer: system, event: phase-enter, detail: scope_definition
+timestamp: 2026-03-28T13:16:40.427Z, axis: phase-time, layer: system, event: phase-exit, detail: scope_definition
+timestamp: 2026-03-28T13:20:26.061Z, axis: phase-time, layer: system, event: phase-enter, detail: research
+timestamp: 2026-03-28T13:20:26.071Z, axis: phase-time, layer: system, event: phase-exit, detail: research
+timestamp: 2026-03-28T13:23:23.816Z, axis: phase-time, layer: system, event: phase-enter, detail: impact_analysis
+timestamp: 2026-03-28T13:23:23.825Z, axis: phase-time, layer: system, event: phase-exit, detail: impact_analysis
+timestamp: 2026-03-28T13:27:15.028Z, axis: phase-time, layer: system, event: phase-enter, detail: requirements
+timestamp: 2026-03-28T13:27:15.037Z, axis: phase-time, layer: system, event: phase-exit, detail: requirements
+timestamp: 2026-03-28T13:29:05.771Z, axis: phase-time, layer: system, event: phase-enter, detail: threat_modeling
+timestamp: 2026-03-28T13:29:05.779Z, axis: phase-time, layer: system, event: phase-exit, detail: threat_modeling
+timestamp: 2026-03-28T13:36:08.219Z, axis: phase-time, layer: system, event: phase-enter, detail: planning
+timestamp: 2026-03-28T13:36:08.228Z, axis: phase-time, layer: system, event: phase-exit, detail: planning
+timestamp: 2026-03-28T13:37:11.810Z, axis: phase-time, layer: system, event: phase-enter, detail: state_machine
+timestamp: 2026-03-28T13:37:11.829Z, axis: phase-time, layer: system, event: phase-exit, detail: state_machine
+timestamp: 2026-03-28T13:38:49.001Z, axis: phase-time, layer: system, event: phase-enter, detail: flowchart
+timestamp: 2026-03-28T13:38:49.023Z, axis: phase-time, layer: system, event: phase-exit, detail: flowchart
+timestamp: 2026-03-28T13:42:24.419Z, axis: phase-time, layer: system, event: phase-enter, detail: ui_design
+timestamp: 2026-03-28T13:42:24.429Z, axis: phase-time, layer: system, event: phase-exit, detail: ui_design
+timestamp: 2026-03-28T13:45:30.652Z, axis: phase-time, layer: system, event: phase-enter, detail: design_review
+timestamp: 2026-03-28T13:45:30.661Z, axis: phase-time, layer: system, event: phase-exit, detail: design_review
+timestamp: 2026-03-28T13:48:30.343Z, axis: phase-time, layer: system, event: phase-enter, detail: test_design
+timestamp: 2026-03-28T13:48:30.364Z, axis: phase-time, layer: system, event: phase-exit, detail: test_design
+timestamp: 2026-03-28T13:49:44.256Z, axis: phase-time, layer: system, event: phase-enter, detail: test_selection
+timestamp: 2026-03-28T13:49:44.273Z, axis: phase-time, layer: system, event: phase-exit, detail: test_selection
+timestamp: 2026-03-28T13:49:56.424Z, axis: phase-time, layer: system, event: phase-enter, detail: test_impl
+timestamp: 2026-03-28T13:49:56.459Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: output_file_exists, passed: true, message: No output file required for this phase
+timestamp: 2026-03-28T13:49:56.460Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: input_files_exist, passed: true, message: All 2 input files exist
+timestamp: 2026-03-28T13:49:56.460Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: spec_paths_exist, passed: true, message: @spec path check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.461Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: exit_code_zero, passed: true, message: Phase test_impl: exit_code_zero exempted via dodExemptions (checked by tdd_red_evidence instead)
+timestamp: 2026-03-28T13:49:56.461Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_quality, passed: true, message: No artifact quality check required for this phase
+timestamp: 2026-03-28T13:49:56.462Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: toon_safety, passed: true, message: No output file for this phase
+timestamp: 2026-03-28T13:49:56.462Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: content_validation, passed: true, message: No content validation required for this phase
+timestamp: 2026-03-28T13:49:56.463Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_completeness, passed: true, message: RTM completeness check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.463Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: rtm_required, passed: true, message: RTM required check not applicable for phase: test_impl
+timestamp: 2026-03-28T13:49:56.464Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_completeness, passed: true, message: AC completeness check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.464Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: invariant_completeness, passed: true, message: Invariant completeness check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.465Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_format, passed: true, message: ac_format check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.466Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: not_in_scope_section, passed: true, message: not_in_scope_section check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.467Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: open_questions_section, passed: true, message: open_questions_section check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.467Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: intent_consistency, passed: true, message: intent_consistency check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.469Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: baseline_required, passed: true, message: Baseline check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.469Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_freshness, passed: true, message: All input artifacts are fresh
+timestamp: 2026-03-28T13:49:56.469Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: delta_entry_format, passed: true, message: Delta Entry format check not applicable for phase: test_impl
+timestamp: 2026-03-28T13:49:56.470Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_design_mapping, passed: true, message: AC→design mapping check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.470Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_tc_mapping, passed: true, message: AC→TC traceability check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.472Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: ac_achievement_table, passed: true, message: AC Achievement Status check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.472Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: tc_coverage, passed: true, message: TC coverage check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.473Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: artifact_drift, passed: true, message: All 3 approved artifacts are unmodified (ART-1)
+timestamp: 2026-03-28T13:49:56.473Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: package_lock_sync, passed: true, message: Package lock sync check only applicable for commit phase
+timestamp: 2026-03-28T13:49:56.473Z, axis: dod-retry, layer: system, event: FAIL, detail: retry:1 checkId: tdd_red_evidence, passed: false, message: TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)
+timestamp: 2026-03-28T13:49:56.474Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_results_exist, passed: true, message: Test results check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.475Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: test_regression_gate, passed: true, message: Regression gate not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.475Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: hearing_user_response, passed: true, message: userResponse check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.476Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dead_references, passed: true, message: Dead reference check not required for phase: test_impl
+timestamp: 2026-03-28T13:49:56.476Z, axis: dod-retry, layer: system, event: PASS, detail: retry:1 checkId: dci_validation, passed: true, message: skip: not a DCI phase
+timestamp: 2026-03-28T13:50:24.801Z, axis: phase-time, layer: system, event: phase-enter, detail: test_impl
+timestamp: 2026-03-28T13:50:24.821Z, axis: phase-time, layer: system, event: phase-exit, detail: test_impl
+timestamp: 2026-03-28T13:53:07.265Z, axis: phase-time, layer: system, event: phase-enter, detail: implementation
+timestamp: 2026-03-28T13:53:07.286Z, axis: phase-time, layer: system, event: phase-exit, detail: implementation
+timestamp: 2026-03-28T13:53:15.037Z, axis: phase-time, layer: system, event: phase-enter, detail: refactoring
+timestamp: 2026-03-28T13:53:15.056Z, axis: phase-time, layer: system, event: phase-exit, detail: refactoring
+timestamp: 2026-03-28T13:53:18.840Z, axis: phase-time, layer: system, event: phase-enter, detail: build_check
+timestamp: 2026-03-28T13:53:18.853Z, axis: phase-time, layer: system, event: phase-exit, detail: build_check
+timestamp: 2026-03-28T13:56:35.683Z, axis: phase-time, layer: system, event: phase-enter, detail: code_review
+timestamp: 2026-03-28T13:56:35.692Z, axis: phase-time, layer: system, event: phase-exit, detail: code_review
+timestamp: 2026-03-28T13:57:13.264Z, axis: phase-time, layer: system, event: phase-enter, detail: testing
+timestamp: 2026-03-28T13:57:13.273Z, axis: phase-time, layer: system, event: phase-exit, detail: testing
+timestamp: 2026-03-28T13:57:23.666Z, axis: phase-time, layer: system, event: phase-enter, detail: regression_test
+timestamp: 2026-03-28T13:57:23.675Z, axis: phase-time, layer: system, event: phase-exit, detail: regression_test
+timestamp: 2026-03-28T14:02:16.826Z, axis: phase-time, layer: system, event: phase-enter, detail: acceptance_verification
+timestamp: 2026-03-28T14:02:16.840Z, axis: phase-time, layer: system, event: phase-exit, detail: acceptance_verification
+timestamp: 2026-03-28T14:05:07.763Z, axis: phase-time, layer: system, event: phase-enter, detail: manual_test
+timestamp: 2026-03-28T14:05:07.772Z, axis: phase-time, layer: system, event: phase-exit, detail: manual_test
+timestamp: 2026-03-28T14:07:01.507Z, axis: phase-time, layer: system, event: phase-enter, detail: security_scan
+timestamp: 2026-03-28T14:07:01.517Z, axis: phase-time, layer: system, event: phase-exit, detail: security_scan
+timestamp: 2026-03-28T14:08:13.668Z, axis: phase-time, layer: system, event: phase-enter, detail: performance_test
+timestamp: 2026-03-28T14:08:13.680Z, axis: phase-time, layer: system, event: phase-exit, detail: performance_test
+timestamp: 2026-03-28T14:11:37.368Z, axis: phase-time, layer: system, event: phase-enter, detail: e2e_test
+timestamp: 2026-03-28T14:11:37.377Z, axis: phase-time, layer: system, event: phase-exit, detail: e2e_test
+timestamp: 2026-03-28T14:12:33.449Z, axis: phase-time, layer: system, event: phase-enter, detail: docs_update
+timestamp: 2026-03-28T14:12:33.459Z, axis: phase-time, layer: system, event: phase-exit, detail: docs_update
+timestamp: 2026-03-28T14:13:45.949Z, axis: phase-time, layer: system, event: phase-enter, detail: commit
+timestamp: 2026-03-28T14:13:45.958Z, axis: phase-time, layer: system, event: phase-exit, detail: commit
+timestamp: 2026-03-28T14:13:56.711Z, axis: phase-time, layer: system, event: phase-enter, detail: push
+timestamp: 2026-03-28T14:13:56.719Z, axis: phase-time, layer: system, event: phase-exit, detail: push
+timestamp: 2026-03-28T14:14:00.713Z, axis: phase-time, layer: system, event: phase-enter, detail: ci_verification
+timestamp: 2026-03-28T14:14:00.719Z, axis: phase-time, layer: system, event: phase-exit, detail: ci_verification
+timestamp: 2026-03-28T14:14:05.033Z, axis: phase-time, layer: system, event: phase-enter, detail: deploy
+timestamp: 2026-03-28T14:14:05.040Z, axis: phase-time, layer: system, event: phase-exit, detail: deploy
+timestamp: 2026-03-28T14:15:14.749Z, axis: phase-time, layer: system, event: phase-enter, detail: health_observation
+timestamp: 2026-03-28T14:15:14.756Z, axis: phase-time, layer: system, event: phase-exit, detail: health_observation

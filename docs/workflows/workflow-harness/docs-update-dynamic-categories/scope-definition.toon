@@ -1,0 +1,44 @@
+phase: scope_definition
+taskName: docs-update-dynamic-categories
+timestamp: 2026-03-08
+riskScore: 5
+
+summary: "docs_updateテンプレートを動的化し、scope_definitionで判定したプロジェクト性質に応じて生成すべきドキュメントカテゴリを自動選択する仕組みをハーネスに組み込む。変更は3層(TaskState型拡張、scope_definitionテンプレート追加、docs_updateテンプレート条件分岐+buildSubagentPrompt注入)に跨る。"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "TaskStateにprojectTraitsオプショナルフィールドを追加する", "プロジェクト性質(hasUI/hasAPI/hasDB等)をフェーズ間で引き継ぐには永続化が必要。scope_definition.toonにのみ記録すると後続フェーズでの参照にファイル読み込みが必要になりコンテキスト効率が悪い"
+  SD-2, "ProjectTraits型はbooleanフラグ6項目(hasUI/hasAPI/hasDB/hasEvents/hasI18n/hasDesignSystem)", "workflow-docs.mdのカテゴリを網羅しつつ最小限のフラグで表現。各フラグがdocs_updateテンプレート内の条件分岐に直接対応"
+  SD-3, "scope_definitionテンプレートにプロジェクト性質判定ステップを追加する", "scope_definitionはプロジェクト全体を調査する最初のフェーズであり性質判定に最適"
+  SD-4, "buildSubagentPromptに{projectTraits}プレースホルダーを追加する", "docs_updateテンプレートがTaskStateのprojectTraitsを参照して動的にカテゴリを選択するにはプロンプトへの注入が必要"
+  SD-5, "docs_updateテンプレートの固定リストを条件分岐リストに置換する", "現在のdocs_updateテンプレートは固定5項目だが、UI有無やAPI有無に応じてscreens/api/database等のカテゴリを追加すべき"
+  SD-6, "harness_set_scopeにprojectTraitsオプショナルパラメータを追加する(後方互換)", "サブエージェントがharness_set_scopeを呼ぶ既存フローに組み込む方が自然"
+  SD-7, "TaskStateSchema(Zod)はpassthrough()を使用しているためprojectTraitsフィールド追加でバリデーション破壊は発生しない", "Zodスキーマの変更は不要"
+
+scopeFiles[6]{path,changeType,rationale}:
+  src/phases/defs-stage1.ts, modify, "scope_definitionテンプレートにプロジェクト性質判定ステップ追加"
+  src/phases/defs-stage6.ts, modify, "docs_updateテンプレートを動的カテゴリ選択に書き換え"
+  src/phases/definitions.ts, modify, "buildSubagentPromptに{projectTraits}展開を追加"
+  src/state/types.ts, modify, "TaskStateにprojectTraits?フィールド追加"
+  src/state/types-core.ts, modify, "ProjectTraits型定義を追加"
+  src/tools/handlers/scope-nav.ts, modify, "handleHarnessSetScopeでprojectTraits保存"
+
+secondaryFiles[3]{path,changeType,rationale}:
+  src/tools/defs-a.ts, modify, "harness_set_scopeのinputSchemaにprojectTraitsプロパティ追加"
+  src/tools/handlers/query.ts, modify, "handleHarnessGetSubphaseTemplateでTaskStateをbuildSubagentPromptに渡す"
+  .claude/skills/harness/workflow-docs.md, read-only, "カテゴリ定義の権威ソース(変更なし)"
+
+outOfScope[4]{item,reason}:
+  "registry.ts PhaseConfig型変更", "projectTraitsはPhaseConfigではなくTaskStateに保存"
+  "definitions-shared.ts PhaseDefinition型変更", "テンプレートフラグメントにprojectTraits関連追加なし"
+  "manager.ts updateScopeメソッド変更", "既存のupdateScope内でprojectTraitsを保存するだけで新メソッド不要"
+  "テストファイル設計", "test_designフェーズで設計"
+
+dependencyChain: "types-core.ts(ProjectTraits型) -> types.ts(TaskState.projectTraits) -> scope-nav.ts(API受付) -> definitions.ts(プロンプト注入) -> defs-stage6.ts(テンプレート参照) -> defs-stage1.ts(判定指示)"
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/docs-update-dynamic-categories/scope-definition.toon, report, "scope_definitionフェーズの影響範囲定義。7ファイル変更で3層の後方互換変更"
+
+next:
+  criticalDecisions: "SD-1(TaskState拡張)とSD-4(buildSubagentPromptシグネチャ変更)が設計の分岐点。SD-6(harness_set_scope API拡張)は後方互換だが呼び出し元への影響確認が必要"
+  readFiles: "src/state/manager.ts, src/tools/handlers/query.ts, src/tools/defs-a.ts"
+  warnings: "buildSubagentPromptのシグネチャ変更は全呼び出し元の修正が必要。defs-stage1.tsは194行で余裕が少ない"

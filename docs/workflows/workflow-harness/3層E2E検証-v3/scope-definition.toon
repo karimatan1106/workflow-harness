@@ -1,0 +1,17 @@
+task: 3層E2E検証-v3
+intent: "getProjectRoot修正後のDoD成果物チェック動作検証。harness_nextがforceTransition無しで通るか確認"
+scope-files: .agent/handoff/HANDOFF.toon
+size: small
+verification-targets: "existsSyncの絶対パス解決、delegate_work経由の作業実行、Agent除外ガード"
+fixes-under-test: "path.normalize + join(getProjectRoot()) (e4a663d)、Agent除外 (e4a663d)"
+
+decisions[5]{id,statement,rationale}:
+  SD-1, "HANDOFF.toonに検証結果を記録", "3層E2E動作の証跡を残すため"
+  SD-2, "forceTransition無しでDoD通過を確認", "path.normalize修正の検証"
+  SD-3, "delegate_work経由で全作業実行", "Agent除外ガードの動作確認"
+  SD-4, "haiku modelで高速実行", "delegate_work起動時間短縮の検証"
+  SD-5, "スモークテスト後にタスクリセット", "テストデータのクリーンアップ"
+
+artifacts: scope-definition.toon
+
+next: research

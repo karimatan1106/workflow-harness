@@ -1,0 +1,72 @@
+stateDiagram-v2
+    [*] --> Start
+
+    Start --> OrchestratorHoldToken: ワークフロー開始
+
+    OrchestratorHoldToken: Orchestrator<br/>sessionToken保有<br/>フェーズ制御準備完了
+
+    OrchestratorHoldToken --> RequirementsApprovalPhase: requirements<br/>フェーズ進入
+
+    RequirementsApprovalPhase: requirements<br/>subagent実行<br/>→ workflow_approve<br/>呼び出し必要
+
+    RequirementsApprovalPhase --> DesignReviewPhase: ユーザー承認<br/>完了
+
+    DesignReviewPhase: design_review<br/>subagent実行<br/>→ workflow_approve<br/>呼び出し必要
+
+    DesignReviewPhase --> TestDesignPhase: ユーザー承認<br/>完了
+
+    TestDesignPhase: test_design<br/>subagent実行<br/>→ workflow_approve<br/>呼び出し必要
+
+    TestDesignPhase --> CodeReviewPhase: ユーザー承認<br/>完了
+
+    CodeReviewPhase: code_review<br/>subagent実行<br/>→ workflow_approve<br/>呼び出し必要
+
+    CodeReviewPhase --> TestingPhaseInit: ユーザー承認<br/>完了
+
+    TestingPhaseInit: testing<br/>フェーズ開始<br/>subagentに<br/>sessionToken受け渡し
+
+    TestingPhaseInit --> TestingSubagentActive: subagent起動
+
+    TestingSubagentActive: testingサブエージェント<br/>実行中<br/>(workflow_next等<br/>フェーズ制御ツール禁止)
+
+    TestingSubagentActive --> RecordTestResult: テスト実行完了<br/>workflow_record_test_result<br/>呼び出し
+
+    RecordTestResult: テスト結果を記録<br/>(100文字以上の<br/>生の標準出力)<br/>sessionToken使用
+
+    RecordTestResult --> OrchestratorResumeControl: subagent処理終了<br/>制御をOrchestrator<br/>に返却
+
+    OrchestratorResumeControl: Orchestrator<br/>workflow_next<br/>呼び出し準備
+
+    OrchestratorResumeControl --> RegressionTestPhaseInit: regression_test<br/>フェーズ開始<br/>subagentに<br/>sessionToken受け渡し
+
+    RegressionTestPhaseInit: regression_test<br/>フェーズ開始<br/>subagentに<br/>sessionToken受け渡し
+
+    RegressionTestPhaseInit --> RegressionSubagentActive: subagent起動
+
+    RegressionSubagentActive: regressionテストサブエージェント<br/>実行中<br/>(workflow_next等<br/>フェーズ制御ツール禁止)<br/>(並列verification<br/>自律実行禁止)
+
+    RegressionSubagentActive --> RecordRegressionResult: リグレッション実行完了<br/>workflow_record_test_result<br/>呼び出し
+
+    RecordRegressionResult: テスト結果を記録<br/>(既知バグも<br/>workflow_record_known_bug<br/>で記録可)<br/>sessionToken使用
+
+    RecordRegressionResult --> RegressionSubagentEnd: subagent処理終了<br/>制御をOrchestrator<br/>に返却
+
+    RegressionSubagentEnd: Orchestrator<br/>workflow_next<br/>呼び出し準備
+
+    RegressionSubagentEnd --> ParallelVerificationPhase: parallel_verification<br/>フェーズ開始
+
+    ParallelVerificationPhase: 並列検証<br/>4サブフェーズ<br/>manual_test<br/>security_scan<br/>performance_test<br/>e2e_test
+
+    ParallelVerificationPhase --> DocsUpdate: docs_update<br/>フェーズ開始
+
+    DocsUpdate --> CommitPhase: commit<br/>フェーズ開始
+
+    CommitPhase --> PushPhase: push<br/>フェーズ開始<br/>(ユーザー確認必要)
+
+    PushPhase --> CIVerification: ci_verification<br/>フェーズ開始
+
+    CIVerification --> DeployPhase: deploy<br/>フェーズ開始
+
+    DeployPhase --> End: ワークフロー完了
+
+    End --> [*]

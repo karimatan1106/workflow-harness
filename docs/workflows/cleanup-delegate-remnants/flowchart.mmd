@@ -1,0 +1,31 @@
+%% flowchart.mmd - cleanup-delegate-remnants
+%% taskId: 7005fe0b-7a44-4496-9bd1-4bd7218944c2
+
+%% decisions
+%% D1: Are there remaining delegate_work / coordinator references after grep check?
+%% D2: Do all vitest tests pass after cleanup?
+%% D3: Is tool-gate.js modification complete and valid?
+%% D4: Is stream-progress-tracker.ts modification complete and valid?
+%% D5: Are all dist/ obsolete files successfully removed?
+
+flowchart TD
+    A([Start]) --> B[Modify tool-gate.js: remove delegate references]
+    B --> C{D3: tool-gate.js valid?}
+    C -- Yes --> D[Modify stream-progress-tracker.ts: remove delegate references]
+    C -- No --> B
+    D --> E{D4: stream-progress-tracker.ts valid?}
+    E -- Yes --> F[Delete obsolete files from dist/]
+    E -- No --> D
+    F --> G{D5: dist/ cleanup complete?}
+    G -- Yes --> H[Run npm run build]
+    G -- No --> F
+    H --> I[Grep remaining delegate_work and coordinator references]
+    I --> J{D1: Remaining references found?}
+    J -- Yes --> K[Apply additional fixes to flagged files]
+    K --> I
+    J -- No --> L[Run vitest test suite]
+    L --> M{D2: All tests pass?}
+    M -- Yes --> N([Done])
+    M -- No --> O[Analyze test failures]
+    O --> P[Apply targeted fixes]
+    P --> L

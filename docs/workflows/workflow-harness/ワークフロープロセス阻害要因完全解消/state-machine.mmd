@@ -1,0 +1,84 @@
+stateDiagram-v2
+    [*] --> InitializeScript: スクリプト開始
+
+    InitializeScript: スクリプト初期化
+    InitializeScript --> DetectProjectRoot: ファイル検出処理開始
+
+    DetectProjectRoot: プロジェクトルート検索
+    DetectProjectRoot --> ProjectRootFound: ルート特定成功
+    DetectProjectRoot --> ProjectRootError: ルート検出失敗
+
+    ProjectRootFound: ルートパス確定
+    ProjectRootFound --> ApplyN2Fixes: N-2修正への遷移
+
+    ProjectRootError: エラー状態（ルート未検出）
+    ProjectRootError --> TerminateWithError: スクリプト終了
+
+    ApplyN2Fixes: N-2: phase-edit-guard.js修正
+    ApplyN2Fixes --> ApplyN2_Bash: N-2-1: Bashホワイトリスト違反
+
+    ApplyN2_Bash: console.log→console.error変更
+    ApplyN2_Bash --> ApplyN2_FailClosed: N-2-2: Fail Closedブロック
+
+    ApplyN2_FailClosed: catchブロックにメッセージ追加
+    ApplyN2_FailClosed --> ApplyN2_StdinError: N-2-3: stdinエラーメッセージ
+
+    ApplyN2_StdinError: stdin.on('error')に出力追加
+    ApplyN2_StdinError --> ApplyN2_JSONError: N-2-4: JSONパースエラー
+
+    ApplyN2_JSONError: try-catchブロックにメッセージ追加
+    ApplyN2_JSONError --> ValidateN2Results: N-2検証へ移行
+
+    ValidateN2Results: N-2修正の成功判定
+    ValidateN2Results --> N2Success: 4箇所全て適用成功
+    ValidateN2Results --> N2SkipPartial: 1箇所以上スキップ
+
+    N2Success: N-2修正完了
+    N2Success --> ApplyN4Fixes: N-4修正への遷移
+
+    N2SkipPartial: N-2修正の部分失敗
+    N2SkipPartial --> ApplyN4Fixes: 続行（警告）
+
+    ApplyN4Fixes: N-4: enforce-workflow.js修正
+    ApplyN4Fixes --> ApplyN4_TestDesign: N-4-1: test_designフェーズ
+
+    ApplyN4_TestDesign: 拡張子リスト更新
+    ApplyN4_TestDesign --> ApplyN4_TestImpl: N-4-2: test_implフェーズ
+
+    ApplyN4_TestImpl: 拡張子リスト更新
+    ApplyN4_TestImpl --> ApplyN4_Testing: N-4-3: testingフェーズ
+
+    ApplyN4_Testing: 拡張子リスト更新
+    ApplyN4_Testing --> ApplyN4_RegressionTest: N-4-4: regression_testフェーズ
+
+    ApplyN4_RegressionTest: 拡張子リスト更新
+    ApplyN4_RegressionTest --> ApplyN4_E2ETest: N-4-5: e2e_testフェーズ
+
+    ApplyN4_E2ETest: 拡張子リスト更新
+    ApplyN4_E2ETest --> ValidateN4Results: N-4検証へ移行
+
+    ValidateN4Results: N-4修正の成功判定
+    ValidateN4Results --> N4Success: 5フェーズ全て適用成功
+    ValidateN4Results --> N4SkipPartial: 1フェーズ以上スキップ
+
+    N4Success: N-4修正完了
+    N4Success --> FinalValidation: 最終検証フェーズ
+
+    N4SkipPartial: N-4修正の部分失敗
+    N4SkipPartial --> FinalValidation: 続行（警告）
+
+    FinalValidation: 全修正結果の総括
+    FinalValidation --> AllApplied: 全修正適用成功
+    FinalValidation --> PartialApplied: 一部修正の適用失敗
+
+    AllApplied: 最終成功状態
+    AllApplied --> ScriptCompletion: スクリプト正常終了
+
+    PartialApplied: 部分成功状態
+    PartialApplied --> ScriptCompletion: スクリプト終了
+
+    ScriptCompletion: fix-all-n.js処理完了
+    ScriptCompletion --> [*]: 完了
+
+    TerminateWithError: エラー終了
+    TerminateWithError --> [*]: 失敗で終了

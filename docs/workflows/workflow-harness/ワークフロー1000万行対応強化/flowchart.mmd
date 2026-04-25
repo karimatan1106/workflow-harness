@@ -1,0 +1,228 @@
+%% フローチャート: ワークフロー1000万行対応強化
+%% テスト結果記録、設計検証、スコープ設定、監査ログの4つの処理フロー
+%%
+%% @spec docs/workflows/ワ-クフロ-1000万行対応強化/spec.md
+
+graph TD
+    %% ==================== 1. テスト結果記録の処理フロー ====================
+    %% REQ-1: workflowRecordTestResult の検証フロー
+
+    A1["🟢<br/>START<br/>workflowRecordTestResult呼び出し"] -->|exitCode, output| A2{"タスク存在<br/>チェック"}
+
+    A2 -->|失敗| A3["❌ エラー<br/>タスクが見つかりません"]
+    A3 --> A99["RETURN<br/>error"]
+
+    A2 -->|成功| A4{"フェーズ<br/>チェック<br/>testing or<br/>regression_test?"}
+
+    A4 -->|No| A5["❌ エラー<br/>違うフェーズです"]
+    A5 --> A99
+
+    A4 -->|Yes| A6{"exitCode<br/>パラメータ<br/>チェック"}
+
+    A6 -->|失敗| A7["❌ エラー<br/>exitCodeは数値必須"]
+    A7 --> A99
+
+    A6 -->|成功| A8{"output<br/>存在<br/>チェック<br/>50文字以上?"}
+
+    A8 -->|失敗| A9["❌ エラー<br/>output: 50文字以上必須"]
+    A9 --> A99
+
+    A8 -->|成功| A10["📋 整合性検証<br/>validateTestOutputConsistency実行"]
+
+    A10 --> A11{"exitCode=0かつ<br/>失敗キーワード<br/>有?<br/>FAIL/ERROR/×"}
+
+    A11 -->|Yes| A12["❌ ブロック<br/>AC-1.1違反<br/>失敗キーワードがあるのに<br/>exitCode=0"]
+    A12 --> A99
+
+    A11 -->|No| A13{"exitCode≠0かつ<br/>成功メッセージ<br/>のみ?<br/>all tests passed等"}
+
+    A13 -->|Yes| A14["❌ ブロック<br/>AC-1.2違反<br/>成功メッセージなのに<br/>exitCode≠0"]
+    A14 --> A99
+
+    A13 -->|No| A15{"テストフレームワーク<br/>構造<br/>検出?<br/>PASS/✓/Tests等"}
+
+    A15 -->|No| A16["⚠️ 警告<br/>AC-1.3<br/>フレームワーク構造<br/>なし"]
+    A16 --> A17["✅ 成功<br/>警告のみで続行"]
+
+    A15 -->|Yes| A18{"エラーパターン<br/>検出?<br/>スタックトレース等"}
+
+    A18 -->|Yes| A19["⚠️ 警告<br/>エラーパターン<br/>検出"]
+    A19 --> A17
+
+    A18 -->|No| A17
+
+    A17 --> A20["📊 テスト件数抽出<br/>extractTestCounts実行"]
+    A20 --> A21["💾 記録<br/>TaskState.testResults[]<br/>に追記"]
+    A21 --> A22["✅ RETURN<br/>成功"]
+    A22 --> A100["🔵 END"]
+
+
+    %% ==================== 2. 設計-実装整合性チェック ====================
+    %% REQ-2: performDesignValidation の検証フロー
+
+    B1["🟢<br/>START<br/>implementationフェーズ開始"] -->|spec.md等を読み込み| B2{"ワークフロー<br/>ディレクトリ<br/>存在?"}
+
+    B2 -->|No| B3["⚠️ 警告<br/>検証スキップ"]
+    B3 --> B100["RETURN<br/>passed=true"]
+
+    B2 -->|Yes| B4{"設計書<br/>存在チェック<br/>spec.md<br/>state-machine.mmd<br/>flowchart.mmd"}
+
+    B4 -->|全て無し| B5["⚠️ 警告<br/>設計書がない"]
+    B5 --> B100
+
+    B4 -->|1つ以上有| B6["📋 spec.md 解析<br/>parseSpec実行"]
+    B6 --> B7["🔍 クラス/メソッド抽出"]
+
+    B7 --> B8["🔬 AST解析<br/>analyzeClasses実行"]
+    B8 --> B9["🔬 AST解析<br/>analyzeMethods実行"]
+
+    B9 --> B10{"空のクラス<br/>検出?"}
+    B10 -->|Yes| B11["⚠️ 警告<br/>空のクラス"]
+    B11 --> B12{"単なるreturn<br/>のみメソッド<br/>検出?"}
+
+    B10 -->|No| B12
+
+    B12 -->|Yes| B13["⚠️ 警告<br/>空実装メソッド"]
+    B13 --> B14["📋 state-machine.mmd 解析<br/>analyzeStateMachine実行"]
+
+    B12 -->|No| B14
+
+    B14 --> B15["🔍 状態・遷移抽出<br/>nodeCount, edgeCount"]
+    B15 --> B16{"ノード数>0かつ<br/>エッジ数=0?"}
+
+    B16 -->|Yes| B17["⚠️ 警告<br/>遷移が定義されていない"]
+    B17 --> B18{"孤立ノード<br/>検出?"}
+
+    B16 -->|No| B18
+
+    B18 -->|Yes| B19["⚠️ 警告<br/>孤立したノード存在"]
+    B19 --> B20["📋 flowchart.mmd 解析<br/>analyzeFlowchart実行"]
+
+    B18 -->|No| B20
+
+    B20 --> B21["🔍 ノード・エッジ抽出"]
+    B21 --> B22{"エッジ数>0か<br/>ノード数=0?"}
+
+    B22 -->|No| B23["❌ ミッシング<br/>フローチャート接続なし"]
+    B23 --> B24["❌ RETURN<br/>passed=false<br/>missingItems追加"]
+
+    B22 -->|Yes| B25["✅ 成功<br/>全検証完了"]
+    B25 --> B26["📊 サマリー計算<br/>total, implemented,<br/>missing"]
+    B26 --> B27{"missingItems<br/>数=0?"}
+
+    B27 -->|Yes| B28["✅ RETURN<br/>passed=true"]
+    B28 --> B101["🔵 END"]
+
+    B27 -->|No| B24
+
+
+    %% ==================== 3. スコープ設定と依存解析 ====================
+    %% REQ-3: workflowSetScope と analyzeDependencies の流れ
+
+    C1["🟢<br/>START<br/>workflowSetScope呼び出し"] -->|taskId, files, dirs| C2{"タスク存在<br/>チェック"}
+
+    C2 -->|失敗| C3["❌ エラー<br/>タスクが見つかりません"]
+    C3 --> C99["RETURN<br/>error"]
+
+    C2 -->|成功| C4{"フェーズ<br/>チェック<br/>research<br/>requirements<br/>planning?"}
+
+    C4 -->|No| C5["❌ エラー<br/>違うフェーズです"]
+    C5 --> C99
+
+    C4 -->|Yes| C6{"files or dirs<br/>空でない?"}
+
+    C6 -->|空| C7["❌ エラー<br/>スコープなし"]
+    C7 --> C99
+
+    C6 -->|有| C8["📋 ファイル存在チェック<br/>fs.existsSync実行"]
+
+    C8 --> C9{"全ファイル<br/>存在?"}
+
+    C9 -->|No| C10["❌ エラー<br/>存在しないファイル"]
+    C10 --> C99
+
+    C9 -->|Yes| C11["📋 ディレクトリ存在チェック<br/>fs.existsSync実行"]
+
+    C11 --> C12{"全ディレクトリ<br/>存在かつ<br/>ディレクトリ?"}
+
+    C12 -->|No| C13["❌ エラー<br/>存在しないディレクトリ"]
+    C13 --> C99
+
+    C12 -->|Yes| C14["🔍 依存関係解析<br/>analyzeDependencies実行"]
+
+    C14 --> C15["📋 import文解析<br/>extractImports実行"]
+    C15 --> C16["🔗 import元のパス解決<br/>resolveImportPath実行"]
+
+    C16 --> C17["📊 スコープ外依存検出<br/>outOfScopeDeps抽出"]
+
+    C17 --> C18{"スコープ外<br/>依存<br/>有?"}
+
+    C18 -->|Yes| C19["⚠️ 警告<br/>スコープ外依存"]
+    C19 --> C20["💡 推奨スコープを<br/>提案"]
+    C20 --> C21["✅ 続行<br/>警告のみ"]
+
+    C18 -->|No| C21
+
+    C21 --> C22["💾 記録<br/>TaskState.scope<br/>に設定"]
+    C22 --> C23["✅ RETURN<br/>成功"]
+    C23 --> C102["🔵 END"]
+
+
+    %% ==================== 4. 監査ログ記録の処理フロー ====================
+    %% REQ-4: AuditLogger と フック統合
+
+    D1["🟢<br/>START<br/>フック実行<br/>phase-edit-guard等"] -->|環境変数取得| D2{"SKIP_*<br/>環境変数<br/>チェック<br/>SKIP_PHASE_GUARD等"}
+
+    D2 -->|有効| D3["📋 バイパス検出<br/>process.env参照"]
+    D3 --> D4["📝 ログエントリ作成<br/>timestamp, event,<br/>variable, taskId"]
+
+    D2 -->|無効| D5["✅ 通常処理継続<br/>フック本体実行"]
+
+    D4 --> D6["💾 ログ書き込み<br/>fs.appendFileSync"]
+    D6 --> D7{"ログ書き込み<br/>成功?"}
+
+    D7 -->|失敗| D8["⚠️ エラーログ<br/>標準エラー出力"]
+    D8 --> D9["⏭️ 継続<br/>本処理に影響なし"]
+
+    D7 -->|成功| D10["📊 ファイルサイズ<br/>チェック"]
+    D10 --> D11{".jsonlサイズ<br/>10MB超?"}
+
+    D11 -->|Yes| D12["🔄 ローテーション実行"]
+    D12 --> D13["📌 既存世代をシフト<br/>.4→.5, .3→.4..."]
+    D13 --> D14["🗑️ 最古世代削除<br/>.5削除"]
+    D14 --> D15["📝 現在ログを<br/>.1にリネーム"]
+    D15 --> D16{"ローテーション<br/>成功?"}
+
+    D16 -->|失敗| D17["⚠️ エラーログ<br/>標準エラー出力"]
+    D17 --> D9
+
+    D16 -->|成功| D18["✅ ローテーション完了"]
+    D18 --> D9
+
+    D11 -->|No| D9
+
+    D5 --> D19["📊 バイパス回数<br/>カウント<br/>過去1時間"]
+    D19 --> D20{"バイパス<br/>回数>10?"}
+
+    D20 -->|Yes| D21["⚠️ 警告<br/>バイパス閾値超過"]
+    D21 --> D22["📝 閾値超過ログ<br/>記録"]
+    D22 --> D99A["✅ RETURN<br/>処理継続"]
+
+    D20 -->|No| D99A
+
+    D99A --> D103["🔵 END"]
+
+    %% スタイル定義
+    classDef startEnd fill:#90EE90,stroke:#228B22,stroke-width:3px,color:#000
+    classDef process fill:#87CEEB,stroke:#0047AB,stroke-width:2px,color:#000
+    classDef decision fill:#FFD700,stroke:#FF8C00,stroke-width:2px,color:#000
+    classDef error fill:#FF6B6B,stroke:#8B0000,stroke-width:2px,color:#fff
+    classDef warning fill:#FFB347,stroke:#FF6347,stroke-width:2px,color:#000
+    classDef success fill:#98FB98,stroke:#228B22,stroke-width:2px,color:#000
+
+    class A1,B1,C1,D1,A100,B101,C102,D103 startEnd
+    class A2,A4,A6,A8,A11,A13,A15,A18,B2,B4,B10,B12,B16,B18,B22,B27,C2,C4,C6,C9,C12,C18,D2,D7,D11,D16,D20 decision
+    class A3,A5,A7,A9,A12,A14,B3,B5,C3,C5,C7,C10,C13 error
+    class A10,A20,A21,B6,B7,B8,B9,B14,B15,B20,B21,B26,C8,C11,C14,C15,C16,C17,D3,D4,D6,D10,D12,D13,D14,D15,D19,D21 process
+    class A16,A19,B11,B13,B17,B19,B23,C19,C20,D8,D17,D21 warning
+    class A17,A22,B25,B28,C21,C23,D9,D18 success

@@ -1,0 +1,42 @@
+phase: test_impl
+taskName: harness-10m-resilience
+timestamp: 2026-03-09
+riskScore: 6
+
+summary: "10M耐性6本柱(P1-P6)のTDDテストコード実装(Red)。3テストファイル計21テストケースを作成しファイル存在を確認済み。P1(skippedPhases除外)5テスト中3pass/2fail、P2+P4(成果物先行チェック)7テスト中4pass/3fail、P3+P5+P6(テンプレート関連)9テスト中3pass/6fail。全ファイルTypeScriptコンパイル成功、未実装機能はdynamic import+try/catchでランタイム失敗を実現。"
+
+testFiles[3]{path,tests,passed,failed}:
+  src/__tests__/10m-resilience-p1.test.ts, 5, 3, 2
+  src/__tests__/10m-resilience-p2p4.test.ts, 7, 4, 3
+  src/__tests__/10m-resilience-p3p5p6.test.ts, 9, 3, 6
+
+redEvidence[3]{file,failCount,failingTests}:
+  10m-resilience-p1.test.ts, 2, "TC-AC1-01(skippedPhasesによるスキップ未実装で全ファイル検証される) / TC-AC1-03(同上)"
+  10m-resilience-p2p4.test.ts, 3, "TC-AC2-01(成果物不在の先行チェック未実装) / TC-AC4-01(サイズチェック未実装) / TC-AC4-03(0バイトチェック未実装)"
+  10m-resilience-p3p5p6.test.ts, 6, "TC-AC3-01(PROCEDURE_ORDER未展開) / TC-AC3-02(PROCEDURE_ORDER_RULE未定義) / TC-AC5-01(Read指示除去未実装) / TC-AC6-01(loadTraitCategories未定義) / TC-AC6-02(同上) / TC-AC6-03(同上)"
+
+designDecisions[6]{id,statement,rationale}:
+  TI-1, "未実装関数はdynamic import+any castでアクセスしコンパイルエラーを回避", "static importで存在しないexportを参照するとTypeScriptコンパイルが失敗しテスト実行自体ができない"
+  TI-2, "P1テストはcheckInputFilesExistを直接呼び出しskippedPhases/fileToPhaseMapを追加引数として渡す", "TD-2に準拠。現在のシグネチャは3引数だが将来4-5引数に拡張予定のため(checkInputFilesExist as any)でcall"
+  TI-3, "P2+P4テストはhandler-test-setup.tsの統合テストパターンを使用", "TD-3に準拠。setupHandlerTest/call/advanceUntilPhaseを再利用し成果物先行チェックをhandleHarnessNext経由で検証"
+  TI-4, "P6テストのprocess.chdirをconfigDirパラメータ方式に変更", "vitestがworkerスレッドで実行されprocess.chdirがERR_WORKER_UNSUPPORTED_OPERATIONとなるため"
+  TI-5, "P5テストはdesign_review/implementationのbuildSubagentPrompt出力から読み込んで/ファイルを読みパターンの不在を検証", "OQ-2で特定済みのdefs-stage3 L24/defs-stage4 L52の2行が除去対象"
+  TI-6, "TC-AC1-05(inputFiles空フェーズ)とTC-AC2-04(forceTransition)は現行コードで既にpassする正常系テスト", "Red phaseでも既存動作の回帰テストは即座にpassすることが正しい"
+
+acCoverage[6]{ac,testIds,status}:
+  AC-1, "TC-AC1-01/02/03/04/05", "2 failed (skippedPhases未実装)"
+  AC-2, "TC-AC2-01/02/03/04", "1 failed (先行チェック未実装)"
+  AC-3, "TC-AC3-01/02/03", "2 failed (PROCEDURE_ORDER_RULE未定義)"
+  AC-4, "TC-AC4-01/02/03", "2 failed (サイズチェック未実装)"
+  AC-5, "TC-AC5-01/02/03", "2 failed (Read指示除去regex未実装)"
+  AC-6, "TC-AC6-01/02/03", "2 failed (loadTraitCategories未定義)"
+
+artifacts[3]{path,role,summary}:
+  src/__tests__/10m-resilience-p1.test.ts, test, "P1 skippedPhasesによるinputFiles除外テスト(5ケース/103行)"
+  src/__tests__/10m-resilience-p2p4.test.ts, test, "P2+P4成果物存在+サイズ先行チェックテスト(7ケース/181行)"
+  src/__tests__/10m-resilience-p3p5p6.test.ts, test, "P3+P5+P6テンプレート関連テスト(9ケース/196行)"
+
+next:
+  criticalDecisions: "TI-4(configDirパラメータ方式)はP6実装時にloadTraitCategoriesのシグネチャに影響する。spec.toonのp6Spec.signatureにconfigDir?:stringパラメータ追加が必要"
+  readFiles: "src/gates/dod-l1-l2.ts(P1実装対象), src/tools/handlers/lifecycle.ts(P2+P4実装対象), src/phases/definitions-shared.ts(P3実装対象), src/phases/definitions.ts(P3+P5+P6実装対象)"
+  warnings: "P6のloadTraitCategoriesはspec.toonではprocess.cwd()ベースだがテスト環境の制約でconfigDirパラメータ方式に変更した。implementation時にspec.toonを更新しシグネチャを合わせること"

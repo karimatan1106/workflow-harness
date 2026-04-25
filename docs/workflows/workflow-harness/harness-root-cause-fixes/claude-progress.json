@@ -1,0 +1,17 @@
+{
+  "taskId": "d56bdfee-35d7-406b-82b2-860381e95d26",
+  "taskName": "harness-root-cause-fixes",
+  "currentPhase": "research",
+  "completedPhases": [
+    "scope_definition"
+  ],
+  "completedCount": 1,
+  "updatedAt": "2026-03-11T21:33:09.811Z",
+  "transitions": [
+    {
+      "from": "scope_definition",
+      "to": "research",
+      "timestamp": "2026-03-11T21:33:09.811Z"
+    }
+  ]
+}

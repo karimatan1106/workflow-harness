@@ -1,0 +1,74 @@
+phase: research
+task: rtm-intent-gate
+status: complete
+
+summary: "checkOpenQuestionsは存在確認のみで内容検査なし（存在すればpassed:true）。RTMチェーンはcode_review/acceptance_verification/completedの3フェーズのみステータス検査し、requirements→design_review→test_designでのF-NNN/AC-N ID連鎖検証は実装なし。harness_approveのIA-1ブロックはopenQuestions空配列または全項目'なし'の場合のみ通過する判定ロジックを持つが、harness_nextのDoDゲートには同等の判定がない。requirementsテンプレートはOPEN_QUESTIONSを「空の場合はなし」と指示するのみで、IA-1ループの強制力がない。"
+
+codeAnalysis[9]{file,finding,lines}:
+  "gates/dod-l4-requirements.ts", "checkOpenQuestions: 'openQuestions' in toon の存在確認のみ。値が配列でも非空配列でもpassed:true。DoDゲートとしてIA-1を強制しない", "110-130"
+  "tools/handlers/approval.ts", "IA-1ブロック実装: oq.filter(q => q && String(q) !== 'なし')でitems.length !== 0時にrespondError。文字列'なし'のみをフィルタ。オブジェクト形式{id,question}への対応は JSON.stringify経由で文字列比較", "35-52"
+  "gates/dod-l3.ts", "checkRTMCompleteness: RTM_CHECK_PHASES=['code_review','acceptance_verification','completed']。RTM_PHASE_MIN_STATUS={code_review:'implemented', acceptance_verification:'tested', completed:'verified'}。rtmEntriesが空の場合はスキップ（passed:true）", "37-58"
+  "gates/dod-l4-ia.ts", "checkAcDesignMapping: design_reviewフェーズのみ。state.acceptanceCriteriaとacDesignMappingのrawJSON突合でunmapped AC-N IDを検出。F-NNNとAC-Nの連鎖は非実装", "12-38"
+  "gates/dod-l4-ia.ts", "checkAcTcMapping: test_designフェーズのみ。acTcMappingキーの存在確認のみ。AC-N件数との突合なし（checkTCCoverageがTC-ACN-\\d+パターンで補完）", "42-61"
+  "gates/dod-l4-ia.ts", "checkAcAchievementTable: code_reviewフェーズのみ。acAchievementStatus[].statusにnot_metが含まれる場合にfail。F-NNNステータスとの連動なし。現在130行（200行制限に余裕あり）", "89-129"
+  "tools/handlers/lifecycle.ts", "handleHarnessNext: PHASE_APPROVAL_GATESによる承認チェック→runDoDChecks→buildRetryPrompt→respondの流れ。DoDがfailの場合はretryCtxをbuildRetryPromptに渡す。retryCount>=5でユーザー確認要求", "72-147"
+  "tools/retry.ts", "OPEN_QUESTIONSエラーパターン: /OPEN_QUESTIONS/iでマッチし'requirements.mdに ## OPEN_QUESTIONS セクションを追加'という改善メッセージを生成。現在checkOpenQuestionsがpassed:falseを返さないためこのパスは到達不能", "97-98"
+  "phases/defs-stage1.ts", "requirementsテンプレート: OPEN_QUESTIONS★必須指示あり。「Orchestratorは空でないOPEN_QUESTIONSをユーザーに確認してから承認に進む」の記述はあるが、DoDゲートで強制されないため任意指示に留まる", "206-209"
+
+gapDetails[5]{id,currentBehavior,requiredBehavior,implementationPoint}:
+  GAP-RTM-1, "checkOpenQuestions: 'openQuestions'キーが存在すればpassed:true。値が['OQ-1: 性能要件の数値は？']でもpassed:true", "openQuestionsが空配列またはすべて文字列'なし'の場合のみpassed:true。approval.tsのロジック(items.filter(q => q && String(q) !== 'なし').length !== 0)を関数化して再利用", "gates/dod-l4-requirements.ts:checkOpenQuestions"
+  GAP-RTM-2, "requirementsテンプレートにharness_add_rtm呼び出し指示なし。AC-Nの登録指示はあるが、RTM F-NNNエントリ追加はオーケストレーターの裁量に委ねられる", "requirementsテンプレートに★必須としてharness_add_rtm呼び出し指示を追加。各ACに対応するF-NNNをpending状態で登録するよう明示", "phases/defs-stage1.ts:requirementsテンプレート"
+  GAP-RTM-3, "test_designでRTMステータス更新指示なし。test_designテンプレートはAC→TCマッピングのみ指示し、harness_update_rtm_status呼び出しが未定義", "test_designテンプレートにharness_update_rtm_statusでF-NNNをtested状態に更新する指示追加。code_reviewテンプレートにimplementedへの更新指示追加", "phases/defs-stage3.ts:test_designテンプレート, phases/defs-stage4.ts:code_reviewテンプレート"
+  GAP-RTM-4, "harness_nextのretryPromptはOPEN_QUESTIONSパターンを/OPEN_QUESTIONS/iで検出するが、checkOpenQuestionsが現在never-failのためこのパスに到達しない", "GAP-RTM-1修正後にcheckOpenQuestionsがpassed:falseを返すようになると、retryPrompt生成経路が自動的に有効化。retry.tsのerrorToImprovement:97-98のメッセージも機能する", "gates/dod-l4-requirements.ts修正で自動解決"
+  GAP-RTM-5, "requirements→design_review→test_design→code_reviewでAC-N IDの一貫性を機械的に検証する仕組みが欠落。各フェーズの個別チェックはあるが連鎖検証なし", "dod-l4-ia.tsにcheckRtmChainContinuity追加。state.rtmEntriesのIDとstate.acceptanceCriteriaのIDをフェーズ横断で突合。dod.tsからfromフェーズに応じて呼び出す", "gates/dod-l4-ia.ts, gates/dod.ts"
+
+technicalConstraints[6]{constraint,source,implication}:
+  "approval.tsのopenQuestions判定: String(q) !== 'なし' フィルタ。TOON配列値がオブジェクト{id,question}の場合は必ずtruthy（stringified JSON）", "approval.ts:43", "checkOpenQuestionsで同一ロジックを使う場合、TOON配列エントリが文字列か{id,question}かを考慮する必要あり。共通化関数はどちらの形式も処理すること"
+  "dod-l4-ia.ts現在130行。GAP-RTM-5のcheckRtmChainContinuity追加で200行超過リスクあり", "dod-l4-ia.ts実測", "checkRtmChainContinuity追加時に180行超でdod-l4-rtm-chain.tsへ分離。SD-6の判断基準を適用"
+  "checkAcDesignMappingはstate.acceptanceCriteriaをJSON.stringify(record['acDesignMapping'])に対するID文字列包含チェックで突合", "dod-l4-ia.ts:31-36", "checkRtmChainContinuityでも同一パターンが適用可能。rtmEntries[].idをdesign-review.toon/test-design.toon/code-review.toonの各rawコンテンツで包含チェック"
+  "RTMエントリのstatusランク: pending=0, implemented=1, tested=2, verified=3。checkRTMCompletenessはRTM_STATUS_RANKで比較", "dod-l3.ts:39", "checkRtmChainContinuityはステータス検査ではなくID存在チェックが目的。dod-l3.tsのステータス検査と責務が分離される"
+  "requirementsフェーズのrequiredSections: ['decisions','acceptanceCriteria','notInScope','openQuestions']。openQuestionsセクションが必須キーとして既にL4で検査されている", "registry.tsまたはdefs-stage1.ts:175", "checkOpenQuestionsはセクション存在確認(現在)から内容検査(変更後)に強化。requiredSectionsの変更は不要"
+  "retryCount>=5でユーザー確認を要求。retryCount>=3でVDB-1警告。checkOpenQuestionsがfailになることで初めてretryループが起動する", "lifecycle.ts:83-87,121-123", "GAP-RTM-1修正後、OPEN_QUESTIONSが未解消の場合にretryがループする。VDB-1の誤発火を防ぐため、fix指示メッセージをユーザー向け確認依頼として明確化する必要あり"
+
+magicNumbers[5]{value,usage,source,rationale}:
+  "3", "AC最低件数 (checkACFormat, handleHarnessApprove)", "dod-l4-requirements.ts:39, approval.ts:56", "IA-2仕様で定義。変更時はrequirementsテンプレートの指示も同期更新が必要"
+  "5", "retryCount上限 (handleHarnessNext)", "lifecycle.ts:83", "超過時はユーザー確認を要求。OPEN_QUESTIONS未解消のretryループが5回に達するケースを想定した設計が必要"
+  "3", "VDB-1(バリデータバグ疑い)のretryCount閾値", "lifecycle.ts:121", "同一エラーが3回連続した場合はバリデータ側の問題を疑う。checkOpenQuestions強化後はOQ未解消の正常失敗が誤検知される可能性あり"
+  "100", "fileSize下限チェック(bytes) in handleHarnessNext", "lifecycle.ts:106", "出力ファイルが100バイト以下は空ファイル扱い。requirements.toonの正常出力には影響しない"
+  "200", "ソースファイル行数上限 (CLAUDE.md SRP指標)", "workflow-harness/CLAUDE.md", "dod-l4-ia.ts:130行。checkRtmChainContinuity追加で約30-40行増加見込み。180行超時点でdod-l4-rtm-chain.tsへ分離"
+
+approvalVsNextDifference[4]{aspect,harness_approve,harness_next}:
+  "IA-1 openQuestionsブロック", "実装済み(approval.ts:35-52)。空配列または全'なし'でない場合はrespondError", "未実装。checkOpenQuestionsは存在確認のみでpassed:true。GAP-RTM-1で対応"
+  "IA-2 AC最低3件チェック", "実装済み(approval.ts:54-59)。acCount<3でrespondError", "実装済み(dod-l4-requirements.ts:checkACFormat)。acCount<3でDoDfail"
+  "RTMステータスチェック", "未実装（approveハンドラにRTM検査なし）", "実装済み(dod-l3.ts:checkRTMCompleteness)。ただしrequirementsフェーズは対象外"
+  "F-NNN/AC-N連鎖検証", "未実装", "未実装。GAP-RTM-5でcheckRtmChainContinuity追加対象"
+
+existingPatterns[5]{pattern,location,reusability}:
+  "toonDecode + 'key' in record パターン", "dod-l4-requirements.ts:11-23, dod-l4-ia.ts:20-22", "checkOpenQuestionsの内容検査拡張で直接再利用可能。readRequirementsToon関数がモジュール内で共有済み"
+  "state.acceptanceCriteria IDとJSON.stringify突合パターン", "dod-l4-ia.ts:31-36", "checkRtmChainContinuityでrtmEntries IDをdesign-review/test-design/code-reviewのrawコンテンツに対して同一パターンで突合可能"
+  "approval.tsのopenQuestions判定ロジック", "approval.ts:42-44", "isOpenQuestion(q: unknown): boolean 形式の共通関数に抽出し、dod-l4-requirements.tsとapproval.tsで共有。二重実装を解消"
+  "DoDCheckResult型とpush()パターン", "dod.ts:30-57", "新規ゲート関数checkRtmChainContinuityをpush()に渡すだけでDoDチェーンに追加可能。インターフェース変更不要"
+  "retryPromptのOPEN_QUESTIONSパターンマッチ", "retry.ts:97-98", "GAP-RTM-1修正後に自動的に有効化。ただし現在は.mdファイル向けの指示文であり、.toonファイル向けに修正が必要"
+
+decisions[8]{id,statement,rationale}:
+  R-1, "checkOpenQuestionsの判定ロジックをisOpenQuestion共通関数で実装し、approval.tsとdod-l4-requirements.tsで共有する", "approval.ts:43のロジックを関数化することで二重実装を解消。将来的なOQ判定変更を一箇所で管理できる。共通関数の置き場所はdod-l4-requirements.tsまたはstate/utils.ts"
+  R-2, "checkOpenQuestionsはopenQuestionsキーが存在し、かつ配列内の有効項目数が0の場合のみpassed:trueを返すよう変更する", "現在の存在確認のみの実装ではIA-1ゲートが機能しない。approval.tsのブロックロジックと同一判定基準を適用することで承認前後の一貫性が保たれる"
+  R-3, "checkRtmChainContinuityはdod-l4-ia.tsに追加する（現在130行、追加後約160行）。分離閾値180行を超えない見込み", "SD-6の基準: dod-l4-ia.tsが180行超時点でdod-l4-rtm-chain.tsへ分離。現在130行での追加は60行以内に収まる見込みで分離不要と判断"
+  R-4, "checkRtmChainContinuityはdesign_review/test_design/code_reviewフェーズで呼び出し、rtmEntriesが空の場合はpassed:trueを返す（skip）", "requirements未記録のRTM空状態は既存パターン（checkRTMCompleteness:46）と同じskip方針を踏襲。フェーズ別に異なるアーティファクトを突合する実装が必要"
+  R-5, "requirementsテンプレートのharness_add_rtm指示追加とOPEN_QUESTIONS強制化は、templates文字列の変更のみで対応可能。requiredSections変更は不要", "requiredSections: ['decisions','acceptanceCriteria','notInScope','openQuestions']は既にopenQuestionsを含む。テンプレートのコメント指示をDoDゲート強制と整合させるのみ"
+  R-6, "retry.ts:97-98のOPEN_QUESTIONS改善メッセージを.toonファイル向けに修正する（現在'requirements.mdに ## OPEN_QUESTIONS'という指示が誤り）", "checkOpenQuestionsのfix文字列が正確なリトライ指示を提供するため、retry.tsのパターンは副次的。しかしfix文字列はrequirements.toonへの修正を指示すべき"
+  R-7, "test_designとcode_reviewテンプレートにharness_update_rtm_status呼び出し指示を追加する（GAP-RTM-3）。ただし自動呼び出しロジック実装はスコープ外", "スコープ外定義（scope-definition.toon:68）と整合。テンプレートへのオーケストレーター指示追加は設計変更なしで実現可能"
+  R-8, "checkRtmChainContinuityの連鎖検証は、AC-N IDがdesign-review.toonのacDesignMapping内に含まれるか・test-design.toonのacTcMapping内に含まれるかをrawJSON包含チェックで実装する", "checkAcDesignMappingと同一のraw JSON.stringify突合パターンを踏襲。フェーズ横断でACIDの連続性を検証する最小実装。F-NNN IDはrtmEntries.requirementとAC-N descriptionの照合を通じて間接的に追跡"
+
+artifacts[6]{path,role,summary}:
+  "docs/workflows/rtm-intent-gate/scope-definition.toon", input, "影響ファイル12件・ギャップ5件・決定事項6件のスコープ定義"
+  "workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts", "target-primary", "checkOpenQuestions強化: 存在確認→内容検査。isOpenQuestion共通関数の定義元。現在131行"
+  "workflow-harness/mcp-server/src/gates/dod-l4-ia.ts", "target-primary", "checkRtmChainContinuity追加: design_review/test_design/code_reviewでAC-N ID連鎖検証。現在130行、追加後約160行見込み"
+  "workflow-harness/mcp-server/src/gates/dod.ts", "target-minor", "runDoDChecks: checkRtmChainContinuityをpush()チェーンに追加。変更は1-2行のみ"
+  "workflow-harness/mcp-server/src/phases/defs-stage1.ts", "target-minor", "requirementsテンプレート: harness_add_rtm必須化・OPEN_QUESTIONS強制指示追加"
+  "workflow-harness/mcp-server/src/tools/handlers/approval.ts", "target-minor", "isOpenQuestion関数のインポート。IA-1判定ロジックを共通関数に委譲して二重実装を解消"
+
+next:
+  criticalDecisions: "isOpenQuestion共通関数の置き場所選択。dod-l4-requirements.tsに定義してapproval.tsがインポートする方向（循環依存リスクなし）か、state/utils.tsに独立させるか。checkRtmChainContinuity追加後の実測行数確認。180行超の場合はdod-l4-rtm-chain.ts分離を先行決定すること"
+  readFiles: "src/__tests__/dod-l4-requirements.test.ts(checkOpenQuestionsのTDD Red基準確認), src/__tests__/dod-ia.test.ts(checkAcDesignMappingのテスト構造確認), src/gates/dod-types.ts(DoDCheckResult型の完全定義確認)"
+  warnings: "approval.tsのopenQuestions判定でString(q) !== 'なし'フィルタを使用しているが、TOON配列値がオブジェクト{id,question}の場合はJSON.stringify結果に'なし'が含まれないため全エントリが有効扱いになる。共通関数ではオブジェクト形式の場合にentry.question === 'なし'のチェックが必要。defs-stage3.tsとdefs-stage4.tsのtest_design/code_reviewテンプレート変更はGAP-RTM-3対応で追加scopeファイルとなる（scope-definition.toonのscopeFilesに未列挙）"

@@ -1,0 +1,47 @@
+flowchart TD
+    Start([セキュリティ修正処理開始]) --> A1
+
+    A1["コマンド受信"] --> A2["ゼロ幅文字パターン検査 U+200B/200C/200D/FEFF"]
+    A2 --> A3{"ゼロ幅文字検出?"}
+    A3 -->|Yes| A4["sanitizeZeroWidthChars実行で正規表現置換"]
+    A3 -->|No| A5["元のコマンドをそのまま使用"]
+    A4 --> A6["サニタイズ済みコマンドを分割処理"]
+    A5 --> A6
+    A6 --> B1
+
+    B1["detectEncodedCommandでエンコード方式判定"] --> B2{"base64形式?"}
+    B2 -->|Yes| B4["Base64デコード試行 decodeBase64Safe"]
+    B2 -->|No| B5{"printf hex形式?"}
+    B5 -->|Yes| B6["Printf hexデコード試行 decodePrintfHex"]
+    B5 -->|No| B7{"echo octal形式?"}
+    B7 -->|Yes| B8["Echo octalデコード試行 decodeEchoOctal"]
+    B7 -->|No| B18["エンコード未検出のため allowed:true 返却"]
+
+    B4 --> B10{"Base64デコード結果がnull?"}
+    B6 --> B11{"Printf hexデコード結果がnull?"}
+    B8 --> B12{"Echo octalデコード結果がnull?"}
+
+    B10 -->|null| B13["Fail-Closed: allowed:false reason:Base64 decoding failed"]
+    B10 -->|成功| B14["デコード結果をホワイトリストで検証"]
+    B11 -->|null| B15["Fail-Closed: allowed:false reason:Printf hex decoding failed"]
+    B11 -->|成功| B14
+    B12 -->|null| B16["Fail-Closed: allowed:false reason:Echo octal decoding failed"]
+    B12 -->|成功| B14
+
+    B14 --> B17{"ホワイトリスト検証結果"}
+    B17 -->|合格| B18
+    B17 -->|不合格| B19["コマンド拒否 allowed:false"]
+
+    B19 --> C1
+    B18 --> C1
+
+    C1["normalizeFilePathでファイルパス正規化"] --> C2{"fs.realpathSync成功?"}
+    C2 -->|成功| C4["正規化パスを返却"]
+    C2 -->|失敗| C5["console.warn出力しpath.resolveへフォールバック"]
+    C5 --> C6{"path.resolve成功?"}
+    C6 -->|成功| C8["フォールバックパスを返却"]
+    C6 -->|失敗| C9["console.error出力し元パスの簡易正規化で返却"]
+
+    C4 --> Complete([全修正処理完了])
+    C8 --> Complete
+    C9 --> Complete

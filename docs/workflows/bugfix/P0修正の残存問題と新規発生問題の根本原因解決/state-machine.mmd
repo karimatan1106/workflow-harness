@@ -1,0 +1,96 @@
+stateDiagram-v2
+    state Start {
+        開始: 3件のドキュメント修正タスク
+    }
+    Start --> FR3_Preparation: 準備フェーズ開始
+    note right of Start
+        3件のドキュメント不整合修正準備
+        - spec.mdの修正内容を確認
+        - 修正対象ファイルとパスを確認
+    end
+
+    FR3_Preparation --> FR3_Splitting: FR-3を実施
+    note right of FR3_Preparation
+        修正優先度の第1段階
+        ルートCLAUDE.mdの176行目
+        test_impl行を2行に分割実施
+    end
+
+    FR3_Splitting --> FR3_Validation: FR-3の検証
+    note right of FR3_Splitting
+        Edit ツールで1行を2行に変更
+        test_impl: readonly, testing
+        implementation/refactoring: readonly, testing, implementation
+    end
+
+    FR3_Validation --> FR2_ModifyDeploy: FR-3検証完了
+    note right of FR3_Validation
+        Read ツールで分割結果確認
+        - test_impl行が独立存在
+        - implementation カテゴリ非含有
+    end
+
+    FR2_ModifyDeploy --> FR2_CategoryUpdate: FR-2を実施
+    note right of FR2_ModifyDeploy
+        修正優先度の第2段階
+        ルートCLAUDE.mdの182行目
+        deploy行のBashカテゴリ修正
+    end
+
+    FR2_CategoryUpdate --> FR2_Validation: FR-2の検証
+    note right of FR2_CategoryUpdate
+        Edit ツールでdeploy行を修正
+        既存: readonly, implementation, deploy
+        新規: readonly のみに変更
+    end
+
+    FR2_Validation --> FR1_SubagentFix: FR-2検証完了
+    note right of FR2_Validation
+        Read ツールでdeploy行確認
+        - 許可カテゴリが readonly のみ
+        - implementation, deploy文字列消滅
+    end
+
+    FR1_SubagentFix --> FR1_ValueChange: FR-1を実施
+    note right of FR1_SubagentFix
+        修正優先度の第3段階
+        workflow-plugin/CLAUDE.mdの330行目
+        subagent_type値の修正
+    end
+
+    FR1_ValueChange --> FR1_Validation: FR-1の検証
+    note right of FR1_ValueChange
+        Edit ツールで値を置換
+        既存: subagent_type: 'Plan'
+        新規: subagent_type: 'general-purpose'
+    end
+
+    FR1_Validation --> FinalReview: FR-1検証完了
+    note right of FR1_Validation
+        Read ツールでコードブロック確認
+        - Plan文字列消滅
+        - general-purpose統一
+    end
+
+    FinalReview --> DefinitionsComparison: 最終検証フェーズ
+    note right of FinalReview
+        3件全修正後の総合検証
+        - ルートCLAUDE.mdのテーブル確認
+        - workflow-plugin/CLAUDE.mdコード確認
+    end
+
+    DefinitionsComparison --> IntegrityCheck: 整合性確認
+    note right of DefinitionsComparison
+        definitions.ts の設定値との比較
+        - subagentType: general-purpose に統一
+        - deploy フェーズのカテゴリ: readonly のみ
+        - test_impl フェーズのカテゴリ: readonly, testing
+    end
+
+    IntegrityCheck --> End: 修正完了
+
+    note right of End
+        3件の不整合を完全解決
+        ドキュメント整合性回復
+        実行時エラーリスク排除
+    end

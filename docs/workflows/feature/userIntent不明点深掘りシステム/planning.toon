@@ -1,0 +1,16 @@
+phase: planning
+taskId: 0ea4294a-cc38-4718-b9e9-112b8ca7d93b
+ts: "2026-03-02T05:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  PL-001,3軸分析（目的・成功条件・影響範囲）をSKILL.mdのステップ3に導入する,UI-7の警告のみ通過設計では後続フェーズの手戻りを防げないため対話的補完が必要
+  PL-002,AskUserQuestion発動条件は不明軸1軸以上とし最大3問・options2〜4件を質問する,Claude Code制約（NFR-1）に準拠しつつ最小限の質問数でuserIntentを補完するため
+  PL-003,全軸明確な場合はAskUserQuestionをスキップして直接harness_startを呼ぶ高速パスを設ける,速度維持（REQ-005）と不要な対話の排除のため
+  PL-004,変更対象は2ファイルのみ（SKILL.mdとworkflow.md）でMCP server TypeScript変更なし,スキル文書の手順記述のみで対話フローを実現できるためSD-003に従う
+  PL-005,両ファイルはWriteツールによる全文書き換えで同一セッション内に同期しdiff完全一致を確認する,SD-008（ミラー同期漏れリスク）を防ぐため
+artifacts[2]{path,role,summary}:
+  docs/workflows/userIntent不明点深掘りシステム/spec.md,spec,3軸分析・AskUserQuestion発動条件・回答統合方式のアーキテクチャ設計とF-001〜F-005 RTMエントリおよび8ステップ実装計画を定義した技術仕様書
+  docs/workflows/userIntent不明点深掘りシステム/planning.toon,toon,planningフェーズの決定事項と成果物を記録したTOONファイル
+next:
+  readFiles[2]: .claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md
+  implementOrder[4]: SKILL.md全文確認,SKILL.md書き換え（Writeツール）,workflow.md書き換え（Writeツール）,diff完全一致確認
+  acVerification[5]: AC-1曖昧入力でAskUserQuestion発動,AC-2回答後harness_start呼び出し,AC-3全軸明確時スキップ,AC-4diff完全一致,AC-5UI-1ブロック維持

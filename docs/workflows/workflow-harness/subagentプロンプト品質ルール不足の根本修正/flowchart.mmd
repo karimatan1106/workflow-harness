@@ -1,0 +1,89 @@
+flowchart TD
+    Start((プロンプト生成開始)) --> GetPhase(PhaseGuideを取得)
+    GetPhase --> GenHeader(ヘッダーセクション生成<br/>タスク情報・タスク名・出力先)
+    GenHeader --> GenInput(入力ファイルセクション生成<br/>読み込むファイルパス一覧)
+    GenInput --> GenWork(作業内容セクション生成<br/>フェーズの作業内容・指示)
+    GenWork --> GenOutput(出力セクション生成<br/>成果物配置先パス)
+    GenOutput --> GenQuality(品質ルールセクション生成)
+
+    GenQuality --> QualityStart{品質ルール<br/>セクション}
+
+    QualityStart --> DensityRule("行数・密度要件を生成<br/>最低行数基準を記述")
+    DensityRule --> DensityAdd("句点ごとに改行して複数行に<br/>分割する行動指示を追加<br/>SPEC-1実装")
+
+    QualityStart --> ForbiddenRule("禁止パターン完全リストを生成<br/>NG例と説明を列挙")
+    ForbiddenRule --> ForbiddenAdd("includes()による部分一致検索<br/>の旨と言い換え例を追加<br/>SPEC-2実装")
+
+    QualityStart --> BracketRule("角括弧プレースホルダー禁止を生成<br/>許可される角括弧を記述")
+    BracketRule --> BracketAdd("コードフェンス内も検出対象の旨<br/>配列アクセス記法の禁止と<br/>散文形式・波かっこ記法への<br/>言い換え例を追加<br/>SPEC-3実装")
+
+    QualityStart --> DuplicateRule("重複行禁止・Mermaid図・<br/>テストファイル・トレーサビリティ<br/>の各サブセクション生成")
+
+    DensityAdd --> CodeFenceWarn("コードフェンス警告を追加<br/>コード内での禁止語使用リスク")
+    CodeFenceWarn --> BracketSpecWarn("bracket専用リトライ条件<br/>フラグを付加<br/>SPEC-4の準備")
+
+    ForbiddenAdd --> CodeFenceWarn
+    BracketAdd --> CodeFenceWarn
+    DuplicateRule --> CodeFenceWarn
+
+    BracketSpecWarn --> BashRestrict("Bashコマンド制限セクション生成<br/>許可カテゴリ・禁止コマンド")
+    BashRestrict --> SummaryGuide("サマリー必須セクション追加<br/>次フェーズへのコンテキスト引き継ぎ")
+    SummaryGuide --> CompletePrompt("プロンプト完成<br/>全セクション結合")
+    CompletePrompt --> ReturnPrompt(("buildPrompt戻り値<br/>完成したプロンプト文字列"))
+
+    ReturnPrompt --> ErrorReceive(("buildRetryPrompt開始<br/>エラーメッセージを受信"))
+    ErrorReceive --> ExtractError(エラーメッセージを解析<br/>improvements配列初期化)
+
+    ExtractError --> BracketCheck{"エラーメッセージに<br/>bracket関連<br/>キーワードを含む？"}
+    BracketCheck -->|プレースホルダー括弧<br/>角かっこ<br/>bracket| BracketCondition("bracket専用条件分岐実行<br/>SPEC-4実装")
+    BracketCondition --> BracketImp1("修正指示1を追加<br/>コードブロック内の角かっこ記法<br/>を散文・波かっこに変更")
+    BracketImp1 --> BracketImp2("修正指示2を追加<br/>配列アクセス代替表現<br/>.at等の使用")
+    BracketImp2 --> ForbiddenCheck
+
+    BracketCheck -->|含まない| ForbiddenCheck
+
+    ForbiddenCheck{"エラーメッセージに<br/>禁止パターン<br/>キーワードを含む？"}
+    ForbiddenCheck -->|はい| ForbiddenCondition("禁止パターン条件分岐実行")
+    ForbiddenCondition --> ForbiddenImp("修正指示を追加<br/>指摘された禁止語を削除<br/>具体的な実例に置き換え")
+    ForbiddenImp --> DensityCheck
+
+    ForbiddenCheck -->|いいえ| DensityCheck
+
+    DensityCheck{"エラーメッセージに<br/>密度・行数<br/>キーワードを含む？"}
+    DensityCheck -->|行数不足| DensityImp("修正指示を追加<br/>実質行を増やす<br/>句点ごとの改行実施")
+    DensityImp --> DensityCheckDone
+
+    DensityCheck -->|密度不足| DensityImpDensity("修正指示を追加<br/>該当セクションに実質内容追加<br/>総行数に対する割合確認")
+    DensityImpDensity --> DensityCheckDone
+
+    DensityCheck -->|いいえ| DensityCheckDone
+
+    DensityCheckDone --> SectionCheck{"必須セクション欠落<br/>キーワード検出？"}
+    SectionCheck -->|はい| SectionImp("修正指示を追加<br/>欠落セクション追加")
+    SectionImp --> BuildRetry
+
+    SectionCheck -->|いいえ| BuildRetry
+
+    BuildRetry("リトライプロンプトを構築<br/>improvements配列を含む<br/>前回バリデーション失敗理由記載")
+    BuildRetry --> RetryHeader("リトライプロンプトヘッダー<br/>フェーズ名・回数・タスク情報")
+    RetryHeader --> FailureSection("前回バリデーション失敗理由セクション<br/>MCPサーバーからのエラー全文引用")
+    FailureSection --> ImprovementSection("改善要求セクション<br/>improvements配列から<br/>実行可能な指示に変換")
+    ImprovementSection --> RetryInput("入力・作業内容・出力セクション<br/>元のbuildPromptと同じ")
+    RetryInput --> RetryQuality("成果物品質要件再確認<br/>行数・密度・禁止語・<br/>bracket検出について")
+    RetryQuality --> RetryBash("Bashコマンド制限再確認")
+    RetryBash --> CompleteRetry("リトライプロンプト完成")
+    CompleteRetry --> ReturnRetry(("buildRetryPrompt戻り値<br/>修正指示を含むリトライプロンプト"))
+
+    ReturnRetry --> End((フロー終了))
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style ReturnPrompt fill:#87CEEB
+    style ErrorReceive fill:#87CEEB
+    style ReturnRetry fill:#87CEEB
+    style BracketImp1 fill:#FFE4B5
+    style BracketImp2 fill:#FFE4B5
+    style DensityImp fill:#FFE4B5
+    style DensityImpDensity fill:#FFE4B5
+    style ForbiddenImp fill:#FFE4B5
+    style SectionImp fill:#FFE4B5

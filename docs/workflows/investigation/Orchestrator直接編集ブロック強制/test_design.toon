@@ -1,0 +1,30 @@
+phase: test_design
+taskId: 9fb16d24-4d20-4da1-845a-9d93167ee1b9
+ts: "2026-03-02T11:00:00+09:00"
+strategy: code_review_plus_shell_execution
+rationale: spec.mdにユニットテストファイルは対象外と明記されているため、コードレビュー形式確認とシェル実行検証を採用する
+testCases[13]{id,ac,method,verdict}:
+  TC-AC1-01,AC-1,shell_exit_code,docs/workflows/配下パスにexit code 2が返ること
+  TC-AC1-02,AC-1,code_review,ブロックロジックのコード（includes検出）が行59直後に存在すること
+  TC-AC1-03,AC-1,shell_exit_code,通過対象パス（src/配下）がexit code 2を返さないこと
+  TC-AC1-04,AC-1,shell_exit_code,Windowsバックスラッシュ形式パスが正規化されてブロックされること
+  TC-AC1-05,AC-1,shell_exit_code,絶対パス（C:/...）でもdocs/workflows/を含む場合にブロックされること
+  TC-AC2-01,AC-2,code_review,SKILL.mdに違反例と正しいパターンの両方が追記されていること
+  TC-AC2-02,AC-2,line_number_check,追記位置が## 3. Workflow Usage Decision節の直前であること
+  TC-AC3-01,AC-3,diff_comparison,workflow.mdとSKILL.mdの追記内容がdiffで0差分であること
+  TC-AC3-02,AC-3,code_review,workflow.mdに違反例テキストが独立して存在すること
+  TC-AC4-01,AC-4,wc_line_count,phase-edit-guard.jsの行数がwc -lで200以下であること
+  TC-AC5-01,AC-5,stderr_json_parse,stderrをJSON.parseしてdecisionキーがblockであること
+  TC-AC5-02,AC-5,grep_keys,stderrのJSONにdecisionとreasonの両キーが存在すること
+  TC-AC5-03,AC-5,grep_filepath,stderrのreasonに入力ファイルパスが含まれること
+acMapping[5]{ac,tcIds}:
+  AC-1,[TC-AC1-01,TC-AC1-02,TC-AC1-03,TC-AC1-04,TC-AC1-05]
+  AC-2,[TC-AC2-01,TC-AC2-02]
+  AC-3,[TC-AC3-01,TC-AC3-02]
+  AC-4,[TC-AC4-01]
+  AC-5,[TC-AC5-01,TC-AC5-02,TC-AC5-03]
+artifacts[2]{path,role,summary}:
+  docs/workflows/Orchestrator直接編集ブロック強制/test-design.md,spec,テスト方針・13テストケース・AC→TCマッピングテーブルを定義
+  docs/workflows/Orchestrator直接編集ブロック強制/test_design.toon,checkpoint,test_designフェーズTOONチェックポイント
+next:
+  readFiles[1]: docs/workflows/Orchestrator直接編集ブロック強制/test-design.md

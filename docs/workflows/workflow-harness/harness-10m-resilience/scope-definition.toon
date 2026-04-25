@@ -1,0 +1,59 @@
+phase: scope_definition
+taskName: harness-10m-resilience
+timestamp: 2026-03-08
+riskScore: 6
+
+summary: "ハーネスの10Mステップ耐性を6本柱(P1-P6)で強化する。P1:skippedPhases出力の自動除外でforceTransition不要化、P2:harness_next前の成果物存在+サイズ機械検証、P3:サブエージェントテンプレートへの手順確定化フラグメント追加、P4:P2統合による空ファイル検出、P5:テンプレートからのRead指示自動除去、P6:TRAIT_CATEGORIESの.harness.json外部化。"
+
+rootCauses[5]{id,description}:
+  RC-1, "dod-l1-l2.tsのinput_files_existがskippedPhasesの出力を要求しforceTransitionが必要になる"
+  RC-2, "サブエージェントが成果物を書き忘れてもharness_next呼び出しまで検出されない"
+  RC-3, "buildSubagentPromptに手順確定化がなくサブエージェントが自由順序で作業し手戻りが発生する"
+  RC-4, "TRAIT_CATEGORIESがdefinitions.tsにハードコードされ異なるプロジェクト構造に対応できない"
+  RC-5, "テンプレートの参考ファイルRead指示がコンテキストウィンドウを圧迫する"
+
+pillarDesign[6]{id,targetFile,fixApproach,expectedOutcome}:
+  P1, src/gates/dod-l1-l2.ts, "checkInputFilesExistにskippedPhases引数追加。OUTPUT_FILE_TO_PHASEでinputFileのソースフェーズを逆引きしskippedPhasesに含まれれば除外", "forceTransition使用頻度がゼロになり全DoDチェックが正規パスで通過"
+  P2, src/tools/handlers/lifecycle.ts, "handleHarnessNext内でDoDチェック前にoutputFileのexistsSync+statSync(size>=100)を先行チェック", "成果物未作成のままharness_nextが呼ばれた場合にDoD全チェック実行前に即時検出"
+  P3, src/phases/definitions-shared.ts, "PROCEDURE_ORDER_RULEフラグメントを追加しbuildSubagentPromptで全テンプレートに挿入。順序:Read→分析→Write→検証Read→報告", "サブエージェントが確定的順序で作業し成果物未完成での戻りが排除"
+  P4, src/tools/handlers/lifecycle.ts, "P2の先行チェック内にstatSync(path).size>=100バイトの検証を統合", "空ファイルや極端に小さいファイルでの誤完了が機械的に防止"
+  P5, src/phases/definitions.ts, "buildSubagentPrompt内でRead指示行を検出し自動除去するregexを追加。workflow-execution.mdにインライン化ルール追記", "コンテキスト消費が入力TOON+テンプレートのみに限定"
+  P6, src/phases/definitions.ts, "loadTraitCategories関数を追加し.harness.jsonからTRAIT_CATEGORIESを読込。不在時はデフォルト値でフォールバック", "異なるプロジェクト構造でもdocs_updateが正しいカテゴリを生成"
+
+scopeFiles[7]{path,changeType,rationale}:
+  src/gates/dod-l1-l2.ts, modify, "checkInputFilesExistにskippedPhases除外ロジック追加(P1)"
+  src/gates/dod.ts, modify, "checkInputFilesExist呼び出しにstate.skippedPhases引数追加(P1)"
+  src/tools/handlers/lifecycle.ts, modify, "handleHarnessNext内にoutputFile先行チェック追加(P2+P4)"
+  src/phases/definitions-shared.ts, modify, "PROCEDURE_ORDER_RULEフラグメント追加(P3)"
+  src/phases/definitions.ts, modify, "フラグメント展開+Read指示除去regex+loadTraitCategories関数追加(P3+P5+P6)"
+  .claude/skills/harness/workflow-execution.md, modify, "パターンインライン化ルール追記(P5)"
+  .harness.json, create, "プロジェクト設定ファイル新規作成(P6)"
+
+secondaryFiles[2]{path,changeType,rationale}:
+  src/phases/registry.ts, read-only, "inputFiles定義の確認(P1の逆引きに必要)"
+  src/phases/definitions.ts, read-only, "OUTPUT_FILE_TO_PHASEマッピングの確認(P1)"
+
+outOfScope[4]{item,reason}:
+  "L5(LLM判断)チェックの追加", "L5は設計上禁止済み。本タスクは既存L1-L4の強化のみ"
+  "テンプレート内容(defs-stage1-6.ts)の書き直し", "テンプレート構造はP3のフラグメント挿入で改善。個別内容は別タスク"
+  "harness_startのAPIスキーマ変更", ".harness.jsonファイル方式を採用しAPI変更を回避(SD-5)"
+  "Orchestrator直接編集防止hook", "hookは.claude/hooks/の設定変更でありハーネスコード変更とは独立"
+
+decisions[7]{id,statement,rationale}:
+  SD-1, "skippedPhases除外はOUTPUT_FILE_TO_PHASEの逆引きで実装する", "inputFileのbasenameからソースフェーズを特定する既存マッピングを再利用でき新規データ構造が不要"
+  SD-2, "成果物先行チェックはlifecycle.ts内に配置しdod.ts内には置かない", "DoDチェック全実行前のearly-returnとして明確なエラーメッセージを返すため"
+  SD-3, "PROCEDURE_ORDER_RULEは独立フラグメントとしてdefinitions-shared.tsに定義する", "既存のEXIT_CODE_RULE/ARTIFACT_QUALITY_RULESと同じパターンで一貫性を維持する"
+  SD-4, "P4の空ファイル検証はP2の先行チェック内に統合する", "別関数に分離する必要がなく単一チェックポイントで両方を満たせる"
+  SD-5, "TRAIT_CATEGORIESの外部化は.harness.jsonファイルを採用しharness_startパラメータは採用しない", "パラメータ追加はAPI変更を伴いMCPスキーマ更新が必要だが設定ファイルはコード側のみの変更で完結する"
+  SD-6, "Read指示の自動除去はbuildSubagentPrompt内のregexで実装する", "テンプレートソース(defs-stage*.ts)を個別修正するより一箇所で横断的に適用できる"
+  SD-7, "先行チェックのファイルサイズ閾値は100バイトとする", "TOON形式の最小有効成果物が約80-100バイトであり空ファイルと有効ファイルを識別可能"
+
+dependencyChain: "dod-l1-l2.ts(P1除外ロジック) -> dod.ts(引数伝搬) -> lifecycle.ts(P2+P4先行チェック) -> definitions-shared.ts(P3フラグメント) -> definitions.ts(P3展開+P5除去+P6外部化) -> workflow-execution.md(P5ルール)"
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/harness-10m-resilience/scope-definition.toon, report, "10M耐性6本柱の実装スコープ。7ファイル変更で6軸の構造的強化"
+
+next:
+  criticalDecisions: "SD-1(逆引き方式)とSD-2(先行チェック配置)とSD-5(.harness.json採用)が設計の分岐点"
+  readFiles: "src/gates/dod-l1-l2.ts, src/gates/dod.ts, src/tools/handlers/lifecycle.ts, src/phases/definitions-shared.ts, src/phases/definitions.ts"
+  warnings: "P6の.harness.json導入はプロジェクトルート検出ロジックが必要。definitions.tsは173行で27行の余裕がありP5+P6の追加に十分だがP3のフラグメント展開コードも含めると余裕が少ない"

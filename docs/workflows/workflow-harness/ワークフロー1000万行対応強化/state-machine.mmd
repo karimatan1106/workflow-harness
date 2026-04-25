@@ -1,0 +1,193 @@
+%% ワークフロー1000万行対応強化 - ステートマシン図
+%% 4つの検証機能の状態遷移を定義
+
+---
+config:
+    look: handDrawn
+    layout: elk
+---
+stateDiagram-v2
+
+    %% ========================================
+    %% 1. テスト結果記録の検証フロー
+    %% ========================================
+    state "1. テスト結果記録フロー\n(record-test-result)" as RecordTest {
+        direction LR
+        RTS_IDLE["入力受付<br/>(タスクID, exitCode,<br/>summary, output)"]
+        RTS_VALIDATE["パラメータ検証<br/>・exitCode: 数値<br/>・output: 文字列(50字超)"]
+        RTS_CONSISTENCY["整合性チェック<br/>REQ-1: exitCode ⟷ output<br/>・exitCode=0 + FAILキーワード?<br/>・exitCode≠0 + PASSのみ?"]
+        RTS_STRUCTURE["構造検証<br/>・テストフレームワークパターン<br/>・エラーパターン検出"]
+        RTS_REJECT["拒否<br/>(エラーメッセージ返却)"]
+        RTS_RECORD["記録<br/>(TaskState.testResults[]<br/>に追記)"]
+        RTS_SUCCESS["成功<br/>(テスト結果記録完了)"]
+
+        [*] --> RTS_IDLE
+        RTS_IDLE --> RTS_VALIDATE: パラメータ取得
+        RTS_VALIDATE --> RTS_CONSISTENCY: パラメータ正常
+        RTS_VALIDATE --> RTS_REJECT: 無効なパラメータ
+        RTS_CONSISTENCY --> RTS_REJECT: 矛盾検出<br/>(ブロック)
+        RTS_CONSISTENCY --> RTS_STRUCTURE: 整合性OK
+        RTS_STRUCTURE --> RTS_RECORD: フレームワーク検出or警告出力
+        RTS_STRUCTURE --> RTS_RECORD: フレームワーク未検出<br/>(警告のみ)
+        RTS_REJECT --> [*]
+        RTS_RECORD --> RTS_SUCCESS
+        RTS_SUCCESS --> [*]
+    }
+
+    %% ========================================
+    %% 2. 設計検証のフロー
+    %% ========================================
+    state "2. 設計検証フロー\n(design-validator + ast-analyzer)" as DesignValidate {
+        direction LR
+        DV_START["検証開始<br/>(spec.md,<br/>state-machine.mmd,<br/>flowchart.mmd)"]
+        DV_SPEC_PARSE["spec.md解析<br/>parseSpec()<br/>・クラス・メソッド抽出<br/>・ファイルパス抽出"]
+        DV_AST_ANALYZE["AST解析実行<br/>analyzeClasses/Methods()<br/>・空クラス検出<br/>・空メソッド検出<br/>・単純return検出"]
+        DV_SM_PARSE["state-machine.mmd解析<br/>analyzeStateMachine()<br/>・ノードカウント<br/>・遷移カウント<br/>・孤立ノード検出"]
+        DV_FC_PARSE["flowchart.mmd解析<br/>analyzeFlowchart()<br/>・ノードカウント<br/>・エッジカウント<br/>・孤立ノード検出"]
+        DV_STRUCTURE_CHECK["構造整合性チェック<br/>・ノード数 > 1 かつ<br/>  遷移数 ≥ ノード数-1?<br/>・孤立ノード存在?"]
+        DV_FILE_CHECK["ファイル存在チェック<br/>・spec記載ファイル存在?<br/>・クラス存在?<br/>・メソッド存在?"]
+        DV_REJECT["不合格<br/>(missing_items記録)"]
+        DV_PASS["合格<br/>(warning記録)"]
+        DV_SUCCESS["検証完了<br/>(ValidationResult返却)"]
+
+        [*] --> DV_START
+        DV_START --> DV_SPEC_PARSE: ファイル読み込み
+        DV_SPEC_PARSE --> DV_FILE_CHECK: クラス・メソッド抽出
+        DV_FILE_CHECK --> DV_AST_ANALYZE: ファイル存在確認
+        DV_AST_ANALYZE --> DV_SM_PARSE: 空コード検出
+        DV_SM_PARSE --> DV_FC_PARSE: 状態遷移解析
+        DV_FC_PARSE --> DV_STRUCTURE_CHECK: フロー解析
+        DV_STRUCTURE_CHECK --> DV_REJECT: 構造エラー<br/>(エッジなし、孤立ノード)
+        DV_STRUCTURE_CHECK --> DV_PASS: 構造OK<br/>(警告のみ)
+        DV_REJECT --> DV_SUCCESS
+        DV_PASS --> DV_SUCCESS
+        DV_SUCCESS --> [*]
+    }
+
+    %% ========================================
+    %% 3. スコープ検証のフロー
+    %% ========================================
+    state "3. スコープ検証フロー\n(set-scope + dependency-analyzer)" as SetScope {
+        direction LR
+        SS_INPUT["スコープ受付<br/>(taskId, files[], dirs[])"]
+        SS_PHASE_CHECK["フェーズ確認<br/>research OR<br/>requirements OR<br/>planning?"]
+        SS_EMPTY_CHECK["空スコープ確認<br/>files.length == 0 AND<br/>dirs.length == 0?"]
+        SS_EXIST_CHECK["存在チェック<br/>・各ファイル存在?<br/>・各ディレクトリ存在?"]
+        SS_NOT_EXIST["未存在ファイル/<br/>ディレクトリあり"]
+        SS_DEPEND_ANALYZE["依存関係解析<br/>analyzeDependencies()<br/>・import文抽出<br/>・スコープ外依存検出<br/>・推奨スコープ提案"]
+        SS_DEPEND_CHECK["スコープ外依存<br/>ありか?"]
+        SS_WARN["警告発行<br/>コンソール出力<br/>推奨スコープ表示"]
+        SS_RECORD["設定記録<br/>(TaskState.scope<br/>に記録)"]
+        SS_SUCCESS["成功<br/>(スコープ設定完了)"]
+        SS_ERROR["エラー<br/>(存在しないパス)"]
+
+        [*] --> SS_INPUT
+        SS_INPUT --> SS_PHASE_CHECK: パラメータ取得
+        SS_PHASE_CHECK --> SS_EMPTY_CHECK: フェーズOK
+        SS_PHASE_CHECK --> SS_ERROR: フェーズNG<br/>(allowedフェーズ外)
+        SS_EMPTY_CHECK --> SS_EXIST_CHECK: スコープ非空
+        SS_EMPTY_CHECK --> SS_ERROR: スコープ空
+        SS_EXIST_CHECK --> SS_NOT_EXIST: ファイル/ディレクトリ未存在
+        SS_EXIST_CHECK --> SS_DEPEND_ANALYZE: 全て存在
+        SS_NOT_EXIST --> SS_ERROR
+        SS_DEPEND_ANALYZE --> SS_DEPEND_CHECK: 依存解析完了
+        SS_DEPEND_CHECK --> SS_WARN: スコープ外依存あり
+        SS_DEPEND_CHECK --> SS_RECORD: スコープ外依存なし
+        SS_WARN --> SS_RECORD: 警告表示
+        SS_RECORD --> SS_SUCCESS
+        SS_ERROR --> [*]
+        SS_SUCCESS --> [*]
+    }
+
+    %% ========================================
+    %% 4. 監査ログのフロー
+    %% ========================================
+    state "4. 監査ログフロー\n(audit logger)" as AuditLog {
+        direction LR
+        AL_START["バイパス検出<br/>(環境変数チェック)<br/>SKIP_PHASE_GUARD?<br/>SKIP_DESIGN_VALIDATION?<br/>SKIP_SPEC_GUARD?"]
+        AL_FOUND["バイパス環境変数<br/>検出"]
+        AL_NOT_FOUND["バイパス環境変数<br/>未検出"]
+        AL_LOG_RECORD["ログ記録<br/>AuditLogger.log()<br/>event: 'bypass_enabled'<br/>variable, taskId, phase"]
+        AL_APPEND["JSONL追記<br/>.claude/state/<br/>audit-log.jsonl"]
+        AL_ROTATE_CHECK["ローテーション判定<br/>ログファイルサイズ<br/>> 10MB?"]
+        AL_ROTATE["ローテーション実施<br/>・.1, .2, ... .5 にシフト<br/>・最古世代削除"]
+        AL_COUNT_RECENT["過去1時間の<br/>バイパス回数カウント"]
+        AL_THRESHOLD["閾値判定<br/>count > 10?"]
+        AL_THRESHOLD_LOG["閾値超過ログ<br/>event: 'bypass_threshold_exceeded'"]
+        AL_WARN["警告発行<br/>(コンソール)"]
+        AL_PASS["通過<br/>(警告なし)"]
+        AL_COMPLETE["監査完了"]
+
+        [*] --> AL_START
+        AL_START --> AL_FOUND: 環境変数有効
+        AL_START --> AL_NOT_FOUND: 環境変数なし
+        AL_NOT_FOUND --> AL_COMPLETE
+        AL_FOUND --> AL_LOG_RECORD: バイパス記録
+        AL_LOG_RECORD --> AL_APPEND: ログエントリ作成
+        AL_APPEND --> AL_ROTATE_CHECK: ファイルに追記
+        AL_ROTATE_CHECK --> AL_ROTATE: サイズ超過
+        AL_ROTATE_CHECK --> AL_COUNT_RECENT: サイズ未満
+        AL_ROTATE --> AL_COUNT_RECENT: ローテーション完了
+        AL_COUNT_RECENT --> AL_THRESHOLD: カウント計算
+        AL_THRESHOLD --> AL_THRESHOLD_LOG: 閾値超過
+        AL_THRESHOLD --> AL_PASS: 閾値未満
+        AL_THRESHOLD_LOG --> AL_WARN: 閾値超過イベント記録
+        AL_WARN --> AL_COMPLETE
+        AL_PASS --> AL_COMPLETE
+        AL_COMPLETE --> [*]
+    }
+
+    %% ========================================
+    %% 全体フロー - ワークフロー実行時の統合
+    %% ========================================
+    state "全体フロー: ワークフロー実行時の統合検証" as Integration {
+        direction LR
+        INT_START["ワークフロー実行開始<br/>(research/requirements/planning)"]
+        INT_AUDIT["監査ログ監視<br/>(REQ-4)"]
+        INT_SCOPE["スコープ設定<br/>(REQ-3)"]
+        INT_DESIGN_CHECK["設計検証<br/>(REQ-2)<br/>implementationフェーズ時"]
+        INT_TEST_RUN["テスト実行<br/>(testing/regression_test)"]
+        INT_TEST_RECORD["テスト結果記録<br/>(REQ-1)"]
+        INT_COMPLETE["ワークフロー完了"]
+
+        [*] --> INT_START
+        INT_START --> INT_AUDIT: フェーズ遷移時
+        INT_START --> INT_SCOPE: 早期フェーズ
+        INT_SCOPE --> INT_DESIGN_CHECK: スコープ設定後
+        INT_DESIGN_CHECK --> INT_TEST_RUN: implementation時
+        INT_TEST_RUN --> INT_TEST_RECORD: テスト実行
+        INT_AUDIT -.->|全フェーズで継続監視| INT_TEST_RECORD
+        INT_TEST_RECORD --> INT_COMPLETE
+        INT_COMPLETE --> [*]
+    }
+
+    note right of RecordTest
+        AC-1.1: exitCode=0 + FAILキーワード → ブロック
+        AC-1.2: exitCode≠0 + PASSのみ → ブロック
+        AC-1.3: テストフレームワーク構造なし → 警告
+        AC-1.4: 正常フロー → 記録成功
+    end note
+
+    note right of DesignValidate
+        結果: ValidationResult
+        passed: boolean
+        missing_items: []
+        warnings: []
+    end note
+
+    note right of SetScope
+        スコープ内容
+        files: string[]
+        dirs: string[]
+        推奨スコープ(必要に応じて)
+    end note
+
+    note right of AuditLog
+        ログ出力先:
+        .claude/state/audit-log.jsonl
+        (JSONL形式, 行ごと1JSON)
+
+        ローテーション:
+        10MB超時に自動実行
+        最大5世代保持
+    end note

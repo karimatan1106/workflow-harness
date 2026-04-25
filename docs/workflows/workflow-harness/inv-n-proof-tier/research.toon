@@ -1,0 +1,68 @@
+taskName: inv-n-proof-tier
+phase: research
+createdAt: 2026-03-07
+userIntent: INV-N（不変条件）とproofTier（証明レベルT1-T4）の枠組みをハーネスに追加する
+
+decisions[8]{id,statement,rationale}:
+  R-001, "types-core.tsのInvariant型はAcceptanceCriterion型と同一構造パターンで設計し、id/description/status/proofTier/verifiedAt/evidenceの6フィールドとする", "AcceptanceCriterionが{id,description,testCaseId?,status}の4フィールドで実証済みの最小構成を持つ。Invariantはこれを拡張しproofTier(T1-T4)、verifiedAt(ISO8601)、evidence(検証理由テキスト)を追加する。status遷移はACの'open|met|not_met'に対し'open|held|violated'の3状態とし、不変条件の意味論（常に成立すべき制約が保持されているか違反しているか）を正確に表現する"
+  R-002, "types-core.tsは189行で200行制限に対し余裕が11行しかないため、Invariant型とProofTier列挙型を新ファイルtypes-invariant.tsに分離する", "AcceptanceCriterion(6行)、RTMEntry(7行)、ProofEntry(7行)がtypes-core.tsに定義済みで合計189行。Invariant型(8行)+ProofTier(2行)+InvariantStatus(2行)+Zodスキーマ(5行)=約17行の追加は200行を大幅に超過する。types-invariant.tsとして独立させ、types.tsのre-export経路に追加する構成が200行制限の設計原則に適合する"
+  R-003, "manager.tsは200行（上限ちょうど）のため、addInvariant/updateInvariantStatus/getInvariantsの3メソッドをmanager-invariant.tsに分離しmanager.tsから委譲する", "manager.tsは既にStateManagerクラスの全メソッド（createTask/advancePhase/approveGate/completeSubPhase/goBack/resetTask/addAcceptanceCriterion等）で200行に達している。新メソッド追加は物理的に不可能であるため、AC関連のadd/update/getパターンを踏襲した3関数をmanager-invariant.tsに定義し、StateManagerからthis経由で委譲呼出しする"
+  R-004, "ProofTier列挙型はT1(ExampleTest)/T2(PropertyTest)/T3(TypeProof)/T4(FormalProof)の4段階とし、AC-NとINV-Nの両方にoptionalフィールドとして付与する", "既存AcceptanceCriterion型にproofTier?フィールドを追加することで後方互換性を維持する。INV-Nでは初期登録時にproofTierを必須化せずoptionalとし、acceptance_verificationフェーズのDoDゲートでT1以上を要求する段階的導入戦略を採用する。これによりrequirementsフェーズでINV-N登録時の摩擦を最小化できる"
+  R-005, "manager-write.tsのrefreshCheckpointTraceability関数を拡張し、invariants配列をCheckpoint型に追加してセッション回復時の不変条件復元を保証する", "現在のrefreshCheckpointTraceabilityはacceptanceCriteriaとrtmEntriesの2配列をコピーしている（75-80行目）。invariantsを同じパターンで追加する場合、Checkpoint型にinvariants配列フィールドを追加し、refreshCheckpointTraceabilityにstate.checkpoint.invariants = [...state.invariants]の1行を追加するだけで済む。checkpointHash計算は既存のcomputeCheckpointHash関数がJSON.stringifyで全フィールドをハッシュ化するため自動的にinvariantsも含まれる"
+  R-006, "harness_add_invariantツール定義はdefs-a.ts(163行)に追加可能で、defs-c.tsの新設は不要と判断する", "defs-a.tsは163行で37行の余裕がある。harness_add_invariantのツール定義は約20行（harness_add_acの12行+proofTierフィールド分）であり、163+20=183行で200行制限内に収まる。harness_update_invariant_statusはdefs-b.ts(158行)に追加し、158+18=176行で同様に収まる"
+  R-007, "DoDゲートにcheckInvariantCompletenessをdod-l3.tsに追加し、acceptance_verification/completedフェーズで全INV-Nのstatus=heldを検証する", "checkACCompletenessが99-117行でAC_CHECK_PHASES=['acceptance_verification','completed']に対しstatus='met'を確認するパターンを持つ。同一パターンでcheckInvariantCompletenessを定義し、status='held'を確認する。dod-l3.tsは現在155行で約20行の追加で175行となり200行制限内に収まる。dod.tsのrunDoDChecksにpush呼出しを1行追加する"
+  R-008, "dogfooding不変条件INV-1からINV-4はregistry.tsのPHASE_ORDER/SIZE_SKIP_MAP/getNextPhaseの実際のロジックから導出し、vitest property-based testでT2レベル証明とする", "registry.tsの170行から抽出可能な不変条件: INV-1(test_before_impl): PHASE_ORDERにおいてtest_implのインデックスはimplementationより小さい。INV-2(completed_is_terminal): getNextPhase('completed',any)は常にnullを返す。INV-3(skip_monotonicity): SIZE_SKIP_MAP.smallはSIZE_SKIP_MAP.mediumの上位集合である。INV-4(next_phase_advances): getNextPhaseが返すフェーズのPHASE_ORDER上のインデックスは現在フェーズより常に大きい。これら4条件はfc.property()で全サイズ/全フェーズの組合せに対して検証可能"
+
+artifacts[5]{path,role,summary}:
+  docs/workflows/inv-n-proof-tier/research.toon, spec, 本調査成果物
+  docs/workflows/inv-n-proof-tier/scope-definition.toon, spec, 前フェーズのスコープ定義
+  workflow-harness/mcp-server/src/state/types-core.ts, source, AcceptanceCriterion型の参照元（189行）
+  workflow-harness/mcp-server/src/state/manager.ts, source, StateManager本体（200行上限到達）
+  workflow-harness/mcp-server/src/state/manager-write.ts, source, refreshCheckpointTraceability関数の拡張対象（120行）
+
+analysisResults:
+  acPatternAnalysis:
+    typeDefinition: "AcceptanceCriterion = {id: string, description: string, testCaseId?: string, status: 'open'|'met'|'not_met'} (types-core.ts:111-116)"
+    taskStateField: "acceptanceCriteria: AcceptanceCriterion[] (types.ts:75)"
+    managerMethods: "addAcceptanceCriterion(90-94行), updateAcceptanceCriterionStatus(160-165行)"
+    writeOperations: "applyAddAC(82-87行), applyUpdateACStatus(95-100行), refreshCheckpointTraceability(75-80行)"
+    toolDefinition: "harness_add_ac in defs-a.ts:133-145 (id/description/sessionToken)"
+    handler: "handleHarnessAddAc in recording.ts:24-40 (validate->create->applyAddAC->addProof->respond)"
+    dodGate: "checkACCompleteness in dod-l3.ts:99-117 (acceptance_verification/completedフェーズ)"
+    dodRequirements: "checkACFormat in dod-l4-requirements.ts:25-46 (requirementsフェーズでAC>=3件)"
+  lineCountAnalysis:
+    typesCore: "189行 - 余裕11行、Invariant型17行追加で206行超過、分割必須"
+    manager: "200行 - 余裕0行、新メソッド追加不可、分割必須"
+    managerWrite: "120行 - 余裕80行、applyAddInvariant等の追加可能"
+    defsA: "163行 - 余裕37行、harness_add_invariant定義追加可能"
+    defsB: "158行 - 余裕42行、harness_update_invariant_status定義追加可能"
+    handler: "54行 - 余裕146行、case文2行追加可能"
+    recording: "121行 - 余裕79行、handleHarnessAddInvariant追加可能"
+    query: "125行 - 余裕75行、handleHarnessUpdateInvariantStatus追加可能"
+    dodL3: "155行 - 余裕45行、checkInvariantCompleteness追加可能"
+    dodL4Req: "124行 - 余裕76行、checkInvariantFormat追加可能"
+    dodTypes: "17行 - 余裕183行、ProofTierエクスポート追加可能"
+    dod: "70行 - 余裕130行、push呼出し1行追加可能"
+    registry: "170行 - 余裕30行、変更不要（dogfoodingのデータソース）"
+  fileSplitPlan:
+    newFiles[2]{path,purpose,estimatedLines}:
+      workflow-harness/mcp-server/src/state/types-invariant.ts, "Invariant型/ProofTier列挙型/InvariantStatus型/Zodスキーマ定義", 45
+      workflow-harness/mcp-server/src/state/manager-invariant.ts, "addInvariant/updateInvariantStatus/getInvariants関数定義", 55
+  phaseTransitionInvariants:
+    INV1_testBeforeImpl: "PHASE_ORDER.indexOf('test_impl')=12 < PHASE_ORDER.indexOf('implementation')=13 が常に成立"
+    INV2_completedTerminal: "getNextPhase('completed', size) === null が全size('small'|'medium'|'large')で成立"
+    INV3_skipMonotonicity: "SIZE_SKIP_MAP.small(18項目)はSIZE_SKIP_MAP.medium(8項目)の上位集合: medium.every(p => small.includes(p))が真"
+    INV4_nextPhaseAdvances: "getNextPhase(phase, size)がnon-nullのとき、PHASE_ORDER.indexOf(result) > PHASE_ORDER.indexOf(phase)が成立"
+  checkpointImpact: "Checkpoint型(types-core.ts:129-139)にinvariants?: Invariant[]をoptionalで追加。computeCheckpointHash関数はJSON.stringify(rest, Object.keys(rest).sort(), 2)で全キーをソート順にハッシュ化するため、invariantsフィールド追加時に既存checkpointのsha256と非互換になる。後方互換性のためoptionalフィールドとし、undefinedの場合はハッシュに含まれない設計とする"
+  testPatternAnalysis: "handler-traceability.test.tsはsetupHandlerTest()/teardownHandlerTest()ヘルパーを使用し、createMgr()で新StateManagerインスタンスを作成、call()でhandleToolCallをラップする。dod-l4-requirements.test.tsはcreateTempDir()/removeTempDir()でファイルシステムを分離し、makeMinimalState()でTaskStateモックを構築、buildValidRequirementsToon()でTOON成果物を生成する"
+  zodSchemaImpact: "TaskStateSchema(types-core.ts:178-189)は.passthrough()で未知フィールドを許容するため、invariantsフィールド追加時のZodバリデーションは自動的にパスする。明示的にinvariantsスキーマを追加する場合はz.array(InvariantSchema).optional()をchainする"
+
+openQuestions[3]{id,question,resolution}:
+  OQ-1, "ProofTierをAC-Nに付与する際の既存データマイグレーション", "optional型(proofTier?: ProofTier)にすることでマイグレーション不要。既存ACはproofTier=undefinedで動作し、DoDゲートではproofTier未設定のACを従来通りstatus='met'のみで検証する"
+  OQ-2, "INV-Nのviolated状態のブロック挙動", "ACのnot_met状態と同等に扱い、acceptance_verification/completedフェーズのDoDゲートでブロックする。violatedなINV-Nが存在する場合はタスク完了を阻止し、修正を要求する設計とする"
+  OQ-3, "dogfooding INV-1からINV-4の検証タイミング", "DoDゲート内のみで十分。vitest property-based testとして__tests__/invariant-dogfood.test.tsに実装し、CI上では通常のテストスイートの一部として自動実行される。DoDゲートのcheckInvariantFormatは件数確認のみを行い、内容の検証はテストに委任する"
+
+next:
+  criticalDecisions[3]: R-001, R-002, R-003
+  readFiles[5]: docs/workflows/inv-n-proof-tier/scope-definition.toon, docs/workflows/inv-n-proof-tier/research.toon, workflow-harness/mcp-server/src/state/types-core.ts, workflow-harness/mcp-server/src/state/manager.ts, workflow-harness/mcp-server/src/state/manager-write.ts
+  warnings[3]: types-core.tsとmanager.tsの200行制限超過回避のためtypes-invariant.tsとmanager-invariant.tsの新設が必須, Checkpoint型へのinvariants追加はsha256ハッシュ計算に影響するためoptionalフィールドとして後方互換性を維持すること, ProofTierをAC-Nに付与する変更は既存テスト（handler-traceability.test.ts等）の回帰テストが必要

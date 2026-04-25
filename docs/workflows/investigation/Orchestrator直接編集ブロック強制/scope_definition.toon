@@ -1,0 +1,29 @@
+phase: scope_definition
+taskId: orchestrator-direct-edit-block
+ts: "2026-03-02T00:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  SD-001,phase-edit-guard.jsはパスベースのブロックを持たず拡張子チェックのみ,runHook関数の実装を読み取った結果。isBypassPath/getEffectiveExtensionのみで構成されパス成分の検査なし
+  SD-002,SKILL.md Section 6に違反例の具体的記述が存在しない,宣言「NEVER does phase work directly」はあるが反例パターンの記載がなく意識浸透に不十分
+  SD-003,workflow.mdはSKILL.mdと同一内容のミラー,両ファイルの内容が完全一致しているため同期変更が必要
+  SD-004,変更はphase-edit-guard.jsとSKILL.mdの2ファイルに限定,MCP サーバー側・他フック・CIは変更しない
+  SD-005,200行制限を守るため追加行数をrunHook内10行以内に抑制,CORE PRINCIPLEによりphase-edit-guard.jsは200行以下を維持必須
+artifacts[2]{path,role,summary}:
+  docs/workflows/Orchestrator直接編集ブロック強制/scope-definition.md,spec,スコープ定義書。変更対象3ファイルと成功基準4件を明記
+  docs/workflows/Orchestrator直接編集ブロック強制/scope_definition.toon,checkpoint,TOONチェックポイント。次フェーズへの引き継ぎ情報
+findings[4]{id,content}:
+  F-001,phase-edit-guard.jsのrunHook関数(行48-79)はisBypassPath後に拡張子チェックのみ実施。パスにdocs/workflows/を含む場合の分岐なし
+  F-002,SKILL.mdとworkflow.mdは内容が完全一致(両ファイル89行)。変更は両方に適用が必要
+  F-003,CLAUDE.md Section 5にはOrchestratorの直接編集禁止が文書化済みだがフック強制なし
+  F-004,workflow-orchestrator.md行30に「re-launch subagent (NEVER edit directly)」の記載あり。フック側が未実装の状態
+scope[3]{type,path}:
+  file,workflow-harness/hooks/phase-edit-guard.js
+  file,.claude/skills/harness/SKILL.md
+  file,workflow-harness/skills/workflow.md
+out_of_scope[4]{item}:
+  hook-utils.jsの変更（isBypassPath等のユーティリティは不変）
+  workflow-orchestrator.mdへの変更（別タスクとして扱う）
+  MCP サーバー側DoD検証ロジックの変更
+  phase-edit-guard.jsのユニットテスト追加
+next:
+  readFiles[3]: workflow-harness/hooks/phase-edit-guard.js,.claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md
+  action: implementation — runHookにdocs/workflows/パスチェックを追加し、SKILL.md Section 6に違反例を追記

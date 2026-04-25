@@ -1,0 +1,33 @@
+task: tier-c-gaps-n16-n25
+phase: test_selection
+intent: test-design.toonの22テストケースから実装対象を選定する
+
+selectionCriteria:
+  strategy: 全テストケース実装。mediumタスクのため選択的除外なし。
+  totalTests: 22
+  unitTests: 19 (plankton 5 + skill-rules 5 + antipattern 4 + safety 5)
+  integrationTests: 3 (e2e-mcp-chain.test.ts MCP統合テスト)
+  manualTests: 0
+
+selectedTests[5]{file,testCount,coverage}:
+  plankton.test.ts, 5, "AC-1 classifyComplexity 3分類+プロンプト+優先度"
+  skill-rules.test.ts, 5, "AC-2 禁止語+TOON必須フィールド+承認ゲート+bashCategories+minLines"
+  antipattern.test.ts, 4, "AC-5 comment_ratio閾値上下+archgate統合+空ファイル"
+  e2e-mcp-chain.test.ts, 3, "AC-4 lifecycle/quality/verificationチェーン"
+  safety.test.ts, 5, "AC-6 パストラバーサル+特殊文字+巨大入力+XSS+SQLi"
+
+decisions[3]{id,statement,rationale}:
+  TS-1, "全22テストケースを実装対象とし選択的除外は行わない", "mediumタスクのためテスト工数が許容範囲内"
+  TS-2, "AC-7(全テスト通過)はtestingフェーズのvitest run全体実行で検証", "個別ケースではなくスイート全体のexit codeで判定"
+  TS-3, "手動テスト対象なし。全テストがvitest自動実行可能", "純粋関数テスト+vi.mock('fs')で全ケースが自動化可能"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/test-design.toon, input, テスト設計(22ケース定義)
+  docs/workflows/tier-c-gaps-n16-n25/test-selection.toon, output, テスト選択結果(全件実装)
+
+next:
+  criticalDecisions: "TS-1(全件実装)によりtest_implで22自動テストの構成が確定"
+  readFiles: "test-design.toon, retry.ts, archgate.ts, linter-runner.ts, lifecycle.ts"
+  warnings: "5テストファイル各200行制限を遵守すること"
+
+result{phase,status,artifact,lines}: test_selection, complete, docs/workflows/tier-c-gaps-n16-n25/test-selection.toon, 32

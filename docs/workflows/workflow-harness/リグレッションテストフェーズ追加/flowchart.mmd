@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph テストフェーズフロー
+        A[testing フェーズ] --> B{新規テスト<br>全てパス?}
+        B -->|Yes| C[regression_test フェーズ]
+        B -->|No| D[テスト修正]
+        D --> A
+
+        C --> E{リグレッションテスト<br>実行}
+
+        subgraph リグレッションテスト実行
+            E --> F[バックエンド<br>pytest tests/regression/]
+            E --> G[フロントエンド<br>npm test test/regression/]
+        end
+
+        F --> H{バックエンド<br>テストパス?}
+        G --> I{フロントエンド<br>テストパス?}
+
+        H -->|Yes| J[バックエンド OK]
+        H -->|No| K[バックエンド失敗]
+        I -->|Yes| L[フロントエンド OK]
+        I -->|No| M[フロントエンド失敗]
+
+        J --> N{両方OK?}
+        L --> N
+        K --> O[エラー報告]
+        M --> O
+
+        O --> P[問題の特定]
+        P --> Q{今回の変更が<br>原因?}
+        Q -->|Yes| R[コード修正]
+        Q -->|No| S[リグレッション<br>テスト修正]
+        R --> A
+        S --> C
+
+        N -->|Yes| T[parallel_verification<br>フェーズへ]
+        N -->|No| O
+    end
+
+    subgraph リグレッションテスト蓄積フロー
+        U[test_impl フェーズ] --> V[テストコード作成]
+        V --> W{リグレッション<br>として蓄積?}
+        W -->|Yes| X[regression/ に配置]
+        W -->|No| Y[通常のテスト<br>ディレクトリに配置]
+        X --> Z[タスクディレクトリ作成]
+        Z --> AA[テストファイル保存]
+    end

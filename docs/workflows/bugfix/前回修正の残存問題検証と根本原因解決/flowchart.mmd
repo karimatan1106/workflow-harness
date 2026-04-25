@@ -1,0 +1,44 @@
+flowchart TD
+    Start(("実装フェーズ開始<br/>spec.md確認"))
+    Start --> ReadCLAUDE(("Read ツール実行<br/>CLAUDE.md 170-190行読み込み<br/>ci_verification行を特定"))
+
+    ReadCLAUDE --> CheckCurrentState{ci_verification行の<br/>現在の状態は<br/>readonly, testing か?}
+    CheckCurrentState -->|Yes| PrepareEdit(("編集準備完了<br/>置換対象文字列確認"))
+    CheckCurrentState -->|No| ErrorState(("警告: 予期した行内容ではない<br/>ドキュメント確認"))
+
+    ErrorState --> Stop1(("中断: 手動確認必要"))
+
+    PrepareEdit --> ExecuteEdit(("Edit ツール実行<br/>ci_verification行を修正<br/>readonly, testing → readonly"))
+
+    ExecuteEdit --> VerifyEdit(("Read ツール実行<br/>修正結果を検証"))
+
+    VerifyEdit --> CheckModification{修正成功<br/>readonly のみになったか?}
+    CheckModification -->|不成功| RollbackCheck{Edit ツール再実行<br/>が必要か?}
+    RollbackCheck -->|Yes| ExecuteEdit
+    RollbackCheck -->|No| Stop2(("修正失敗<br/>ロールバック"))
+
+    CheckModification -->|成功| VerifyOtherLines(("隣接行確認<br/>security_scan行と commit行<br/>が変更されていないか検証"))
+
+    VerifyOtherLines --> CheckOtherLines{他行に影響<br/>なし確認<br/>完了か?}
+    CheckOtherLines -->|不正| Stop3(("中止: 不正な影響を検出"))
+    CheckOtherLines -->|正常| ReadDefinitions(("Read ツール実行<br/>definitions.ts読み込み<br/>ci_verification設定確認"))
+
+    ReadDefinitions --> VerifyMatch{definitions.ts の<br/>allowedBashCategories が<br/>readonly のみか?}
+    VerifyMatch -->|不一致| Stop4(("中止: 定義ファイルと不整合"))
+    VerifyMatch -->|一致| FinalCheck(("最終検証実施<br/>テーブル構造完全性確認<br/>パイプ区切り正常性検証"))
+
+    FinalCheck --> CheckStructure{テーブル構造<br/>正常に維持されたか?}
+    CheckStructure -->|異常| Stop5(("修正ロールバック<br/>構造エラー"))
+    CheckStructure -->|正常| Complete(("タスク完了<br/>FR-4修正完了<br/>整合性確認済み"))
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style Stop1 fill:#FFB6C6
+    style Stop2 fill:#FFB6C6
+    style Stop3 fill:#FFB6C6
+    style Stop4 fill:#FFB6C6
+    style Stop5 fill:#FFB6C6
+    style ExecuteEdit fill:#87CEEB
+    style ReadCLAUDE fill:#FFE4B5
+    style VerifyEdit fill:#FFE4B5
+    style ReadDefinitions fill:#FFE4B5

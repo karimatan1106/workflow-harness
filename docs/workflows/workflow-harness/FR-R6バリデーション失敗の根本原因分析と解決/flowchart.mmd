@@ -1,0 +1,85 @@
+flowchart TD
+    Start((開始: qualitySectionを確認))
+
+    Start --> Step1(ステップ1: definitions.tsの変更)
+    Step1 --> Step1A(行1093-1114の禁止語リスト部分を特定)
+    Step1A --> Step1B(禁止語の実体をコードフェンス内に追加)
+    Step1B --> Step1C(安全な代替表現リストを同ブロック追記)
+    Step1C --> Step1D(転記防止のための警告文を追加)
+    Step1D --> Step1E(変更箇所の確認と整理完了)
+
+    Step1E --> BuildCheck1{TypeScriptビルド実行}
+    BuildCheck1 -->|ビルド失敗| BuildFail1(エラーメッセージを確認)
+    BuildFail1 --> BuildFix1(ビルドエラーを修正)
+    BuildFix1 --> BuildCheck1
+    BuildCheck1 -->|ビルド成功| Step2(ステップ2: subagentTemplate修正)
+
+    Step2 --> Step2A(manual_testテンプレート更新)
+    Step2A --> Step2B(行数カウント仕様を明示)
+    Step2B --> Step2C(minLinesの値20を明記)
+    Step2C --> Step2D(禁止語転記防止ガイダンス追加)
+
+    Step2D --> Step2E(security_scanテンプレート更新)
+    Step2E --> Step2F(非空行数カウント仕様を明示)
+    Step2F --> Step2G(禁止語転記防止ガイダンス追加)
+
+    Step2G --> Step2H(e2e_testテンプレート更新)
+    Step2H --> Step2I(行数カウント仕様説明を追加)
+    Step2I --> Step2J(禁止語転記防止ガイダンス追加)
+
+    Step2J --> BuildCheck2{TypeScriptビルド再実行}
+    BuildCheck2 -->|ビルド失敗| BuildFail2(ビルドエラーを確認)
+    BuildFail2 --> BuildFix2(ビルドエラーを修正)
+    BuildFix2 --> BuildCheck2
+    BuildCheck2 -->|ビルド成功| Step3(ステップ3: MCPサーバー再起動)
+
+    Step3 --> Step3A(npm run buildを確認)
+    Step3A --> Step3B(dist/definitions.jsの更新確認)
+    Step3B --> Step3C(MCPサーバープロセス再起動)
+    Step3C --> Step3D(workflow_statusで状態確認)
+
+    Step3D --> Step4(ステップ4: CLAUDE.mdを変更)
+
+    Step4 --> Step4A(安全な代替表現パターンセクション追加)
+    Step4A --> Step4B(3つのケースごとに表現パターン列挙)
+    Step4B --> Step4C(確定されていない状態の回避表現)
+    Step4C --> Step4D(追加調査が必要な状態の回避表現)
+    Step4D --> Step4E(架空データを示す状態の回避表現)
+
+    Step4E --> Step4F(リトライプロンプトテンプレート強化)
+    Step4F --> Step4G(フィードバックループの危険性説明)
+    Step4G --> Step4H(間接参照の使用方法を明確化)
+
+    Step4H --> Step4I(subagent起動テンプレート追記)
+    Step4I --> Step4J(禁止語転記防止の注意を追加)
+    Step4J --> Step4K(コードフェンス内記述禁止を強調)
+
+    Step4K --> Step5(ステップ5: 検証を実施)
+
+    Step5 --> Verify1{buildPrompt実行}
+    Verify1 -->|リストが未確認| Verify1X(生成ロジックを再確認)
+    Verify1X --> Verify1
+    Verify1 -->|リストが確認| Verify2(各テンプレート確認)
+
+    Verify2 -->|ガイダンス不足| Verify2X(テンプレート追記内容再確認)
+    Verify2X --> Verify2
+    Verify2 -->|ガイダンス確認| Verify3{parallel_verification再実行}
+
+    Verify3 -->|manual_test失敗| Verify3A(エラー内容を確認)
+    Verify3A --> Verify3
+    Verify3 -->|security_scan失敗| Verify3B(テンプレート再修正)
+    Verify3B --> Verify3
+    Verify3 -->|e2e_test失敗| Verify3C(テンプレート再修正)
+    Verify3C --> Verify3
+    Verify3 -->|全て初回成功| Complete1(検証成功を確認)
+
+    Complete1 --> End((完了: FR-R6修正完成))
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style BuildCheck1 fill:#87CEEB
+    style BuildCheck2 fill:#87CEEB
+    style Verify1 fill:#FFD700
+    style Verify2 fill:#FFD700
+    style Verify3 fill:#FFD700
+    style Complete1 fill:#90EE90

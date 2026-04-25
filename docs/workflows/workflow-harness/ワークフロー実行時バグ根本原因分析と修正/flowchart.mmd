@@ -1,0 +1,69 @@
+%% サマリー
+%% 目的: next.tsのデッドコード削除の実装手順を可視化し、各ステップの順序と条件分岐を示す
+%% 主要な決定事項: 削除対象を2箇所に限定（if ブロック + import文）、テスト動作の不変性を確認、ビルド成功で完了
+%% 次フェーズで必要な情報: ビルド成功確認、regression_test フェーズの遷移動作が変更前後で同一であることの検証
+
+flowchart TD
+    Start((デッドコード削除処理開始)) --> ReadSpec(spec.md を確認<br/>削除対象: line 336-346<br/>import 削除対象: line 28)
+
+    ReadSpec --> Step1(ステップ1: import文の修正<br/>next.ts line 28 を読み込み)
+
+    Step1 --> CheckImport{"recordTestOutputHash<br/>の呼び出し箇所を<br/>確認"}
+
+    CheckImport -->|呼び出しなし| RemoveImport(recordTestOutputHash を<br/>import から除去<br/>validateTestAuthenticity は維持)
+
+    CheckImport -->|呼び出し箇所あり| ErrorImport(エラー: 仕様と不一致<br/>再度確認が必要)
+
+    ErrorImport --> ReadSpec
+
+    RemoveImport --> Step2(ステップ2: デッドコードブロックの削除<br/>regression_test ハンドラー内の<br/>line 336-346 を確認)
+
+    Step2 --> LocateCode(削除対象コードを特定<br/>- コメント行: ハッシュ重複チェック<br/>- if ブロック: currentPhase !== 'regression_test')
+
+    LocateCode --> DeleteBlock(デッドコード全体を削除<br/>- コメント行 1 行<br/>- if ステートメント<br/>- ブロック内容 9 行<br/>合計: 約10行)
+
+    DeleteBlock --> Step3(ステップ3: スキップコメントの追加<br/>削除位置に以下を追加:<br/>ハッシュ重複チェックは<br/>record-test-result.ts側で<br/>対処済みのためスキップ)
+
+    Step3 --> VerifyFormat(コメント形式が<br/>testing フェーズと<br/>一貫しているか確認)
+
+    VerifyFormat --> Step4(ステップ4: ビルド確認<br/>workflow-plugin/mcp-server で<br/>npm run build を実行)
+
+    Step4 --> BuildCheck{"ビルド成功?"}
+
+    BuildCheck -->|成功| Step4Result(ビルド成功確認<br/>TypeScript コンパイル<br/>エラーなし)
+
+    BuildCheck -->|失敗: import エラー| ImportError(import 文を再確認<br/>削除対象が正確か検査)
+
+    ImportError --> RemoveImport
+
+    BuildCheck -->|失敗: 構文エラー| SyntaxError(削除範囲を再確認<br/>コードが完全に<br/>削除されているか検査)
+
+    SyntaxError --> DeleteBlock
+
+    Step4Result --> Verification(変更検証<br/>- 削除前後でハッシュチェック<br/>  スキップ処理の動作が同一<br/>- regression_test へ<br/>  parallel_verification の遷移が正常)
+
+    Verification --> VerifyCheck{"遷移動作が<br/>変更前後で<br/>同一?"}
+
+    VerifyCheck -->|同一| AcceptanceCriteria(受け入れ基準を確認<br/>1. デッドコード削除済み<br/>2. コメント追加済み<br/>3. import 修正済み<br/>4. ビルド成功<br/>5. テスト動作不変)
+
+    VerifyCheck -->|異なる| RegressionBug(リグレッション検出<br/>削除内容を見直し<br/>spec.md を再確認)
+
+    RegressionBug --> DeleteBlock
+
+    AcceptanceCriteria --> AllOK{"全項目クリア?"}
+
+    AllOK -->|はい| Complete((FR-1, FR-2, FR-3 完了<br/>flowchart フェーズ終了))
+
+    AllOK -->|いいえ| ReviewSpec(spec.md の要件を<br/>再度確認<br/>対応が必要な項目を特定)
+
+    ReviewSpec --> ReadSpec
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style ErrorImport fill:#FFB6C6
+    style ImportError fill:#FFE4B5
+    style SyntaxError fill:#FFE4B5
+    style RegressionBug fill:#FFE4B5
+    style BuildCheck fill:#87CEEB
+    style VerifyCheck fill:#87CEEB
+    style AllOK fill:#87CEEB

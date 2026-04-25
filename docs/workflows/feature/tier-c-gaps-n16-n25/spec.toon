@@ -1,0 +1,111 @@
+task: tier-c-gaps-n16-n25
+phase: planning
+intent: Tier C 6項目の技術仕様と実装計画を策定する
+
+implementationOrder[6]{seq,gapId,name,rationale}:
+  1, N-25, Safety sanitizeTaskName, セキュリティ最優先。taskNameがdocsDir/workflowDir生成に直結しパストラバーサル攻撃面を封鎖する必要がある
+  2, N-16, Plankton classifyComplexity, retry.tsのbuildRetryPromptに複雑度分類を追加。既存RetryPromptResult型の拡張で後続のリトライ精度を向上させる
+  3, N-21, Antipattern comment_ratio, archgate.tsのArchCheckType拡張とlinter-runner.tsのcountCommentLines追加。N-18のrunArchGateQuickCheckの前提となるlinter-runner.ts変更を先行させる
+  4, N-18, archgate-linter統合, linter-runner.tsにrunArchGateQuickCheckを追加しpost-tool-lint.shから呼び出す。N-21のlinter-runner.ts変更と合わせて一括実装する
+  5, N-17, Doc-to-test skill-rules, FORBIDDEN_PATTERNS等の定数をコードから直接importして検証するテスト。実装変更なしのテスト専用項目
+  6, N-20, E2E mcp-chain, handleToolCall経由の3チェーン統合テスト。全ツール実装完了後に検証する最終項目
+
+fileChanges[10]{seq,path,action,gapId,description}:
+  1, workflow-harness/mcp-server/src/state/manager-write.ts, modify, N-25, "createTaskState関数内のtaskName引数にsanitizeTaskName適用。line43-50付近でconst sanitized = sanitizeTaskName(taskName)を追加しdocsDir/workflowDir生成に使用"
+  2, workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts, modify, N-25, "handleHarnessStart先頭にtaskName/userIntentのmaxLengthチェック追加。taskName上限100文字、userIntent上限10000文字。String(value).length検査でvalidation error返却"
+  3, workflow-harness/mcp-server/src/tools/retry.ts, modify, N-16, "RetryPromptResult型にcomplexity:'trivial'|'moderate'|'critical'フィールド追加。classifyComplexity関数を新設しbuildRetryPrompt内で呼び出してプロンプトに複雑度タグ埋め込み"
+  4, workflow-harness/mcp-server/src/tools/archgate.ts, modify, N-21, "ArchCheckType unionにcomment_ratioを追加。runArchGateChecks内にcomment_ratio処理ブランチを実装。matchGlob関数をexport化(N-18用)"
+  5, workflow-harness/mcp-server/src/tools/linter-runner.ts, modify, "N-18/N-21", "countCommentLines関数とrunArchGateQuickCheck関数を追加。countCommentLinesは単行コメント(//行頭)とブロックコメント(/* */)を計数。runArchGateQuickCheckはpattern_absent/pattern_requiredのみ100ms timeout付きで実行"
+  6, .claude/hooks/post-tool-lint.sh, modify, N-18, "末尾(exit 0の前)にtimeout 3秒のnode呼び出しセクション追加。runArchGateQuickCheckを実行しnode失敗時はexit 0でgraceful degradation"
+  7, workflow-harness/mcp-server/src/__tests__/safety.test.ts, create, N-25, "パストラバーサル/NULバイト/制御文字/巨大入力の4攻撃パターンテスト"
+  8, workflow-harness/mcp-server/src/__tests__/plankton.test.ts, create, N-16, "classifyComplexityのtrivial/moderate/critical分類テストとbuildRetryPromptの複雑度タグ埋め込みテスト"
+  9, workflow-harness/mcp-server/src/__tests__/antipattern.test.ts, create, N-21, "comment_ratio checkTypeのviolation検出テストとcountCommentLinesの計数精度テスト"
+  10, workflow-harness/mcp-server/src/__tests__/e2e-mcp-chain.test.ts, create, N-20, "lifecycle/quality/verificationの3チェーンをhandleToolCall経由で検証するE2Eテスト"
+
+typeDesign[6]{id,signature,location,description}:
+  TD-1, "type ComplexityLevel = 'trivial' | 'moderate' | 'critical'", retry.ts, "DoDCheckResultのcheck/passed/levelフィールドから修正難易度を3段階に分類する型。trivial=禁止語/プレースホルダー(fix存在)、moderate=密度不足/行数不足(artifact_quality失敗)、critical=ファイル未存在/L1失敗2件以上"
+  TD-2, "classifyComplexity(errorClass: RetryPromptResult['errorClass'], checks: DoDCheckResult[]): ComplexityLevel", retry.ts, "errorClassの4分類(FileNotFound/SyntaxError/LogicError/Unknown)とDoDCheckResult配列から複雑度を判定する純粋関数。FileNotFound→critical、SyntaxError+fix存在→trivial、それ以外→checks分析で判定"
+  TD-3, "sanitizeTaskName(name: string): string", manager-write.ts, "path.basename適用→/[^a-zA-Z0-9\\-_]/g除去→NULバイト/制御文字除去→最大100文字切り詰め。空文字列の場合はエラーをthrow"
+  TD-4, "countCommentLines(content: string): {commentLines: number, totalLines: number, ratio: number}", linter-runner.ts, "単行コメント(^\\s*//)とブロックコメント(/* */間の行)を計数しコメント行比率を返す。空行はtotalLinesに含むがcommentLinesには含まない"
+  TD-5, "runArchGateQuickCheck(filePath: string, content: string): {passed: boolean, violations: string[]}", linter-runner.ts, "archgate-rules.jsonからpattern_absent/pattern_requiredルールのみフィルタしglob一致ファイルに対してregex評価。AbortController+setTimeout(100)でtimeout。タイムアウト時はpassed:trueを返す"
+  TD-6, "ArchCheckType = 'line_count' | 'pattern_absent' | 'pattern_required' | 'duplicate_code' | 'ast_grep_pattern' | 'comment_ratio'", archgate.ts, "既存5種にcomment_ratioを追加したunion型。runArchGateChecks内のswitch文にcomment_ratioブランチを追加"
+
+classifyComplexityLogic:
+  trivialConditions: "errorClass='SyntaxError' AND 全failed checksにfixフィールドが存在 AND failed checks数が2以下"
+  moderateConditions: "errorClass='LogicError' OR (errorClass='SyntaxError' AND fix欠落あり) OR failed checks数が3-4"
+  criticalConditions: "errorClass='FileNotFound' OR L1レベルの失敗が2件以上 OR failed checks数が5以上"
+  fallback: "errorClass='Unknown'の場合はfailed checks数で判定: 0-2=trivial, 3-4=moderate, 5+=critical"
+
+sanitizeTaskNameLogic:
+  step1: "NULバイト(\\x00)と制御文字(\\x01-\\x1f)を空文字に置換"
+  step2: "path.basename()を適用しディレクトリ部分を除去(../等のトラバーサル防止)"
+  step3: "正規表現/[^a-zA-Z0-9\\-_]/gで許可文字以外を除去"
+  step4: "先頭・末尾のハイフン/アンダースコアをtrim"
+  step5: "100文字超過時はslice(0,100)で切り詰め"
+  step6: "結果が空文字列の場合throw new Error('Invalid taskName: empty after sanitization')"
+
+commentRatioLogic:
+  singleLinePattern: "^\\s*//で始まる行をコメント行として計数"
+  blockCommentTracking: "/*を検出したらブロック内フラグをON、*/を検出したらOFF。フラグON中の全行をコメント行として計数"
+  ratioCalculation: "ratio = commentLines / totalLines (totalLines=0の場合ratio=0)"
+  thresholdDefault: "archgate-rules.jsonのthresholdフィールドで指定。未指定時デフォルト40%"
+  violationCondition: "ratio > threshold/100の場合violation報告"
+
+archgateQuickCheckLogic:
+  ruleFilter: "loadRuleStore()からcheckType='pattern_absent'またはcheckType='pattern_required'のルールのみ抽出"
+  globMatch: "archgate.tsのmatchGlob関数(export化済み)でfilePath引数とルールのglobフィールドを照合"
+  patternEval: "new RegExp(rule.pattern)でcontent引数を評価。pattern_absent→matchでviolation、pattern_required→non-matchでviolation"
+  timeout: "AbortControllerのsignal+setTimeout(100ms)でタイムアウト制御。タイムアウト時は{passed:true, violations:[]}を返す"
+  caching: "loadRuleStore()結果をモジュールレベル変数にキャッシュし同一プロセス内で再読み込みを回避"
+
+postToolLintIntegration:
+  insertionPoint: "post-tool-lint.shのexit 0直前(line86付近)"
+  nodeCommand: "timeout 3 node -e \"require('./workflow-harness/mcp-server/dist/tools/linter-runner.js').runArchGateQuickCheck('$FILE_PATH', require('fs').readFileSync('$FILE_PATH','utf-8'))\""
+  errorHandling: "node実行失敗(exit code非0)時はecho警告メッセージのみ出力しexit 0で続行"
+  windowsNote: "MSYS_NT環境ではnodeパスがPATH依存のためcommand -v node確認を先行させる"
+
+e2eTestStrategy:
+  mockApproach: "vi.mock('fs')でインメモリfsStore使用。vi.mock('../utils/hmac.js')でHMAC検証をバイパス"
+  chain1Lifecycle: "harness_start(taskName+userIntent)→harness_set_scope→harness_add_ac→harness_next(forceTransition:true)の順にhandleToolCallを呼び出しtaskId/sessionTokenの一貫性を検証"
+  chain2Quality: "harness_record_test→harness_record_test_result→harness_record_proofの連鎖で状態遷移を検証。各ツールの返却値からstate変化を確認"
+  chain3Verification: "registerArchRule→runArchGateChecks→DoD失敗→buildRetryPromptの連鎖を検証。archgateルール登録後のDoD検証でviolation検出とリトライプロンプト生成を確認"
+
+testFileMapping[5]{testFile,sourceFile,gapId,testCount}:
+  safety.test.ts, "manager-write.ts/lifecycle.ts", N-25, 8
+  plankton.test.ts, retry.ts, N-16, 6
+  antipattern.test.ts, "archgate.ts/linter-runner.ts", N-21, 7
+  skill-rules.test.ts, "dod-helpers.ts/handler-shared.ts/registry.ts", N-17, 5
+  e2e-mcp-chain.test.ts, "handler.ts/manager.ts", N-20, 9
+
+estimatedTestCount: 35
+
+riskMitigations[4]{risk,mitigation,owner}:
+  matchGlob export化がarchgate.tsの既存importに影響, archgate.tsからのimportを全てgrep確認し影響範囲ゼロを検証。matchGlobは現在privateのため外部依存なし, N-18実装時
+  sanitizeTaskNameが既存タスクのdocsDir互換性を破壊, 既存タスク名パターン(英数字+ハイフン)は全てregex /[^a-zA-Z0-9\\-_]/gを通過するため変更なし。新規タスクのみ影響, N-25実装時
+  post-tool-lint.shのnode呼び出しがWindows MSYS_NTで失敗, command -v node確認を先行させtimeout 3秒で強制終了。失敗時exit 0でgraceful degradation, N-18実装時
+  E2Eテストのfsモックが不完全で実ファイルシステムに書き込み, vi.mock('fs')のモック検証をbeforeEach内で実施しwriteFileSync呼び出し回数をアサート, N-20実装時
+
+decisions[8]{id,statement,rationale}:
+  PL-1, "実装順序はN-25(Security)→N-16(Retry)→N-21(Antipattern)→N-18(Archgate)→N-17(Doc-test)→N-20(E2E)とする", "セキュリティ修正を最優先しパストラバーサル攻撃面を即座に封鎖する。N-21とN-18はlinter-runner.ts共通変更のため連続実装する。N-20は全ツール実装後の統合テストのため最後に配置"
+  PL-2, "classifyComplexity関数はerrorClassとDoDCheckResult[]の2引数を受け取る純粋関数とする", "外部状態やファイルI/Oに依存しないためテスト容易性が高い。errorClassの4分類(FileNotFound/SyntaxError/LogicError/Unknown)とDoDCheckResultのcheck/passed/level/fixフィールドの組み合わせで修正難易度を正確に判定可能"
+  PL-3, "sanitizeTaskName関数はmanager-write.tsに配置しcreateTaskState内で呼び出す", "taskNameがdocsDir/workflowDir生成に直結するため生成元であるcreateTaskState内で適用するのが攻撃面封鎖の最適位置。lifecycle.tsのhandleHarnessStartにはmaxLengthチェックのみ配置し関心分離を維持"
+  PL-4, "runArchGateQuickCheckはarchgate.tsのmatchGlobをimportし再実装を避ける", "glob一致判定ロジックの重複はバグの温床。matchGlob関数をexport化しlinter-runner.tsからimportする。archgate.tsの変更はexportキーワード追加のみで既存ロジックに影響しない"
+  PL-5, "comment_ratio checkTypeの閾値はarchgate-rules.jsonのthresholdフィールドで外部設定可能とする", "ハードコード閾値はプロジェクト別カスタマイズを阻害する。デフォルト40%はLLM生成コードのアンチパターン(全行の4割以上がコメント)を検出する経験的閾値。通常JSDoc付きコード20-30%と区別可能"
+  PL-6, "E2EテストはStateManagerをvi.mock('fs')のインメモリストアで実体化しhandleToolCallを直接呼び出す", "ディスクI/O排除によりテスト独立性を確保し並列実行を可能にする。handleToolCallの第3引数にStateManagerインスタンスを渡す既存APIを活用"
+  PL-7, "入力長制限はhandleHarnessStart先頭でString(value).length検査を行いvalidation errorとして即座に返却する", "maxLength検査をハンドラー最初期に実行することでメモリ確保前に過大入力を拒否する。taskName上限100文字、userIntent上限10000文字の制限値はTM-D2の脅威分析に基づく"
+  PL-8, "buildRetryPromptのプロンプトテキストに[TRIVIAL]/[MODERATE]/[CRITICAL]タグを埋め込みCRITICALの場合sonnetエスカレーション推奨文を含める", "複雑度タグにより下流のリトライ戦略を最適化する。CRITICALエラー(ファイル未存在等)はhaikuでは解決困難なためsonnetへのエスカレーションを推奨することでリトライ成功率を向上させる"
+
+artifacts[8]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/scope-definition.toon, input, 10項目の実用性分析と6件in-scope確定
+  docs/workflows/tier-c-gaps-n16-n25/research.toon, input, 6項目の技術調査結果と8件の実装方針決定
+  docs/workflows/tier-c-gaps-n16-n25/requirements.toon, input, 機能要件12件・非機能要件6件・受入基準7件・RTM6件の要件定義
+  docs/workflows/tier-c-gaps-n16-n25/threat-model.toon, input, 5脅威+5対策の脅威分析
+  docs/workflows/tier-c-gaps-n16-n25/spec.toon, output, 技術仕様書と実装計画(本成果物)
+  workflow-harness/mcp-server/src/tools/retry.ts, reference, classifyComplexity追加先(188行・RetryPromptResult型・buildRetryPrompt関数)
+  workflow-harness/mcp-server/src/tools/archgate.ts, reference, comment_ratio追加先(187行・ArchCheckType型・matchGlob関数・runArchGateChecks関数)
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, reference, countCommentLines/runArchGateQuickCheck追加先(68行・JscpdResult/AstGrepResult型)
+
+next:
+  criticalDecisions: "PL-1の実装順序がN-25→N-16→N-21→N-18→N-17→N-20で確定。PL-3のsanitizeTaskName配置先がmanager-write.tsで確定。PL-4のmatchGlob export化がarchgate.tsの変更範囲を最小化。PL-6のfsモック戦略がE2Eテストの実装方針を確定。"
+  readFiles: "retry.ts(classifyComplexity追加), archgate.ts(comment_ratio/matchGlob export), linter-runner.ts(countCommentLines/runArchGateQuickCheck), manager-write.ts(sanitizeTaskName), lifecycle.ts(maxLength検査), handler.ts(handleToolCall API), post-tool-lint.sh(node呼び出しセクション), dod-helpers.ts(FORBIDDEN_PATTERNS定数), handler-shared.ts(PHASE_APPROVAL_GATES定数)"
+  warnings: "matchGlob export化はarchgate.tsの公開API拡張のため既存importへの影響確認が必要。post-tool-lint.sh内のnodeパス解決はMSYS_NT環境でcommand -v node確認を先行させること。E2Eテストのvi.mock('fs')はStateManagerのコンストラクタ内ensureHmacKeysもモック対象に含めること。"

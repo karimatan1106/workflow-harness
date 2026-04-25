@@ -1,0 +1,22 @@
+phase: research
+taskId: orchestrator-direct-edit-block
+ts: "2026-03-02T01:00:00+09:00"
+decisions[4]{id,statement,rationale}:
+  R-D001,パスチェックはisBypassPath()呼び出し直後に挿入する,フェーズ取得前に弾くことでgetCurrentPhase()の不要な呼び出しを避けパスが明確になる
+  R-D002,docs/workflows/検出はreplace+includesで実装する,hook-utils.jsのisBypassPath実装パターンと一致し行数を最小化できる
+  R-D003,SKILL.mdへの追加はSection 2末尾に違反例ブロックとして挿入する,既存セクション構造を壊さず最小変更でOrchestratorパターンを補強できる
+  R-D004,workflow.mdはSKILL.mdと同一変更を適用しミラー一致を維持する,両ファイルが乖離すると/harness呼び出し時の動作が環境依存になるリスクがある
+findings[6]{id,content}:
+  R-001,phase-edit-guard.js行48-79のrunHookはExt検査のみ。パスディレクトリ成分の検査なし
+  R-002,isBypassPath(hook-utils.js行49-56)はdocs/workflows/をブロック対象として持たない
+  R-003,SKILL.md Section 2に「never edit directly」の記述はあるがOrchestratorパターン節・違反例なし
+  R-004,workflow.mdはSKILL.mdの完全ミラー(89行一致)。両ファイルへの同期変更が必要
+  R-005,CLAUDE.md Section 5にForbidden Action宣言あり。フック側実装が未対応の乖離状態
+  R-006,phase-edit-guard.jsは現在86行。200行制限まで114行の余裕あり
+changeTargets[3]{file,location,action}:
+  workflow-harness/hooks/phase-edit-guard.js,行59(isBypassPath直後),docs/workflows/パスチェック追加(10行以内)
+  .claude/skills/harness/SKILL.md,Section 2末尾,違反例と正しいパターンを追加(5-10行)
+  workflow-harness/skills/workflow.md,Section 2末尾,SKILL.mdと同一変更を適用
+next:
+  readFiles[3]: workflow-harness/hooks/phase-edit-guard.js,.claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md
+  action: requirements — AC-N定義とORPEN_QUESTIONSセクション作成

@@ -1,0 +1,22 @@
+stateDiagram-v2
+    Start --> ReadSpec
+    ReadSpec --> ReadRootCLAUDE: spec.mdから修正計画を読み込み完了
+    ReadRootCLAUDE --> InsertDesignReview: ルートCLAUDE.mdの141-165行を確認
+    InsertDesignReview --> InsertRegressionTest: ui_design直後にdesign_review行を挿入（FR-5-A完了）
+    InsertRegressionTest --> InsertCiAndDeploy: testing直後にregression_test行を挿入（FR-5-B完了）
+    InsertCiAndDeploy --> VerifyRootTable: push直後にci_verification・deploy行を挿入（FR-5-C完了）
+    VerifyRootTable --> VerifyRootTable: ルートCLAUDE.mdが25行であることを確認
+    VerifyRootTable --> ReadPluginCLAUDE: ルートCLAUDE.md検証完了（AC-5-5確認）
+    ReadPluginCLAUDE --> InsertPluginDesignReview: workflow-plugin/CLAUDE.mdの179-205行を確認
+    InsertPluginDesignReview --> InsertPluginRegressionTest: ui_design直後にdesign_review行を挿入（FR-6-A完了）
+    InsertPluginRegressionTest --> InsertPluginCiAndDeploy: testing直後にregression_test行を挿入（FR-6-B完了）
+    InsertPluginCiAndDeploy --> VerifyPluginTable: push直後にci_verification・deploy行を挿入（FR-6-C完了）
+    VerifyPluginTable --> VerifyPluginTable: workflow-plugin/CLAUDE.mdが25行であることを確認
+    VerifyPluginTable --> CrossValidate: plugin側テーブル検証完了（AC-6-5確認）
+    CrossValidate --> CrossValidate: 両テーブルとdefinitions.tsの三者フェーズ順序が一致
+    CrossValidate --> CrossValidate: design_reviewとregression_testとci_verificationとdeployのsubagent_type・model値を照合
+    CrossValidate --> End: 整合性検証完了（NFR-3確認）
+    note right of End
+        全25フェーズの整合性確認完了
+        FR-5とFR-6とFR-7の全受入基準を達成
+    end note

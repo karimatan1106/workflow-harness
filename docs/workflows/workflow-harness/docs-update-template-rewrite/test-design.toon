@@ -1,0 +1,75 @@
+phase: test_design
+taskName: docs-update-template-rewrite
+intent: "docs_updateフェーズテンプレートをworkflow-docs.mdのドキュメント構造(docs/spec/features/, docs/architecture/等)に基づいて改修し、永続的なコードドキュメント生成を可能にする"
+riskScore: 4
+
+testStrategy:
+  approach: "ユニットテスト中心。変更対象3ファイル(defs-stage6.ts, registry.ts, definitions.ts)に対し、既存テストパターン(handler-templates-s1.test.ts, handler-templates-validation.test.ts)を踏襲したvitest統合テストで検証する"
+  unitTestRatio: "80%。テンプレート内容検証、registry設定検証、OUTPUT_FILE_TO_PHASE検証はすべてユニットレベルで実施可能"
+  integrationTestRatio: "20%。buildSubagentPromptを経由した最終プロンプト出力の検証でテンプレート+registry+definitions連携を統合的に確認する"
+  e2eTestRatio: "0%。本タスクはハーネス内部のテンプレート改修であり、E2Eテスト対象外。DoD検証パイプラインの動作確認は統合テストで代替する"
+  framework: "vitest。既存テストスイート(handler-test-setup.ts)のsetupHandlerTest/teardownHandlerTestヘルパーを再利用する"
+
+testDataStrategy:
+  templateVerification: "defs-stage6.tsからdocs_updateテンプレート文字列を直接インポートしてコンテンツ検証する。DEFS_STAGE6.docs_update.subagentTemplateへの直接アクセスが最も正確"
+  registryVerification: "registry.tsからPHASE_REGISTRYをインポートしてdocs_update設定値を検証する。モック不要で実設定を検証可能"
+  promptBuilderVerification: "buildSubagentPromptにdocs_updateフェーズを渡し、最終出力プロンプトに対してパターンマッチ検証する。taskName/docsDir/userIntentは固定テストデータを使用"
+  lineCounting: "wc -l相当のreadonly bashコマンドでdefs-stage6.tsの行数を計測する。テスト実行時に動的計測することで圧縮・拡充後の実測値を検証可能"
+
+testCases[18]{id,acRef,category,description,expectedResult,verificationMethod}:
+  TC-AC1-01, AC-1, unit, "docs_updateテンプレートがdocs/architecture/overview.mdパスを含むこと", "テンプレート文字列にdocs/architecture/overview.mdが出現する", "DEFS_STAGE6.docs_update.subagentTemplateに対するtoContain検証"
+  TC-AC1-02, AC-1, unit, "docs_updateテンプレートがdocs/operations/パスを含むこと", "テンプレート文字列にdocs/operations/が出現しenvironments/deployment/monitoring/runbooksのいずれかに言及する", "toContain('docs/operations/')で基本パス確認。environments/deployment/monitoring/runbooksの少なくとも2語がtoMatchで検出される"
+  TC-AC1-03, AC-1, unit, "docs_updateテンプレートがCHANGELOG.mdを含むこと", "テンプレート文字列にCHANGELOG.mdが出現する", "toContain('CHANGELOG.md')検証"
+  TC-AC1-04, AC-1, unit, "docs_updateテンプレートがREADME.mdを含むこと", "テンプレート文字列にREADME.mdが出現する", "toContain('README.md')検証"
+  TC-AC1-05, AC-1, unit, "docs_updateテンプレートがdocs/workflows/の一時性注意を含むこと", "テンプレート文字列にdocs/workflows/が出現し、一時的/永続パスに関する指示がある", "toContain('docs/workflows/')検証。一時/永続に関するキーワードのtoMatch検出"
+  TC-AC2-01, AC-2, unit, "registry.tsのdocs_update.outputFileが'{docsDir}/docs-update.toon'であること", "PHASE_REGISTRY.docs_update.outputFileが正確に'{docsDir}/docs-update.toon'と一致する", "PHASE_REGISTRY.docs_updateをインポートしてoutputFileプロパティをtoBe検証"
+  TC-AC2-02, AC-2, unit, "registry.tsのdocs_update.inputFilesにspec.toon/requirements.toon/code-review.toonが含まれること", "inputFiles配列に3つのTOONファイルパスが含まれる", "toContain検証で3つのパターン({docsDir}/spec.toon, {docsDir}/requirements.toon, {docsDir}/code-review.toon)の存在確認"
+  TC-AC2-03, AC-2, unit, "registry.tsのdocs_update.requiredSectionsに[decisions,artifacts,next]が設定されていること", "requiredSections配列がdecisions/artifacts/nextの3要素を含む", "toEqual(['decisions','artifacts','next'])で完全一致検証"
+  TC-AC2-04, AC-2, unit, "registry.tsのdocs_update.minLinesが30であること", "minLinesプロパティが30", "toBe(30)検証"
+  TC-AC2-05, AC-2, unit, "registry.tsのdocs_update.modelがsonnetであること", "modelプロパティがsonnet", "toBe('sonnet')検証"
+  TC-AC2-06, AC-2, unit, "registry.tsのdocs_update.bashCategoriesにreadonlyとimplementationが含まれること", "bashCategories配列に'readonly'と'implementation'が含まれる", "toContain('readonly')とtoContain('implementation')の両方で検証"
+  TC-AC3-01, AC-3, unit, "definitions.tsのOUTPUT_FILE_TO_PHASEに'docs-update.toon'エントリが存在すること", "OUTPUT_FILE_TO_PHASE['docs-update.toon']が'docs_update'を返す", "buildToonFirstSectionの動作検証。docs-update.toonをinputFilesに含むフェーズからbuildSubagentPromptを呼び出し、TOON入力セクションにdocs-update.toonが含まれることを間接検証"
+  TC-AC4-01, AC-4, unit, "defs-stage6.tsの行数が200以下であること", "wc -l出力が200以下の数値を示す", "readonlyカテゴリのbashコマンド(wc -l)で実測。数値比較でassert"
+  TC-AC4-02, AC-4, boundary, "defs-stage6.tsの行数が190以上であること(過剰圧縮の検出)", "wc -l出力が190以上の数値を示す(テンプレート内容が著しく削減されていないことの確認)", "下限値検証。過剰な圧縮によりテンプレート情報が失われていないことを保証"
+  TC-AC5-01, AC-5, unit, "docs_updateテンプレートに'## タスク情報'ヘッダーが含まれないこと", "テンプレート文字列に'## タスク情報'が出現しない", "not.toContain('## タスク情報')検証"
+  TC-AC5-02, AC-5, unit, "docs_updateテンプレートに'## 入力'ヘッダーが含まれないこと", "テンプレート文字列に'## 入力'が出現しない", "not.toContain('## 入力')検証"
+  TC-AC5-03, AC-5, unit, "docs_updateテンプレートに'## 出力'ヘッダーが含まれないこと", "テンプレート文字列に'## 出力'が出現しない", "not.toContain('## 出力')検証"
+  TC-AC5-04, AC-5, integration, "buildSubagentPrompt経由でdocs_updateの最終プロンプトに除去対象ヘッダーが残存しないこと", "buildSubagentPrompt('docs_update', ...)の出力に'## タスク情報'/'## 入力'/'## 出力'が含まれない", "buildSubagentPrompt呼出後のプロンプト全文に対してnot.toContain検証3件"
+
+edgeCases[6]{id,description,expectedBehavior}:
+  EC-1, "defs-stage6.tsがちょうど200行の場合", "AC-4を満たす(200以下)。境界値として許容される"
+  EC-2, "inputFilesに指定されたファイル(spec.toon等)が存在しない場合", "buildSubagentPromptはin:行にファイルパスを列挙するのみ。ファイル不在でもプロンプト生成は成功する(OQ-2で確認済み)"
+  EC-3, "commit/push/ci_verification/deployテンプレート圧縮後にbuildSubagentPrompt出力が変化しないこと", "## タスク情報ブロックはbuildSubagentPromptのL94正規表現で除去されるため、圧縮前後で最終プロンプト出力は同一。ただし本タスクのスコープ外(notInScope[2])のため検証は実施しない"
+  EC-4, "テンプレート内に=== 区切りを使用した場合のbuildSubagentPrompt L132変換との干渉", "L132は'## 'を'=== 'に変換する処理。テンプレートが直接'=== 'を使用する場合は変換対象外で干渉しない"
+  EC-5, "requiredSections設定後にminLines未満の成果物が生成された場合", "L3チェック(dod-l3.ts)がcontent chars < minLines*10で失敗を返す。DoD検証パイプラインが正常に機能していることの間接確認"
+  EC-6, "OUTPUT_FILE_TO_PHASEにdocs-update.toonを追加した後、他フェーズのinputFilesにdocs-update.toonを含めた場合", "buildToonFirstSectionがTOON入力ACEセクションにdocs-update.toonのread:行を自動生成する。現時点ではcommitのinputFilesは空だが将来の拡張で機能する"
+
+acTcMapping[5]{acId,tcIds,coverageSummary}:
+  AC-1, "TC-AC1-01/TC-AC1-02/TC-AC1-03/TC-AC1-04/TC-AC1-05", "workflow-docs.md Section3 docs_updateの5項目(overview.md/operations/CHANGELOG/README/workflows一時性)を各1テストケースで網羅"
+  AC-2, "TC-AC2-01/TC-AC2-02/TC-AC2-03/TC-AC2-04/TC-AC2-05/TC-AC2-06", "registry設定6プロパティ(outputFile/inputFiles/requiredSections/minLines/model/bashCategories)を各1テストケースで網羅"
+  AC-3, "TC-AC3-01", "OUTPUT_FILE_TO_PHASEマッピングの存在をbuildToonFirstSection経由の間接検証で確認"
+  AC-4, "TC-AC4-01/TC-AC4-02", "200行上限と190行下限の境界値ペアで過不足を検証"
+  AC-5, "TC-AC5-01/TC-AC5-02/TC-AC5-03/TC-AC5-04", "3種のヘッダー(タスク情報/入力/出力)の不在をテンプレート直接検証+buildSubagentPrompt統合検証で二重確認"
+
+testFileStructure[2]{path,role,testCount}:
+  src/__tests__/handler-templates-s6-docs.test.ts, "defs-stage6.tsのdocs_updateテンプレート内容検証+registry設定検証+OUTPUT_FILE_TO_PHASE検証のユニットテスト群", 16
+  src/__tests__/handler-templates-s6-docs-integration.test.ts, "buildSubagentPrompt経由のdocs_update最終プロンプト統合検証", 2
+
+decisions[7]{id,statement,rationale}:
+  TD-1, "既存テストパターン(handler-templates-s1.test.ts)を踏襲しDEFS_STAGE6直接インポートとharness_get_subphase_template API呼出の両方を使用する", "handler-templates-s1.test.tsはcall(mgr, 'harness_get_subphase_template', {phase})パターンでテンプレートを取得しtoContainで内容検証する。同じパターンを踏襲することでテストスイートの一貫性を維持する"
+  TD-2, "AC-1の5項目を5つの独立テストケースに分割し各項目の検証漏れを防止する", "5項目を1テストにまとめると最初のassert失敗で残りが未検証となる。vitest itごとに1項目を検証することで全項目の検証完了を保証する"
+  TD-3, "AC-4の200行制限検証にwc -lコマンドの実測値を使用し静的計算に依存しない", "spec.toonのlineBudgetAnalysisは推定値(198行)だが、テンプレート文字列内の改行やバッククォートの扱いで実測値が異なる可能性がある。実測値による検証が最も信頼性が高い"
+  TD-4, "AC-3のOUTPUT_FILE_TO_PHASE検証はbuildToonFirstSection経由の間接検証を採用しエクスポートされていない内部定数への依存を回避する", "OUTPUT_FILE_TO_PHASEはdefinitions.ts内のconst(エクスポートなし)。直接参照するにはテスト用エクスポートが必要だが、既存コードの変更はスコープ外。buildSubagentPromptが内部的にbuildToonFirstSectionを呼出すため、最終プロンプト出力での検証が適切"
+  TD-5, "境界値テストとしてdefs-stage6.tsの下限(190行)検証を追加し過剰圧縮を検出する", "200行上限のみ検証すると、テンプレートが極端に短縮されて情報量が不足するケースを検出できない。190行下限は現在の推定値(198行)から10行のマージンを考慮した妥当な閾値"
+  TD-6, "commit/push/ci_verification/deployテンプレート圧縮の検証は本タスクのスコープ外としてテストケースに含めない", "requirements.toonのnotInScope[2]で他フェーズのテンプレート改修は除外されている。圧縮はdocs_updateテンプレート拡充の前提作業だが、圧縮結果の検証は別タスクの責務"
+  TD-7, "テストファイルを2ファイル(ユニット+統合)に分割しテスト種別の明確化と実行速度の最適化を図る", "ユニットテスト(16件)はインポート検証のみで高速実行可能。統合テスト(2件)はsetupHandlerTest/createMgr/callヘルパーを使用しMCPハンドラー経由の検証を行うため相対的に低速。分割により高速フィードバックループを実現する"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/docs-update-template-rewrite/test-design.toon, spec, "本テスト設計成果物。テスト方針、18テストケース、6エッジケース、AC-TC追跡マトリクスを構造化"
+  src/__tests__/handler-templates-s6-docs.test.ts, test, "defs-stage6.ts/registry.ts/definitions.tsの設定検証ユニットテスト(16件)。実装フェーズで作成"
+  src/__tests__/handler-templates-s6-docs-integration.test.ts, test, "buildSubagentPrompt経由のdocs_update最終プロンプト統合検証(2件)。実装フェーズで作成"
+
+next:
+  criticalDecisions: "TD-4のOUTPUT_FILE_TO_PHASE間接検証が最も実装上の注意を要する。buildSubagentPromptの呼出引数(phase, taskName, docsDir, workflowDir, userIntent)を正確に設定し、docs-update.toonをinputFilesに含むフェーズを特定するか、テスト用にPHASE_REGISTRYの一時的なinputFiles設定が必要になる可能性がある"
+  readFiles: "src/__tests__/handler-test-setup.ts, src/__tests__/handler-templates-s1.test.ts, src/phases/defs-stage6.ts, src/phases/registry.ts, src/phases/definitions.ts"
+  warnings: "OUTPUT_FILE_TO_PHASEはエクスポートされていないため直接テスト不可。buildToonFirstSection経由の間接検証では、docs-update.toonをinputFilesに含むフェーズが現時点で存在しない可能性がある。その場合はTC-AC3-01の検証方法をdefinitions.tsのソースコード文字列検索(grep相当)に変更する必要がある"

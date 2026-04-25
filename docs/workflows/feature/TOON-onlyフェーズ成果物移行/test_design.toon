@@ -1,0 +1,17 @@
+phase: test_design
+taskId: toon-only-migration-2026-03-02
+ts: "2026-03-02T12:00:00+09:00"
+decisions[7]{id,statement,rationale}:
+  TD-001,AC-1の検証はdod-l3.ts・dod-l4-delta.ts・dod-l4-requirements.tsの各チェック関数をユニットテストレベルで検証する方針とする,各関数は入出力が明確な純粋関数であるためユニットテストが最適なカバレッジ戦略である
+  TD-002,AC-2はnpm run buildを直接実行し終了コード0と型エラーゼロを自動検証する,TypeScript変更を伴う移行において型チェックは最優先の客観的証拠となる
+  TD-003,AC-3はnpm testを変更前後で実行しテスト件数差異ゼロとリグレッションゼロを確認する,既存テストのリグレッションなしという条件は件数・名称の変化がないことで証明できる
+  TD-004,AC-4はCLAUDE.md Section 13に対してgrepで「## 」形式の見出し記述残存を確認するファイル静的検査で検証する,静的ファイル検査は非決定論的判断を排除し確実な証拠を提供する
+  TD-005,AC-5はdefs-stage1〜6.tsの6ファイル全てにgrepで.md生成指示の残存を確認するファイル静的検査で検証する,文字列検索はL4レベルの確実性を持つ検証手段である
+  TD-006,境界値テストはdecisions[]配列の5件・4件・0件の3パターンとacceptanceCriteria[]の3件・2件の2パターンを必ずカバーする,境界値テストは実装ミスの最も高い発生リスク箇所であるため個別テストケースとして定義する
+  TD-007,checkToonCheckpointの廃止確認はgates runnerファイルへのgrepチェックをTC-EDGE-01として独立したテストケースに定義する,廃止漏れは機能重複と混乱を引き起こすため独立確認が必要である
+artifacts[1]{path,role,summary}:
+  docs/workflows/TOON-onlyフェーズ成果物移行/test-design.md,spec,AC-1〜AC-5に対応するテストケースTC-AC1-01〜TC-AC5-02とエッジケース2件を定義したテスト設計書
+next:
+  criticalDecisions[3]: TD-001,TD-006,TD-007
+  readFiles[4]: workflow-harness/mcp-server/src/gates/dod-l3.ts,workflow-harness/mcp-server/src/gates/dod-l4-delta.ts,workflow-harness/mcp-server/src/gates/dod-l4-requirements.ts,workflow-harness/mcp-server/src/phases/registry.ts
+  warnings[3]: dod-l3.tsのtoonDecodeベース再実装ではtoonDecode戻り値型の全フィールド名を事前に確認してからcontentLines相当の計算ロジックを実装すること,dod-l4-requirements.tsの4関数変更時にacceptanceCriteria[]・notInScope[]・openQuestions[]の実際のキー名をrequirements.toonの構造と照合してから実装すること,checkToonCheckpointの廃止前にdod.tsおよびgates runner全ファイルでの参照箇所を全件確認してから削除すること

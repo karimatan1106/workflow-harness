@@ -1,0 +1,36 @@
+entries[1]:
+  - timestamp: "2026-03-28T13:49:56.477Z"
+    phase: test_impl
+    retryCount: 1
+    errors[1]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)"
+    checks[30]{name,passed,message,level,fix,example}:
+      output_file_exists,true,No output file required for this phase,L1,null,null
+      input_files_exist,true,All 2 input files exist,L1,null,null
+      spec_paths_exist,true,"@spec path check not required for phase: test_impl",L1,null,null
+      exit_code_zero,true,"Phase test_impl: exit_code_zero exempted via dodExemptions (checked by tdd_red_evidence instead)",L2,null,null
+      artifact_quality,true,No artifact quality check required for this phase,L3,null,null
+      toon_safety,true,No output file for this phase,L4,null,null
+      content_validation,true,No content validation required for this phase,L4,null,null
+      rtm_completeness,true,"RTM completeness check not required for phase: test_impl",L3,null,null
+      rtm_required,true,"RTM required check not applicable for phase: test_impl",L3,null,null
+      ac_completeness,true,"AC completeness check not required for phase: test_impl",L3,null,null
+      invariant_completeness,true,"Invariant completeness check not required for phase: test_impl",L3,null,null
+      ac_format,true,"ac_format check not required for phase: test_impl",L4,null,null
+      not_in_scope_section,true,"not_in_scope_section check not required for phase: test_impl",L4,null,null
+      open_questions_section,true,"open_questions_section check not required for phase: test_impl",L4,null,null
+      intent_consistency,true,"intent_consistency check not required for phase: test_impl",L4,null,null
+      baseline_required,true,"Baseline check not required for phase: test_impl",L3,null,null
+      artifact_freshness,true,All input artifacts are fresh,L3,null,null
+      delta_entry_format,true,"Delta Entry format check not applicable for phase: test_impl",L4,null,null
+      ac_design_mapping,true,"AC→design mapping check not required for phase: test_impl",L4,null,null
+      ac_tc_mapping,true,"AC→TC traceability check not required for phase: test_impl",L4,null,null
+      ac_achievement_table,true,"AC Achievement Status check not required for phase: test_impl",L4,null,null
+      tc_coverage,true,"TC coverage check not required for phase: test_impl",L3,null,null
+      artifact_drift,true,All 3 approved artifacts are unmodified (ART-1),L4,null,null
+      package_lock_sync,true,Package lock sync check only applicable for commit phase,L4,null,null
+      tdd_red_evidence,false,"TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)",L2,テストを実行して失敗結果をharness_record_proofで記録してください（TDD Redフェーズ）。,null
+      test_results_exist,true,"Test results check not required for phase: test_impl",L1,null,null
+      test_regression_gate,true,"Regression gate not required for phase: test_impl",L2,null,null
+      hearing_user_response,true,"userResponse check not required for phase: test_impl",L2,null,null
+      dead_references,true,"Dead reference check not required for phase: test_impl",L4,null,null
+      dci_validation,true,"skip: not a DCI phase",L4,null,null

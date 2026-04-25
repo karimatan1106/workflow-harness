@@ -1,0 +1,37 @@
+task: tier-c-gaps-n16-n25
+phase: e2e_test
+intent: Tier C実装のE2E統合テスト検証
+
+e2eChains[3]{id,chain,toolSequence,result,evidence}:
+  E2E-1, "lifecycle", "harness_start→harness_set_scope→harness_add_ac→harness_status", pass, "e2e-mcp-chain.test.ts TC-AC4-01: taskId一貫性確認。phase=scope_definition。"
+  E2E-2, "quality", "harness_record_test→harness_record_test_result→harness_record_proof", pass, "e2e-mcp-chain.test.ts TC-AC4-02: 全3ツール成功。proofLogにエントリ追加。"
+  E2E-3, "verification", "harness_set_scope→harness_next(forceTransition)", pass, "e2e-mcp-chain.test.ts TC-AC4-03: ツールチェーン呼び出し成功。"
+
+integrationPoints[4]{source,target,mechanism,verified}:
+  classifyComplexity, buildRetryPrompt, "関数呼び出し+タグ埋め込み", "TC-AC1-04で[TRIVIAL]タグ確認"
+  sanitizeTaskName, StateManager.createTask, "将来統合予定(現在export済み)", "TC-AC6-01~05で単体検証済み"
+  countCommentLines, archgate(comment_ratio), "将来統合予定(型定義済み)", "TC-AC5-01~04で単体検証済み"
+  ArchCheckType(comment_ratio), runArchGateChecks, "型拡張のみ(分岐未実装)", "TC-AC5-03で型存在確認"
+
+crossCuttingVerification[3]{aspect,verification,result}:
+  "状態一貫性", "E2Eチェーンでtaskidが全ツール間で一貫", pass
+  "エラー伝搬", "sanitizeTaskNameのthrowがcallerに伝搬", pass
+  "型安全性", "ArchCheckType拡張が既存コードとの互換性維持", pass
+
+decisions[5]{id,statement,rationale}:
+  E2E-D1, "3つのE2Eチェーンが正常動作することを確認", "lifecycle/quality/verificationの主要ワークフローパスを網羅"
+  E2E-D2, "将来統合ポイント(sanitizeTaskName/countCommentLines)は単体テストで検証", "現時点では統合未実施のため単体テストで品質担保"
+  E2E-D3, "全547テストのパスがシステム全体の回帰なしを証明", "既存525テスト+新規22テストの全パスで安全性確認"
+  E2E-D4, "handleToolCall経由の呼び出しがツール間状態伝搬の一貫性を保証", "taskIdとsessionTokenが全ツール間で正しく受け渡される"
+  E2E-D5, "forceTransition使用のphase遷移がE2Eチェーンテストで有効", "DoD未達状態でもチェーン動作検証が可能"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/e2e-test.toon, output, E2Eテスト結果(3チェーン全パス+4統合ポイント検証)
+  docs/workflows/tier-c-gaps-n16-n25/test-design.toon, input, テスト設計
+
+next:
+  criticalDecisions: "E2E-D1(3チェーン正常)によりAC-4達成"
+  readFiles: "なし"
+  warnings: "sanitizeTaskNameのcreateTask統合は本タスクスコープ外。将来タスクで実施。"
+
+result{phase,status,artifact,lines}: e2e_test, complete, docs/workflows/tier-c-gaps-n16-n25/e2e-test.toon, 35

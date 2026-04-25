@@ -1,0 +1,157 @@
+flowchart TD
+    A("buildPrompt関数開始<br/>パラメータ: guide, taskName, userIntent, docsDir") -->|入力検証| B{guide.phaseNameが<br/>空文字列か?}
+
+    B -->|Yes| C("エラースロー<br/>Invalid phase name")
+    C --> Z("関数終了")
+
+    B -->|No| D{guide.descriptionが<br/>空文字列か?}
+
+    D -->|Yes| E("エラースロー<br/>Invalid description")
+    E --> Z
+
+    D -->|No| F{docsDirが<br/>空文字列か?}
+
+    F -->|Yes| G("エラースロー<br/>Invalid docsDir")
+    G --> Z
+
+    F -->|No| H("GLOBAL_RULES_CACHEから<br/>GlobalRulesを取得")
+
+    H --> I("キャッシュ確認<br/>初回: exportGlobalRules呼び出し<br/>以後: キャッシュ参照")
+
+    I --> J("BASH_WHITELIST_CACHEから<br/>BashWhitelistを取得")
+
+    J --> K("キャッシュ確認<br/>初回: getBashWhitelist呼び出し<br/>以後: キャッシュ参照")
+
+    K --> L("セクション1: フェーズ情報ヘッダー<br/>フェーズ名・タスク名・ユーザー意図<br/>出力先pathReference生成")
+
+    L --> M{guide.inputFileMetadataが<br/>存在するか?}
+
+    M -->|Yes| N("セクション2: 入力ファイル<br/>重要度とreadModeのメタデータ併記<br/>リスト表示")
+
+    M -->|No| O{guide.inputFilesが<br/>1件以上存在するか?}
+
+    O -->|Yes| P("セクション2: 入力ファイル<br/>ファイルパスのみリスト表示<br/>readMode指定があれば併記")
+
+    O -->|No| Q("セクション2: 入力ファイル<br/>「入力ファイルなし」と表示")
+
+    N --> R{guide.outputFileが<br/>存在するか?}
+    P --> R
+    Q --> R
+
+    R -->|Yes| S("セクション3: 出力ファイル<br/>完全パスを表示")
+
+    R -->|No| T("セクション3: 出力ファイル<br/>「出力ファイル指定なし」と表示")
+
+    S --> U{guide.requiredSectionsが<br/>空配列か?}
+    T --> U
+
+    U -->|Yes| V("セクション4: スキップ")
+
+    U -->|No| W("セクション4: 必須セクションリスト<br/>guide.requiredSectionsを<br/>リスト表示")
+
+    V --> X("セクション5: 成果物品質要件<br/>lineCount要件取得")
+    W --> X
+
+    X --> Y1("禁止パターン一覧<br/>GlobalRules.forbiddenPatternsを展開")
+
+    Y1 --> Y2("placeholderRegex禁止ルール<br/>GlobalRules.bracketPlaceholderInfoを展開")
+
+    Y2 --> Y3("重複行検出ルール<br/>GlobalRules.duplicateLineThresholdと<br/>duplicateExclusionPatternsを展開")
+
+    Y3 --> Y4("セクション密度要件<br/>GlobalRules.minSectionDensityと<br/>minSectionLinesを展開")
+
+    Y4 --> Y5("サマリーlineCount制限<br/>GlobalRules.maxSummaryLinesを展開")
+
+    Y5 --> Y6("短い行lineRatio制限<br/>GlobalRules.shortLineMinLengthと<br/>shortLineMaxRatioを展開")
+
+    Y6 --> Y7("ヘッダーのみチェック<br/>GlobalRules.minNonHeaderLinesを展開")
+
+    Y7 --> Y8("Mermaid構造検証<br/>GlobalRules.mermaidMinStatesと<br/>mermaidMinTransitionsを展開")
+
+    Y8 --> Y9("testFileQuality要件<br/>GlobalRules.testFileRulesを展開")
+
+    Y9 --> Y10("キーワードトレーサビリティ<br/>GlobalRules.traceabilityThresholdを展開")
+
+    Y10 --> Y11("pathReference要件<br/>GlobalRules.codePathRequiredを展開")
+
+    Y11 --> Z1("セクション6: Bashコマンド制限<br/>guide.allowedBashCategoriesの<br/>カテゴリ名取得")
+
+    Z1 --> Z2("expandCategories展開<br/>BASH_WHITELIST.expandCategoriesで<br/>コマンドホワイトリスト生成")
+
+    Z2 --> Z3("ブラックリスト概要<br/>BASH_WHITELIST.blacklistSummaryを表示")
+
+    Z3 --> Z4("node実行制限<br/>BASH_WHITELIST.nodeEBlacklistを展開")
+
+    Z4 --> Z5("環境変数保護対象<br/>BASH_WHITELIST.securityEnvVarsを展開")
+
+    Z5 --> Z6("代替手段リスト<br/>Read/Write/Edit/Glob/Grep<br/>ツールの説明を記載")
+
+    Z6 --> Z7{guide.editableFileTypesが<br/>アスタリスク1件か?}
+
+    Z7 -->|Yes| Z8("セクション7: ファイル編集制限<br/>「全拡張子編集可能」と表示")
+
+    Z7 -->|No| Z9("セクション7: ファイル編集制限<br/>guide.editableFileTypesを<br/>リスト表示")
+
+    Z8 --> AA{guide.checklistが<br/>存在するか?}
+    Z9 --> AA
+
+    AA -->|Yes| AB("セクション8: フェーズ固有チェックリスト<br/>guide.checklistを<br/>番号付きリストで表示")
+
+    AA -->|No| AC("セクション8: スキップ")
+
+    AB --> AD("セクション9: 重要事項<br/>出力先パスの厳守・サマリー必須<br/>バリデーション失敗時の対応")
+    AC --> AD
+
+    AD --> AE("プロンプト結合<br/>9セクション全てを<br/>1つの文字列に結合")
+
+    AE --> AF("長さ検証<br/>プロンプト文字数を確認")
+
+    AF --> AG{文字数が<br/>閾値超過か?<br/>約8000文字}
+
+    AG -->|Yes| AH("警告ログ出力<br/>プロンプト長が大きい旨を通知")
+
+    AG -->|No| AI("警告なし")
+
+    AH --> AJ("プロンプト文字列を返却")
+    AI --> AJ
+
+    AJ --> Z("関数終了<br/>生成されたプロンプトを返す")
+
+    Z10("リトライプロンプト生成の場合<br/>buildRetryPrompt関数へ") -.->|別フロー| AK("リトライ検証")
+
+    AK --> AL("errorMessageを受け取る")
+    AL --> AM("retryCountを受け取る")
+    AM --> AN("エラー種別を判定<br/>11種類のキーワード検索")
+
+    AN --> AO{エラー種別判定}
+
+    AO -->|禁止パターン| AP("禁止語削除と具体例置換を指示")
+    AO -->|密度不足| AQ("セクション内容追加で<br/>5行の実質lineCount確保を指示")
+    AO -->|同一行繰り返し| AR("各行を異なる内容に書き換え<br/>文脈固有情報を含めることを指示")
+    AO -->|必須セクション欠落| AS("欠落セクションヘッダー追加を指示")
+    AO -->|lineCount不足| AT("必要行数以上に増やすことを指示")
+    AO -->|短い行超過| AU("10文字以上の文を増やし<br/>50パーセント未満に下げることを指示")
+    AO -->|ヘッダーのみ| AV("各セクションに本文を追加<br/>説明文の記述を指示")
+    AO -->|Mermaid構造不足| AW("最低3状態・2遷移を追加することを指示")
+    AO -->|testFileQuality不足| AX("expectアサーションと<br/>テストケース追加を指示")
+    AO -->|pathReference欠落| AY("src/testsパスへの<br/>pathReference追加を指示")
+    AO -->|未知のエラー| AZ("エラー内容確認と<br/>適切対応を指示")
+
+    AP --> BA("リトライプロンプト結合<br/>セクション1: リトライヘッダー")
+    AQ --> BA
+    AR --> BA
+    AS --> BA
+    AT --> BA
+    AU --> BA
+    AV --> BA
+    AW --> BA
+    AX --> BA
+    AY --> BA
+    AZ --> BA
+
+    BA --> BB("セクション2: 前回バリデーション失敗理由<br/>errorMessageの全文引用")
+    BB --> BC("セクション3: 改善要求<br/>複数エラー検出時は全て列挙")
+    BC --> BD("セクション4: 元のプロンプト全文<br/>buildPrompt呼び出しで生成")
+    BD --> BE("リトライカウントを付加<br/>retryCount回目を表示")
+    BE --> BF("リトライプロンプト文字列を返却")
+    BF --> Z

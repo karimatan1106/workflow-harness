@@ -1,0 +1,30 @@
+task: harness_delegate_coordinator TOON正式パース実装
+scope: instructionの入力パースと出力パースの両方にdeterministicなTOONパーサーを実装
+current-state: instructionは生文字列としてそのままclaudeサブプロセスに渡される。coordinatorの出力も手動文字列組み立て
+target-file: workflow-harness/mcp-server/src/tools/handlers/delegate-coordinator.ts
+existing-helpers: workflow-harness/mcp-server/src/state/toon-helpers.ts
+
+acceptance-criteria[4]{id,description,status}:
+  AC-1, instructionパラメータがサーバー側でTOONパースされ構造化データとしてcoordinatorプロンプトに注入される, open
+  AC-2, coordinatorの出力がTOONパースされ構造化された戻り値として呼び出し元に返される, open
+  AC-3, パース失敗時のフォールバック（生文字列としてそのまま渡す）が実装されている, open
+  AC-4, 既存のテストが通る, open
+
+risks[1]{description}:
+  coordinatorのLLM出力が厳密なTOON形式でない場合のフォールバック必要
+
+not-in-scope: TaskStateパーサーの変更。toon-helpers.tsの既存関数変更。新規テストファイル作成
+
+decisions[5]{id,statement,rationale}:
+  SD-1, instructionのTOONパースはサーバー側で実施, LLM依存を排除しdeterministicな解析を保証するため
+  SD-2, パース失敗時は生文字列フォールバック, 後方互換性と堅牢性を維持するため
+  SD-3, 既存toon-helpers.tsのユーティリティを再利用, コード重複を避け一貫性を保つため
+  SD-4, coordinator出力もTOONパースして構造化, 呼び出し元が機械的に結果を処理できるようにするため
+  SD-5, coordinatorからworkerへのファイル書き込みはBash経由HARNESS_LAYER=worker, Agent toolはcoordinator権限を継承するためレイヤー分離にworkerプロセスが必要
+
+artifacts[3]{id,path,description}:
+  A-1, workflow-harness/mcp-server/src/tools/handlers/delegate-coordinator.ts, メイン実装対象
+  A-2, workflow-harness/hooks/tool-gate.js, workerレイヤー書き込み許可の修正（完了済み）
+  A-3, workflow-harness/mcp-server/src/state/toon-helpers.ts, 既存TOONヘルパー（参照のみ）
+
+next: research

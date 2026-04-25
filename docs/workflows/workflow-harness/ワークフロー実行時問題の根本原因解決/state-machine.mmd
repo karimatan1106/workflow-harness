@@ -1,0 +1,99 @@
+stateDiagram-v2
+    state "開始" as Start
+
+    Start --> InputReceived: テスト実行完了\n出力受け取り
+
+    InputReceived --> PatternMatching: 複合出力パターン\n判定開始
+
+    PatternMatching --> SimpleFailed: パターン未\nマッチ
+    PatternMatching --> ComplexMatched: 複合形式\nマッチ成功
+
+    SimpleFailed --> FallbackPattern: 既存パターン\nへフォールバック
+
+    ComplexMatched --> CountExtraction: passedカウント\n抽出（FR-1\n新規パターン）
+
+    FallbackPattern --> CountExtraction
+
+    CountExtraction --> OutputAnalysis: テスト出力全体\nを行単位に分割
+
+    OutputAnalysis --> LineClassification: カテゴリ分類\n開始（FR-2実装）
+
+    LineClassification --> ClassifyA: カテゴリA\n集計行判定
+    LineClassification --> ClassifyB: カテゴリB\nテスト名行判定
+    LineClassification --> ClassifyC: カテゴリC\nスタックトレース判定
+
+    ClassifyA --> KeywordDetection: キーワード\n検出対象に
+
+    ClassifyB --> KeywordExclude: キーワード\n検出除外（FR-2新機能）
+
+    ClassifyC --> KeywordExclude
+
+    KeywordDetection --> ConsistencyCheck: キーワードの\n有無判定
+
+    KeywordExclude --> ConsistencyCheck
+
+    ConsistencyCheck --> ValidationCheck: バリデーション\n処理へ移行
+
+    ValidationCheck --> QualityReview: 品質要件\nチェック（FR-4仕様）
+
+    QualityReview --> ContentAnalysis: コンテンツ\n密度確認
+
+    ContentAnalysis --> ConstraintValidation: 禁止語・\n重複行検査
+
+    ConstraintValidation --> FormatValidation: ドキュメント\n形式確認
+
+    FormatValidation --> PassValidation: バリデーション\n成功判定
+
+    PassValidation --> Success: 成果物合格\n記録完了
+
+    FormatValidation --> FailValidation: バリデーション\n失敗検出
+
+    FailValidation --> RetryPrompt: リトライテンプレート\n生成（FR-5改善）
+
+    RetryPrompt --> ErrorContext: エラーメッセージ\n参照情報化
+
+    ErrorContext --> IndirectGuidance: 間接参照による\nガイダンス提供
+
+    IndirectGuidance --> CodeBlockWarning: コードブロック内\n転記禁止指示
+
+    CodeBlockWarning --> SubagentRetry: subagent\nリトライ実行
+
+    SubagentRetry --> InputReceived: 修正成果物\n再受け取り
+
+    Success --> End
+    state "終了" as End
+
+    note right of Start
+        FR-3との関連:
+        ルール20により
+        testingフェーズで
+        記録実施の正当化
+    end note
+
+    note right of PatternMatching
+        FR-1対応:
+        複合形式パターン
+        「N failed | M passed」
+        への対応追加
+    end note
+
+    note right of LineClassification
+        FR-2対応:
+        行単位コンテキスト
+        判定の実装
+        （exitCode=0のみ）
+    end note
+
+    note right of QualityReview
+        FR-4対応:
+        コードフェンス内
+        行の密度除外
+        ルール明示化
+    end note
+
+    note right of RetryPrompt
+        FR-5対応:
+        エラー引用の
+        転記リスク低減
+        注記強化
+    end note

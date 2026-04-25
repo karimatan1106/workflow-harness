@@ -1,0 +1,45 @@
+phase: test_selection
+task: orchestrator-direct-edit-block-hook
+intent: "テスト設計で定義したテストケースから実行対象テストを選定し、テストスクリプトのパスと実行方法を確定する"
+
+selectedTests[1]{path,type,runner,scope}:
+  .claude/hooks/test-orchestrator-edit-guard.sh, "bashユニットテスト", "bash直接実行", "AC-1からAC-5の全16テストケース+5エッジケースをカバー"
+
+relatedTests[0]{path,impact}:
+  (なし。新規フック作成のため既存テストへの影響なし)
+
+testExecutionPlan:
+  command: "bash .claude/hooks/test-orchestrator-edit-guard.sh"
+  expectedDuration: "5秒以内"
+  prerequisites: "対象フックスクリプト(.claude/hooks/orchestrator-edit-guard.sh)が存在すること"
+  environment: "MSYS_NT (Windows Git Bash)"
+  parallelizable: false
+
+tddRedStrategy:
+  approach: "テストスクリプトを先に作成し、対象フックスクリプト未実装の状態でexit code 1(失敗)を確認する"
+  redCondition: "テストスクリプトが対象フックの不在またはロジック不備を検出しexit 1を返す"
+  greenCondition: "全テストケースがpassしテストスクリプトがexit 0を返す"
+
+impactAnalysis:
+  newFiles: ".claude/hooks/test-orchestrator-edit-guard.sh (テストスクリプト), .claude/hooks/orchestrator-edit-guard.sh (対象フック)"
+  modifiedFiles: ".claude/settings.json (フック登録)"
+  existingTestImpact: "なし。新規フックのため既存テストとの競合・依存はゼロ"
+  riskLevel: "low"
+
+decisions[5]{id,statement,rationale}:
+  TS-01, "テストスクリプトは単一ファイルに全テストケースを集約する", "16テストケース+5エッジケースの規模であり分割の必要性がない。単一ファイルで実行・管理が容易"
+  TS-02, "関連テストは選定しない(relatedTests=0)", "新規フック作成タスクであり既存コードへの変更がないため、既存テストへの回帰リスクはゼロ"
+  TS-03, "テストランナーはbash直接実行とし外部フレームワークを導入しない", "test-design.toonのTD-01決定を継承。テスト対象がbashスクリプトであり依存ゼロが最適"
+  TS-04, "TDD Redフェーズではフック未実装状態でテスト失敗を確認する", "テストファースト原則に従い、テストが正しく失敗を検出できることを先に証明する"
+  TS-05, "テスト実行環境はMSYS_NT(Windows Git Bash)を前提とする", "開発環境がWindows上のMSYSであり、パス正規化テスト(AC-5)の挙動がOS依存であるため明示する"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/orchestrator-direct-edit-block-hook/test-selection.toon, output, "本テスト選定成果物。実行対象テスト1件を選定しTDD Red戦略を定義"
+  docs/workflows/orchestrator-direct-edit-block-hook/test-design.toon, input, "テスト設計。16テストケース+5エッジケースの定義を参照"
+  .claude/hooks/test-orchestrator-edit-guard.sh, output, "選定されたテストスクリプト。本フェーズで実行対象として確定"
+
+next:
+  phase: "test_impl"
+  criticalDecisions: "TS-01(単一ファイル集約), TS-04(TDD Redフェーズ)"
+  readFiles: "docs/workflows/orchestrator-direct-edit-block-hook/test-design.toon"
+  warnings: "TDD Redではフック未実装状態でテスト失敗(exit 1)を確認すること。exit 0は異常"

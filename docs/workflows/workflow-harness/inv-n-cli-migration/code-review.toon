@@ -1,0 +1,36 @@
+phase: code_review
+taskId: ece97499-7696-4c44-91d5-8c950046b862
+taskName: inv-n-cli-migration
+summary: MCPツール定義2つの削除とCLI新設の全変更をレビュー。AC-1からAC-4全てmet。削除は正確で残存参照なし。
+
+acAchievementStatus[4]{id,status,evidence}:
+  AC-1, met, handler-misc.test.tsでTOOL_DEFINITIONS.length===22を確認しinvariantツール名が含まれないことを検証済み
+  AC-2, met, cli.test.tsのTC-AC2-01でrunCli add-invariant実行後にTaskState.invariantsにINV-1が追加されることを検証済み
+  AC-3, met, cli.test.tsのTC-AC3-01でrunCli update-invariant-status実行後にstatus=heldを確認しTC-AC3-02で不正status拒否を検証済み
+  AC-4, met, tsc --noEmitエラーゼロ。vitest run 34ファイル314テスト全パス。既存309テスト+新規5テストで回帰なし
+
+changesReview[7]{file,change,verdict}:
+  defs-a.ts, harness_add_invariant定義15行を削除(165→150行), 正常。前後の配列要素(harness_add_ac/harness_add_rtm)は影響なし
+  defs-b.ts, harness_update_invariant_status定義14行を削除(173→159行), 正常。前後の配列要素(harness_update_ac_status/harness_update_rtm_status)は影響なし
+  handler.ts, import文から2関数を除去しcase文2行を削除(54→51行), 正常。残存する20ツールのディスパッチに影響なし
+  recording.ts, ハンドラ関数2つ(35行)を削除しProofTier/InvariantStatus/Invariantのimportを除去(158→122行), 正常。残存する7ハンドラの型importは維持
+  cli.ts, 新規96行。parseArgsでサブコマンド解析しStateManagerを直接呼び出す, 正常。validateSessionをhandler-shared.tsからインポートしセキュリティモデル維持
+  handler-misc.test.ts, ツール数24→22に変更し不在確認テスト2件追加(197→207行), 正常。既存14テストに影響なし
+  cli.test.ts, 新規62行。add-invariantとupdate-invariant-statusの動作確認3テスト, 正常。一時ディレクトリでテスト分離
+
+securityCheck: CLIはvalidateSession関数をhandler-shared.tsからインポートしMCPハンドラと同じsessionToken検証を実施。セキュリティモデルの劣化なし。
+
+decisions[5]{id,statement,rationale}:
+  CR-1, 全変更は設計仕様(spec.toon)に準拠している, 削除対象と新設ファイルが計画通り
+  CR-2, recording.tsのimport編集はProofTierとInvariantStatusのみを除去し他の型は維持, PhaseName/ProofEntry/ControlLevel/AcceptanceCriterion/RTMEntryは残存ハンドラが使用
+  CR-3, cli.tsの行数は96行で200行制限を大幅に下回る, 将来のサブコマンド追加余地あり
+  CR-4, テストカバレッジは正常系3件とエラー系1件で十分, CLIはStateManagerの薄いラッパーでありAPI層テストが既存9件で補完
+  CR-5, package.jsonのbinフィールド追加はnpx harness-invでのCLI起動を可能にする, node dist/cli.js直接実行も引き続き可能
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/inv-n-cli-migration/code-review.toon, report, コードレビュー結果とAC達成状況
+
+next:
+  criticalDecisions[1]: CR-2
+  readFiles[1]: workflow-harness/mcp-server/src/cli.ts
+  warnings[1]: recording.tsの残存importが正しいことをtscビルドで確認済み

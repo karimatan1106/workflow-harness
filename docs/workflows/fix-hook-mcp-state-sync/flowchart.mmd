@@ -1,0 +1,23 @@
+%% hook-MCP state sync fix rollout flow
+
+flowchart TD
+    Start([start implementation]) --> S1[update .mcp.json STATE_DIR]
+    S1 --> S2[edit start.sh pwd -P resolve]
+    S2 --> S3[add readToonPhase in hook-utils.js]
+    S3 --> S4[extend getActivePhaseFromWorkflowState]
+    S4 --> S5[add unit tests for toon reader]
+    S5 --> S6[write ADR-029 hook-mcp-state-sync]
+    S6 --> V1{manual verify: new task Write allowed?}
+    V1 -- no --> Diag[inspect hook logs, rollback step]
+    V1 -- yes --> S7[delete bootstrap dir]
+    S7 --> S8[remove bootstrap entry from task-index.json]
+    S8 --> Commit([single PR commit])
+    Diag --> S3
+    Commit --> End([merge])
+
+%% ## decisions
+%% - D-001: 手動検証ゲート V1 で不合格なら hook ロジックに戻り修正
+%% - D-002: bootstrap削除は全step完了かつ手動検証OK後のみ
+%% - D-003: 単一コミットにまとめてmergeする
+%% - D-004: 検証失敗時は readToonPhase 実装に直接戻り、他stepを巻き戻さない
+%% - D-005: ADR-029執筆は実装完了後でもよく、最終commit前に含める

@@ -1,0 +1,20 @@
+flowchart TD
+    Start([PreToolUse hook fires]) --> ReadEnv[Read HARNESS_LAYER env]
+    ReadEnv --> EnvIsWorker{env == worker?}
+    EnvIsWorker -->|yes| LayerWorker[return worker]
+    EnvIsWorker -->|no| EnvIsCoord{env == coordinator?}
+    EnvIsCoord -->|yes| LayerCoord[return coordinator]
+    EnvIsCoord -->|no| AgentExists{hookInput.agent_id exists?}
+    AgentExists -->|no| LayerOrch[return orchestrator]
+    AgentExists -->|yes| LayerWorker
+    LayerWorker --> Apply[apply checkWriteEdit allow-set]
+    LayerCoord --> Apply
+    LayerOrch --> BlockDocs[block docs/workflows writes]
+
+## decisions
+
+- D-001: env 判定を入口に置き debug override を最優先で尊重する
+- D-002: orchestrator 分岐は agent_id 不在の 1 条件のみで判定する
+- D-003: subagent (agent_id 存在) は opaque hex を type 判別せず全て worker に集約する
+- D-004: coordinator 分岐は HARNESS_LAYER=coordinator 明示時のみ到達する
+- D-005: orchestrator 層のみ docs/workflows 書き込みを block する path gate に委ねる

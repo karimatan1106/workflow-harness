@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph Flow1
+        A1(Orchestratorがサブエージェントを起動) --> A2(buildPromptが誤ったNG/OK例を生成)
+        A2 --> A3(サブエージェントがコードフェンス内も危険と誤解)
+        A3 --> A4(技術的記法をコードフェンス外の箇条書きに記述)
+        A4 --> A5(artifact-validatorが角括弧を検出)
+        A5 --> A6(バリデーション失敗)
+        A6 --> A7(Orchestratorがリトライ)
+        A7 -.->|エラー継続| A3
+    end
+
+    subgraph Flow2
+        B1(definitions.tsの行1155から1160を特定) --> B2(6行を正しい8行に置き換え)
+        B2 --> B3(npm run buildを実行)
+        B3 --> B4{ビルド成功か}
+        B4 -->|No| B5(コンパイルエラーを修正)
+        B5 --> B3
+        B4 -->|Yes| B6(dist/phases/definitions.jsを確認)
+        B6 --> B7(MCPサーバーを再起動)
+        B7 --> B8(workflow_statusでフェーズを確認)
+    end
+
+    subgraph Flow3
+        C1(Orchestratorがサブエージェントを起動) --> C2(buildPromptが正しいNG/OK例を生成)
+        C2 --> C3(サブエージェントがコードフェンス内は安全と理解)
+        C3 --> C4(技術的記法をコードフェンス内に記述)
+        C4 --> C5(extractNonCodeLinesがコードフェンス内行を除外)
+        C5 --> C6(バリデーション成功)
+    end
+
+    Flow1 -.->|修正作業で対処| Flow2
+    Flow2 -.->|修正後に遷移| Flow3

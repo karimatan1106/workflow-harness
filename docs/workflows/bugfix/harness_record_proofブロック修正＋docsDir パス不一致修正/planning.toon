@@ -1,0 +1,50 @@
+phase: planning
+task: harness_record_proofブロック修正＋docsDir パス不一致修正
+taskId: d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f
+status: complete
+inputArtifact: docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/requirements.toon
+
+summary: pre-tool-guard.sh の is_lifecycle_mcp() ワイルドカード化(実施済み)と manager-read.ts の getDocsPath() 絶対パス化の2件修正の実装計画。CHG-1は完了済み。CHG-2はimport追加+1行変更。
+
+architectureDecisions[3]{id,decision,alternatives,rationale}:
+  AD-1, "is_lifecycle_mcp() をワイルドカードパターン mcp__harness__harness_* に変更", "全23ツール個別列挙", "保守コスト削減と将来のツール追加への自動対応"
+  AD-2, "getDocsPath() で resolveProjectPath を適用し絶対パスを返す", "消費側の各箇所に個別に resolveProjectPath を追加", "変更箇所が1箇所で済み下流全体が自動修正される"
+  AD-3, "DoD検証側のパス解決ロジックは変更しない", "消費側も同時に修正", "docsDir生成元の修正で消費側は自動的に正しいパスを受け取る"
+
+implementationSteps[4]{id,description,files,dependsOn}:
+  PL-01, "pre-tool-guard.sh の is_lifecycle_mcp() をワイルドカードパターンに変更(実施済み)", workflow-harness/hooks/pre-tool-guard.sh, none
+  PL-02, "manager-read.ts に resolveProjectPath の import を追加", workflow-harness/mcp-server/src/state/manager-read.ts, none
+  PL-03, "getDocsPath() で resolveProjectPath(join(DOCS_DIR taskName)) を返すように変更", workflow-harness/mcp-server/src/state/manager-read.ts, PL-02
+  PL-04, "既存テスト実行で docsDir が絶対パスになった影響を確認", workflow-harness/mcp-server/src/**/*.test.ts, PL-03
+
+changeDetail[2]{id,file,before,after}:
+  CD-1, workflow-harness/hooks/pre-tool-guard.sh, "case文で6ツール個別列挙", "mcp__harness__harness_*) return 0 のワイルドカードパターン(実施済み)"
+  CD-2, workflow-harness/mcp-server/src/state/manager-read.ts, "return join(DOCS_DIR taskName)", "return resolveProjectPath(join(DOCS_DIR taskName)) + import追加"
+
+rtmEntries[5]{id,requirement,implementationStep,status}:
+  F-001, "全harness_*ツールがis_lifecycle_mcpを通過する(AC-1)", PL-01, complete
+  F-002, "getDocsPathがresolveProjectPath経由で絶対パスを返す(AC-2)", PL-02+PL-03, pending
+  F-003, "DoD gatesで二重解決しない(AC-3)", PL-03, pending
+  F-004, "既存テストが全て通過する(AC-4)", PL-04, pending
+  F-005, "他プロジェクトでリグレッションなし(AC-5)", PL-04, pending
+
+decisions[5]{id,statement,rationale}:
+  PL-D1, "CHG-1は先行実施済みとして扱う", "Bug #6のせいでharness MCPツールがブロックされていたため先に修正が必要だった"
+  PL-D2, "CHG-2はmanager-read.tsの1関数のみ変更", "getDocsPathで絶対パス化すれば下流全箇所が自動修正される"
+  PL-D3, "resolveProjectPathのimportパスは ../utils/project-root.js を使用", "ESMモジュール解決に合わせた.js拡張子"
+  PL-D4, "テストでdocsDir相対パス前提のものがあれば修正する", "getDocsPathが絶対パスを返すようになるためテスト期待値の更新が必要な場合がある"
+  PL-D5, "DOCS_DIR環境変数が絶対パスの場合はresolveProjectPathのisAbsoluteガードでそのまま返る", "二重解決防止の仕組みが既に組み込まれている"
+
+riskMitigation[2]{id,risk,mitigation}:
+  RM-1, "docsDir絶対パス化による既存テスト失敗", "PL-04でテスト実行し期待値のずれを検出して修正する"
+  RM-2, "resolveProjectPath内のgitコマンド実行がCI環境で失敗する可能性", "getProjectRoot()はcatchブロックでprocess.cwd()にフォールバックするため安全"
+
+artifacts[1]{path,role,summary}:
+  docs/workflows/harness_record_proofブロック修正＋docsDir パス不一致修正/planning.toon, spec, "実装計画: 2ファイル修正の手順と依存関係"
+
+next:
+  phase: implementation
+  criticalDecisions: CHG-1実施済み。CHG-2はmanager-read.tsのgetDocsPath()に1行変更+import追加。
+  readFiles: workflow-harness/mcp-server/src/state/manager-read.ts
+  warnings: docsDir絶対パス化によるテスト期待値変更の可能性あり
+

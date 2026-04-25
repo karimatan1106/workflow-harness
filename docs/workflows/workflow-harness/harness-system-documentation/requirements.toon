@@ -1,0 +1,83 @@
+title: ハーネスシステム永続ドキュメント 要件定義
+phase: requirements
+taskName: harness-system-documentation
+intent: "ハーネスシステムの現状の要件、基本設計、アーキテクチャ、全30フェーズの仕様を永続ドキュメントとして作成し、各仕様がコードのどの部分(ファイル:行番号)と対応するかのトレーサビリティを含める"
+createdAt: 2026-03-08
+
+summary: "ハーネスMCPサーバー(46ソースファイル5,117行)の永続ドキュメント化に必要な機能要件を6成果物・7受入基準・12の設計決定として定義した。成果物はアーキテクチャ概要1文書、機能仕様3文書(フェーズ/ゲート/MCPツール)、モジュール仕様1文書(状態管理)、トレーサビリティマトリクス1文書の計6文書。scope-definitionで計画した12文書から、内容の重複・関連性に基づき6文書に統合し、各文書200行以内を維持しつつ網羅性を確保する構成とした。"
+
+acceptanceCriteria[7]{id,description,status}:
+  AC-1, "docs/architecture/overview.md が作成され、6サブシステム構造(phases/gates/tools/state/utils/entry)・依存関係グラフ・MCPプロトコル統合・200行制限がソースファイル:行番号参照付きで記述されている", open
+  AC-2, "docs/spec/features/phase-system.md が作成され、30フェーズ+completed定義・14ステージ・並列グループ4種・タスクサイジング・リスク分類がソースファイル:行番号参照付きで記述されている", open
+  AC-3, "docs/spec/features/gate-system.md が作成され、L1-L4 DoDゲート22チェック・承認ゲート5種・IA-1〜IA-7意図精度チェック・RTMステータスチェーンがソースファイル:行番号参照付きで記述されている", open
+  AC-4, "docs/spec/features/mcp-tools.md が作成され、21 MCPツールの入力パラメータ・ハンドラルーティング・セッション検証がソースファイル:行番号参照付きで記述されている", open
+  AC-5, "docs/architecture/modules/state-management.md が作成され、TaskState v4スキーマ・HMAC-SHA256署名・Reflector-Curator-ACE 3層パイプラインがソースファイル:行番号参照付きで記述されている", open
+  AC-6, "docs/architecture/traceability-matrix.md が作成され、全48ソースファイル↔42テストファイル↔機能仕様文書の3軸対応表が記述されている", open
+  AC-7, "全ドキュメントにソースコード参照(ファイルパス:行番号)が含まれ、仕様記述とコード実装の対応が追跡可能である", open
+
+functionalRequirements[6]{id,document,sections,sourceMapping,maxLines}:
+  FR-1, "docs/architecture/overview.md", "システム概要/6モジュール構成表/モジュール間依存グラフ/MCPプロトコル統合/設計制約(200行制限)", "index.ts:1-48 全モジュールディレクトリ", 200
+  FR-2, "docs/spec/features/phase-system.md", "フェーズ一覧表(30+completed)/ステージ構造(14段階)/並列グループ(4種)/タスクサイジング(small/medium/large)/リスク分類器/フェーズスキップマップ/サブエージェントテンプレート生成", "registry.ts:8-170 definitions.ts:26-136 defs-stage1〜6.ts risk-classifier.ts:17-58", 200
+  FR-3, "docs/spec/features/gate-system.md", "DoDチェック一覧(L1:2/L2:2/L3:6/L4:12)/承認ゲート(5種)/意図精度チェーン(IA-1〜7)/RTMステータスチェーン/禁止語・プレースホルダー検出/成果物鮮度検証", "dod.ts:24-59 dod-l1-l2.ts dod-l3.ts dod-l4-*.ts dod-helpers.ts approval.ts:16-74", 200
+  FR-4, "docs/spec/features/mcp-tools.md", "ツール定義一覧(21種)/入力スキーマ/ハンドラディスパッチ/セッション検証/スキルファイルルーティング/リトライシステム(EAC-1分類・モデルエスカレーション)", "defs-a.ts:6-164 defs-b.ts:6-158 handler.ts:19-54 handler-shared.ts:1-73 retry.ts:1-153", 200
+  FR-5, "docs/architecture/modules/state-management.md", "TaskState v4スキーマ(フィールド定義)/Zodバリデーション/HMAC-SHA256署名・鍵ローテーション/StateManager(22メソッド)/永続化・読取・書込/Reflector-Curator-ACE 3層パイプライン/不変条件管理", "types.ts:52-121 types-core.ts:1-194 manager.ts:23-196 manager-read.ts manager-write.ts hmac.ts:1-85 reflector.ts curator.ts ace-context.ts", 200
+  FR-6, "docs/architecture/traceability-matrix.md", "ソースファイル→テストファイル対応表/ソースファイル→仕様文書対応表/テストファイル→機能カテゴリ対応表/カバレッジサマリ", "全48ソースファイル 全42テストファイル FR-1〜FR-5の5仕様文書", 200
+
+documentConsolidation[6]{originalIds,mergedTo,rationale}:
+  "DOC-01(phase-system)+DOC-05(subagent-system)+DOC-08(risk-classifier)", FR-2, "サブエージェントテンプレートとリスク分類器はフェーズシステムの構成要素であり分離すると相互参照が増え可読性が低下するため統合"
+  "DOC-02(gate-system)", FR-3, "22チェック+5承認ゲート+IA-1〜7で単独200行に収まるため独立維持"
+  "DOC-03(state-management)+DOC-06(reflector-curator)+DOC-09(traceability)", FR-5, "状態管理・学習パイプライン・追跡データはStateManagerを介して密結合しており分離すると状態遷移の全体像が見えなくなるため統合"
+  "DOC-04(mcp-tools)+DOC-07(retry-system)", FR-4, "リトライはMCPツール(harness_next)の内部機構であり分離するとツール呼出フローが断片化するため統合"
+  "DOC-10(overview)+DOC-11(data-flow)", FR-1, "アーキテクチャ概要とデータフローは同一文脈で読むべき情報であり分離する利点がないため統合"
+  "DOC-12(traceability-matrix)", FR-6, "3軸対応表は独立した参照用途のため独立維持。ただし48x42の全組合せではなく実際のテスト対応のみ記載し200行に収める"
+
+documentStructureTemplate:
+  description: "全仕様文書の共通構造"
+  sections: "概要(purpose+scope) / 仕様詳細(subsystem-specific) / コード参照表(file:line mapping) / 制約・不変条件 / 関連文書リンク"
+  codeRefFormat: "`src/module/file.ts:NN-MM` 形式で記載。行番号はresearch.toon調査時点(2026-03-08)のコミット基準"
+  writingRules: "断定形で記述。推測・曖昧表現禁止。コードに存在しない機能は記載しない。禁止語(CLAUDE.md Section 4準拠)を使用しない"
+
+decisions[12]{id,statement,rationale}:
+  REQ-1, "scope-definitionの12文書計画を6文書に統合する", "関連性の高いサブシステムを統合することで相互参照を減らし、各文書200行制限を維持しつつ文脈の連続性を確保するため"
+  REQ-2, "全文書にソースファイル:行番号の参照表セクションを必須とする", "タスク要件の核心である「各仕様がコードのどの部分と対応するか」を直接満たすため"
+  REQ-3, "文書作成順序をFR-1(概要)→FR-2(フェーズ)→FR-3(ゲート)→FR-5(状態)→FR-4(ツール)→FR-6(マトリクス)とする", "アーキテクチャ概要→コア機構→横断機構の順に読者の理解が積み上がるため。ツールはフェーズ・ゲート・状態の知識を前提とするため後半に配置"
+  REQ-4, "トレーサビリティマトリクス(FR-6)は実際のテスト対応のみ記載し48x42の全組合せ表にしない", "200行制限を遵守しつつ実用的な参照価値を維持するため。テストファイル名からソース対応は自明な命名規則(handler-*.test.ts→handlers/*.ts)で推定可能"
+  REQ-5, "コード参照の行番号はresearch.toon調査時点(2026-03-08)のスナップショットとし、文書先頭にコミットハッシュを記録する", "ソースコードは変更されるため、参照時点を明示することでトレーサビリティの信頼性を確保するため"
+  REQ-6, "Reflector-Curator-ACEパイプラインはstate-management文書(FR-5)に統合する", "3層パイプラインはStateManagerの教訓永続化・読取を通じて動作しており、状態管理の文脈なしには理解できないため"
+  REQ-7, "リトライシステムとエラー分類はmcp-tools文書(FR-4)に統合する", "リトライはharness_nextハンドラ内で発動するMCPツールの内部機構であり、ツールインターフェースと分離すると実行フローが不明瞭になるため"
+  REQ-8, "サブエージェントテンプレート生成はphase-system文書(FR-2)に統合する", "テンプレートはフェーズ定義(defs-stage1〜6.ts)に直接格納されており、フェーズ定義と分離すると同一ファイルの異なる側面を別文書で説明する非効率が生じるため"
+  REQ-9, "各文書の記述はコードに実装済みの機能のみとし、計画中・構想段階の機能は記載しない", "永続ドキュメントの目的は現状の正確な記録であり、実装されていない機能の記載は誤解を招くため"
+  REQ-10, "禁止語(CLAUDE.md Section 4)およびプレースホルダー([#xxx#])は文書内で使用しない", "DoDゲートL4(content_validation)で自動検証されるため、ドキュメント成果物も同基準に準拠する"
+  REQ-11, "Magic Number 28個の定義・根拠は各文書の該当セクションに分散記載し、集約表は作成しない", "各マジックナンバーは所属サブシステムの文脈で理解されるべきであり、脱文脈化した一覧は参照価値が低いため"
+  REQ-12, "文書間の相互参照はMarkdown相対リンクで記述し、DoDゲートL4(dead_references)で死参照を検出可能にする", "dod-l4-refs.ts:23-52の既存検証機構を活用し、文書間リンクの整合性を自動保証するため"
+
+notInScope[5]{id,description}:
+  NIS-1, "スキル文書(.claude/skills/harness/*.md)のドキュメント化。スキル文書はLLM実行時指示であり永続仕様書とは性質が異なる(SD-4準拠)"
+  NIS-2, "テストコード(src/__tests__/*.ts)の個別仕様書作成。テストはトレーサビリティマトリクス(FR-6)で対応関係を記録するにとどめる(SD-6準拠)"
+  NIS-3, "CLAUDE.md(権威仕様)の再文書化。CLAUDE.mdは運用ルールの権威ソースとして参照するが、内容を別文書に複製しない"
+  NIS-4, "ソースコードの変更・リファクタリング。本タスクはドキュメント作成のみでありコード変更は行わない"
+  NIS-5, "将来の拡張計画・ロードマップの記載。REQ-9に基づき実装済み機能のみを記録する"
+
+openQuestions[0]{id,question,impact}:
+
+resolvedQuestions[3]{id,answer}:
+  OQ-1, "省略OK。命名規則で自明な対応は省略し約80行に圧縮する"
+  OQ-2, "記載不要。コミットハッシュ記録で十分。更新方針は暗黙ルールとする"
+  OQ-3, "現存しないため衝突リスクなし。新規作成で問題なし"
+
+artifacts[4]{path,role,summary}:
+  docs/workflows/harness-system-documentation/requirements.toon, spec, "要件定義: 6成果物・7 AC・12設計決定・5除外項目・3未決事項を定義"
+  docs/workflows/harness-system-documentation/research.toon, input, "Research分析結果: 46ファイル5117行の全構造を網羅的に記録(入力成果物)"
+  docs/workflows/harness-system-documentation/scope-definition.toon, input, "スコープ定義: 12文書計画の原案(入力成果物、本フェーズで6文書に統合)"
+  docs/architecture/, output, "成果物出力先ディレクトリ(FR-1/FR-5/FR-6)"
+
+executionPlan:
+  phase1_docs: "FR-1(overview.md) → FR-2(phase-system.md) → FR-3(gate-system.md)"
+  phase2_docs: "FR-5(state-management.md) → FR-4(mcp-tools.md)"
+  phase3_docs: "FR-6(traceability-matrix.md)"
+  rationale: "依存順序: 概要→コア機構→横断機構→参照表。FR-5をFR-4より先に配置するのは、MCPツールハンドラがStateManagerを呼び出すため状態管理の知識が前提となるため"
+
+next:
+  criticalDecisions: "OQ-1のトレーサビリティマトリクス分割判断、FR-1〜FR-6各文書の詳細セクション設計、コード参照のコミットハッシュ固定"
+  readFiles: "src/phases/defs-stage1.ts〜defs-stage6.ts(テンプレート詳細)、src/gates/dod-l4-*.ts(L4チェック詳細)、src/tools/handlers/*.ts(ハンドラ実装詳細)、src/state/manager.ts(22メソッド一覧)"
+  warnings: "FR-5(state-management.md)は統合により3サブシステム(状態管理+学習パイプライン+追跡データ)を含むため200行制限への圧力が最も高い。セクション粒度の調整が必要になる可能性がある"

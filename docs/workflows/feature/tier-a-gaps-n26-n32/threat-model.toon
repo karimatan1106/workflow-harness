@@ -1,0 +1,26 @@
+taskName: tier-a-gaps-n26-n32
+phase: threat_modeling
+createdAt: 2026-03-10
+userIntent: Tier A 7項目(N-26〜N-32)の脅威分析。全て内部コード変更でありリスクは低い。
+
+threats[5]{id,description,impact,mitigation,residualRisk}:
+  T-001, buildRetryPromptのcomplexityパラメータ追加で既存呼び出し元が破壊される, 既存のretryフローが動作しなくなりリトライ失敗が発生, complexityをオプショナル引数(デフォルトmoderate)とし既存呼び出し元は変更不要にする, 低
+  T-002, ERROR_ADR_MAPのパターンマッチが誤ったADRを返しリトライ指示が的外れになる, エージェントが無関係なADRを参照し修正が遅延する, マッチはincludes()による部分一致とし該当なし時はgenericスライスにフォールバックする, 低
+  T-003, checkBrokenPointersがfs.existsSyncで相対パス解決に失敗し偽陽性を返す, 正常なartifactsパスが壊れた参照として誤報告される, basePathを明示的に受け取りpath.resolve(basePath/artifactPath)で絶対パス化する, 低
+  T-004, post-tool-lint.shの--deny no-explicit-anyがテストファイルに適用されas anyを使う正当なテストが失敗する, テスト実行がブロックされ開発速度が低下する, oxlintコマンドに--ignore-pattern対象としてテストファイルパターンを除外する, 低
+  T-005, detectGhostFilesのbasename比較が意図的な同名ファイル(異なるディレクトリ)を誤検出する, 正当なファイル追加がゴーストファイルとして報告される, basenameが一致してもディレクトリが異なる場合は警告レベルに留め必ず人間確認を挟む設計とする, 低
+
+decisions[5]{id,statement,rationale}:
+  TM-001, 全7項目は内部コード変更のみで外部API・ユーザーデータ・認証に影響しないため脅威レベルは低とする, "N-26〜N-32は全てハーネス内部の関数追加・定数追加・シェルスクリプト修正であり外部インターフェースの変更を伴わない"
+  TM-002, complexityパラメータはオプショナル引数としデフォルトmoderateで後方互換性を維持する, "既存のbuildRetryPrompt呼び出し元を一切変更せずに新機能を追加できるため移行リスクがゼロになる"
+  TM-003, ERROR_ADR_MAPのマッチ失敗時はgenericスライスにフォールバックする, "パターン未登録のエラーでもリトライ指示が空にならず既存動作と同等の品質を維持できる"
+  TM-004, checkBrokenPointersは同期関数(fs.existsSync)として実装する, "DoDチェックは同期フローで実行されるためasync化は不要であり実装の複雑性を回避できる"
+  TM-005, post-tool-lint.shのno-explicit-anyルールはテストファイルを除外パターンで適用外とする, "テストファイルではas anyが型安全性テストや型キャストで正当に使用されるためルール適用は本番コードに限定する"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-a-gaps-n26-n32/threat-model.toon, report, 脅威分析（低リスク・内部変更のみ）
+  docs/workflows/tier-a-gaps-n26-n32/requirements.toon, input, 受入基準と要件定義（前フェーズ成果物）
+
+next:
+  criticalDecisions[2]: TM-002, TM-005
+  readFiles[2]: docs/workflows/tier-a-gaps-n26-n32/requirements.toon, docs/workflows/tier-a-gaps-n26-n32/research.toon

@@ -1,0 +1,93 @@
+%% ワークフロー10M対応全問題根本原因修正 - ステートマシン図
+%% task-index.jsonスキーマ管理、フックエラー処理、HMAC鍵ライフサイクル、バリデーションプロセスの状態遷移
+
+%% ステートマシン1: task-index.jsonスキーマ管理
+stateDiagram-v2
+    [*] --> FileAbsent: 初回起動
+
+    FileAbsent --> Initializing: MCP Server起動
+    Initializing --> HookSchema: Hookスキーマで初期化完了
+
+    HookSchema --> Syncing: タスク状態変更
+    Syncing --> HookSchema: 同期成功
+    Syncing --> SyncError: 書き込み失敗
+    SyncError --> HookSchema: リトライ成功
+    SyncError --> Corrupted: リトライ上限到達
+
+    HookSchema --> Validating: Hook読み込み時
+    Validating --> HookSchema: スキーマ検証OK
+    Validating --> Rebuilding: スキーマ不正検出
+    Rebuilding --> HookSchema: 再構築成功
+    Rebuilding --> Corrupted: 再構築失敗
+
+    Corrupted --> Initializing: 手動リセット
+
+%% ステートマシン2: フックエラー処理
+stateDiagram-v2
+    [*] --> Executing: Hook起動
+
+    Executing --> Classifying: エラー発生
+    Executing --> Allowed: 正常完了
+
+    state Classifying {
+        [*] --> CheckHMACError
+        CheckHMACError --> SecurityCategory: HMAC検証失敗
+        CheckHMACError --> CheckPhaseError: HMAC以外
+        CheckPhaseError --> SecurityCategory: フェーズ違反
+        CheckPhaseError --> CheckErrno: フェーズ違反以外
+        CheckErrno --> TemporaryCategory: ENOENT/EACCES/ETIMEDOUT
+        CheckErrno --> SecurityCategory: その他コード
+    }
+
+    Classifying --> Blocked: セキュリティカテゴリ
+    Classifying --> ModeCheck: 一時的カテゴリ
+
+    ModeCheck --> Allowed: WORKFLOW_FAIL_MODE=permissive
+    ModeCheck --> Blocked: WORKFLOW_FAIL_MODE=strict
+
+    Allowed --> [*]
+    Blocked --> [*]
+
+%% ステートマシン3: HMAC鍵ライフサイクル
+stateDiagram-v2
+    [*] --> Uninitialized: 初回起動
+
+    Uninitialized --> Generating: 鍵生成開始
+    Generating --> Active: 鍵生成完了
+
+    Active --> ExpiryCheck: 定期チェック
+    ExpiryCheck --> Active: 有効期限内
+    ExpiryCheck --> GracePeriod: 有効期限超過
+
+    GracePeriod --> Rotating: 24時間経過
+    GracePeriod --> GracePeriod: 24時間未満
+    Rotating --> Active: 新鍵生成完了
+    Rotating --> RotationError: ローテーション失敗
+
+    Active --> Retired: 新鍵でローテーション
+    Retired --> Archived: グレース期間終了
+
+    RotationError --> GracePeriod: リトライ待機
+
+%% ステートマシン4: バリデーションプロセス
+stateDiagram-v2
+    [*] --> Idle: バリデーター待機
+
+    Idle --> Loading: 成果物読み込み
+    Loading --> TimerStarted: タイムアウト設定(10秒)
+
+    TimerStarted --> StructureCheck: 構造検証開始
+    StructureCheck --> DuplicateCheck: 構造OK
+    StructureCheck --> ValidationFailed: 構造NG
+
+    DuplicateCheck --> SectionCheck: 重複なし
+    DuplicateCheck --> ValidationFailed: 重複検出
+
+    SectionCheck --> ValidationPassed: 必須セクションあり
+    SectionCheck --> ValidationFailed: セクション欠落
+
+    TimerStarted --> TimedOut: 10秒経過
+    TimedOut --> ValidationFailed: タイムアウトエラー
+
+    ValidationPassed --> Idle: 次の成果物待機
+    ValidationFailed --> Idle: エラー報告後待機

@@ -1,0 +1,93 @@
+task: skill-files-compression
+phase: research
+status: complete
+timestamp: 2026-03-07T20:00:00+09:00
+
+loadMechanism:
+  triggerCondition: SKILL.mdにuser-invocable: trueが設定されたスキルフォルダを /harness で呼び出すと同フォルダ内の全.mdファイルがコンテキストにロードされる
+  frontmatterRole: name=表示名, description=スキル選択時の説明文. user-invocable=trueがないとコマンド一覧に出ない
+  loadGranularity: フォルダ単位で全ファイル一括ロード. サブディレクトリに分割しても親フォルダ内のファイルのみロードされサブディレクトリは対象外
+  subdirectoryBehavior: Claude Codeスキルシステムはフラット構造前提. harness/sub/file.mdは /harness 呼び出し時にロードされない. 階層化による遅延ロードは不可能
+  implication: 全11ファイルが毎回ロードされるため総行数削減がそのままトークン削減に直結する
+
+claudeMdOverlap[12]{id,skillFile,skillSection,claudeMdSection,overlapType,lines}:
+  OV-01, workflow-phases.md, Phase Table, Sec2 Phases, 完全重複(30フェーズ表がCLAUDE.mdのSec2と同一構造), 15
+  OV-02, workflow-phases.md, Task Sizing, Sec3 Task Sizing, 完全重複(行数・risk score・use caseが同一), 6
+  OV-03, workflow-rules.md, Bash Categories(Sec7), Sec12 Bash Categories, 実質重複(定義内容同一だがスキル側がやや詳細), 8
+  OV-04, workflow-rules.md, Retry Protocol(Sec3), Sec6 Retry Protocol, 実質重複(CAN-1/CAN-2/VDB-1の記述がCLAUDE.mdにも存在), 12
+  OV-05, workflow-rules.md, Session Recovery(Sec5), Sec8 Session Recovery, 完全重複(ANT-3の5ステップ手順が同一), 6
+  OV-06, workflow-rules.md, Artifact Quality(Sec6), Sec11 Artifact Quality, 実質重複(禁止語12個・L3閾値・L4パターンが同一内容), 8
+  OV-07, workflow-orchestrator.md, sessionToken Rules(Sec3), Sec9 sessionToken Rules, 完全重複(Layer1/Layer2ルールが同一), 8
+  OV-08, workflow-orchestrator.md, Execution Flow(Sec1), Sec5 Orchestrator Pattern, 実質重複(harness_next→Task→DoD検証フローが同一), 10
+  OV-09, workflow-gates.md, IA-1~7(Sec2), Sec7 Intent Accuracy, 完全重複(7項目の定義が同一), 12
+  OV-10, workflow-gates.md, Traceability(Sec4), Sec10 Traceability, 実質重複(AC-N/F-NNNチェーンの記述が同一), 8
+  OV-11, workflow-subagent.md, Bash Categories(Sec3), Sec12 Bash Categories, 三重重複(CLAUDE.md+rules+subagent), 6
+  OV-12, SKILL.md, Commands(Sec1), Sec5 Orchestrator Pattern, 部分重複(コマンド一覧はCLAUDE.mdのフロー記述と重複), 8
+totalOverlapLines: 107
+
+mcpTemplateOverlap[3]{id,skillFile,skillSection,mcpSource,description,lines}:
+  MT-01, workflow-subagent.md, subagent起動テンプレート(行61-95), definitions-shared.ts SUMMARY_SECTION_RULE+EXIT_CODE_RULE+bashCategoryHelp, テンプレート全体がbuildSubagentPromptで動的生成されるため静的コピーは完全に不要, 35
+  MT-02, workflow-subagent.md, リトライテンプレート(行97-146), buildSubagentPrompt+buildRetryPrompt, リトライプロンプトもMCPサーバーが動的生成. エラー種別→改善要求変換表のみスキル固有, 50
+  MT-03, workflow-subagent.md, 並列フェーズ実行例(行152-163), harness_complete_sub MCPツール, MCPツールの使い方説明であり実行方法はツールドキュメントで提供される, 12
+totalMcpOverlapLines: 97
+
+interFileOverlap[8]{id,file1,file2,content,lines}:
+  SF-01, workflow-subagent.md, workflow-rules.md, Bashコマンドカテゴリ定義(readonly/testing/impl/git/security), 10
+  SF-02, workflow-subagent.md, workflow-rules.md, Retry Protocol(エスカレーション順序・CAN-1/CAN-2), 15
+  SF-03, workflow-subagent.md, workflow-orchestrator.md, コンテキスト引き継ぎ(docsDir/成果物読み込みフロー), 8
+  SF-04, workflow-phases.md, workflow-subagent.md, フェーズ別Bashカテゴリ表(30行の表が両方に存在), 30
+  SF-05, workflow-phases.md, workflow-gates.md, フェーズ別DoD(phases.mdのDoD記述とgates.mdのDoD表が部分重複), 20
+  SF-06, workflow-orchestrator.md, SKILL.md, Orchestrator実行フロー(harness_next→Task→DoD検証), 10
+  SF-07, workflow-docs-structure.md, workflow-docs-phases.md, ディレクトリ構造(docs/配下の同一ツリーが両方に記載), 25
+  SF-08, workflow-rules.md, workflow-gates.md, L1-L4レベル定義(gates.mdに完全版がありrules.mdに簡略版), 5
+totalInterFileOverlapLines: 123
+
+accessPatterns[4]{pattern,files,frequency,rationale}:
+  常時参照(Orchestrator), "SKILL.md, workflow-orchestrator.md, workflow-rules.md", 毎フェーズ遷移時, Orchestratorが委譲・リトライ・報告に使用
+  フェーズ固有参照, "workflow-phases.md, workflow-gates.md", 特定フェーズのDoD確認時, サブエージェントテンプレートにDoD情報が含まれるためOrchestratorが直接参照する頻度は低い
+  プロジェクト固有(初回のみ), "workflow-project-structure.md, workflow-api-standards.md, workflow-docs-structure.md, workflow-docs-phases.md", planning/ui_design等の特定フェーズ, プロジェクト構造・API標準はサブエージェントが参照. Orchestratorは直接使用しない
+  運用時のみ, workflow-operations.md, MCP再起動・テスト配置問題発生時, 通常フローでは参照不要
+
+compressionAnalysis:
+  totalCurrentLines: 1640
+  claudeMdOverlapRemovable: 107
+  mcpTemplateRemovable: 97
+  interFileDedup: 80
+  proseToListConversion: 50
+  estimatedPostCompression: 850
+  compressionRatio: 48%
+  targetAchievable: 全ファイル200行以下は達成可能. 最大ファイルworkflow-phases.md(154行)は重複除去後130行程度
+
+subdirectoryFinding:
+  result: サブディレクトリ分割は不可. Claude Codeスキルシステムはフラット構造のみサポート
+  alternative: ファイル数削減(統合)と各ファイルの行数削減の二軸で圧縮する
+  mergeCandidate1: workflow-docs-structure.md(186行) + workflow-docs-phases.md(198行) → workflow-docs.md(推定180行)
+  mergeCandidate2: workflow-operations.md(122行)は圧縮後50行以下になるためworkflow-rules.mdへの吸収を検討
+  mergeCandidate3: workflow-subagent.mdからテンプレート除去後はworkflow-orchestrator.mdに吸収可能(推定90行→60行の差分のみ)
+
+phaseTableAuthorityAnalysis:
+  claudeMdSec2: 30フェーズのステージ・モデル・ゲート情報を簡潔に記載(15行)
+  workflowPhasesMd: 同一30フェーズを詳細テーブル(42行)+作業説明(90行)で記載
+  registryTs: PHASE_REGISTRYがmodel/bashCategories/inputFiles/outputFile/requiredSectionsを定義
+  defsStageTs: 各フェーズのsubagentTemplateがDoD情報を含む
+  conclusion: workflow-phases.mdの「Phase Table」はCLAUDE.md Sec2とregistry.tsの両方と重複. 作業説明(Phase Work Descriptions)のみがスキルファイル固有の価値
+
+decisions[7]{id,statement,rationale}:
+  R-01, Claude Codeスキルシステムはフラット構造のみ対応しサブディレクトリ分割による遅延ロードは実現不可能, harness/sub/ 配下のファイルは /harness 呼び出し時にロードされないことを確認. 階層化戦略はファイル統合による数削減に変更すべき
+  R-02, CLAUDE.mdとの重複107行は全て削除可能でありスキルファイルからは参照のみにすべき, CLAUDE.mdは常時ロードされる権威仕様であり同一情報の二重保持はトークン浪費かつ不整合リスク. OV-01~12の全箇所でCLAUDE.md側が権威版
+  R-03, MCPサーバーテンプレート97行は全て削除可能でありテンプレート内容をスキルファイルに静的保持する理由がない, buildSubagentPromptがSUMMARY_SECTION_RULE/EXIT_CODE_RULE/bashCategoryHelpを動的注入する. エラー種別→改善要求変換表(10行)のみリトライ運用でスキル固有
+  R-04, workflow-subagent.mdはテンプレート97行+bash重複10行+retry重複15行を除去すると残り64行であり独立ファイルとしての存在意義が薄い, 残る内容はsubagent type表(30行)とedit制限表(15行)とモデルエスカレーション(5行)とコンテキスト引き継ぎ(8行). workflow-orchestrator.mdに統合してworkflow-execution.mdとする方が効率的
+  R-05, workflow-docs-structure.mdとworkflow-docs-phases.mdは相互参照が強く統合すべきであり重複ツリー25行を除去すると180行以内に収まる, docs-phasesがdocs-structureのディレクトリ構造を前提としており分離の意味がない. Enterprise Placement例(docs-structure L142-154)はdocs-phasesのDocument Creation Flow(L156-184)と重複
+  R-06, workflow-operations.mdは圧縮後50行程度になるが独立ファイルとして維持すべき, テスト配置ルール・MCP再起動手順・パッケージインストールルールは運用固有でありworkflow-rules.mdの「ルール」とは性質が異なる. 独立ファイルの方が検索性が高い
+  R-07, workflow-phases.mdのPhase TableはCLAUDE.md Sec2と重複するが作業説明(Phase Work Descriptions)90行はスキルファイル固有であり保持すべき, Phase Tableを「CLAUDE.md Sec2参照」に置換し作業説明のみ残すことで154行→100行程度に圧縮可能
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/skill-files-compression/research.toon, report, スキルファイル11ファイルのロードメカニズム・CLAUDE.md重複12箇所・MCPテンプレート重複3箇所・ファイル間重複8箇所の調査結果と7つの設計決定
+  docs/workflows/skill-files-compression/scope-definition.toon, spec, 前フェーズで作成したスコープ定義(9決定・6受入基準)
+
+next:
+  criticalDecisions[3]: R-01(サブディレクトリ不可→ファイル統合戦略), R-02(CLAUDE.md重複107行全削除), R-03(MCPテンプレート97行全削除)
+  readFiles[5]: workflow-harness/CLAUDE.md, workflow-subagent.md, workflow-docs-structure.md, workflow-docs-phases.md, workflow-orchestrator.md
+  implementationPlan[5]: 1.workflow-subagent.md→テンプレート除去+orchestrator統合(SD-04/R-04), 2.docs2ファイル統合(SD-05/R-05), 3.全ファイルCLAUDE.md重複排除(SD-01/R-02), 4.phases.mdのPhaseTable削除(R-07), 5.operations/rules/gates圧縮(SD-06~08)
+  expectedResult: 11ファイル1640行 → 9ファイル850行(48%削減). 統合: subagent→orchestrator=execution.md, docs-structure+docs-phases=docs.md. 削除なし
+  warnings[2]: サブディレクトリ分割は不可能であるためファイル数は最大11から最小9に減るのみ, 親リポのSKILL.mdに3-axis intent analysis追加がありサブモジュール未反映(OOS対象)

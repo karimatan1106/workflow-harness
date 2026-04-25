@@ -1,0 +1,10 @@
+task: tool-gate.jsにデバッグログを追加
+phase: implementation
+status: completed
+files-changed: workflow-harness/hooks/tool-gate.js
+changes-summary: logEnvDebug関数を追加しHARNESS_DEBUG=1で環境変数ログを有効化
+env-vars-logged: "HARNESS_LAYER, HARNESS_TASK_ID, HARNESS_SESSION_TOKEN, CLAUDE_AGENT_ID, NODE_ENV"
+activation: HARNESS_DEBUG=1
+log-file: "<projectRoot>/.harness-debug.log"
+note: HARNESS_SESSION_TOKENは値をマスクし[SET]/[UNSET]のみ記録
+success: true

@@ -1,0 +1,47 @@
+%% State Machine: fix-failing-quality-rule-tests
+%% taskId: 516baef8-f09e-45d9-a654-fb70c308f925
+%%
+%% decisions
+%% - D-001: 3ファイルへの追加は独立しており並列遷移が可能
+%% - D-002: 各ファイルの状態は「未変更 -> セクション追加済み -> テストPASS」の3段階
+%% - D-003: coordinator.md は4テスト、worker.md は3テスト、hearing-worker.md は3テストに対応
+%% - D-004: テスト実行は全ファイル編集完了後に一括実行（2テストスイート同時）
+%% - D-005: 失敗時は該当ファイルの編集状態に戻り正規表現パターンとの照合を再実施
+
+stateDiagram-v2
+    [*] --> PreEdit: 3ファイル未変更 (10テスト失敗)
+
+    state PreEdit {
+        [*] --> CoordinatorPending
+        [*] --> WorkerPending
+        [*] --> HearingWorkerPending
+    }
+
+    state EditPhase {
+        CoordinatorEdited: coordinator.md\nPhase Output Rules追加
+        WorkerEdited: worker.md\nEdit Completeness追加
+        HearingWorkerEdited: hearing-worker.md\nAskUserQuestion Quality Rules追加
+    }
+
+    CoordinatorPending --> CoordinatorEdited: S-1 セクション追記
+    WorkerPending --> WorkerEdited: S-2 セクション追記
+    HearingWorkerPending --> HearingWorkerEdited: S-3 セクション追記
+
+    CoordinatorEdited --> TestExecution: 編集完了
+    WorkerEdited --> TestExecution: 編集完了
+    HearingWorkerEdited --> TestExecution: 編集完了
+
+    state TestExecution {
+        RunFirstPass: first-pass-improvement.test.ts\n(7テスト: TC-AC1-01〜04, TC-AC2-01〜03)
+        RunHearingWorker: hearing-worker-rules.test.ts\n(3テスト: TC-AC1-01, TC-AC2-01, TC-AC3-01)
+        RunFirstPass --> VerifyAll
+        RunHearingWorker --> VerifyAll
+        VerifyAll: 全10テストPASS確認
+    }
+
+    TestExecution --> AllPass: 10/10 PASS
+    TestExecution --> FixRegex: テスト失敗あり
+
+    FixRegex --> EditPhase: 正規表現パターン再照合して再編集
+
+    AllPass --> [*]: 完了

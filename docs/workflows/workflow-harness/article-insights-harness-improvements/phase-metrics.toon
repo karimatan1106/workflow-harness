@@ -1,0 +1,146 @@
+phase: metrics
+taskName: article-insights-harness-improvements
+startedAt: "2026-03-28T02:21:32.363Z"
+completedAt: "2026-03-28T08:32:56.306Z"
+totalRetries: 18
+totalDoDFailures: 18
+phases:
+  hearing:
+    durationSec: 208
+    retries: 0
+    dodFailures: 0
+  scope_definition:
+    durationSec: 15976
+    retries: 1
+    dodFailures: 1
+  research:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 44
+    retries: 3
+    dodFailures: 8
+  threat_modeling:
+    durationSec: 6
+    retries: 0
+    dodFailures: 0
+  planning:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  state_machine:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  ui_design:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 8
+    retries: 1
+    dodFailures: 3
+  test_design:
+    durationSec: 9
+    retries: 0
+    dodFailures: 0
+  test_selection:
+    durationSec: 4
+    retries: 1
+    dodFailures: 3
+  test_impl:
+    durationSec: 13
+    retries: 2
+    dodFailures: 2
+  implementation:
+    durationSec: 141
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 322
+    retries: 1
+    dodFailures: 1
+  build_check:
+    durationSec: 57
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 812
+    retries: 6
+    dodFailures: 10
+  testing:
+    durationSec: 121
+    retries: 1
+    dodFailures: 2
+  regression_test:
+    durationSec: 37
+    retries: 0
+    dodFailures: 0
+  acceptance_verification:
+    durationSec: 3655
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 175
+    retries: 1
+    dodFailures: 1
+  security_scan:
+    durationSec: 97
+    retries: 0
+    dodFailures: 0
+  performance_test:
+    durationSec: 129
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 138
+    retries: 1
+    dodFailures: 1
+  docs_update:
+    durationSec: 118
+    retries: 0
+    dodFailures: 0
+  commit:
+    durationSec: 80
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 10
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 10
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 8
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 81
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  scope_definition[1]: "[L4] Duplicate lines (3+ times): \"- 推定変更: +10行...\" (3x)"
+  requirements[8]: "[L3] Missing required sections: acceptanceCriteria, notInScope, openQuestions. Add ## headings for each.","[L4] Missing required Markdown sections: acceptanceCriteria, notInScope, openQuestions","[L3] RTM entries do not reference these ACs: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-10, AC-11, AC-12, AC-13, AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20","[L4] requirements.md is missing notInScope section\n修正方法: requirements.md に ## notInScope セクションを追加し、スコープ外の機能を列挙してください。","[L4] requirements.md is missing openQuestions section\n修正方法: requirements.md に ## openQuestions セクションを追加してください。未解決の場合は空にしてください。","[L4] 意図整合性警告: 9語が requirements.md に未反映: Anthropic記事の知見から4つの改善をハーネスに追加:, (P3), slopパターンL4正規表現チェック, (P4), planningフェーズからコード例排除ルール\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。","[L4] openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。","[L4] 意図整合性警告: 8語が requirements.md に未反映: Anthropic記事の知見から4つの改善をハーネスに追加:, (P3), slopパターンL4正規表現チェック, (P4), (P5)\n修正方法: requirements.md にユーザー意図の主要キーワードを反映してください。"
+  design_review[3]: "[L3] Missing required sections: next. Add ## headings for each.","[L4] Forbidden patterns found: 未定; Missing required Markdown sections: next","[L4] design-review.md is missing acDesignMapping section (IA-3)\n修正方法: design-review.md に ## acDesignMapping セクションを追加し、各AC-Nと対応する設計要素を列挙してください。"
+  test_selection[3]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  test_impl[2]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+  refactoring[1]: "[L2] refactoring フェーズテスト結果: 763パス / 791テスト（28失敗）。ReferenceError (beforeAll, afterAll undefined)、フィルタリング/キュレーション関連テスト失敗\n\nTest Files: 28 failed | 89 passed (117). Tests: 28 failed | 763 passed (791). Failures in mcp-contract.test.ts (beforeAll undefined), rtm-intent-gate.test.ts (afterAll undefined), ace-reflector-curator.test.ts (curator quality score filtering), ace-reflector.test.ts, reflector-quality.test.ts (lesson filtering). Root cause: vitest setup or refactored function logic affecting curator/reflector modules."
+  code_review[10]: "[L4] Duplicate lines (3+ times): \"- severity: critical...\" (3x); \"- category: design-implementation-gap...\" (4x); \"- severity: minor...\" (3x)","[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending), F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending), F-009 (pending)","[L4] decisions count: 4 < required 5\n修正方法: ## decisions にあと1件追加してください。","[L4] code-review.md is missing acAchievementStatus section (IA-5)\n修正方法: code-review.md に ## acAchievementStatus セクションを追加し、各AC-Nのpass/fail状態を記入してください。","[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending)","[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。","[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L3] RTM entries not at required status: F-001 (pending), F-002 (pending), F-003 (pending), F-004 (pending), F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending), F-009 (pending)","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  testing[2]: "[L1] Test results exist but none recorded for current phase: testing","[L2] New test failures detected (4): mcp-contract.test.ts::beforeAll, rtm-intent-gate.test.ts::afterAll, ace-reflector-curator.test.ts::curator quality score, reflector-quality.test.ts::lesson filtering"
+  manual_test[1]: "[L4] Duplicate lines (3+ times): \"Status: PASS...\" (6x)"
+  e2e_test[1]: "[L4] Duplicate lines (3+ times): \"- ファイル数: 1...\" (6x); \"- 結果: 全件 PASS...\" (6x)"

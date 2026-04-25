@@ -1,0 +1,59 @@
+title: requirements - harness_record_proofブロック修正＋docsDir パス不一致修正
+type: requirements
+taskId: d20100fe-b5bb-4b3f-b3b6-4ed8cd6f850f
+phase: requirements
+
+summary: pre-tool-guard.sh の is_lifecycle_mcp() が harness_* MCPツール23種中6種しか許可しないバグと、manager-read.ts の getDocsPath() が相対パスを返すことによるパス不一致バグの2件を修正する要件定義。
+
+background: オーケストレーターから harness_record_proof 等のMCPツールを呼ぶとBLOCKEDエラーになる。原因は is_lifecycle_mcp() が6ツールのみ明示列挙しているため。また docsDir が相対パスで返されるため、CWDがプロジェクトルートと異なる場合にDoD検証でパス不一致が発生する。
+
+decisions[7]{id,statement,rationale}:
+  D-1, "is_lifecycle_mcp() の case パターンを mcp__harness__harness_* ワイルドカードに変更する", "個別列挙は新ツール追加時に漏れるリスクがある。harness_ プレフィクスを持つツールは全てハーネスのライフサイクル制御系でありオーケストレーターが呼べて問題ない"
+  D-2, "getDocsPath() 内で resolveProjectPath() を適用し絶対パスを返す根本修正を採用する", "下流の全消費箇所(DoD gates, progress-json, manager-write等)を個別修正するより変更点が1箇所で済む。resolveProjectPath の isAbsolute ガードにより二重適用も安全"
+  D-3, "DoD検証側(dod-l1-l2.ts, dod-l3.ts, dod-l4-*.ts等)のパス解決ロジックは変更しない", "docsDir 生成元を修正すれば消費側は自動的に正しい絶対パスを受け取る。両側を変更するとリグレッションリスクが増す"
+  D-4, "ensureStateDirs や progress-json 等の docsDir 消費箇所は変更不要", "docsDir が絶対パスになっても join() や existsSync() は正常動作する。resolveProjectPath は isAbsolute ガードがあるため二重解決しない"
+  D-5, "harness_get_subphase_template はオーケストレーターから直接呼ばず coordinator subagent 経由で取得する", "オーケストレーターのMCPツール呼び出しを最小限に保ちsubagentに委譲する方針と整合"
+  D-6, "pre-tool-guard.sh の BLOCKED メッセージ文言は変更しない", "エラーメッセージはlifecycle MCPツールという表現で正しく動作し変更不要"
+  D-7, "manager-read.ts に resolveProjectPath の import を追加する", "getDocsPath 内で resolveProjectPath を使用するために必要な依存追加"
+
+ac[5]{id,description,verification}:
+  AC-1, "全 harness_* MCPツール(23種)が is_lifecycle_mcp チェックを通過する", "mcp__harness__harness_record_proof, mcp__harness__harness_add_ac, mcp__harness__harness_delegate_coordinator 等を引数に is_lifecycle_mcp を呼び出し return 0 を確認"
+  AC-2, "getDocsPath が resolveProjectPath 経由で絶対パスを返す", "getDocsPath('test-task') の戻り値が isAbsolute === true であることを確認。getProjectRoot() + '/docs/workflows/test-task' と一致することを確認"
+  AC-3, "DoD gates で resolveProjectPath を使う箇所が二重解決しない", "docsDir が既に絶対パスの場合に resolveProjectPath がそのまま返すことを確認。dod-l1-l2.ts 等の resolveProjectPath(config.outputFile.replace('{docsDir}', docsDir)) が正しいパスを生成することを確認"
+  AC-4, "既存テストが全て通過する", "vitest run を実行し全テストがパスすることを確認。docsDir を相対パス前提で使っているテストがあれば修正する"
+  AC-5, "他プロジェクトでの workflow-harness 使用にリグレッションがない", "DOCS_DIR 環境変数で絶対パスを指定している場合も resolveProjectPath の isAbsolute ガードで二重解決しないことを確認"
+
+notInScope[5]:
+  docsDir 消費側(dod-l4-requirements.ts, dod-l4-ia.ts, progress-json.ts, manager-write.ts)のコード変更
+  pre-tool-guard.sh の subagent 判定ロジック変更(正常動作中)
+  MCP ツール定義ファイル(defs-a.ts, defs-b.ts, defs-c.ts)の変更
+  TOOL_GUARD_DISABLE の挙動変更
+  Edit ツールの edit-auth.txt 認可ロジックの変更
+
+openQuestions[3]{id,question,impact}:
+  OQ-1, "DOCS_DIR 環境変数に相対パスが設定されている場合にも resolveProjectPath で絶対パス化すべきか", "環境変数による明示的な相対パス設定は意図的な可能性があるが resolveProjectPath はそのケースも絶対パス化する。現行の resolveProjectPath の仕様通りで問題ないと判断"
+  OQ-2, "docsDir が絶対パスになることで既存テストのモック・スタブに影響があるか", "テスト内で process.env.DOCS_DIR を設定しているケースやtmpdir を使うケースで挙動が変わる可能性がある。実装時にテスト実行で確認する"
+  OQ-3, "lifecycle.ts L212 の resolveProjectPath(freshTask.docsDir) は docsDir が絶対パスになった後も正常動作するか", "resolveProjectPath は isAbsolute チェックにより絶対パスならそのまま返すため問題なし"
+
+changeSpec[2]{id,file,description}:
+  CHG-1, "workflow-harness/hooks/pre-tool-guard.sh", "is_lifecycle_mcp() の case 文を mcp__harness__harness_* ワイルドカードパターンに変更。個別の6ツール列挙を削除"
+  CHG-2, "workflow-harness/mcp-server/src/state/manager-read.ts", "getDocsPath() で resolveProjectPath(join(DOCS_DIR, taskName)) を返すように変更。resolveProjectPath の import を追加"
+
+rtm[5]{id,ac,change,description}:
+  F-001, AC-1, CHG-1, "ワイルドカードマッチにより全 harness_* ツールが is_lifecycle_mcp を通過する"
+  F-002, AC-2, CHG-2, "getDocsPath が resolveProjectPath 経由で絶対パスを返す"
+  F-003, AC-3, CHG-2, "resolveProjectPath の isAbsolute ガードにより二重解決が発生しない"
+  F-004, AC-4, "CHG-1,CHG-2", "両変更後に既存テストスイートが全て通過する"
+  F-005, AC-5, CHG-2, "DOCS_DIR 環境変数が絶対パスの場合も isAbsolute ガードで安全に動作する"
+
+impactedFiles[6]:
+  workflow-harness/hooks/pre-tool-guard.sh (直接変更)
+  workflow-harness/mcp-server/src/state/manager-read.ts (直接変更)
+  workflow-harness/mcp-server/src/utils/project-root.ts (参照のみ - resolveProjectPath 定義元)
+  workflow-harness/mcp-server/src/gates/dod-l1-l2.ts (影響確認 - docsDir消費箇所)
+  workflow-harness/mcp-server/src/gates/dod-l3.ts (影響確認 - docsDir消費箇所)
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts (影響確認 - docsDir消費箇所)
+
+riskAssessment: 低。変更は2ファイル合計2箇所の小規模修正。CHG-1 は case パターンの単純化。CHG-2 は既存の resolveProjectPath 関数の活用で isAbsolute ガードにより安全。
+
+next: planning

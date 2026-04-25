@@ -1,0 +1,41 @@
+flowchart TD
+    Start((修正開始: definitions.ts確認))
+    Start --> CheckSecurity(FR-R5A: security_scanの修正)
+    CheckSecurity --> DetailSecurity(subagentTemplateに3ブロック追加: サマリー・スキャン結果・問題検出ガイダンス)
+    DetailSecurity --> CheckCodeReview(FR-R5B: code_reviewの修正)
+    CheckCodeReview --> DetailCodeReview(subagentTemplateに5ブロック追加: サマリー・設計整合性・品質・セキュリティ・パフォーマンス)
+    DetailCodeReview --> CheckE2E(FR-R5C: e2e_testの修正)
+    CheckE2E --> DetailE2E(subagentTemplateに4ブロック追加: サマリー・シナリオ・結果・重複行回避)
+    DetailE2E --> CheckManualTest(FR-R5D: manual_testの修正)
+    CheckManualTest --> DetailManualTest(subagentTemplateに2ブロック追加: シナリオ・結果ガイダンス)
+    DetailManualTest --> Build(TypeScriptコンパイル実行)
+    Build --> BuildExec(npm run buildを実行)
+    BuildExec --> BuildCheck{ビルド成功確認}
+    BuildCheck -->|失敗| BuildError(ビルドエラー分析)
+    BuildError --> BuildRetry(エラー箇所修正実施)
+    BuildRetry --> BuildExec
+    BuildCheck -->|成功| RestartMCP(MCPサーバープロセス再起動)
+    RestartMCP --> WaitServer(MCPサーバー起動完了待機)
+    WaitServer --> VerifyStatus(workflow_statusコマンド実行)
+    VerifyStatus --> StatusCheck{フェーズ確認成功}
+    StatusCheck -->|確認失敗| ServerError(MCPサーバーステータス確認)
+    ServerError --> ServerFix(MCPサーバーエラー対応)
+    ServerFix --> VerifyStatus
+    StatusCheck -->|確認成功| ValidateChanges(definitions.tsの全4サブフェーズ確認)
+    ValidateChanges --> CheckComplete{全ガイダンス追加完了確認}
+    CheckComplete -->|未完了| FixMissing(不足分ガイダンスを追加)
+    FixMissing --> BuildExec
+    CheckComplete -->|完了| FinalTest(動作確認テスト実施)
+    FinalTest --> TestValidate(新規ワークフロータスク開始して検証)
+    TestValidate --> TestResult{バリデーション初回通過確認}
+    TestResult -->|失敗| DebugTemplate(テンプレート内容再確認)
+    DebugTemplate --> FixTemplate(ガイダンスブロック修正)
+    FixTemplate --> BuildExec
+    TestResult -->|成功| Complete((修正完了: バリデーション初回通過率向上))
+
+    style Start fill:#90EE90
+    style Complete fill:#87CEEB
+    style BuildCheck fill:#FFB6C6
+    style StatusCheck fill:#FFB6C6
+    style CheckComplete fill:#FFB6C6
+    style TestResult fill:#FFB6C6

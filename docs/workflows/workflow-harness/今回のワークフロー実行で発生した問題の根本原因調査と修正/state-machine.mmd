@@ -1,0 +1,23 @@
+stateDiagram-v2
+    Start(開始: subagent起動) --> PrepareTest(テスト準備)
+
+    PrepareTest --> RunTests(テスト実行)
+
+    RunTests --> TestResult{テスト結果}
+    TestResult -->|成功| RecordBaseline(ベースライン記録)
+    TestResult -->|失敗| RecordBaseline(ベースライン記録)
+
+    RecordBaseline --> CheckBaseline{ベースライン\n記録成功か?}
+    CheckBaseline -->|成功| ExtractMetrics(メトリクス抽出)
+    CheckBaseline -->|失敗| Error1(エラー: ベースライン記録失敗)
+
+    ExtractMetrics --> RecordTestResult(テスト結果記録)
+
+    RecordTestResult --> CheckRecording{テスト結果\n記録成功か?}
+    CheckRecording -->|成功| UpdateReport(テスト結果レポート更新)
+    CheckRecording -->|失敗| Error2(エラー: テスト結果記録失敗)
+
+    UpdateReport --> End(完了: regression_testフェーズへ遷移可能)
+
+    Error1 --> End
+    Error2 --> End

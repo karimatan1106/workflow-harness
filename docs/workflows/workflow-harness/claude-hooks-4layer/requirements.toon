@@ -1,0 +1,56 @@
+phase: requirements
+task: claude-hooks-4layer
+intent: "Claude Code Hooks 4種(PostToolUse/PreToolUse/Stop/PreCompact)を実装し、ms単位フィードバック層を確立する"
+
+functionalRequirements[5]{id,title,description,hookId,event,priority}:
+  F-001,PostToolUseリンター自動実行,Write/Edit完了直後にtsc --noEmitを実行し構文エラーをstdoutにフィードバック。exit 0固定(情報提供のみ),G-01,PostToolUse,must
+  F-002,設定ファイル保護ゲート,"PreToolUseでWrite/Editのfile_pathが保護パターン(.eslintrc*/tsconfig*.json/.mcp.json/package.json/.claude/settings.json/.gitignore)に一致した場合、exit 2でブロックしメッセージ表示",G-02,PreToolUse,must
+  F-003,完了宣言時テスト強制,"Stop時にテストファイル(*.test.ts/*.spec.ts)が存在すればvitest --runを実行し、失敗時exit 2で完了をブロック。テストファイル不在時はexit 0で許可",G-03,Stop,must
+  F-004,コンテキスト圧縮前情報退避,"Notification(type=compact)検出時にtask/phase/完了AC/scopeFiles/decisionsを.agent/checkpoint.toonへTOON形式で退避。exit 0固定(ブロック不可)",G-04,Notification,must
+  F-005,settings.jsonフック登録,"PostToolUse/PreToolUse/Stop/Notificationの4イベントに対応するhookエントリをsettings.jsonに追加。既存UserPromptSubmit/PreToolCallエントリは変更しない",なし,なし,must
+
+nonFunctionalRequirements[4]{id,category,requirement,metric}:
+  NFR-01,性能,各フックスクリプトの実行時間が5秒以内に完了すること,tsc実行にtimeout 5秒上限を適用
+  NFR-02,依存性,node/tsc/vitest以外の外部ツールに依存しないこと。jq不使用(grep+sedでstdinパース),MSYS2環境での動作保証
+  NFR-03,互換性,既存フック4本(watchdog/handoff-reader/handoff-validator/session-end-reminder)の動作に影響を与えないこと,既存イベント種別のエントリ不変
+  NFR-04,保守性,bashスクリプトで統一し既存フックと同一パターン(stdin読み取り/grep+sed抽出/exit code制御)を踏襲すること,コード規約の一貫性
+
+acceptanceCriteria[5]{id,criterion,verificationMethod,relatedReq}:
+  AC-1,"4本のフックスクリプト(.claude/hooks/post-tool-lint.sh, pre-tool-config-guard.sh, stop-test-enforcer.sh, pre-compact-context-save.sh)が存在し実行権限を持つ",ls -la .claude/hooks/ で4ファイルの存在と-rwxr-xr-xを確認,F-001/F-002/F-003/F-004
+  AC-2,"settings.jsonのhooksキー配下にPostToolUse/PreToolUse/Stop/Notificationの4イベントが登録されており、既存3イベント(UserPromptSubmit/PreToolCall)が変更されていない",settings.jsonの差分確認(git diff),F-005
+  AC-3,G-01が.tsファイル編集後にtscエラーをstdoutに出力しexit 0を返す(情報提供のみでブロックしない),"構文エラーを含む.tsファイルパスをstdinに渡し、stdoutにエラー出力かつexit code=0を確認",F-001
+  AC-4,"G-02が保護対象ファイル(tsconfig.json等)へのWrite/Editをexit 2でブロックし、[CONFIG-GUARD]プレフィックス付きメッセージをstdoutに出力する",保護対象file_pathをstdinに渡しexit code=2とメッセージ内容を確認,F-002
+  AC-5,"G-03がテストファイル存在時にvitest --runを実行し、テスト失敗時exit 2で完了をブロックする。テストファイル不在時はexit 0で完了を許可する",テスト失敗状態でStop stdinを渡しexit code=2を確認。テストファイル削除後にexit 0を確認,F-003
+
+designConstraints[4]{id,constraint,source}:
+  DC-01,stdinパースはgrep+sed方式(jq不使用)。既存watchdogパターンを踏襲,R-05(research.toon)
+  DC-02,G-01のtsconfig検索はfile_pathから親ディレクトリを上位走査する動的検索方式,R-08(research.toon)
+  DC-03,Windowsパス変換(C:\→/c/)への対応。sed 's|\\|/|g'でパス正規化,PC-01(research.toon)
+  DC-04,G-02のCONFIG_GUARD_DISABLE=true環境変数による一時無効化サポート,g02PreToolConfigGuardDesign(research.toon)
+
+notInScope[5]{item,reason}:
+  既存フック4本(watchdog/handoff-reader等)のコード改修,本タスクは新規4本の追加に限定。既存フックは動作確認のみ
+  MCPサーバーコードやワークフロープラグインの変更,フックはシェルスクリプトでありMCPサーバーとは独立
+  vitest設定ファイル(vitest.config.ts)の新規作成,G-03はプロジェクトに既存のテスト設定を利用する
+  .agent/CRITICAL.toonのフォーマット変更,G-04は既存フォーマットを維持して追記統合する
+  eslint/prettier等tsc以外のリンター統合,G-01はtsc --noEmitに限定。他リンターは将来拡張として別タスク化
+
+openQuestions[0]{id,question,impact}:
+
+decisions[6]{id,statement,rationale}:
+  REQ-01,AC粒度はフック単位(AC-1は全4本の存在確認)とし個別フックのAC(AC-3〜5)で機能検証を分離する,テスト工数を最小化しつつ各フックの独立検証を保証
+  REQ-02,G-04のAC(コンテキスト退避)は明示的ACとせずAC-1(存在確認)とAC-2(登録確認)でカバーする,G-04はexit 0固定かつNotificationイベントのためブロック検証が不可。ファイル退避の正確性は統合テストで担保
+  REQ-03,NFR-01の5秒制限はtsc実行(G-01)とvitest実行(G-03)に適用しG-02/G-04はパターンマッチのみで1秒未満を想定,フック応答時間の上限を明示しDX劣化を防止
+  REQ-04,AC-2で既存イベントの不変性を検証対象に含める,F-005の要件「既存エントリ変更なし」を検証可能にするため
+  REQ-05,G-02の保護パターンは6種固定とし外部設定ファイルを参照しない,SD-03(scope-definition)の判断を踏襲。ms単位実行でファイルI/O削減が優先
+  REQ-06,テストファイル不在時のG-03動作(exit 0)をAC-5の検証項目に含める,R-04(research.toon)のテストレスプロジェクト対応を検証可能にするため
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/claude-hooks-4layer/requirements.toon,deliverable,機能要件5件/非機能要件4件/AC5件/設計制約4件の要件定義
+  docs/workflows/claude-hooks-4layer/research.toon,input,リサーチ結果。既存フック分析と4フック設計方針
+  docs/workflows/claude-hooks-4layer/scope-definition.toon,input,スコープ定義。変更対象8ファイルと影響範囲
+
+next:
+  criticalDecisions: REQ-01(AC粒度フック単位) REQ-02(G-04はAC-1/AC-2でカバー) REQ-05(保護パターン6種固定)
+  readFiles: docs/workflows/claude-hooks-4layer/requirements.toon docs/workflows/claude-hooks-4layer/research.toon
+  warnings: G-03のvitest実行時間がNFR-01の5秒制限を超過する可能性がある。大規模テストスイートではtimeout制御が必須

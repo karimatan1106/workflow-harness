@@ -1,0 +1,51 @@
+id: REQ-DOD-ERR-STRUCT
+title: DoD Error Structuring - Requirements
+phase: requirements
+status: complete
+date: 2026-03-10
+
+summary: Add structured fix and example fields to DoDCheckResult type so retry.ts can consume actionable remediation instructions directly from each DoD check, eliminating fragile regex matching in errorToImprovement.
+
+acceptanceCriteria[4]{id,description,verificationMethod}:
+  AC-1, DoDCheckResult type in dod-types.ts has optional fix (string) and example (string) fields, Inspect dod-types.ts for field presence and optional typing
+  AC-2, All DoD checks (L1-L4) across 8 source files populate fix field with actionable repair instructions when passed=false, Run full test suite and verify fix field populated in all failure-path unit tests
+  AC-3, retry.ts buildRetryPrompt uses structured fix/example fields from DoDCheckResult[] instead of regex matching in errorToImprovement, Inspect retry.ts for removal of regex patterns and direct field access
+  AC-4, Existing 449 tests pass with no regressions, Run vitest and confirm 449+ tests pass with 0 failures
+
+requirements[6]{id,description,priority}:
+  REQ-1, Add optional fix:string and example:string to DoDCheckResult interface in dod-types.ts, must
+  REQ-2, Each of the 22 DoD check functions populates fix with a Japanese improvement instruction when passed=false, must
+  REQ-3, Each check function populates example with a short correct-output snippet when the fix benefits from an example (file paths and format samples), should
+  REQ-4, buildRetryPrompt in retry.ts accepts DoDCheckResult[] and reads fix/example fields directly to construct improvement instructions, must
+  REQ-5, classifyError in retry.ts uses DoDCheckResult.check field instead of regex on evidence string, should
+  REQ-6, formatDoDResult in dod.ts optionally appends fix text for failed checks in the output, should
+
+constraints[3]{id,description}:
+  CON-1, fix and example fields must be optional to maintain backward compatibility with existing DoDCheckResult consumers
+  CON-2, All changes must stay within the 200-line-per-file limit enforced by the harness
+  CON-3, errorToImprovement regex logic must be retained as fallback for any DoDCheckResult lacking a fix field
+
+notInScope[6]{item,reason}:
+  UI changes to workflow dashboard,本タスクはバックエンドDoD検証のみ
+  TOON format specificationの変更,フォーマット仕様は変更不要
+  フェーズ順序/スキップロジック変更,DoDエラー形式のみが対象
+  新規DoDチェック追加,既存22チェックの構造化のみ
+  retry.tsのモデルエスカレーション閾値変更,エスカレーションロジックは変更不要
+  hookシステムの変更,フック基盤は別タスク
+
+openQuestions[0]{id,question,impact}:
+
+decisions[5]{id,statement,rationale}:
+  REQ-D1, fix field is a single string not an array, Each check function returns one DoDCheckResult per invocation so one fix instruction suffices; compound checks concatenate sub-fixes with semicolons
+  REQ-D2, example field is optional even among failure results, Not all checks benefit from examples (e.g. exit_code_zero has no meaningful example output)
+  REQ-D3, errorToImprovement is retained as fallback not deleted, Third-party or future checks may return DoDCheckResult without fix field; fallback ensures no regression
+  REQ-D4, DoDResult.errors[] string array format is unchanged, errors[] is consumed by multiple callers; changing its type would cascade beyond scope
+  REQ-D5, buildRetryPrompt signature changes to accept optional DoDCheckResult[] parameter, Adding a new parameter with default undefined preserves backward compatibility for all existing callers
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/dod-error-structuring/research.toon,research,現状分析と22チェックのインベントリ
+  docs/workflows/dod-error-structuring/requirements.toon,spec,要件定義とAC4件
+next:
+  criticalDecisions: REQ-D1 through REQ-D5 define the backward-compatible extension strategy
+  readFiles: dod-types.ts, dod.ts, dod-l1-l2.ts, dod-l3.ts, dod-l4-content.ts, retry.ts
+  warnings: content_validation in dod-l4-content.ts produces compound errors from 4 sub-checks; fix field must concatenate all applicable sub-fixes

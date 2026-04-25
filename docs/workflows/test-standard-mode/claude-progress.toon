@@ -1,0 +1,8 @@
+taskId: edda5b74-c639-4689-9893-617b4932a420
+taskName: test-standard-mode
+currentPhase: research
+completedPhases[1]: scope_definition
+completedCount: 1
+updatedAt: "2026-04-25T08:22:48.780Z"
+transitions[1]{from,to,timestamp}:
+  scope_definition,research,"2026-04-25T08:22:48.780Z"

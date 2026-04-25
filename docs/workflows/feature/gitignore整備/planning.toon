@@ -1,0 +1,32 @@
+phase: planning
+taskId: 2c7dfc16-1d80-4a29-a061-30d0f36311ae
+ts: "2026-03-02T08:30:00+09:00"
+decisions[7]{id,statement,rationale}:
+  PL-001,gitignore追記を git rm --cached より先に実行する,gitignore にパターンが存在しない状態で git rm --cached を行うと削除後の再追加リスクがある。先に gitignore を更新することで git add 時に自動的に除外される安全な順序となる
+  PL-002,親リポジトリの git rm --cached は単一ファイル指定で実行する,.claude-phase-guard-log.json は1ファイルのみのため -r オプションは不要。誤って他ファイルを削除するリスクを排除する
+  PL-003,サブモジュール内の git rm -r --cached はディレクトリ単位で2回に分けて実行する,mcp-server/dist/ と mcp-server/.claude/state/ は異なるディレクトリであり一括指定するとパスの誤りで意図しないファイルが削除される可能性がある。個別実行により各操作の結果を確認できる
+  PL-004,サブモジュールの .gitignore には変更を加えない,research フェーズ R-005 で確認済みのとおり dist/ と mcp-server/.claude/state/ は既に記載済み。重複追記は混乱を招く
+  PL-005,コミットは親リポジトリとサブモジュールで別々に行う,サブモジュール内の変更はサブモジュール内でコミットし親リポジトリではサブモジュール参照の更新と .gitignore 変更を一括コミットする。Git のサブモジュール管理の標準的な手順に従う
+  PL-006,Git履歴からの秘密鍵削除は本タスクのスコープ外とする,REQ-007 で明示的にスコープ外と定義済み。BFG Repo-Cleaner 等による履歴書き換えは破壊的操作であり別タスクとして慎重に計画すべき
+  PL-007,実装完了後に git ls-files で untrack 確認を行う,git status だけでは追跡状態の変化を見落とす可能性がある。git ls-files による明示的な確認で AC-2 および AC-3 の検証精度を高める
+artifacts[5]{path,role,summary}:
+  docs/workflows/gitignore整備/planning.toon,planning,実装計画と決定事項
+  docs/workflows/gitignore整備/spec.md,specification,変更仕様の詳細記述
+  docs/workflows/gitignore整備/threat-model.md,threat_model,脅威分析の最小スタブ
+  docs/workflows/gitignore整備/state-machine.mmd,diagram,状態遷移図
+  docs/workflows/gitignore整備/flowchart.mmd,diagram,実装フローチャート
+implementationSteps[6]{order,target,action,detail}:
+  1,.gitignore(親リポジトリ),3行追加,".claude-phase-guard-log.json, .claude/settings.local.json, .claude/generated-files.json を末尾に追記"
+  2,親リポジトリ,git rm --cached,".claude-phase-guard-log.json を追跡対象から除去。ファイル自体はワーキングツリーに残す"
+  3,workflow-harness/,git rm -r --cached mcp-server/dist/,"サブモジュール内でビルド成果物192ファイルを追跡対象から除去"
+  4,workflow-harness/,git rm -r --cached mcp-server/.claude/state/,"サブモジュール内でHMAC鍵を含む3ファイルを追跡対象から除去"
+  5,workflow-harness/,git add + git commit,"サブモジュール内の変更をコミット"
+  6,親リポジトリ,git add + git commit,".gitignore変更とサブモジュール参照更新を一括コミット"
+verificationSteps[4]{ac,command,expected}:
+  AC-1,"grep -c 'phase-guard\|settings.local\|generated-files' .gitignore",3
+  AC-2,"cd workflow-harness && git ls-files mcp-server/dist/ mcp-server/.claude/state/ | wc -l",0
+  AC-3,"git ls-files .claude-phase-guard-log.json | wc -l",0
+  AC-4,git status,対象ファイルが Untracked files に表示されず staged deletion として表示される
+next:
+  readFiles[3]: .gitignore,workflow-harness/.gitignore,docs/workflows/gitignore整備/requirements.toon
+  warnings[1]: サブモジュール内での git rm --cached 実行時はサブモジュールディレクトリに cd してから実行すること

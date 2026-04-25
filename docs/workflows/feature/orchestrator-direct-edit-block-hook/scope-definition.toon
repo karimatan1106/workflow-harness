@@ -1,0 +1,41 @@
+phase: scope_definition
+task: orchestrator-direct-edit-block-hook
+intent: "PreToolUseフックで、Orchestratorがdocs/workflows/配下の成果物ファイルを直接Write/Editすることをブロックする。DoD失敗時のsubagent再起動強制を機械的に担保する。"
+riskScore: 3
+riskRationale: "既存フックパターンが確立済み(pre-tool-config-guard.sh)で、同一アーキテクチャを踏襲する新規フック追加。影響範囲はsettings.jsonへの登録と新規shファイル1本。既存フック群への副作用なし。"
+
+entryPoints[2]{file,symbol,role}:
+  .claude/settings.json, hooks.PreToolUse, フック登録先の設定ファイル。新規フックエントリを追加する
+  .claude/hooks/pre-tool-config-guard.sh, main, 参照実装。Write/Edit用PreToolUseフックの構造パターンを踏襲する
+
+affectedFiles[6]{path,changeType,reason}:
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, create, "Orchestratorによるdocs/workflows/配下の直接編集をブロックする新規PreToolUseフック"
+  .claude/settings.json, modify, "hooks.PreToolUseにmatcher Write|Editで新規フックエントリを追加"
+  .claude/skills/harness/SKILL.md, verify, "Sec7 Orchestrator Direct Edit Policyの記述と新フックの整合性を確認"
+  .claude/skills/harness/workflow-orchestrator.md, verify, "Execution Flow Sec5のvalidation failure re-launch記述との整合性確認"
+  .claude/skills/harness/workflow-rules.md, verify, "Prohibited Actions Rule4(直接編集禁止)との整合性確認"
+  workflow-plugin/hooks/phase-edit-guard.js, reference, "既存のNode.js版phase-edit-guardとの役割分担を確認。本フックはbash版で親リポジトリに配置"
+
+decisions[6]{id,statement,rationale}:
+  SD-01, "新規bashスクリプトとして.claude/hooks/に配置する", "既存のpre-tool-config-guard.shと同一パターンを踏襲。workflow-plugin/hooks/のNode.js版phase-edit-guardとは別レイヤーで動作し、親リポジトリ側のOrchestrator制約を担保する"
+  SD-02, "matcher: Write|Editで登録する", "Orchestratorが直接成果物を編集する手段はWrite/Editツールのみ。Bash経由のリダイレクトは既にpre-tool-no-verify-block.shパターンで対処可能"
+  SD-03, "ブロック対象パスはdocs/workflows/配下の全ファイルとする", "SKILL.md Sec7の方針に準拠。成果物ファイル(.toon, .md, .mmd等)はsubagentが生成・修正すべきであり、Orchestratorの直接編集は設計違反"
+  SD-04, "claude-progress.txtのみ例外として許可する", "SKILL.md Sec7に明記された例外。進捗追跡ファイルはOrchestrator自身が更新する正当なユースケース"
+  SD-05, "exit code 2でブロックしメッセージを出力する", "Claude Codeのフック仕様でexit 2はツール実行のブロックを意味する。ブロック時のメッセージでsubagent再起動を促すガイダンスを含める"
+  SD-06, "環境変数ORCHESTRATOR_GUARD_DISABLEでバイパス可能にする", "pre-tool-config-guard.shのCONFIG_GUARD_DISABLEパターンを踏襲。開発時やデバッグ時の意図的な直接編集を許容する安全弁"
+
+artifacts[4]{path,role,summary}:
+  .claude/hooks/pre-tool-orchestrator-edit-guard.sh, impl, "docs/workflows/配下へのWrite/Editをexit 2でブロックするPreToolUseフック。claude-progress.txtは例外許可"
+  .claude/settings.json, impl, "hooks.PreToolUseセクションに新規フックエントリを追加した設定ファイル"
+  docs/workflows/orchestrator-direct-edit-block-hook/scope-definition.toon, spec, "本スコープ定義成果物。影響範囲・決定事項・リスク評価を記録"
+  src/backend/tests/unit/hooks/test-orchestrator-edit-guard.test.ts, test, "新規フックの動作を検証するユニットテスト。ブロック対象パスと例外パスを網羅"
+
+scopeExclusions[3]{item,reason}:
+  workflow-plugin/hooks/phase-edit-guard.js, "Node.js版の既存フックは変更不要。本タスクのbashフックとは異なるレイヤーで動作しており相互に独立"
+  .claude/hooks/post-tool-lint.sh, "PostToolUseフックは本タスクの対象外。PreToolUse段階でブロックするため後処理は不要"
+  workflow-harness/CLAUDE.md, "サブモジュールの権威仕様は本タスクでは変更対象外。親リポジトリ側のスキルファイルで整合性確認のみ実施"
+
+next:
+  criticalDecisions: "SD-01(bash配置), SD-03(ブロック対象パス), SD-04(例外パス)"
+  readFiles: ".claude/hooks/pre-tool-config-guard.sh, .claude/settings.json, .claude/skills/harness/SKILL.md"
+  warnings: "settings.jsonは現在tracked and modifiedの状態(HANDOFF.md参照)。フックエントリ追加時に既存の未コミット変更との競合に注意が必要"

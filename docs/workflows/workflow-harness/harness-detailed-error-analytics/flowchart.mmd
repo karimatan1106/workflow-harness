@@ -1,0 +1,88 @@
+flowchart TD
+    Start([開始: harness-detailed-error-analytics]) --> GetDoD["DoDCheckResult取得<br/>(level, check, passed, evidence, fix?, example?)"]
+
+    GetDoD --> MapChecks["mapChecksForErrorToon()<br/>全フィールド変換<br/>(level, fix, example含む)"]
+
+    MapChecks --> AppendError["appendErrorToon()<br/>phase-errors.toon に記録"]
+
+    AppendError --> ReadError["readErrorToon() で読み込み<br/>(phase-errors.toon全entry)"]
+
+    ReadError --> BuildAnalysis["buildErrorAnalysis()実行<br/>全entry全checksをループ"]
+
+    BuildAnalysis --> LoopCheck{checks処理<br/>完了?}
+
+    LoopCheck -->|No| CheckPassed{passed === true?}
+
+    CheckPassed -->|Yes| SkipCount["skip処理<br/>(failureカウント対象外)"]
+    SkipCount --> NextCheck["次 check へ"]
+    NextCheck --> LoopCheck
+
+    CheckPassed -->|No| IncrCount["カウント加算<br/>topFailure に集計"]
+    IncrCount --> UseLevelValue["level実値を使用<br/>(デフォルト: L1)"]
+    UseLevelValue --> NextCheck
+
+    LoopCheck -->|Yes| CreateStats["PhaseErrorStats集計<br/>(check毎の失敗回数)"]
+
+    CreateStats --> BuildHistory["buildErrorHistory()<br/>全entry全checksを再帰展開"]
+
+    BuildHistory --> CreateHistoryArr["ErrorHistoryEntry[]作成<br/>(phase, retryCount,<br/>check, level, passed, evidence)"]
+
+    CreateHistoryArr --> WriteAnalytics["writeAnalyticsToon()<br/>topFailure + errorHistory を出力"]
+
+    WriteAnalytics --> OutputFile["phase-analytics.toon 出力<br/>(errorAnalysis + errorHistory)"]
+
+    OutputFile --> End([終了: フローチャート完成])
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C6
+    style CheckPassed fill:#FFE4B5
+    style LoopCheck fill:#FFE4B5
+    style GetDoD fill:#87CEEB
+    style MapChecks fill:#87CEEB
+    style AppendError fill:#87CEEB
+    style ReadError fill:#87CEEB
+    style BuildAnalysis fill:#DDA0DD
+    style CreateStats fill:#DDA0DD
+    style BuildHistory fill:#DDA0DD
+    style CreateHistoryArr fill:#DDA0DD
+    style WriteAnalytics fill:#F0E68C
+    style OutputFile fill:#F0E68C
+
+## decisions
+
+### D1: mapChecksForErrorToon関数の配置
+**決定:** error-toon.ts に配置する
+**根拠:** DoDFailureEntry型定義とmapping関数を同じモジュールに凝集させることで、型安全性と保守性が向上する。lifestyle-next.tsの行数削減(199行→194行)が副次的効果となり、200行制約を余裕で維持できる。
+**代替案検討:**
+- lifecycle-next.ts内に残す: インラインコード3行が199行制約を圧迫する問題あり。
+- analytics-toon.tsに配置: error-toonモジュールとの関係性が弱く、凝集度が低下する。
+
+### D2: Worker実行順序
+**決定:** 3Worker を直列実行(Worker-1 → Worker-2 → Worker-3)
+**根拠:** Worker-1で型定義とmapChecksForErrorToon関数を定義 → Worker-2で呼び出し元とbuildErrorAnalysis実装 → Worker-3でerrorHistory出力、という依存チェーンがあるため。並列化によるリスク(型不在による型エラー)の方が、直列による時間増加よりも大きい。
+**並列化不可理由:**
+- Worker-1: DoDFailureEntry型のlevel/fix/example追加は基盤
+- Worker-2: mapChecksForErrorToon import依存、ErrorHistoryEntry型定義
+- Worker-3: ErrorHistoryEntry型 import依存
+
+### D3: ErrorHistoryEntry型定義の配置
+**決定:** phase-analytics.ts に定義、analytics-toon.ts からimport する
+**根拠:** ErrorHistoryEntryはAnalyticsResultの内部フィールド(errorHistory?: ErrorHistoryEntry[])の構成要素であり、AnalyticsResultと同じモジュール(phase-analytics.ts)に凝集させるのが自然。analytics-toon.tsは出力フォーマット変換に専念し、型定義には責務を持たせない。
+**代替案検討:**
+- analytics-toon.ts で定義: 出力層が型定義を持つことになり、責務分離が不明確
+- error-toon.ts で定義: errorHistoryはDoDFailure記録ではなく分析結果であり、error-toonのdomainとは異なる
+
+### D4: buildErrorHistory関数の公開性
+**決定:** phase-analytics.ts内の非export(内部関数)とする
+**根拠:** buildErrorHistoryはbuildAnalytics関数内からのみ呼び出され、外部モジュールから直接呼び出す用途がない。公開APIを最小化することで、futureの仕様変更時の影響範囲を局所化でき、テストしやすい状態を保つ。
+**外部呼び出し廃止理由:**
+- analytics-toon.ts: writeAnalyticsToonは既にAnalyticsResultオブジェクトを受け取り、errorHistoryは既に計算済み
+- 外部toolコード: analytics-toon経由で結果を読み込むため直接呼び出し不要
+
+### D5: errorHistoryフィールドのデフォルト値
+**決定:** 空配列[] をデフォルトとする
+**根拠:** buildErrorAnalysis()実行時にerrorHistoryを必ず構築するため、出力時には常に配列(空でも)が存在する状態が保証される。analytics.errorHistory ?? [] ガード式で値なし時も安全に処理でき、nullish cohalescing operator を組み合わせた堅牢な実装パターンが確立できる。
+**選択肢検討:**
+- undefined にする: null check が複数箇所に分散し、防御的プログラミングの煩雑性増加
+- null にする: JSON シリアライゼーション時の扱い(null vs undefinedケース)が曖昧
+- 常に初期化: buildAnalytics() で const errorHistory = buildErrorHistory(task) ?? [] により、outgoing AnalyticsResult は必ず配列を持つ状態

@@ -1,0 +1,15 @@
+phase: scope_definition
+taskId: 0ea4294a-cc38-4718-b9e9-112b8ca7d93b
+ts: "2026-03-02T00:00:00+09:00"
+decisions[3]{id,statement,rationale}:
+  SD-002,変更箇所をSKILL.md内の/harness start ルーティング手順に限定する,他コマンドへの影響を最小化するため
+  SD-003,MCP server TypeScript実装は変更しない,スキル文書の手順記述のみでAskUserQuestion対話フローを実現できるため
+  SD-006,新フローはuserIntent分析→不明点検出→AskUserQuestion→回答統合→harness_startの順にする,ブロックせず対話的に補完することが目的であるため
+artifacts[1]{path,role,summary}:
+  docs/workflows/userIntent不明点深掘りシステム/scope-definition.md,spec,変更対象2ファイルと影響範囲・スコープ外を定義したスコープ定義書
+risks[2]{id,description,mitigation}:
+  SD-008,2ファイルミラー同期漏れによる動作不整合,同一セッションで両ファイルを同時更新する
+  SD-009,SKILL.md Commands テーブルの説明文との不整合,requirementsフェーズで確認し必要なら追加更新する
+next:
+  criticalDecisions[3]: SD-002,SD-003,SD-006
+  readFiles[2]: .claude/skills/harness/SKILL.md,workflow-harness/skills/workflow.md

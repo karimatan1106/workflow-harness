@@ -1,0 +1,9 @@
+taskId: 252e85c9-03bc-4046-9279-7882a12aef30
+taskName: replace-workflow-plugin-references
+currentPhase: implementation
+completedPhases[2]: hearing,scope_definition
+completedCount: 2
+updatedAt: "2026-04-25T10:21:11.276Z"
+transitions[2]{from,to,timestamp}:
+  hearing,scope_definition,"2026-04-25T10:12:09.349Z"
+  scope_definition,implementation,"2026-04-25T10:21:11.276Z"

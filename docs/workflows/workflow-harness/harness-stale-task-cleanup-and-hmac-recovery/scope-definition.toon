@@ -1,0 +1,47 @@
+task: harness-stale-task-cleanup-and-hmac-recovery
+phase: scope_definition
+status: complete
+created: 2026-03-11
+intent: harness_statusの大量staleタスク返却(99KB超)とセッション再起動時HMAC検証失敗(Task not found)の2件を修正
+
+bug_1_title: harness_status staleタスク大量返却
+bug_1_symptom: listTasksFromDiskが92件全ディレクトリを走査し、89件completedを除外後も全件readFileSync+JSON.parse+HMAC検証を実行
+bug_1_root_cause: listTasksFromDiskにcompleted除外フィルタはあるが、ディスクI/O自体が92件分発生。buildTaskIndexはcompletedも含む全件返却
+bug_1_impact: harness_status(taskId無し)呼び出しで99KB超のJSON応答、コンテキスト圧迫、レスポンス遅延
+bug_1_file: workflow-harness/mcp-server/src/state/manager-read.ts
+bug_1_function: listTasksFromDisk (L42-63), buildTaskIndex (L65-91)
+
+bug_2_title: セッション再起動時HMAC検証失敗
+bug_2_symptom: loadTaskFromDiskでverifyStateWithRotationがfalse返却、loadTaskがnull返却、"Task not found"エラー
+bug_2_root_cause: hmac-keys.jsonがレガシー配列形式[{key,generation}]。loadHmacKeysは配列末尾のkeyを取得するが、StateManagerコンストラクタはensureHmacKeysで新規キーを生成する可能性あり。セッション再起動でキー不一致が発生
+bug_2_file_1: workflow-harness/mcp-server/src/utils/hmac.ts
+bug_2_file_2: workflow-harness/mcp-server/src/state/manager-read.ts
+bug_2_function: verifyStateWithRotation (L78-87), loadHmacKeys (L26-50)
+bug_2_detail: レガシー形式は配列末尾1件のみ取得しprevious無し。キーローテーション時に旧キーで署名された状態ファイルが検証不能
+
+scope_files[5]{path}:
+  workflow-harness/mcp-server/src/state/manager-read.ts
+  workflow-harness/mcp-server/src/utils/hmac.ts
+  workflow-harness/mcp-server/src/tools/handlers/lifecycle.ts
+  workflow-harness/mcp-server/src/state/manager.ts
+  workflow-harness/mcp-server/src/state/manager-write.ts
+
+current_hmac_format: レガシー配列形式 [{generation,key,createdAt,expiresAt}]
+current_task_count: 92件(completed:89, research:3)
+current_dir_format: タイムスタンプ形式(20260214_104242_タスク名)、UUID形式は0件
+
+decisions[6]{id,statement}:
+  SD-01, "listTasksFromDiskにmaxAge/maxCountパラメータを追加し、古いタスクの走査をスキップする"
+  SD-02, "handleHarnessStatus(taskId無し)の応答にlimit(デフォルト10)を導入し、最新N件のみ返却する"
+  SD-03, "loadHmacKeysのレガシー配列→新形式変換時にpreviousキーを保持し、verifyStateWithRotationで旧キーフォールバックを有効化する"
+  SD-04, "loadTaskFromDiskのHMAC検証失敗時に再署名フォールバック(verify失敗→レガシーキーで再検証→成功なら新キーで再署名)を追加する"
+  SD-05, "buildTaskIndexにstatus=completedかつ30日以上経過したタスクを除外するフィルタを追加する"
+  SD-06, "completedタスクのディレクトリをarchiveサブディレクトリに移動するクリーンアップ機能は本スコープ外(将来検討)"
+
+not_in_scope[3]{item}:
+  completedタスクディレクトリの物理削除・アーカイブ移動
+  hmac-keys.jsonの自動ローテーション機構の新規実装
+  タスク一覧のページネーション機能
+
+artifacts: scope-definition.toon
+next: research

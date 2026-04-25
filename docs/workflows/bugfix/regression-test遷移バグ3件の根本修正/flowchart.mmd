@@ -1,0 +1,56 @@
+flowchart TD
+    Start((workflow_record_test_result呼び出し)) --> ReadInput(テスト実行結果の入力を読み込み<br/>exitCode、output、taskIdを取得)
+
+    ReadInput --> SaveOutput(テスト出力を記録<br/>行469: output.slice処理を実行)
+
+    SaveOutput --> CalcHash(出力のハッシュ値を計算<br/>SHA256 hash = f(output))
+
+    CalcHash --> CheckPhase{現在フェーズが<br/>regression_test?}
+
+    CheckPhase -->|Yes| SetExistingEmpty(existingHashes = ()として初期化<br/>バグ1の自己参照を防止)
+    CheckPhase -->|No| SetExistingCurrent(existingHashes = 既存ハッシュ配列)
+
+    SetExistingEmpty --> ClassifySummary(テスト出力をカテゴリABCDに分類<br/>行147: SUMMARY_PREFIXESでマッチング)
+    SetExistingCurrent --> ClassifySummary
+
+    ClassifySummary --> FilterKeyword(キーワード検出処理を実行<br/>カテゴリDのみを対象に<br/>BLOCKING_FAILURE_KEYWORDSで検査)
+
+    FilterKeyword --> DetectFailure{出力にブロッキング<br/>キーワードが含まれ<br/>かつ否定語なし?}
+
+    DetectFailure -->|Yes| ReturnError(エラー返却: テスト失敗と判定<br/>workflow_next遷移がブロック)
+    DetectFailure -->|No| SaveState(workflow-stateにテスト結果を保存<br/>testOutputHashes配列にハッシュを記録)
+
+    ReturnError --> End1((record_test_result終了))
+
+    SaveState --> Next(workflow_next MCPツール呼び出し)
+
+    Next --> CheckExitCode{testResult.outputが<br/>存在するか?}
+
+    CheckExitCode -->|No| SkipHashCheck(ハッシュ重複チェックをスキップ<br/>出力なしの場合は検証不要)
+    CheckExitCode -->|Yes| CheckPhase2{現在フェーズが<br/>regression_test?}
+
+    CheckPhase2 -->|Yes| SkipHashCheck
+    CheckPhase2 -->|No| ExecuteHashDuplicate(ハッシュ重複チェックを実行<br/>バグ1の修正: if条件で除外)
+
+    ExecuteHashDuplicate --> ReadExisting(existingHashes = taskState.testOutputHashes)
+
+    ReadExisting --> CalcNewHash(recordTestOutputHash を実行<br/>新規ハッシュとの重複判定)
+
+    CalcNewHash --> CheckDuplicate{重複検出<br/>かつ testStrict?}
+
+    CheckDuplicate -->|Yes| ReturnDupError(エラー返却: 出力重複と判定<br/>同一出力の二重提出を検出)
+    CheckDuplicate -->|No| ProceedNext(重複なし→遷移処理を継続)
+
+    SkipHashCheck --> AuthCheck(真正性検証を実行<br/>test-authenticity.ts)
+    ProceedNext --> AuthCheck
+
+    AuthCheck --> CompareBaseline(ベースライン比較処理<br/>regression_test固有の検証)
+
+    CompareBaseline --> ValidateAuth{真正性検証と<br/>ベースライン比較が<br/>成功?}
+
+    ValidateAuth -->|No| ReturnAuthError(エラー返却: 真正性検証失敗<br/>テスト結果が不正な可能性)
+    ValidateAuth -->|Yes| TransitionNext(フェーズ遷移を実行<br/>parallel_verificationへ移行)
+
+    ReturnDupError --> End2((workflow_next終了))
+    ReturnAuthError --> End2
+    TransitionNext --> End3((遷移成功))

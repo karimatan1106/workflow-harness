@@ -1,0 +1,50 @@
+flowchart TD
+    A["Bash コマンド受信"] --> B{"常に許可パターン<br/>に該当?"}
+
+    B -->|YES| C["✓ 許可で終了<br/>EXIT SUCCESS"]
+
+    B -->|NO| D["ファイル修正コマンド<br/>を検出?"]
+
+    D -->|NO<br/>修正なし| E["✓ 許可で終了<br/>EXIT SUCCESS"]
+
+    D -->|YES<br/>修正あり| F{"ワークフロー<br/>開始済み?"}
+
+    F -->|NO| G["✓ 許可で終了<br/>EXIT SUCCESS"]
+
+    F -->|YES| H{"読み取り専用<br/>フェーズ?<br/>research/build_check<br/>testing/manual_test<br/>security_scan/commit"}
+
+    H -->|YES| I["ブロックメッセージ<br/>を表示"]
+    I --> J["EXIT BLOCK<br/>ブロック終了"]
+
+    H -->|NO| K["ファイルパスを<br/>抽出"]
+
+    K --> L{"パスが<br/>抽出できた?"}
+
+    L -->|NO| M{"ワークフロー<br/>状態による<br/>判定"}
+    M -->|許可| N["✓ 許可で終了<br/>EXIT SUCCESS"]
+    M -->|ブロック| O["ブロックメッセージ<br/>を表示"]
+    O --> J
+
+    L -->|YES| P["ファイルタイプを<br/>判定<br/>getFileType"]
+
+    P --> Q{"フェーズルール<br/>で許可?<br/>canEditInPhase"]
+
+    Q -->|YES<br/>許可| R["✓ 許可で終了<br/>EXIT SUCCESS"]
+
+    Q -->|NO<br/>ブロック| S["ブロックメッセージ<br/>を表示<br/>- フェーズ名<br/>- コマンド<br/>- ファイルパス<br/>- ファイルタイプ<br/>- ブロック理由<br/>- 許可コマンド例<br/>- 次のステップ"]
+    S --> J
+
+    style A fill:#e1f5ff
+    style C fill:#c8e6c9
+    style E fill:#c8e6c9
+    style G fill:#c8e6c9
+    style N fill:#c8e6c9
+    style R fill:#c8e6c9
+    style J fill:#ffcdd2
+    style B fill:#fff9c4
+    style D fill:#fff9c4
+    style F fill:#fff9c4
+    style H fill:#fff9c4
+    style L fill:#fff9c4
+    style M fill:#fff9c4
+    style Q fill:#fff9c4

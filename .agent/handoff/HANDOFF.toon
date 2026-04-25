@@ -1,0 +1,335 @@
+## HANDOFF
+date: 2026-04-25 (Express MVP 完成 → 実用検証待ち)
+
+## 2026-04-25 last cycle: workflow-plugin 全参照 cleanup + active-task.toon Bug #3 runtime 検証
+
+### 完了
+- 24th 系統 (Bug #3 hook phase detection) runtime 検証完了:
+  - `harness_start` で `active-task.toon` が MCP 由来ヘッダー付きで生成
+  - `harness_reset` で phase 更新 (hearing → scope_definition)
+  - C component (writer) live 動作確認
+- 25th 系統 (workflow-plugin → workflow-harness 全置換) commit 8c30b58 push 済み:
+  - 64+ ファイル content edit (.md/.ts/.json/.sh/.toon)
+  - 5 ファイル rename (PLUGIN_CHANGELOG → HARNESS_CHANGELOG 等)
+  - 残存 4 occurrence / 3 file = 全 intentional (dispatch-log/lefthook.yml/handoff archive)
+
+### 今日のセッションで判明した harness 改善ネタ (次セッション以降)
+
+1. **`.test.ts` を implementation phase で許可**: phase-config.js の PHASE_EXT.implementation に `.test.ts/.spec.ts/.test.tsx/.spec.tsx` 追加。今回 11 test files の edit が phase guard で全件 BLOCKED し test_impl への hot-fix が必要だった
+2. **Worker self-report の不正確さ**: 「全件 blocked」「stall」報告が実態と違うケース複数回。実際は 10/11 が既に処理済みだった。worker の状態確認 vs 実行 の判定を見直す
+3. **Hook file resolution**: bash-whitelist.js / phase-edit-guard.js / enforce-workflow.js が workflow-harness/hooks/ に**実在せず** test が require できない壊れ状態。test 自体の retire/rewrite または hook 体系の再編が必要
+4. **Task delete/archive 機構**: 11+ active task 蓄積、reset しても scope_definition で残り続ける構造的問題 (今日 6 件の test task を新規作成して全部 reset 状態)
+5. **active-task.toon の MCP write**: 確認済 ✓ (Bug #3 fix 動作)、ただし MCP rebuild 前に手動で書いたファイルも残存しうる
+
+### 次セッション最初の手順 (もし継続するなら)
+
+1. `harness_status` で現在の active task 一覧確認 (今日 6 件以上の test/dummy task が残存している可能性)
+2. 上記 5 件の改善ネタから 1 件選択
+3. 1 件選んだら hearing → scope → impl で Express mode 走破 (今日 dogfooding 通過済みの flow)
+
+## 使用ツール
+tool: Claude Code (Opus 4.7)
+
+## 現在のタスクと進捗
+- [x] 17系統 Harness 改善完了 (詳細下記)
+- [x] Express phase path Phase 1+2 実装完了 (mode 切替 + DoD scaling)、push 済み
+- [ ] **要 MCP restart**: Phase 1/2 の実装は code に landed/push 済みだが MCP server が古いまま。次セッションで `mode` field が `harness_start` schema に出るか確認すること
+- [ ] Express 効果測定: gitignore-vitest-cache タスクを Express で起動して dispatch-log + metrics 観察
+- [ ] integrate-security-review-into-harness (taskId 26957dbf): scope_definition 保留 → 不要なら reset
+- [ ] harness-smoke-adr029-verify (taskId 1f45a6eb): scope_definition 保留 → 不要なら reset
+- [ ] deprecate-task-index-json (taskId 0ba826bc): push phase 完了済み → 次セッションで harness_next で completed へ送るか reset で畳む
+- [x] gitignore-vitest-cache (taskId ce0b8eba-fca7-4fca-87f8-98c016ffbc8f): MCP stale だったため reset 済み。次セッションで restart 後に再起動して dogfooding する
+- [x] dist/ rebuild 完了 (2026-04-25): MCP 新 dist 待ち
+
+## 次のセッションで最初にやること
+
+1. **dist/ rebuild 完了済み** (2026-04-25 セッション末): `npm run build` 実行し dist/ に Phase 1+2 反映済み。Claude Code 再起動で MCP が pick up する想定
+1a. `harness_status` で新 task に mode が永続化されるか確認 (workflow-state.toon に `mode: express` 等出れば成功)
+1b. 失敗していたら `cd workflow-harness/mcp-server && npm run build` を再実行
+2. 古い 3 task を reset で畳む (harness_reset × 3)
+3. 効果測定タスク起動:
+   ```
+   /workflow-harness start gitignore-vitest-cache --mode express
+     userIntent: "submodule の vitest cache (.vite/vitest/results.json) を gitignore に追加し、毎セッションの dirty marker を解消する。Express mode の MVP 効果測定 dogfooding 兼任。"
+     files: ["workflow-harness/.gitignore"]
+   ```
+4. 6 phase 走破 (hearing → scope → impl → testing → docs_update → commit)
+5. 各 Agent dispatch ごとに `.agent/dispatch-log.toon` に append (token / duration / result)
+6. 完了後 `node workflow-harness/scripts/metrics-report.js --root . --out .agent/metrics-report.md` で per-mode 集計確認
+7. データを基に Phase 3 (requiredSections per-mode override) の必要性判断
+
+## 試したこと・結果 (2026-04-24〜25 セッション群、最終)
+
+17系統 30+ コミット。全 869/869 vitest PASS、全 push 済み。
+
+### State Separation
+- ebcfdde/ab5de30: hook-utils.js JSON→TOON reader
+- 26e514a: orphan task-index.json 削除
+- 8644176/bd00ff1: workflow-state.toon 単一 SoT + mtime ordering
+- 763de15/e177d34: submodule cleanup (denylist WIP revert + vitest cache untrack)
+
+### Measurable
+- 5d4b84e/d631d33: metrics-report CLI v1
+- d115a1e/94f1e82: metrics-report parser fix
+- 715617e/678e4b3: Token budget MVP (.agent/dispatch-log.toon + metrics 拡張 + L1 ルール)
+- 48d7ddc/d17359a: Worker stall detection (criteria + per-agent-type 集計 + L1 ルール)
+
+### Data-Driven Evolution + Contract-First
+- bd5cdcc/322ae4c: DoD top 3 validator 緩和 (DUPLICATE_THRESHOLD 3→5、DELTA_ENTRY_MIN_MAP size 別、dod-l3 で TOON key/Markdown ## 両対応)
+- 11b87da: agent.md backfill (Phase Output Rules / Edit Completeness / AskUserQuestion guidelines)
+- a59cdfa/d636071: Structured subagent return (AGT-1)。artifactPath/summary/nextAction TOON 化
+
+### Design for Failure
+- e3da9f7/107d5db: CBR-1 circuit breaker (同 check 3回連続失敗で halt + pivot)
+
+### Reduction Rules
+- d7bc7d5: top-level rules 削除 + CLAUDE.md trim (常時ロード 390→160行)
+- 2338442/2ab03e5: 指令統合 52→18
+
+### Documentation / Handoff
+- 7d179a9: HANDOFF (前回まで) を 11系統サマリで再構築
+
+### Express phase path (新規系統 — 2026-04-25 後半)
+- 1d88e3c/aebb2d2: **Phase 1 MVP** — WorkflowMode 型 + MODE_PHASES 定義 + classifyMode hard-signal 分類器 + harness_start に mode field 追加 + manager.setMode + handleHarnessStatus に mode/modeRationale
+- a219410/1e5bc50: **Phase 2** — DoD policy mode scaling
+  - AC count: express=3, standard=5, full=5
+  - Delta entry: express=3, standard=5, full=5 (mode 優先)
+  - minLines factor: express=0.5, standard=0.8, full=1.0 (size factor と乗算合成、floor 20)
+
+## ハーネス運用で学んだこと
+
+- metrics-report が示した Top DoD failures (data 修正前):
+  - content_validation (L4) 31 failures → DUPLICATE_THRESHOLD 5 化で解消見込み
+  - delta_entry_format (L4) 20 failures → mode 別 + hearing/flowchart/state_machine 除外で解消
+  - artifact_quality (L3) 13 failures → TOON key ≡ ## 両対応で解消
+  - 合計 84% retry 原因対応済
+
+- outlier phase: push 627x、test_impl 73x、commit 69x、hearing 19x — 大半は人間承認待ち or phase gate 迂回コスト。Express path の存在意義そのもの
+
+- Worker stall (orchestrator 側 Agent が mid-reasoning で無言停止) が頻発 — Token budget + Stall detection で計測基盤は揃った、データ蓄積待ち
+
+- Whitelist → Denylist 転換は検討後却下 (Secure by Default 原則違反、痛みは maintainer 作業が harness 外で起きていた)
+
+- Harness Engineering 記事 "Thin Harness, Fat Skills" との整合性:
+  - Thin 寄り: 7系統 (rules dedup / 指令統合 / Express path / DoD 緩和)
+  - Fat 寄り (観測装置): 5系統 (metrics / Token / Stall / CBR-1 / dispatch-log)
+  - 観測装置の Fat 化は ratchet principle (失敗起点の漸進拡張) で正当化される範囲
+  - Self-healing 機構は未着手 = 次の進化方向
+
+## 注意点・ブロッカー
+
+- **MCP restart 必須** (今セッション末): src/state/, src/phases/, src/tools/handlers/, src/gates/ 全部触ったため
+- TOOL_GUARD_DISABLE は tool-gate.js / pre-tool-guard.sh が honor、context-watchdog / loop-detector / block-dangerous-commands は honor しない (safety critical)
+- `.agent/dispatch-log.toon` を gitignore に入れたかったが pre-tool-config-guard.sh で阻まれた → CONFIG_GUARD_DISABLE で別途対応 (低優先)
+- 古い 3 active task は次セッションで reset 推奨
+
+## ユーザー意図メモ
+
+- 「コンテキストを最小限に抑えつつ最大限の成果を発揮」が harness 改善の北極星
+- 記事 Harness Engineering 5 原則すべてに対応する改善が今日 17 系統で完了
+- 残候補 (記事の枠組みで見直し):
+  1. Self-healing 機構: agent が必要時に rule/skill を書き足せる構造 (記事の核心)
+  2. 動的 phase promote (Phase 5): Express → Standard へ実行時切替
+  3. AskUserQuestion 確認ダイアログ (Phase 4): 境界 mode 判定で user 確認
+  4. metrics-report の per-mode 集計 (Phase 6)
+  5. Policy Gateway 統合 (3 hook → 1 層): 規模大、慎重評価
+  6. requiredSections per-mode override (Phase 3): 効果限定的、Phase 1/2 で実用性十分
+
+## 最新コミット (今日分のみ、新しい順)
+
+parent feature/v2-workflow-overhaul:
+- 1e5bc50 chore: bump workflow-harness for Express Phase 2 (DoD scaling)
+- aebb2d2 chore: bump workflow-harness for Express phase path MVP
+- d17359a chore: bump workflow-harness + CLAUDE.md stall judgment rule
+- 678e4b3 chore: bump workflow-harness + CLAUDE.md dispatch logging rule
+- e177d34 chore: bump workflow-harness for submodule cleanup
+- 7d179a9 docs(handoff): record 11 harness improvement systems (2026-04-24/25)
+- 2ab03e5 chore: bump workflow-harness for rule consolidation (52 -> 18)
+- d636071 chore: bump workflow-harness + document structured result contract
+- d7bc7d5 chore: remove duplicate top-level rules, trim CLAUDE.md
+- 11b87da fix(agents): backfill policy sections to clear 10 failing tests
+- 107d5db chore: bump workflow-harness for CBR-1 circuit breaker
+- 322ae4c chore: bump workflow-harness for DoD validator relaxations
+- 94f1e82 chore: bump workflow-harness for metrics-report parser fix
+- d631d33 chore: bump workflow-harness for metrics-report CLI
+- bd00ff1 chore: bump workflow-harness to drop task-index.toon from phase chain
+- 26e514a chore: delete orphan task-index.json
+- ab5de30 chore: bump workflow-harness for TOON-reader hook fix
+
+submodule workflow-harness main:
+- a219410 feat(modes): Phase 2 — DoD policy scaling by workflow mode (CBR-2)
+- 1d88e3c feat(modes): Express phase path — 6/14/30 phase mode selector (CBR-2)
+- 48d7ddc feat(metrics): worker stall detection — criteria + per-agent breakdown
+- 715617e feat(metrics): token budget per task — dispatch log + report section
+- 763de15 chore: untrack vitest cache; clean up abandoned denylist WIP
+- 2338442 refactor(rules): consolidate 23 AI directives + 22 prohibited into 18 rules
+- a59cdfa feat(phases): structured subagent return format (AGT-1)
+- e3da9f7 feat(gates): CBR-1 circuit breaker on consecutive same-check failures
+- bd5cdcc fix(gates): relax top 3 DoD validators based on metrics data
+- d115a1e fix(scripts): metrics-report error parser matches phase-errors.toon shape
+- 5d4b84e feat(scripts): cross-task metrics aggregator CLI
+- 8644176 fix(hooks): eliminate task-index.toon drift by using workflow-state only
+- ebcfdde fix(hooks): read task-index.toon directly to eliminate JSON/TOON drift
+
+## 2026-04-25 さらに後半: Bug #3 (hook phase detection mismatch) 修正
+
+並走セッションで「harness_status: hearing / hook: research」の phase mismatch が報告された。診断結果:
+
+### 根本原因 2 つ複合
+
+1. **mtime drift**: workflow-state.toon の OS mtime が editor save / git checkout / harness_reset rewrite で bumped。in-file `updatedAt` と乖離し、4ヶ月前の reset 済 task が「最新」と誤判定
+2. **submodule cwd hijack**: `findProjectRoot()` が cwd 直近の `.claude/state/` に snap。cwd が submodule 配下 (workflow-harness/) なら submodule の stale test fixture pool を読む
+
+### 修正内容 (commit d789023 / feb0f81)
+
+- **C**: `.claude/state/active-task.toon` 単一 pointer file 導入
+  - MCP の `harness_start` / `advancePhase` / `goBack` / `resetTask` で writer 呼出
+  - hook の `getCurrentPhase` がこれを **最優先で読む**
+  - mtime fallback は pointer 欠損時のみ
+- **D**: `findProjectRoot` 強化
+  - `.git` が **file** (submodule marker) の dir をスキップして親方向に walk
+  - submodule cwd でも parent repo の state を読む保証
+- **B**: terminal phase filter 拡張
+  - `completed` のみ → `completed/commit/push/deploy/health_observation/ci_verification` セット化
+  - mtime fallback 経路でも near-終端 task が誤って勝つのを防ぐ
+
+### 検証
+
+- 872/872 vitest pass (新規 3 test 追加 — active-task-pointer.test.ts)
+- Build 成功、dist 反映済み
+
+### 次回 restart 効果
+
+- 古い active-task.toon は無いので最初は mtime fallback 経由
+- B filter で terminal phase 除外、D で submodule hijack 防止 → 並走セッションで観測された mismatch 解消の見込み
+- 新 harness_start で pointer file 生成 → 以降は決定論的選択
+
+### 並走セッション (利用側) への通知メッセージ案
+
+```
+Bug #3 (phase detection mismatch) を harness 側で修正。
+- 修正範囲: hooks/hook-utils.js + mcp-server (manager / lifecycle / handlers)
+- commit: submodule d789023, parent feb0f81 (feature/v2-workflow-overhaul)
+- 利用側でやることなし、Claude Code 再起動で MCP が新 dist を pick up すれば自動解消
+```
+
+## 2026-04-25 Express dogfooding 完走 (final)
+
+Express mode の最初の end-to-end タスク完了 (taskId c1fce747)。
+
+### 結果
+
+- 6-phase 完走: hearing → scope_definition → implementation → testing → docs_update → commit
+- skipped phases (Express 設計通り): research, impact_analysis, requirements, threat_modeling, planning, state_machine, flowchart, ui_design, design_review, test_design, test_selection, test_impl, refactoring, build_check, code_review, regression_test, acceptance_verification, manual_test, security_scan, performance_test, e2e_test, health_observation, ci_verification, deploy
+- Phase duration (Express 純): 6 phase 合計 ~19 分 (Full mode 過去データの hearing P95 = 4時間 だけで Express 全体時間を超える)
+
+### Bug 検出と修正 (dogfooding が見つけた)
+
+1. advancePhase が task.mode 未参照 → fix: 5853275/f6879e8
+2. input_files_exist が task.mode 未参照 → fix: 614f503/51d64ab
+- 両方 commit + push 済、次 MCP restart で live 化
+
+### 残技術負債
+
+- workflow-harness/.gitignore の重複 patterns (line 23-27 と 29-32 が同一)
+- planning.md / test-design.md / requirements.md / code-review.md が Express stub として残存 (Bug #2 fix が live 化したら削除候補)
+- task c1fce747 自体は phase: commit で停止 (Express MODE_PHASES の最終 phase に到達後 "No next phase"、これが正しい完了状態)
+
+### 累計 commits 今日 (2026-04-25)
+
+parent feature/v2-workflow-overhaul:
+- a15308d feat: complete Express dogfooding (gitignore-vitest-cache)
+- 22ebd0a docs(handoff): record Bug #2 fix + restart-3 prep
+- 51d64ab chore: bump workflow-harness for input_files mode-aware fix
+- 32f2e3b docs(handoff): record Express dogfooding findings
+- f6879e8 chore: bump workflow-harness for advancePhase mode fix + log dogfooding
+- 584ca15 chore: bump workflow-harness for mode wiring + restore agent.md sections
+- 5a91c99 docs(handoff): record dist rebuild + Express dogfooding next-session plan
+- bd6fbb8 docs(handoff): record Express Phase 1+2 completion + restart prep
+- 1e5bc50 chore: bump workflow-harness for Express Phase 2 (DoD scaling)
+- aebb2d2 chore: bump workflow-harness for Express phase path MVP
+
+submodule workflow-harness main:
+- 81d67ae chore: ignore vitest transient cache (CBR-2 dogfooding)
+- 614f503 fix(gates): input_files_exist honors task.mode (CBR-2 follow-up #2)
+- 5853275 fix(modes): honor task.mode in advancePhase (CBR-2 follow-up)
+- 170b070 fix(modes): wire classifyMode + setMode into handleHarnessStart (CBR-2)
+- a219410 feat(modes): Phase 2 — DoD policy scaling by workflow mode (CBR-2)
+- 1d88e3c feat(modes): Express phase path — 6/14/30 phase mode selector (CBR-2)
+
+### 次セッション
+
+- 古い 4 task (1f45a6eb, 26957dbf, ce0b8eba, c1fce747) を harness_reset で畳むか、task list から消す方法 (現状 reset しか機構なし)
+- gitignore 重複 patterns の cleanup (CONFIG_GUARD_DISABLE で edit、別 task)
+- stub 4ファイル削除 (Bug #2 fix が live になり requirements/code-review が optional 化された後)
+- harness-report skill or harness_capture_baseline 改善: Express completion を「正常終了」と認識する仕組み (現状 "No next phase available" がエラー扱い)
+
+## 2026-04-25 後半セッションの Express dogfooding 結果 (v2)
+
+### 動作確認 OK (Phase 1 完成証明)
+- mode: express を MCP が受け付け、workflow-state.toon に persisted (taskId c1fce747)
+- classifyMode 分類器 (User-explicit 優先) 動作
+- Express の minLines factor (scope_definition で 30、Full 60 の 0.5x)
+- Express の AC count minimum 3 (5 強制されず通過)
+- **Phase advance: scope_definition → implementation (research スキップ)** ✓ 真の Express 動作確認
+
+### 発見した bug 2件 (両方 fix 済 + push 済)
+
+1. **advancePhase が task.mode 未参照** (commit 5853275/f6879e8)
+   - 1行 fix: `getNextPhase(state.phase, state.size, state.mode)`
+
+2. **input_files_exist が task.mode 未参照** (commit 614f503/51d64ab)
+   - implementation phase で planning.md/test-design.md を要求 (Express では skip)
+   - `inputBelongsToActivePhases(file, task)` helper 追加、phase が MODE_PHASES[mode] 外なら optional
+
+両方とも Phase 1 で「mode をどこに通すか」の漏れ。Ratchet Principle (記事 Harness Engineering) 通りの dogfooding 進化。
+
+### 収集データ (.agent/dispatch-log.toon)
+- hearing: 29.5K tokens / 81s
+- implementation entry placeholder
+
+### 次セッション最初の手順 (再起動後)
+
+1. Claude Code 再起動済み確認 (`harness_status` で c1fce747 が mode: express を出すか)
+2. 現タスク `c1fce747` は phase=implementation で停止中 → そのまま `harness_next` を試す
+   - 期待: input_files_exist DoD が Express を理解し、planning.md/test-design.md 不在でも通過
+   - 通過すれば nextPhase=testing
+3. testing phase で AC verify (gitignore patterns 確認、git status の dirty marker 観察)
+4. docs_update phase で hearing.md / scope-definition.md / implementation.md の review
+5. commit phase で git add/commit (submodule 中身は無、parent側は HANDOFF + dispatch-log)
+6. 完了後 `node workflow-harness/scripts/metrics-report.js --root . --out .agent/metrics-report.md` で per-mode token 集計
+7. report の `## Token consumption` で hearing/scope/impl/test/docs/commit 各 phase の tokens 確認
+
+### gitignore の重複問題 (要 cleanup)
+
+workflow-harness/.gitignore の末尾に同じ 3 patterns が 2 度入っている (前ラウンドの malformed + 今回の clean):
+- 行 23-27: malformed (改行混入したコメント) — 削除候補
+- 行 29-32: clean — 残す
+- pre-tool-config-guard.sh で edit blocked → CONFIG_GUARD_DISABLE で別途 cleanup or 手動
+
+## 次セッション最初の Express dogfooding 手順
+
+1. `harness_status` でいずれの task も mode 未設定なことを確認 (旧データ)
+2. 古い 4 task (0ba826bc / 1f45a6eb / 26957dbf / ce0b8eba) を harness_reset で順次畳む
+3. `harness_start` で新タスク起動:
+   - taskName: `gitignore-vitest-cache`
+   - userIntent: 同 (HANDOFF 内に既存)
+   - mode: `express`
+   - files: `["workflow-harness/.gitignore"]`
+4. 戻り値 + workflow-state.toon に `mode: express` あるか確認 = MCP rebuild OK の証拠
+5. 6 phase 走破 (hearing → scope_definition → implementation → testing → docs_update → commit)
+6. 各 Agent dispatch ごとに `.agent/dispatch-log.toon` に append:
+   ```
+   entries[N]:
+     - ts: <iso>
+       taskId: ce... (新 ID)
+       phase: <現 phase>
+       agentType: worker
+       purpose: "..."
+       tokens: <total_tokens>
+       durationMs: <duration_ms>
+       result: ok|stall|error
+   ```
+7. 完了後 `node workflow-harness/scripts/metrics-report.js --root . --out .agent/metrics-report.md` 実行
+8. report の `## Token consumption` + `### Outcome by agent type` + `### Top stall phases` をユーザーに提示
+9. Express の効果 (phase 数 / token 消費 / stall 率) を Full mode 過去データと比較

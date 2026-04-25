@@ -1,0 +1,93 @@
+stateDiagram-v2
+    [*] --> Start: 修正プロセス開始
+
+    Start --> ValidateRequirements: 要件確認
+
+    ValidateRequirements --> CheckCLAUDEmd: CLAUDE.md厳命23番確認
+    ValidateRequirements --> ReviewDefinitions: definitions.ts構造確認
+
+    CheckCLAUDEmd --> FR1Implementation: FR-1修正対象行特定（728行）
+
+    ReviewDefinitions --> FR2Planning: manual_test\nテンプレート追記位置確定
+
+    ReviewDefinitions --> FR3Planning: e2e_test\nテンプレート追記位置確定
+
+    FR1Implementation --> FR1Complete: CLAUDE.md厳命23番を\n二層構造に修正
+
+    FR2Planning --> FR2Implementation: 前提条件行一意化ガイダンス実装
+
+    FR2Implementation --> FR2Complete: manual_testテンプレート追記完了
+
+    FR3Planning --> FR3Implementation: E2E固有ガイダンス実装
+
+    FR3Implementation --> FR3Complete: e2e_testテンプレート追記完了
+
+    FR1Complete --> BuildValidation: npm run buildでコンパイル確認
+
+    FR2Complete --> BuildValidation
+
+    FR3Complete --> BuildValidation
+
+    BuildValidation --> CompileSuccessful: コンパイルエラーなし
+    BuildValidation --> CompileError: コンパイルエラー発生
+    CompileError --> FR1Implementation
+    CompileError --> FR2Implementation
+    CompileError --> FR3Implementation
+
+    CompileSuccessful --> TestExecution: npx vistestでテスト実行
+
+    TestExecution --> AllTestsPassed: 全テスト合格\n（リグレッションなし）
+    TestExecution --> TestFailures: テスト失敗あり
+
+    TestFailures --> FR1Implementation
+    TestFailures --> FR2Implementation
+    TestFailures --> FR3Implementation
+
+    AllTestsPassed --> MCPServerRestart: MCPサーバー再起動
+
+    MCPServerRestart --> SessionTokenVerification: sessionToken二層構造\n動作確認
+
+    SessionTokenVerification --> ManualTestVerification: manual_testテンプレート\n前提条件一意化検証
+
+    ManualTestVerification --> E2ETestVerification: e2e_testテンプレート\n前提条件一意化検証
+
+    E2ETestVerification --> VerificationComplete: 全項目検証完了\n（意図通り動作）
+
+    VerificationComplete --> End: 修正プロセス完了
+
+    note right of Start
+        修正目的: CLAUDE.md厳命23番の誤記修正
+        および manual_test・e2e_test テンプレートの
+        前提条件行重複防止ガイダンス追加
+    end
+
+    note right of FR1Implementation
+        Orchestrator が sessionToken を
+        workflow_next等に渡す動作を
+        正当化する二層構造に修正
+    end
+
+    note right of FR2Complete
+        TC番号付加・シナリオ固有状態
+        による前提条件行の一意化ガイダンス
+    end
+
+    note right of FR3Complete
+        SC番号付加・E2E固有状態
+        （ブラウザ設定等）による前提条件行の一意化ガイダンス
+    end
+
+    note right of BuildValidation
+        TypeScript コンパイルエラーがないことを確認
+        （workflow-plugin/mcp-serverディレクトリで実行）
+    end
+
+    note right of TestExecution
+        既存テストスイート全合格を確認
+        リグレッション検出を確認
+    end
+
+    note right of MCPServerRestart
+        キャッシュ更新のため MCPサーバープロセスを再起動
+        （definitions.ts の定義が新規ロード）
+    end

@@ -1,0 +1,52 @@
+flowchart TD
+    Start("修正プロセス開始<br/>5つのFR実装")
+    FR1("FR-1実施<br/>CLAUDE.md更新")
+    FR1Content("必須コマンド行を<br/>4行に展開<br/>AIへの厳命7番目<br/>4フェーズ承認記述")
+    FR1OK{"FR-1変更<br/>完了確認"}
+    FR234("FR-2/3/4実施<br/>testingテンプレート<br/>追記処理")
+    FR2Content("sessionToken<br/>取得方法追記")
+    FR3Content("生出力要件<br/>100文字以上")
+    FR4Content("制御ツール<br/>5つ禁止指示")
+    FR234OK{"FR-2/3/4<br/>テンプレート<br/>記述確認"}
+    FR5("FR-5実施<br/>regression_testテンプレート<br/>追記処理")
+    FR5Content("sessionToken制限と<br/>制御ツール<br/>5つ禁止指示")
+    FR5OK{"FR-5<br/>テンプレート<br/>記述確認"}
+    BuildCmd("npm run build<br/>実行")
+    BuildCheck{"TypeScript<br/>コンパイル<br/>成功確認"}
+    RestartMCP("MCPサーバー<br/>再起動実行")
+    TestExec("npm test実行<br/>既存912件")
+    TestCheck{"912件<br/>全パス<br/>確認"}
+    StatusCmd("workflow_status<br/>フェーズ確認")
+    Complete("修正プロセス<br/>完了")
+    Error1("コンパイル<br/>エラー検出<br/>修正必要")
+    Error2("テスト失敗<br/>デバッグ<br/>必要")
+
+    Start --> FR1
+    FR1 --> FR1Content
+    FR1Content --> FR1OK
+    FR1OK -->|成功| FR234
+    FR234 --> FR2Content
+    FR2Content --> FR3Content
+    FR3Content --> FR4Content
+    FR4Content --> FR234OK
+    FR234OK -->|成功| FR5
+    FR5 --> FR5Content
+    FR5Content --> FR5OK
+    FR5OK -->|成功| BuildCmd
+    BuildCmd --> BuildCheck
+    BuildCheck -->|成功| RestartMCP
+    BuildCheck -->|失敗| Error1
+    Error1 --> FR2Content
+    RestartMCP --> TestExec
+    TestExec --> TestCheck
+    TestCheck -->|全件成功| StatusCmd
+    TestCheck -->|失敗あり| Error2
+    Error2 --> FR234
+    StatusCmd --> Complete
+
+    style Start fill:#e1f5ff
+    style Complete fill:#c8e6c9
+    style Error1 fill:#ffccbc
+    style Error2 fill:#ffccbc
+    style BuildCheck fill:#fff9c4
+    style TestCheck fill:#fff9c4

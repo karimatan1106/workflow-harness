@@ -1,0 +1,146 @@
+phase: metrics
+taskName: 2c4adf0b
+startedAt: "2026-03-25T10:48:51.834Z"
+completedAt: "2026-03-25T12:18:43.854Z"
+totalRetries: 13
+totalDoDFailures: 13
+phases:
+  threat_modeling:
+    durationSec: 4
+    retries: 1
+    dodFailures: 1
+  planning:
+    durationSec: 4
+    retries: 2
+    dodFailures: 4
+  state_machine:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  flowchart:
+    durationSec: 4
+    retries: 1
+    dodFailures: 1
+  ui_design:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  design_review:
+    durationSec: 8
+    retries: 1
+    dodFailures: 1
+  test_design:
+    durationSec: 8
+    retries: 1
+    dodFailures: 2
+  hearing:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+  scope_definition:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  research:
+    durationSec: 5
+    retries: 0
+    dodFailures: 0
+  impact_analysis:
+    durationSec: 4
+    retries: 0
+    dodFailures: 0
+  requirements:
+    durationSec: 8
+    retries: 0
+    dodFailures: 0
+  test_selection:
+    durationSec: 253
+    retries: 0
+    dodFailures: 0
+  test_impl:
+    durationSec: 461
+    retries: 2
+    dodFailures: 2
+  implementation:
+    durationSec: 364
+    retries: 0
+    dodFailures: 0
+  refactoring:
+    durationSec: 175
+    retries: 0
+    dodFailures: 0
+  build_check:
+    durationSec: 209
+    retries: 0
+    dodFailures: 0
+  code_review:
+    durationSec: 250
+    retries: 2
+    dodFailures: 5
+  testing:
+    durationSec: 152
+    retries: 0
+    dodFailures: 0
+  regression_test:
+    durationSec: 130
+    retries: 1
+    dodFailures: 1
+  acceptance_verification:
+    durationSec: 180
+    retries: 0
+    dodFailures: 0
+  manual_test:
+    durationSec: 251
+    retries: 1
+    dodFailures: 2
+  security_scan:
+    durationSec: 215
+    retries: 0
+    dodFailures: 0
+  performance_test:
+    durationSec: 131
+    retries: 0
+    dodFailures: 0
+  e2e_test:
+    durationSec: 156
+    retries: 0
+    dodFailures: 0
+  docs_update:
+    durationSec: 158
+    retries: 1
+    dodFailures: 2
+  commit:
+    durationSec: 113
+    retries: 0
+    dodFailures: 0
+  push:
+    durationSec: 18
+    retries: 0
+    dodFailures: 0
+  ci_verification:
+    durationSec: 12
+    retries: 0
+    dodFailures: 0
+  deploy:
+    durationSec: 11
+    retries: 0
+    dodFailures: 0
+  health_observation:
+    durationSec: 305
+    retries: 0
+    dodFailures: 0
+  completed:
+    durationSec: 0
+    retries: 0
+    dodFailures: 0
+dodFailurePatterns:
+  threat_modeling[1]: "[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  planning[4]: "[L3] Missing required sections: decisions, artifacts, next. Add ## headings for each.","[L4] Missing required Markdown sections: decisions, artifacts, next","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L4] Forbidden patterns found: 未定"
+  flowchart[1]: "[L4] Forbidden patterns found: 未定"
+  design_review[1]: "[L4] Duplicate lines (3+ times): \"結果: 合格...\" (4x)"
+  test_design[2]: "[L4] Duplicate lines (3+ times): \"- RTM: F-003...\" (3x)","[L4] Approved artifacts modified since approval: hearing.md, requirements.md, design-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  test_impl[2]: "[L2] TDD Red フェーズ: テストは失敗している必要があります。先にテストを実行して失敗を記録してください (TDD-1)","[L2] TDD Red フェーズ: テストは失敗している必要があります。Redフェーズの記録が必要です (TDD-1)"
+  code_review[5]: "[L4] Forbidden patterns found: 未定","[L3] RTM entries not at required status: F-005 (pending), F-006 (pending), F-007 (pending), F-008 (pending)","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。","[L4] code-review.md is missing acAchievementStatus section (IA-5)\n修正方法: code-review.md に ## acAchievementStatus セクションを追加し、各AC-Nのpass/fail状態を記入してください。","[L4] Approved artifacts modified since approval: code-review.md (ART-1)\n修正方法: 変更を元に戻すか harness_approve で再承認してください。"
+  regression_test[1]: "[L3] No baseline captured. Use harness_capture_baseline in testing phase before regression_test"
+  manual_test[2]: "[L4] Duplicate lines (3+ times): \"verdict: PASS / FAIL (目視確認)...\" (3x)","[L4] Markdown artifact missing ## decisions section with list items\n修正方法: ## decisions セクションに最低5件のリスト項目を追加してください。"
+  docs_update[2]: "[L3] Missing required sections: next. Add ## headings for each.","[L4] Missing required Markdown sections: next"

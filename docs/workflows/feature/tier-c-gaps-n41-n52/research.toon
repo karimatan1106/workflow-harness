@@ -1,0 +1,89 @@
+phase: research
+task: tier-c-gaps-n41-n52
+intent: "Tier C N-41〜N-52(12項目)のスキャフォールド・設定テンプレート・MVHロードマップ・LLM品質ゲートを実装する"
+
+categoryAnalysis[3]{category,items,approach}:
+  scaffoldOnly,"N-41(CLS) N-42(VRT) N-43(a11y) N-44(Codex) N-45(Testcontainers) N-46(OPA) N-47(CST) N-48(Mobile) N-49(Desktop)","外部インフラ依存。設定テンプレートとパターンファイルのみ提供"
+  implementable,"N-50(MVH Roadmap) N-51(LLM-as-Judge)","TypeScript+vitestで完結。テスト付きで実装"
+  structuredData,"N-52(EU AI Act)","JSON構造化データ。条文番号と根拠を記録"
+
+n41CLSResearch:
+  api: PerformanceObserver layout-shift
+  threshold: 0.1 (Good per web.dev)
+  measurementPattern: "PerformanceObserverでlayout-shiftエントリを収集し、hadRecentInput=falseのvalueを累積"
+  animationPattern: "Element.getAnimations({subtree:true})で全アニメーション完了を待機"
+  dependency: Playwright (browser context required)
+
+n42VRTResearch:
+  providers: "Chromatic / Percy / Argos CI"
+  selectedProvider: argos-ci (OSS-friendly)
+  keyConfig: "freezeAnimations / diffThreshold(1%) / viewports(desktop+mobile)"
+  snapshotStrategy: "コンポーネント単位スナップショット + フルページスナップショット"
+
+n43A11yResearch:
+  api: "page.accessibility.snapshot() / page.getByRole()"
+  roles: "button / link / heading / textbox / checkbox / radio"
+  standards: "WCAG 2.1 AA / Section 508"
+  tooling: "@axe-core/playwright for automated checks"
+
+n45TestcontainersResearch:
+  images: "postgres:16-alpine / redis:7-alpine"
+  pattern: "GenericContainer + withExposedPorts + withEnvironment"
+  lifecycle: "beforeAll: start → afterAll: stop"
+
+n46OPAResearch:
+  language: Rego
+  pattern: "deny[msg] rule with input.resource_type matching"
+  integration: "conftest test --policy policies/ terraform.tfplan.json"
+  samplePolicy: "S3バケットのpublic-read ACL禁止"
+
+n47CSTResearch:
+  schema: "2.0.0"
+  testTypes: "commandTests / fileExistenceTests / fileContentTests / metadataTests"
+  integration: "container-structure-test test --image <image> --config config.yaml"
+
+n48MobileResearch:
+  ios: "XcodeBuildMCP (Xcode 26.3+)"
+  android: "mobile-mcp (ADB required)"
+  crossPlatform: "Detox (React Native) / Maestro (YAML-based)"
+
+n49DesktopResearch:
+  electron: "Playwright _electron.launch() API"
+  tauri: "tauri-driver / WebDriver protocol"
+  windows: "terminator MCP (UIAutomation API)"
+  macos: "macos-ui-automation-mcp (NSAccessibility)"
+
+n50MVHResearch:
+  source: "anthropic.com engineering blog MVH concept"
+  stages: "week1 / week2-4 / month2-3 / month3+"
+  milestones: 17 items across 4 stages
+  currentProgress: "15/17 implemented (88%)"
+  trackingFormat: "TypeScript interface with id/stage/description/implemented/evidence"
+
+n51LLMJudgeResearch:
+  metrics: "faithfulness / hallucination_rate / relevance / toxicity / instruction_following"
+  thresholds: "0.85 / 0.05 / 0.80 / 0.01 / 0.90"
+  evaluationPattern: "scores Record → gate comparison → pass/fail per metric → aggregate"
+  integration: "promptfoo eval framework (N-38) for automated scoring"
+
+n52EUAIActResearch:
+  regulation: "EU AI Act (Regulation 2024/1689)"
+  effectiveDate: "2026-08-02 (high-risk AI systems)"
+  relevantArticles: "Art.9(リスク管理) / Art.10(データガバナンス) / Art.14(人間による監視) / Art.15(正確性・堅牢性) / Art.9.7(敵対的テスト)"
+  currentCompliance: "Art.14/Art.15は実装済み。Art.9/Art.10は部分的。Art.9.7はスキャフォールドのみ"
+
+decisions[5]{id,statement,rationale}:
+  RES-01,"N-41のCLS閾値は0.1(web.dev Good基準)を採用する","Googleの公式推奨値。Core Web Vitalsの標準"
+  RES-02,"N-42のVRTプロバイダはargos-ciをデフォルトとする","OSS対応で無料枠あり。Chromatic/Percyへの切り替えも容易"
+  RES-03,"N-50のMVHマイルストーンは17項目4ステージで構成する","anthropic.comのMVHコンセプトに基づく段階的成熟モデル"
+  RES-04,"N-51の品質ゲートは5メトリクスで構成する","LLM評価の主要指標をカバー。promptfoo連携を想定"
+  RES-05,"N-52はEU AI Act高リスクAIシステム要件(5条文)を対象とする","2026年8月施行の高リスクAI要件に限定。汎用AI要件は将来拡張"
+
+artifacts[2]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n41-n52/research.toon,deliverable,12項目のリサーチ結果と技術選定
+  docs/workflows/tier-c-gaps-n41-n52/scope-definition.toon,input,スコープ定義
+
+next:
+  criticalDecisions: RES-01(CLS閾値0.1) RES-03(MVH 17項目) RES-04(品質ゲート5メトリクス)
+  readFiles: workflow-harness/mcp-server/src/tools/ workflow-harness/mcp-server/tests/safety/
+  warnings: N-52のEU AI Act施行日(2026-08-02)が近いためコンプライアンス対応の優先度を上げる必要あり

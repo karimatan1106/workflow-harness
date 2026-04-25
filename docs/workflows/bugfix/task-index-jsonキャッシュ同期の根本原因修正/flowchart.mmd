@@ -1,0 +1,70 @@
+%% サマリー (コメント形式)
+%%
+%% FIX-1: updateTaskPhase()の処理フロー
+%% - updateTaskPhase()がメモリとworkflow-state.jsonを更新後、
+%%   updateTaskIndexForSingleTask()でtask-index.jsonを直接更新する
+%% - discoverTasks()を経由せず、キャッシュ競合を回避する
+%%
+%% FIX-2: phase-edit-guard.jsのbashコマンドチェック順序
+%% - B-2 commit/pushチェックをbash-whitelistチェックより前に実行
+%% - キャッシュ遅延があってもcommit/pushフェーズのgit操作を確実に許可する
+%%
+%% この2つの修正により、task-index.jsonキャッシュの同期問題の根本原因を解決
+
+flowchart TD
+    subgraph FIX1["FIX-1: MCP Server Phase Transition"]
+        A["updateTaskPhase()開始<br/>taskId, phase"]
+        B["メモリ上のtaskState.phaseを更新"]
+        C["workflow-state.jsonに書き込み<br/>atomicWriteJson"]
+        D{"loadTaskIndex()で<br/>task-index.jsonを読み込み"}
+        E["変更前: saveTaskIndex()呼び出し<br/>↓<br/>discoverTasks()経由でキャッシュ読取<br/>↓<br/>古いデータでtask-index.json書き込み"]
+        F["FIX-1適用後:<br/>updateTaskIndexForSingleTask()呼び出し"]
+        G["task-index.jsonを直接読み込み"]
+        H["該当タスクのphaseフィールドを更新<br/>または削除(completed時)"]
+        I["atomicWriteJson()で<br/>task-index.jsonに書き込み"]
+        J["taskCache.invalidate('task-list')<br/>を呼び出し"]
+        K["updateTaskPhase()完了<br/>フェーズ遷移成功"]
+
+        A --> B
+        B --> C
+        C --> D
+        D --> E
+        E -->|従来の問題| K
+        D --> F
+        F --> G
+        G --> H
+        H --> I
+        I --> J
+        J --> K
+    end
+
+    subgraph FIX2["FIX-2: Hook Bash Command Check"]
+        L["bashコマンドチェック開始<br/>command, toolInput"]
+        M["findActiveWorkflowState(null)<br/>でフェーズを取得"]
+        N{"phase === 'commit'<br/>または 'push'?"}
+        O["B-2チェック実行<br/>git commit --amend<br/>git commit --no-verify<br/>git push --force<br/>などを検査"]
+        P{"B-2で<br/>マッチした?"}
+        Q["許可してリターン<br/>B-2優先"]
+        R["bash-whitelistチェック実行<br/>checkBashWhitelist(command, phase)"]
+        S{"ホワイトリスト<br/>判定OK?"}
+        T["git addなどを許可"]
+        U["ブロック<br/>process.exit()"]
+        V["チェック完了"]
+
+        L --> M
+        M --> N
+        N -->|Yes| O
+        N -->|No| R
+        O --> P
+        P -->|Yes| Q
+        P -->|No| R
+        Q --> V
+        R --> S
+        S -->|Yes| T
+        S -->|No| U
+        T --> V
+        U --> V
+    end
+
+    FIX1 --> FIX2
+    FIX2 --> W["両修正により<br/>キャッシュ同期問題解決<br/>task-index.jsonが常に最新に更新される"]

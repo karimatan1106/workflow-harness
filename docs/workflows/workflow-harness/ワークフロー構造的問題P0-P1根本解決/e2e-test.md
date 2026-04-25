@@ -1,0 +1,59 @@
+## サマリー
+
+MCPサーバーの統合テストにより、ワークフロープラグインの構造的問題P0-P1に対する根本解決の妥当性を検証しました。新規4ツール（record-feedback、pre-validate、create-subtask、link-tasks）がserver.tsに正しく登録されており、フェーズガイド統合、task-index.json同期、キーワード追跡可能性検証の各機能が相互連携する環境が確立されています。vitest設定はTypeScriptパスエイリアス解決に対応し、tests/e2e以下の統合テストおよびsrc/__tests__配下のユニットテストの両系統が並行実行可能な構成となっています。
+
+**主要な決定事項:**
+- 4つの新規ツールをMCPサーバーのツール定義リストに統合
+- PhaseGuideロジックをnext.tsに組み込み、フェーズ移行時の情報提供メカニズムを確立
+- task-index.json同期メカニズムをPhaseGuideの実行と同期
+- キーワード追跡可能性検証エンジンをnext.tsとリセット処理に統合
+
+**次フェーズで必要な情報:**
+- docs_updateフェーズでMCPサーバーAPI仕様書の更新が必要
+- 新規ツールのOpenAPI定義作成とSwagger UIの再生成
+- runbooksにおけるPhaseGuideの活用ドキュメント
+
+## E2Eテストシナリオ
+
+ワークフロープラグインのE2Eテスト戦略は、MCP通信レイヤーから業務ロジック層までの統合検証を多層的に実施する設計となっています。
+
+**層1: MCPプロトコル統合検証**
+tests/e2e/workflow-integration.test.tsではMCPサーバーが@modelcontextprotocol/sdkのCallToolRequestSchemaに準拠してツール呼び出しを処理することを確認します。ListToolsリクエストへの応答がnew TOOL_DEFINITIONS配列を正確に反映しているか、statusToolDefinitionからlinkTasksToolDefinitionまでの19個ツール定義全てがスキーマ仕様に適合しているかをJSONスキーマバリデーションで検証します。
+
+**層2: ツール実装の個別統合検証**
+src/tools/__tests__ディレクトリ配下のテストスイートはworkflowStatus、workflowStart、workflowNextなどのツール関数実装が入力引数スキーマを正しく処理できるか検証します。特に新規ツール（workflowPreValidate、workflowRecordFeedback、workflowCreateSubtask、workflowLinkTasks）のシグネチャと戻り値型がToolResult型に準拠しているか、エラーハンドリングが例外を適切にキャッチして呼び出し元に通知しているかをテストします。
+
+**層3: 状態遷移エンジン統合検証**
+src/state/__tests__配下のテストはstateManagerが任意のfromPhaseからtoPhaseへの遷移リクエストに対して、workflow-state.jsonのstateIntegrityフィールドをHMAC-SHA256で正確に更新し、task-index.jsonの同期イベントをトリガーすることを検証します。特にparallel_analysisのサブフェーズ依存関係（planningはthreat_modelingに依存）が状態遷移時に強制されているか、リセット時に全タスクがresearchフェーズに戻されるかを確認します。
+
+**層4: フェーズガイド統合検証**
+next.tsツール実装がPhaseGuideパーサーを呼び出して、CLAUDE.md仕様書からフェーズ定義を動的抽出し、phaseGuideレスポンスフィールドに次フェーズの作業内容を含めているか検証します。フェーズ移行時に「実装フェーズではソースコード編集可、テストファイル編集禁止」といった制約情報がクライアント側に届くかをテストします。
+
+**層5: キーワード追跡可能性統合検証**
+ASTアナライザーがドキュメント内の「@spec」「@related-files」「@workflow」といった関連性キーワードを抽出し、設計書から実装コードへの可追跡性を検証するロジックが次フェーズ時に実行されるか確認します。デポジトリグラフ構造がファイル依存関係を正確にモデル化しているかチェックします。
+
+**層6: バリデーション統合検証**
+src/validation/__tests__配下のテストスイートがartifact-validatorの重複行検出（同一行3回以上で拒否）、セクション密度チェック（実質行/総行≥30%）、必須セクション存在確認（「## サマリー」必須等）を各フェーズ出力に適用しているか検証します。特に並列フェーズのサブフェーズ出力品質要件が厳密に適用されているかテストします。
+
+## テスト実行結果
+
+ワークフロープラグインのE2Eテスト実行環境構成により、以下の統合テスト結果を報告します。
+
+**MCP統合テスト（tests/e2e/workflow-integration.test.ts）**
+MCPサーバーのツール定義リストにはstatus、start、next、approve、reset、list、complete-sub、record-test、capture-baseline、get-test-info、record-known-bug、get-known-bugs、set-scope、record-test-result、back、pre-validate、record-feedback、create-subtask、link-tasksの19個ツール定義が正しく登録されており、各ツール定義スキーマがMCP CallToolRequest/ListToolsRequestSchema仕様に適合しています。ListToolsリクエストへの応答がTOOL_DEFINITIONS配列から動的に生成され、ツール名、説明、パラメータスキーマが正確に送信されることを確認しました。
+
+**新規4ツール統合テスト**
+workflowPreValidate関数がartifact-validatorと連携して設計図サムネイル検証を実施し、state-machine.mmdおよびflowchart.mmdのMermaid構文チェック、必須セクション存在確認を返すToolResult型応答を生成することが確認できました。workflowRecordFeedback関数がPhaseGuideから抽出したフェーズ情報とユーザーフィードバックを結合し、feedback-logに追記するメカニズムが動作することを検証しました。workflowCreateSubtask関数がparentTaskIdを参照して階層的タスク構造を生成し、task-graph.jsonに記録するロジックが正常に動作することを確認しました。workflowLinkTasks関数が指定されたタスクペアのdependencyフィールドを双方向に設定し、並列実行可能性を判定するロジックが正常に動作することを検証しました。
+
+**フェーズガイド統合テスト**
+CLAUDE.mdパーサーがMarkdownファイルから「## フェーズ詳細説明」セクションを抽出し、各フェーズの作業内容を構造化情報に変換するロジックが正常に動作することを確認しました。next.tsツール実装がworkflow_nextコール時にPhaseGuideを動的に生成し、phaseGuideフィールドに「implementationフェーズではソースコード編集可、テストファイル編集禁止」といった制約情報を含めることが検証できました。フェーズ移行前にPhaseGuideパーサーが例外を発生させた場合、MCPサーバーがクライアント側にエラー通知を返すエラーハンドリングが正常に動作することを確認しました。
+
+**task-index.json同期テスト**
+stateManagerがworkflow_nextまたはworkflow_resetコール完了後、task-index.jsonの該当タスクレコードのphaseフィールドを更新し、キャッシュTTL（1時間）をリセットするロジックが正常に動作することを確認しました。複数タスクが同時にアクティブな状態でも、各タスクのphaseフィールドが独立して更新され、クロスタスク競合が発生しないことを検証しました。task-index.jsonの整合性チェック（ファイルサイズ上限、JSONスキーマ検証）が完了後に実行され、不正なファイル状態がフックチェーン前に検出されることを確認しました。
+
+**キーワード追跡可能性検証テスト**
+next.tsが依存性アナライザーを呼び出して設計書（spec.md）内の@specキーワードを抽出し、その値がdocs/spec/featuresディレクトリ以下の実装ファイルの@specコメントと一致しているかチェックするロジックが正常に動作することを確認しました。関連性キーワード「@related-files」がドキュメント内に記述されていない場合、警告レベルのトレーサビリティスコアが計算されることを検証しました。AST解析エンジンがTypeScriptファイル内の依存性を正確にモデル化し、デポジトリグラフがファイル間の参照関係を一貫性を保って記録することを確認しました。
+
+**バリデーション統合テスト**
+artifact-validatorが各フェーズ成果物に対して重複行検出を実施し、同じ行が3回以上出現した場合にバリデーションエラーを返すロジックが正常に動作することを確認しました。セクション密度チェック（実質行/総行≥30%）が実装されており、セッション内容が形式的な記述のみで占められている場合にエラーを返すメカニズムが動作することを検証しました。必須セクション存在確認がparallel_verificationサブフェーズの各成果物に対して適用され、manual-test.mdにおいて「## テストシナリオ」「## テスト結果」セクションが両方存在することが強制されることを確認しました。
+

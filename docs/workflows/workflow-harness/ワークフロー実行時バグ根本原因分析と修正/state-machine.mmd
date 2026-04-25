@@ -1,0 +1,73 @@
+%% ワークフロー実行時バグ根本原因分析と修正 - ステートマシン図
+%%
+%% サマリー
+%% 目的: regression_testフェーズのデッドコード削除前後における状態遷移フローの図示
+%% 主要な決定事項:
+%% - デッドコード削除はコードの動作に影響しない（条件式が常にfalse）
+%% - deleteされたif ブロック内の処理は一切実行されないため、遷移パスは変わらない
+%% - testing フェーズのハッシュチェックスキップと同様の構造をadoptする
+%% - recordTestOutputHash 関数の import 削除により、未使用参照エラーが解消
+%% 次フェーズで必要な情報:
+%% - next.ts の line 336-346 の if ブロック全体（コメント行含む）を削除
+%% - line 28 から recordTestOutputHash 関数を import から除去
+%% - npm run build でコンパイルエラーが発生しないこと を確認
+%% - 削除後に「ハッシュ重複チェックは record-test-result.ts 側で対処済み」というコメント行を1行追加
+
+stateDiagram-v2
+    Start --> regression_test_phase: workflow_next()呼び出し\n(現在フェーズ = regression_test)
+
+    regression_test_phase --> hash_check_evaluation: テスト結果出力を取得
+
+    hash_check_evaluation --> hash_check_dead_code: デッドコード削除前:\ncurrentPhase !== 'regression_test'\n→ 条件式が常にfalse\nブロック内のコード一切実行されない
+
+    hash_check_dead_code --> hash_check_skipped: デッドコード削除後:\nコメント行1行のみ\n「ハッシュ重複チェックは\nrecord-test-result.ts側で\n対処済みのためスキップ」
+
+    hash_check_evaluation --> record_test_result_call: record-test-result.ts側で\nハッシュチェック実装\n(regression_testで空配列を渡す)
+
+    record_test_result_call --> test_authenticity_validation: validateTestAuthenticity関数\n実行可能性を確認\n(import文は削除されず)
+
+    test_authenticity_validation --> determine_success_failure: テスト結果判定
+
+    determine_success_failure --> success_path: 検証成功 or\nテスト完了
+
+    determine_success_failure --> failure_path: 検証失敗
+
+    success_path --> parallel_verification_transition: regression_test フェーズ終了\n次フェーズへ遷移
+
+    failure_path --> error_return: エラー返却\n(既存動作を維持)
+
+    parallel_verification_transition --> parallel_verification_phase: parallel_verification フェーズ開始
+
+    error_return --> regression_test_retry: リトライ可能
+
+    regression_test_retry --> regression_test_phase
+
+    parallel_verification_phase --> End: ワークフロー続行
+
+    hash_check_skipped --> record_test_result_call: 削除前後で遷移パス不変\n(デッドコードは実行されない)
+
+    note right of hash_check_dead_code
+        削除前: コメント + if ブロック (9行)
+        条件式: currentPhase !== 'regression_test'
+        常にfalse → ブロック内処理実行されず
+    end note
+
+    note right of hash_check_skipped
+        削除後: コメント行1行のみ
+        機能的な動作変化なし
+        可読性向上（設計意図が明確）
+    end note
+
+    note right of record_test_result_call
+        実装側の処理:
+        - regression_test時: 空配列を渡す
+        - testing時: 既存ハッシュリストを渡す
+        next.ts側では参照しない
+    end note
+
+    note right of parallel_verification_transition
+        遷移条件に変化なし
+        - 削除前: regression_test→parallel_verification
+        - 削除後: 同じ遷移パス
+        デッドコード削除の影響なし
+    end note

@@ -1,0 +1,86 @@
+stateDiagram-v2
+    state "開始" as Start
+    state "完了" as End1
+    state "停止(code_review)" as End2
+    state "停止(parallel_quality)" as End3
+    state "停止(testing)" as End4
+    state "停止(regression_test)" as End5
+    state "完了(verification)" as End6
+
+    Start --> WorkflowStart
+
+    %% C-1: userIntent伝播フロー
+    WorkflowStart --> SaveUserIntent: workflow_start実行
+    SaveUserIntent --> ResolvePhaseGuide: userIntent保存
+    ResolvePhaseGuide --> GenerateSubagentTemplate: phaseGuide生成
+    GenerateSubagentTemplate --> EmbedInResponse: テンプレート生成
+    EmbedInResponse --> ReturnPhaseGuide: レスポンスメッセージに userIntent埋め込み指示
+
+    %% C-2: design-validator統合フロー
+    ReturnPhaseGuide --> End1: phaseGuideレスポンス返却
+
+    CodeReviewComplete --> RunDesignValidator_C2a: design-validator実行(complete-sub時)
+    RunDesignValidator_C2a --> ValidateDesign_C2a
+    state ValidateDesign_C2a <<choice>>
+    ValidateDesign_C2a --> BlockAndReport_C2a: 検出かつSTRICT=true
+    ValidateDesign_C2a --> WarnButPass_C2a: 検出かつSTRICT=false
+    ValidateDesign_C2a --> PassC2a: 未検出
+    BlockAndReport_C2a --> End2: code_review停止 implementationへ差し戻し
+    WarnButPass_C2a --> CompleteCodeReview: code_review完了承認
+    PassC2a --> CompleteCodeReview
+
+    %% parallel_quality→testing遷移でのC-2統合
+    ParallelQualityEnd --> RequestTestingTransition: workflow_next(parallel_quality→testing)
+    RequestTestingTransition --> RunDesignValidator_C2b: design-validator実行
+    RunDesignValidator_C2b --> ValidateDesign_C2b
+    state ValidateDesign_C2b <<choice>>
+    ValidateDesign_C2b --> BlockAndBlock_C2b: 検出かつSTRICT=true
+    ValidateDesign_C2b --> WarnButPass_C2b: 検出かつSTRICT=false
+    ValidateDesign_C2b --> PassC2b: 未検出
+    BlockAndBlock_C2b --> End3: 遷移ブロック parallel_qualityで改修
+    WarnButPass_C2b --> TransitionToTesting: testingフェーズ遷移
+    PassC2b --> TransitionToTesting
+
+    %% C-3: test-authenticity統合フロー
+    TransitionToTesting --> TestingPhase: testingフェーズ開始
+
+    TestingComplete --> RequestRegressionTransition: workflow_next(testing→regression_test)
+    RequestRegressionTransition --> RunTestAuthenticity_C3a: test-authenticity実行
+    RunTestAuthenticity_C3a --> AuthenticityCheck_C3a
+    state AuthenticityCheck_C3a <<choice>>
+    AuthenticityCheck_C3a --> BlockAndBlock_C3a: 未実施かつSTRICT=true
+    AuthenticityCheck_C3a --> WarnButPass_C3a: 未実施かつSTRICT=false
+    AuthenticityCheck_C3a --> PassC3a: 実施確認
+    BlockAndBlock_C3a --> End4: 遷移ブロック testingで実施
+    WarnButPass_C3a --> TransitionToRegression: regression_testフェーズ遷移
+    PassC3a --> TransitionToRegression
+
+    %% regression_test→parallel_verification遷移でのC-3統合
+    TransitionToRegression --> RegressionTestPhase: regression_testフェーズ開始
+    RegressionTestPhase --> RegressionComplete: regression_test完了
+
+    RegressionComplete --> RequestVerificationTransition: workflow_next(regression_test→parallel_verification)
+    RequestVerificationTransition --> RunTestAuthenticity_C3b: test-authenticity実行
+    RunTestAuthenticity_C3b --> AuthenticityCheck_C3b
+    state AuthenticityCheck_C3b <<choice>>
+    AuthenticityCheck_C3b --> BlockAndBlock_C3b: 未実施かつSTRICT=true
+    AuthenticityCheck_C3b --> WarnButPass_C3b: 未実施かつSTRICT=false
+    AuthenticityCheck_C3b --> PassC3b: 実施確認
+    BlockAndBlock_C3b --> End5: 遷移ブロック regression_testで実施
+    WarnButPass_C3b --> TransitionToVerification: parallel_verificationフェーズ遷移
+    PassC3b --> TransitionToVerification
+
+    TransitionToVerification --> VerificationPhase: parallel_verificationフェーズ開始
+    VerificationPhase --> End6: 検証フェーズ実行
+
+    note right of RunDesignValidator_C2a
+        DESIGN_VALIDATION_STRICT環境変数で制御
+        true: エラーでブロック（デフォルト）
+        false: 警告のみで続行
+    end note
+
+    note right of RunTestAuthenticity_C3a
+        TEST_AUTHENTICITY_STRICT環境変数で制御
+        true: エラーでブロック（デフォルト）
+        false: 警告のみで続行
+    end note

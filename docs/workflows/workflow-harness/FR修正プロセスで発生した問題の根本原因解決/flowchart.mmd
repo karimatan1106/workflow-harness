@@ -1,0 +1,45 @@
+flowchart TD
+    Start((修正開始))
+    OpenDef(definitions.tsファイルを開く<br/>workflow-plugin/mcp-server/src/phases/)
+
+    Start --> OpenDef
+
+    OpenDef --> FRA(FR-A: code_reviewの<br/>requiredSections配列を確認<br/>821行目)
+    FRA --> FRAEdit(requiredSectionsに<br/>『## パフォーマンス』を追加<br/>4要素から5要素に拡張)
+
+    FRAEdit --> FRB(FR-B: buildPrompt関数内の<br/>禁止語ループを確認<br/>1093〜1098行目)
+    FRB --> FRBEdit(ループ処理を削除<br/>3グループの間接参照に置き換え<br/>英語系・検討系・予定仮値系)
+
+    FRBEdit --> FRC(FR-C: manual_testフェーズの<br/>subagentTemplateを確認<br/>890行目)
+    FRC --> FRCEdit(重複行回避ガイダンスを追記<br/>シナリオ番号による一意化方法<br/>具体的な記述例を含める)
+
+    FRCEdit --> FRD(FR-D: commitフェーズの<br/>subagentTemplateを確認<br/>945行目)
+    FRD --> FRDEdit(サブモジュール対応手順を追記<br/>3ステップの確認プロセス<br/>変更ファイルのステージング方法)
+
+    FRDEdit --> FRE(FR-E: testing・regression_testの<br/>subagentTemplateを確認<br/>862行目・871行目)
+    FRE --> FREEdit(workflow_record_test_result制約を追記<br/>exitCode制約・出力形式・再記録例外<br/>各フェーズの注意事項を文書化)
+
+    FREEdit --> BuildExec(npm run buildを実行<br/>workflow-plugin/mcp-serverで実行)
+    BuildExec --> BuildCheck{ビルド<br/>成功?}
+
+    BuildCheck -->|失敗| BuildErr(コンパイルエラーを確認<br/>該当行の構文エラーを修正)
+    BuildErr --> BuildExec
+
+    BuildCheck -->|成功| RestartStart(MCPサーバーを再起動<br/>Claude Desktopの再起動機能)
+    RestartStart --> VerifyStatus(workflow_statusを実行<br/>現在のフェーズを確認)
+    VerifyStatus --> VerifyCheck{修正内容<br/>反映確認<br/>OK?}
+
+    VerifyCheck -->|未反映| RestartRetry(MCPサーバーの<br/>再起動を再実行)
+    RestartRetry --> VerifyStatus
+
+    VerifyCheck -->|確認完了| Complete((修正完了))
+
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style FRA fill:#B0E0E6
+    style FRB fill:#B0E0E6
+    style FRC fill:#B0E0E6
+    style FRD fill:#B0E0E6
+    style FRE fill:#B0E0E6
+    style BuildCheck fill:#FFD700
+    style VerifyCheck fill:#FFD700

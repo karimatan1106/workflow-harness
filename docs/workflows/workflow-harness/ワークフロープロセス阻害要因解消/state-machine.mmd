@@ -1,0 +1,16 @@
+%% ワークフロープロセス阻害要因解消 ステートマシン図
+%% フック修正プロセスの5状態遷移: Unfixed, TestDesigned, TestImplemented, Fixed, Verified
+%% D-1からD-8までの8件の問題が同一ステートマシンを並行して通過する
+%% TDD Red-Greenサイクルに対応し、TestImplementedがRed、FixedがGreenに相当する
+%% 修正失敗時のRollbackパスとして Fixed→TestImplemented の逆遷移を含む
+
+stateDiagram-v2
+    [*] --> Unfixed: D-1～D-8の8件検出
+    Unfixed --> TestDesigned: テストケース設計完了（test-design.md作成）
+    TestDesigned --> TestImplemented: verify-fixes.test.ts実装（TDD Redフェーズ）
+    TestImplemented --> Fixed: fix-all.js実行で全テストがGreen達成
+    Fixed --> Verified: refactoring、parallel_quality、testing、regression_test、parallel_verification通過
+    Verified --> [*]: commit→push→ci_verification→deploy→completed
+
+    Fixed --> TestImplemented: テスト失敗により修正スクリプトの再修正が必要
+    TestImplemented --> TestDesigned: テスト設計自体の見直しが必要な場合にリセット

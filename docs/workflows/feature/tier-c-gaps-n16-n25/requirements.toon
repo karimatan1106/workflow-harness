@@ -1,0 +1,81 @@
+task: tier-c-gaps-n16-n25
+phase: requirements
+intent: Tier C 6項目(N-16/N-17/N-18/N-20/N-21/N-25)の機能要件・非機能要件を定義し受入基準7件とRTM6件を設定する
+
+acceptanceCriteria[7]{id,description,verification,traceability}:
+  AC-1, "retry.tsのbuildRetryPromptが全DoDエラーをtrivial/moderate/criticalの3段階に分類しclassifyComplexity関数で判定した分類結果をリトライプロンプトテキストに複雑度タグとして含める", "retry-complexity.test.tsでDoDCheckResult入力に対しtrivial(禁止語/プレースホルダー)/moderate(密度不足/行数不足)/critical(ファイル未存在/複数L1失敗)の各分類が正しく判定されbuildRetryPrompt返却値のpromptフィールドに複雑度タグ文字列が含まれることを検証する", F-001
+  AC-2, "skill-rules.test.tsが禁止語リスト12語・TOON必須フィールド・承認ゲート5種・Bash制限カテゴリ・密度閾値30%の5ルールをコード定数と照合テストする", "skill-rules.test.tsでFORBIDDEN_PATTERNSが12語全て含むこと・PHASE_APPROVAL_GATESが5種であること・PHASE_REGISTRYの各エントリがbashCategories/minLinesフィールドを持つこと・密度閾値が30以上であることをアサーションで検証する", F-002
+  AC-3, "linter-runner.tsのrunArchGateQuickCheckがpattern_absent/pattern_required checkTypeのみを100ms以内に実行しpost-tool-lint.shから呼び出し可能である", "archgate-quickcheck.test.tsでrunArchGateQuickCheckにpattern_absent違反コンテンツを渡しviolation検出を確認する。実行時間をperformance.nowで計測し100ms以内を検証する。post-tool-lint.shにnode呼び出しセクションが存在しtimeout 3秒が設定されていることをシェルスクリプト解析で確認する", F-003
+  AC-4, "e2e-mcp-chain.test.tsがlifecycle/quality/verificationの3チェーンをhandleToolCall経由で検証する", "Chain1(lifecycle): harness_start→harness_set_scope→harness_add_ac→harness_nextの順にhandleToolCallを呼び出し各返却値のtaskId/sessionTokenが一貫していることを検証する。Chain2(quality): harness_record_test→harness_record_test_result→harness_record_proofの連鎖で状態遷移を検証する。Chain3(verification): archgateルール登録→runArchGateChecks→DoD失敗時retryPrompt生成を検証する", F-004
+  AC-5, "archgateにcomment_ratio checkTypeが追加されコメント行比率が閾値40%超過時にviolation報告する。oxlintのno-unused-importsルールが有効である", "archgate-antipattern.test.tsでcomment_ratioルールに対しコメント率50%のコンテンツでviolation検出・コメント率30%のコンテンツでpass・閾値境界40%での判定を検証する。countCommentLines関数の単体テストで単行コメント(//)+ブロックコメント(/* */)の計数精度を検証する。.oxlintrc.jsonにno-unused-importsルールが記載されていることを確認する", F-005
+  AC-6, "safety.test.tsがMCPツール入力に対するパストラバーサル/XSS/SQLインジェクション/巨大入力ペイロードをテストし全て安全に処理されることを検証する", "TC-S1: harness_startにtaskName='../../etc/passwd'を渡しエラー返却またはパスサニタイズを確認する。TC-S2: harness_startにuserIntent=10MB文字列を渡しメモリ問題なくエラー返却されることを確認する。TC-S3: harness_add_acにdescription='<script>alert(1)</script>'を渡しJSON出力でエスケープされることを確認する。TC-S4: taskName含NULバイト・制御文字でエラーまたはサニタイズを確認する", F-006
+  AC-7, "全既存テスト(525件)が通過し新規テストも全て通過する", "vitest runで全テストスイートを実行し525件以上のテストが全てpassすることをCI出力で確認する", F-001/F-002/F-003/F-004/F-005/F-006
+
+rtm[6]{id,feature,ac,testFile,sourceFile}:
+  F-001, N-16 Planktonパターン複雑度分類, AC-1/AC-7, retry-complexity.test.ts, retry.ts
+  F-002, N-17 Doc→テスト置換(5ルール検証), AC-2/AC-7, skill-rules.test.ts, "dod.ts/defs-a.ts/handler-approval.ts"
+  F-003, N-18 archgate→リンター統合, AC-3/AC-7, archgate-quickcheck.test.ts, "linter-runner.ts/post-tool-lint.sh"
+  F-004, N-20 E2Eテスト強制(3チェーン), AC-4/AC-7, e2e-mcp-chain.test.ts, "handler.ts/manager.ts"
+  F-005, N-21 AIアンチパターン検出, AC-5/AC-7, archgate-antipattern.test.ts, "archgate.ts/linter-runner.ts/.oxlintrc.json"
+  F-006, N-25 Safety testing, AC-6/AC-7, safety.test.ts, "manager-write.ts/handler-shared.ts"
+
+functionalRequirements[12]{id,feature,description,priority}:
+  FR-01, F-001, "RetryPromptResult型にcomplexity:'trivial'|'moderate'|'critical'フィールドを追加する", must
+  FR-02, F-001, "classifyComplexity関数を新設しerrorClassとDoDCheckResult[]から3段階複雑度を判定する。trivial=禁止語/プレースホルダー(check=content_validation+passed=false+fix存在)、moderate=密度不足/行数不足(check=artifact_quality+passed=false)、critical=ファイル未存在/複数L1失敗(check=output_file_exists+passed=false or L1失敗2件以上)", must
+  FR-03, F-001, "buildRetryPromptのプロンプトテキストに複雑度タグ[TRIVIAL]/[MODERATE]/[CRITICAL]とルーティング指示を埋め込む。CRITICALの場合sonnetエスカレーション推奨文を含める", must
+  FR-04, F-002, "skill-rules.test.tsでFORBIDDEN_PATTERNSから12語(TODO/TBD/WIP/FIXME/未定/未確定/要検討/検討中/対応予定/サンプル/ダミー/仮置き)の完全性を検証する", must
+  FR-05, F-002, "skill-rules.test.tsでPHASE_APPROVAL_GATESが5種(scope_approval/research_approval/requirements_approval/planning_approval/implementation_approval)を含むことを検証する", must
+  FR-06, F-003, "linter-runner.tsにrunArchGateQuickCheck(filePath:string, content:string):ArchGateResult関数を追加しarchgate-rules.jsonからpattern_absent/pattern_requiredルールのみをフィルタしglob一致ファイルに対してregex評価を実行する", must
+  FR-07, F-003, "post-tool-lint.shの末尾にtimeout 3秒のnode呼び出しセクションを追加しrunArchGateQuickCheckを実行する。node実行失敗時はexit 0でgraceful degradation", must
+  FR-08, F-004, "e2e-mcp-chain.test.tsでStateManagerをfsモック(memfs or vol)で実体化しhandleToolCallを直接呼び出す。DoD検証はforceTransition:trueで迂回しツール間連携の状態伝搬に集中する", must
+  FR-09, F-005, "archgate.tsのArchCheckType型にcomment_ratioを追加しrunArchGateChecksにcomment_ratio処理ブランチを実装する。contentInfosからコメント行を計数し閾値超過でviolation報告する", must
+  FR-10, F-005, "linter-runner.tsにcountCommentLines(content:string):{commentLines:number, totalLines:number, ratio:number}関数を新設する。単行コメント(//行頭)とブロックコメント(/* */ブロック)を計数する", must
+  FR-11, F-006, "manager-write.tsのcreateTaskState内でtaskNameにsanitizeTaskName関数を適用する。path.basename適用+スラッシュ除去+ドットドット除去+NULバイト除去+制御文字除去+最大100文字制限", must
+  FR-12, F-006, "handleHarnessStart/handleHarnessRecordTestResultの入力検証にmaxLengthチェックを追加する。userIntent上限10000文字、output上限100000文字、taskName上限100文字", must
+
+nonFunctionalRequirements[6]{id,category,description,metric}:
+  NFR-01, performance, "runArchGateQuickCheckの実行時間が100ms以内で完了する", "performance.nowで計測し100ms以下"
+  NFR-02, performance, "post-tool-lint.shの総実行時間が既存14秒+3秒=17秒以内に収まる", "timeout 3秒設定で強制終了"
+  NFR-03, reliability, "archgateQuickCheck失敗時にpost-tool-lint.shがexit 0で終了し後続処理を継続する", "node実行失敗時のexit codeが0"
+  NFR-04, reliability, "oxlint設定(.oxlintrc.json)未存在時にoxlintが既定動作(無警告)を維持する", ".oxlintrc.json未存在でもoxlint実行が成功する"
+  NFR-05, security, "sanitizeTaskName関数がパストラバーサル/NULバイト/制御文字/100文字超過を全て除去またはエラーとする", "攻撃パターン4種でテスト通過"
+  NFR-06, compatibility, "全新規実装が既存テスト525件を破壊しない", "vitest run全件pass"
+
+notInScope[6]{item,reason}:
+  N-19 Plan/Execute分離, 既存30フェーズ設計(scope_definition〜planningが計画・test_design以降が実行)で実現済みのため追加実装不要
+  N-22 Hybrid Claude/Codex戦略, OpenAI Codex APIとの統合が必要であり現環境はClaude Code単独動作のため実装不可能
+  N-23 CLS/アニメーション検証, Playwright未導入でe2eディレクトリ未整備のためブラウザE2E環境の前提条件が未解決
+  N-24 LLM評価パイプライン, セッション横断の統計分析基盤が必要であり単一タスク内メトリクスでは不十分
+  archgateの既存5種checkType(line_count/pattern_absent/pattern_required/duplicate_code/ast_grep_pattern)の動作変更, 既存ルール評価ロジックの安定性を維持するため変更対象外
+  post-tool-lint.shの既存tsc/biome/oxlintブロックの変更, 既存リンターパイプラインの安定性を維持するため変更対象外
+
+openQuestions: none
+
+constraints[4]{id,description}:
+  CON-1, "classifyComplexity関数はDoDCheckResult型のcheck/passed/level/fixフィールドのみを参照し内部状態やファイルI/Oに依存しない純粋関数として実装する"
+  CON-2, "runArchGateQuickCheckはarchgate-rules.jsonを同期読み込み(readFileSync)で取得しキャッシュする。外部プロセス呼び出し(jscpd/ast-grep)を一切含まない"
+  CON-3, "sanitizeTaskName関数は既存タスクのdocsDir互換性を維持する。既にdocs/workflows/配下に存在するディレクトリ名パターン(英数字+ハイフン)を許可しそれ以外を除去する"
+  CON-4, "全新規テストファイルはworkflow-harness/mcp-server/src/__tests__/配下に配置しvitest設定を変更せずに自動検出される"
+
+decisions[8]{id,statement,rationale}:
+  REQ-1, "classifyComplexity関数はerrorClassとDoDCheckResult[]の2引数を受け取りcomplexity値を返す純粋関数とする", "errorClassの4分類(FileNotFound/SyntaxError/LogicError/Unknown)とDoDCheckResultのcheck/passed/levelフィールドを組み合わせることで修正難易度を正確に判定できる。純粋関数にすることでテスト容易性を確保しリトライロジックの予測可能性を維持する"
+  REQ-2, "skill-rules.test.tsはコード内定数を直接importしスキルファイル記述値との一致を検証する", "定数値をハードコードせずimportすることでリファクタリング時にテストが自動追従する。FORBIDDEN_PATTERNSの12語・PHASE_APPROVAL_GATESの5種・密度閾値30%はスキルファイルの権威的定義とコード実装の整合性を保証する"
+  REQ-3, "runArchGateQuickCheckはarchgate.tsからmatchGlob関数をimportし再実装を避ける", "glob一致判定ロジックの重複はバグの温床となる。archgate.tsのmatchGlob関数をexport化しlinter-runner.tsからimportすることで一貫したglob評価を保証する。archgate.tsの変更はmatchGlobのexport追加のみで既存ロジックに影響しない"
+  REQ-4, "E2EテストのStateManagerはメモリベースfsモック(memfs)で実体化しディスクI/Oを排除する", "ディスクI/Oを伴うテストは実行速度低下とテスト間干渉の原因となる。memfsでStateManagerを実体化することでテスト独立性を確保し並列実行を可能にする。handleToolCallの引数にStateManagerインスタンスを渡す既存APIを活用する"
+  REQ-5, "comment_ratio checkTypeの閾値はarchgate-rules.jsonのthresholdフィールドで指定しデフォルト40%とする", "閾値をハードコードせずarchgate-rules.jsonで設定可能にすることでプロジェクト別のカスタマイズを許容する。40%はLLM生成コードの典型的アンチパターン(全行の4割以上がコメント)を検出する経験的閾値であり、通常のJSDoc付きコードの20-30%と区別可能"
+  REQ-6, "sanitizeTaskName関数はpath.basename適用後にregex /[^a-zA-Z0-9\\-_]/g で許可文字以外を除去する", "英数字+ハイフン+アンダースコアのみ許可することでファイルシステム操作の安全性を保証する。既存タスク名パターン(tier-c-gaps-n16-n25等)は全てこのregexを通過するため後方互換性を維持する"
+  REQ-7, "入力長制限はハンドラー関数の先頭でString(value).length検査を行いvalidation errorとして返却する", "maxLength検査をハンドラー最初期に実行することでメモリ確保前に過大入力を拒否する。String()キャストは既存コードベースの慣習であり型変換後に長さを検査する。エラーメッセージにはフィールド名と上限値を含める"
+  REQ-8, "oxlintのno-unused-importsルールは.oxlintrc.jsonのrules配列に追加しseverity=warnとする", "error severityにするとoxlint実行失敗でpost-tool-lint.shが非ゼロ終了し既存ワークフローを阻害する可能性がある。warn severityにすることでgraceful degradationパターンを維持しつつ開発者にゴーストimportを通知する"
+
+artifacts[6]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n16-n25/scope-definition.toon, spec, 10項目の実用性分析と6件in-scope確定
+  docs/workflows/tier-c-gaps-n16-n25/research.toon, research, 6項目の技術調査結果と8件の実装方針決定
+  docs/workflows/tier-c-gaps-n16-n25/requirements.toon, spec, 機能要件12件・非機能要件6件・受入基準7件・RTM6件の要件定義
+  workflow-harness/mcp-server/src/tools/retry.ts, source, N-16の変更対象(classifyComplexity追加先)
+  workflow-harness/mcp-server/src/tools/archgate.ts, source, N-18/N-21の変更対象(comment_ratio/matchGlob export追加先)
+  workflow-harness/mcp-server/src/tools/linter-runner.ts, source, N-18の変更対象(runArchGateQuickCheck/countCommentLines追加先)
+
+next:
+  criticalDecisions: "REQ-1(classifyComplexity純粋関数設計)とREQ-6(sanitizeTaskName許可文字regex)が実装の基盤を決定する。REQ-3(matchGlob export化)はarchgate.tsの変更範囲を最小化する。REQ-4(memfs StateManager)はE2Eテストのモック戦略を確定する。"
+  readFiles: "retry.ts, archgate.ts, linter-runner.ts, manager-write.ts, handler-shared.ts, handler.ts, post-tool-lint.sh, dod.ts, defs-a.ts, dod-types.ts"
+  warnings: "REQ-3のmatchGlob export化はarchgate.tsの公開APIを拡張するため既存importの影響確認が必要。REQ-7の入力長制限はhandleHarnessStartの既存テスト(handler-start.test.ts)にmaxLength超過テストケースの追加が必要。Windows環境(MSYS_NT)でのpost-tool-lint.sh内nodeパス解決に注意。"

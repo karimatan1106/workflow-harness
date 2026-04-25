@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> scope_definition
+    scope_definition --> research
+    research --> requirements
+    requirements --> planning
+    planning --> test_design
+    test_design --> test_impl
+    test_impl --> implementation
+    implementation --> commit
+    commit --> completed

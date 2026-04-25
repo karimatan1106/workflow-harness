@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph Orchestrator["Orchestrator (Main Claude)"]
+        Start[タスク開始] --> WF_Start[workflow_start]
+        WF_Start --> GetPhase[現在フェーズ取得]
+        GetPhase --> CheckPhaseType{フェーズタイプ?}
+
+        CheckPhaseType -->|単一| SinglePhase
+        CheckPhaseType -->|並列| ParallelPhase
+        CheckPhaseType -->|完了| End[タスク完了]
+
+        subgraph SinglePhase["単一フェーズ実行"]
+            S1[プロンプト準備] --> S2[Task tool呼び出し]
+            S2 --> S3[結果待機]
+            S3 --> S4{成功?}
+            S4 -->|Yes| S5[workflow_next]
+            S4 -->|No| S6[エラー処理]
+            S6 --> S7{再実行?}
+            S7 -->|Yes| S1
+            S7 -->|No| ErrorEnd[中断]
+        end
+
+        subgraph ParallelPhase["並列フェーズ実行"]
+            P1[サブフェーズ特定] --> P2[複数Task同時起動]
+            P2 --> P3[全結果待機]
+            P3 --> P4{全成功?}
+            P4 -->|Yes| P5[workflow_complete_sub x N]
+            P5 --> P6[workflow_next]
+            P4 -->|No| P7[失敗サブフェーズ特定]
+            P7 --> P8{再実行?}
+            P8 -->|Yes| P2
+            P8 -->|No| ErrorEnd
+        end
+
+        S5 --> GetPhase
+        P6 --> GetPhase
+    end
+
+    subgraph Subagent["subagent"]
+        SA1[起動] --> SA2[入力ファイル読み込み]
+        SA2 --> SA3[フェーズ作業実行]
+        SA3 --> SA4[成果物書き出し]
+        SA4 --> SA5[結果返却]
+    end
+
+    S2 -.->|起動| SA1
+    SA5 -.->|結果| S3

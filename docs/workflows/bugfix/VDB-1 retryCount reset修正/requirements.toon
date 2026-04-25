@@ -1,0 +1,26 @@
+phase: requirements
+taskId: c17eeac4-7e5c-4b57-a1ac-16744ac776bb
+ts: "2026-03-02T10:00:00+09:00"
+decisions[5]{id,statement,rationale}:
+  REQ-001,resetTask に state.retryCount = {} を追加してリトライカウンターを全クリアする,resetTask は completedPhases と subPhaseStatus をクリアするが retryCount の初期化がなくリセット後も旧カウントが残存してハーネスがブロックされるため
+  REQ-002,goBack に state.retryCount = {} を追加してフェーズロールバック時にリトライカウンターを全クリアする,goBack はフェーズ差し戻し処理を行うが retryCount がそのまま残り差し戻し先フェーズが即座にブロックされるため
+  REQ-003,差し戻し先フェーズのみではなく全フェーズの retryCount を全クリアする,全クリアのほうが差し戻し先フェーズの選択ロジックより単純で誤りが少なく差し戻し後は必ずクリーンな状態から再開できるため
+  REQ-004,manager-lifecycle.test.ts に retryCount クリアを検証する新規テストを2件追加する,既存テスト群は retryCount のクリアを検証しておらず今回のバグを検出できない状態にあるため
+  REQ-005,types.ts の型定義および harness_next のリトライ判定ロジックは変更しない,修正対象は manager.ts 内の初期化漏れのみであり公開 API や型定義の変更は今回のスコープ外とするため
+artifacts[2]{path,role,summary}:
+  docs/workflows/VDB-1 retryCount reset修正/requirements.md,spec,要件定義
+  docs/workflows/VDB-1 retryCount reset修正/requirements.toon,report,TOONチェックポイント
+acceptanceCriteria[4]{id,description}:
+  AC-1,harness_reset 後に同一フェーズで retryCount が 0 から再開されること
+  AC-2,harness_back 後に同一フェーズで retryCount が 0 から再開されること
+  AC-3,npm run build が終了コード 0 で完了すること
+  AC-4,npm test が全テスト通過で終了コード 0 を返すこと
+notInScope[5]:
+  types.ts の retryCount フィールド型定義変更
+  harness_next のリトライ判定ロジック変更
+  retryCount 履歴の永続化機能追加
+  差し戻し先フェーズのみをクリアする選択的初期化ロジックの実装
+  harness_reset および harness_back の MCP ツールレイヤー（ハンドラー関数）の変更
+openQuestions[0]:
+next:
+  readFiles[1]: workflow-harness/mcp-server/src/state/manager.ts

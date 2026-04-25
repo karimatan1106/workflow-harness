@@ -1,0 +1,18 @@
+stateDiagram-v2
+    Start --> TemplateRead: 対象ファイル開く
+
+    TemplateRead --> ReplacementEdit: 行番号と前後文脈確認
+
+    ReplacementEdit --> BuildCompile: 「4項目」を「5項目」に置換\n5個のOK例を追加記述
+
+    BuildCompile --> BuildSuccess: npm run build実行
+
+    BuildSuccess --> Verification: コンパイル成功\ndist/phases/definitions.js更新確認
+
+    Verification --> End: MCPサーバー再起動\nworkflow_status正常応答確認
+
+    BuildCompile --> BuildError: コンパイルエラー発生
+
+    BuildError --> ErrorFix: シングルクォート・エスケープ構文確認
+
+    ErrorFix --> BuildCompile: 構文を修正して再実行

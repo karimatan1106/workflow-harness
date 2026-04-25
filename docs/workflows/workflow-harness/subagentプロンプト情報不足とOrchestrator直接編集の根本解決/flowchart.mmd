@@ -1,0 +1,22 @@
+flowchart TD
+    A("修正プロセス開始") --> B("CLAUDE.md読み込み<br/>現状確認")
+    B --> C("FR-1: 禁止パターン<br/>完全リスト追加<br/>CLAUDE.md「成果物品質要件」セクション")
+    C --> D("FR-2: 8ルール<br/>正規表現パターン付記<br/>CLAUDE.md「重複行禁止」セクション")
+    D --> E("FR-6: ルール21<br/>エスカレーション手順追加<br/>CLAUDE.md「AIへの厳命」セクション")
+    E --> F("definitions.ts読み込み<br/>現状確認")
+    F --> G("FR-3: requirements・planning<br/>subagentTemplate拡張<br/>必須セクション名と最低行数指示")
+    G --> H("FR-4: buildPrompt パス警告<br/>セクション1・セクション9強化<br/>docsDir値を具体的に明示")
+    H --> I("FR-5: Bash代替ツール案内<br/>拡充<br/>Read/Write/Glob/Grep対応表")
+    I --> J("FR-7: code_review<br/>subagentTemplate拡張<br/>設計書4ファイル読み込み指示")
+    J --> K("npm run build実行<br/>TypeScriptトランスパイル")
+    K --> L{"ビルド成功？"}
+    L -->|失敗| M("ビルドエラー分析<br/>修正実施")
+    M --> K
+    L -->|成功| N("dist/*.js更新日時確認<br/>変更反映確認")
+    N --> O("MCPサーバー再起動<br/>キャッシュクリア")
+    O --> P("workflow_statusで<br/>フェーズ確認")
+    P --> Q("三者間整合性確認<br/>artifact-validator/definitions/CLAUDE.md")
+    Q --> R{"整合性確認<br/>OK？"}
+    R -->|問題発見| S("問題箇所修正<br/>MCPサーバー再起動")
+    S --> Q
+    R -->|OK| T("修正プロセス完了")

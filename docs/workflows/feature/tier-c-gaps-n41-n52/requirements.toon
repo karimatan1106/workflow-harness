@@ -1,0 +1,49 @@
+phase: requirements
+task: tier-c-gaps-n41-n52
+intent: "Tier C N-41〜N-52(12項目)のスキャフォールド・設定テンプレート・MVHロードマップ・LLM品質ゲートを実装する"
+
+functionalRequirements[5]{id,title,description,items,priority}:
+  F-001,スキャフォールドファイル作成,"N-41〜N-43(E2Eパターン)とN-45〜N-49(インフラ設定)の設定テンプレートを型安全なTypeScript/YAML/Regoで作成する","N-41 N-42 N-43 N-45 N-46 N-47 N-48 N-49",must
+  F-002,MVHロードマップトラッカー,"17マイルストーン4ステージのMVH成熟度を追跡するTypeScriptモジュールを実装し、進捗集計関数を提供する",N-50,must
+  F-003,LLM品質ゲート,"5メトリクスの品質閾値を定義し、スコア評価関数(pass/fail判定)を提供する",N-51,must
+  F-004,EU AI Actチェックリスト,"高リスクAIシステム要件5条文の準拠状況を構造化JSONで記録する",N-52,must
+  F-005,Codex互換性確認,"既存AGENTS.mdのCodex発見可能性を確認し必要に応じ更新する",N-44,should
+
+acceptanceCriteria[5]{id,criterion,verificationMethod,relatedReq}:
+  AC-1,"9個のスキャフォールドファイル(N-41〜N-43/N-45〜N-49)が所定パスに存在しTypeScriptコンパイルエラーがないこと",ファイル存在確認+tsc --noEmit,F-001
+  AC-2,"MVHロードマップが17マイルストーン4ステージを持ちgetMVHProgress()が正確な集計を返すこと",vitest mvh-roadmap.test.ts,F-002
+  AC-3,"LLM品質ゲートが5メトリクスを持ちevaluateGates()が閾値判定を正確に行うこと",vitest llm-quality-gates.test.ts,F-003
+  AC-4,"EU AI Actチェックリストが5条文の準拠状況をJSON形式で記録していること",JSONスキーマ検証,F-004
+  AC-5,"既存テストスイートにリグレッションがないこと",vitest run(全テスト),F-001/F-002/F-003
+
+nonFunctionalRequirements[3]{id,category,requirement}:
+  NFR-01,ファイルサイズ,全ファイル200行以下
+  NFR-02,型安全性,"TypeScriptスキャフォールドはas const/export constで型推論を有効化"
+  NFR-03,独立性,"スキャフォールドファイルは既存コードに依存せず単独でインポート可能"
+
+designConstraints[3]{id,constraint,source}:
+  DC-01,"スキャフォールドはexport const + as constパターンで型安全な設定を提供",SD-01(scope-definition)
+  DC-02,"N-50/N-51はsrc/tools/配下に配置しvitest単体テストを付与",SD-02(scope-definition)
+  DC-03,"N-52はtests/safety/配下にJSON形式で配置",SD-03(scope-definition)
+
+notInScope[3]{item,reason}:
+  スキャフォールドの実行テスト,外部インフラ(ブラウザ/Docker/OPA等)が未整備
+  promptfoo連携の実装,N-38で別途スキャフォールド済み
+  EU AI Act汎用AIモデル要件,高リスクAIシステム要件に限定
+
+decisions[5]{id,statement,rationale}:
+  REQ-01,"AC粒度はカテゴリ単位(スキャフォールド/MVH/LLM/EU)とする","12項目個別のACは冗長。カテゴリ単位で効率的に検証"
+  REQ-02,"AC-5でリグレッション不在を全テスト実行で確認する","新規ファイル追加が既存テストに影響しないことを保証"
+  REQ-03,"スキャフォールドのTypeScriptファイルはany型を許容する","Playwright等の外部型定義が利用不可。スキャフォールドの目的は構造定義"
+  REQ-04,"N-44はファイル確認のみとし新規作成は行わない","既存AGENTS.mdが存在する場合は変更不要"
+  REQ-05,"テストファイルはsrc/__tests__/配下に配置しvitest標準パターンに準拠する","既存テストファイルと同一ディレクトリ構造を維持"
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/tier-c-gaps-n41-n52/requirements.toon,deliverable,要件定義。AC5件/NFR3件/制約3件
+  docs/workflows/tier-c-gaps-n41-n52/research.toon,input,リサーチ結果
+  docs/workflows/tier-c-gaps-n41-n52/scope-definition.toon,input,スコープ定義
+
+next:
+  criticalDecisions: REQ-01(AC粒度カテゴリ単位) REQ-03(any型許容) REQ-05(src/__tests__/配置)
+  readFiles: workflow-harness/mcp-server/src/tools/ workflow-harness/mcp-server/src/__tests__/
+  warnings: AC-5のリグレッションテストは全テスト実行のため時間がかかる可能性あり

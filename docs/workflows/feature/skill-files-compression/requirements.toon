@@ -1,0 +1,73 @@
+task: skill-files-compression
+phase: requirements
+status: complete
+timestamp: 2026-03-07T20:30:00+09:00
+
+functionalRequirements[7]{id,description,source}:
+  REQ-F01, workflow-subagent.md→workflow-execution.mdにリネームしMCPテンプレート96行(MT-01~03)を全削除, SD-02/SD-04
+  REQ-F02, workflow-execution.mdにsubagent type/model表とphase別edit制限表のみ残す(推定56行), SD-04/R-04
+  REQ-F03, workflow-docs-structure.md+workflow-docs-phases.mdをworkflow-docs.mdに統合し重複ツリー25行(SF-07)を排除, SD-05/R-05
+  REQ-F04, CLAUDE.mdとの完全重複6箇所(OV-01/02/05/07/09/12)を削除する, SD-01/R-02
+  REQ-F05, CLAUDE.mdとの実質重複6箇所(OV-03/04/06/08/10/11)を「CLAUDE.md SecN参照」に置換する, SD-01/R-02
+  REQ-F06, スキルファイル間重複8箇所(SF-01~08)を単一ソースに一元化する(bash categories→rules.md / DoD→gates.md / context handoff→execution.md), SD-03/R-01
+  REQ-F07, 全ファイルの説明的散文を箇条書きに変換し1行あたり情報密度を高める, SD-08/R-07
+
+nonFunctionalRequirements[5]{id,description,source}:
+  REQ-N01, 全スキルファイルが各200行以下であること, AC-01
+  REQ-N02, 圧縮後の総行数が1000行以下(40%以上削減)であること, AC-06
+  REQ-N03, 圧縮によりハーネスの動作が変わらないこと(情報の削除ではなく重複の排除), NFR-01
+  REQ-N04, 各ファイルの冒頭にCLAUDE.mdの該当セクション番号への参照を記載すること, NFR-02
+  REQ-N05, 圧縮後のファイルがMarkdown形式を維持すること(TOON変換は対象外), NFR-03
+
+decisions[7]{id,statement,rationale}:
+  REQ-D01, サブディレクトリ分割は不可でありファイル統合+行数削減の二軸で圧縮する, Claude Codeスキルシステムはフラット構造のみ対応しharness/sub/配下はロード対象外(R-01確認済み)
+  REQ-D02, CLAUDE.mdを唯一の権威仕様とし全スキルファイルから重複情報を排除する, CLAUDE.md(151行)は常時ロードされる権威仕様. スキルファイルはオンデマンドロードのため二重保持はトークン浪費+不整合リスク
+  REQ-D03, MCPサーバーが動的生成するテンプレート3箇所(97行)は全削除しエラー種別→改善要求変換表(10行)のみ保持する, buildSubagentPromptがSUMMARY_SECTION_RULE/EXIT_CODE_RULE/bashCategoryHelpを動的注入するため静的コピーは更新漏れの原因
+  REQ-D04, workflow-subagent.md→workflow-execution.mdへのリネームと130行削減を行う, テンプレート97行+bash重複10行+retry重複15行を除去すると残り56行. ファイル名もexecutionが実態に合う
+  REQ-D05, docs-structure+docs-phasesの統合により1ファイル200行以内に収める, 両ファイル合計384行中重複例示約100行. 統合により相互参照が不要になる
+  REQ-D06, workflow-operations.mdは独立ファイルとして維持する, テスト配置・MCP再起動・パッケージインストールは運用固有でありworkflow-rules.mdの「ルール」とは性質が異なる. 検索性を優先
+  REQ-D07, workflow-phases.mdのPhase TableをCLAUDE.md Sec2参照に置換し作業説明(90行)のみ残す, Phase TableはCLAUDE.md Sec2とregistry.tsの両方と重複. 作業説明のみがスキルファイル固有の価値
+
+acceptanceCriteria[6]{id,description}:
+  AC-1, 全スキルファイルが200行以下であること(wc -lで計測)
+  AC-2, CLAUDE.mdとの重複記述OV-01~12の全箇所が削除または「CLAUDE.md SecN参照」に置換されていること
+  AC-3, スキルファイル間重複SF-01~08が単一ソースに一元化されていること
+  AC-4, MCPテンプレート重複MT-01~03の該当行が存在しないこと(grepで確認)
+  AC-5, SKILL.mdのファイルインデックスが圧縮後のファイル構成(9ファイル)と一致すること
+  AC-6, 圧縮後の総行数が1000行以下(40%以上削減)であること(wc -l合計で確認)
+
+notInScope[4]{id,item}:
+  OOS-01, CLAUDE.md自体の編集(権威仕様は変更しない)
+  OOS-02, MCPサーバーコード変更(テンプレート生成ロジックは対象外)
+  OOS-03, スキルファイルのTOON形式変換(Markdown形式を維持)
+  OOS-04, 親リポSKILL.mdの3-axis intent analysis差分のサブモジュールへのバックポート
+
+openQuestions: なし
+
+fileTransformPlan[10]{id,before,after,action,estimatedLines}:
+  FT-01, SKILL.md(88行), SKILL.md, ファイルインデックス更新(11→9ファイル)+散文圧縮, 75
+  FT-02, workflow-phases.md(154行), workflow-phases.md, Phase Table削除(CLAUDE.md Sec2参照)+散文圧縮, 100
+  FT-03, workflow-orchestrator.md(159行), workflow-orchestrator.md, OV-07/08重複削除+散文圧縮, 110
+  FT-04, workflow-gates.md(155行), workflow-gates.md, OV-09/10重複削除+DoD一元化, 110
+  FT-05, workflow-rules.md(123行), workflow-rules.md, OV-03~06重複削除+bash/retry一元化受入, 120
+  FT-06, workflow-subagent.md(186行), workflow-execution.md, リネーム+テンプレート97行削除+重複25行削除, 56
+  FT-07, workflow-operations.md(122行), workflow-operations.md, MCP情報をCLAUDE.md参照化+散文圧縮, 60
+  FT-08, workflow-project-structure.md(117行), workflow-project-structure.md, コード例簡潔化+散文圧縮, 90
+  FT-09, workflow-api-standards.md(152行), workflow-api-standards.md, コード例簡潔化+散文圧縮, 120
+  FT-10, "workflow-docs-structure.md(186行)+workflow-docs-phases.md(198行)", workflow-docs.md, 2ファイル統合+重複ツリー排除+散文圧縮, 180
+
+estimatedTotals:
+  fileCount: 9(11から2減)
+  totalLines: 1021(1640から38%削減)
+  deletedFiles: workflow-subagent.md(→execution.mdにリネーム) / workflow-docs-structure.md / workflow-docs-phases.md(→docs.mdに統合)
+  newFiles: workflow-execution.md / workflow-docs.md
+
+artifacts[3]{path,role,summary}:
+  docs/workflows/skill-files-compression/requirements.toon, spec, 機能要件7件+非機能要件5件+受入基準6件+ファイル変換計画9件の要件定義
+  docs/workflows/skill-files-compression/research.toon, input, 重複分析結果(CLAUDE.md重複12箇所/MCPテンプレート3箇所/ファイル間重複8箇所)
+  docs/workflows/skill-files-compression/scope-definition.toon, input, スコープ定義(9決定/6受入基準/3スコープ外)
+
+next:
+  criticalDecisions[3]: REQ-D02(CLAUDE.md権威仕様として重複全排除), REQ-D04(subagent→execution.mdリネーム+130行削減), REQ-D05(docs2ファイル統合)
+  readFiles[5]: .claude/skills/harness/workflow-subagent.md, .claude/skills/harness/workflow-docs-structure.md, .claude/skills/harness/workflow-docs-phases.md, .claude/skills/harness/workflow-orchestrator.md, workflow-harness/CLAUDE.md
+  warnings[2]: 推定合計1021行は目標1000行をわずかに超過するため実装フェーズで追加圧縮が必要(api-standards/rules/gates各10行追加削減で達成可能), 圧縮後のwc -l合計が1000行を超える場合はworkflow-operations.mdのworkflow-rules.md吸収を再検討

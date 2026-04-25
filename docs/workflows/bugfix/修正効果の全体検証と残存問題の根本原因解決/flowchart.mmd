@@ -1,0 +1,67 @@
+## サマリー
+
+本フローチャートは3つの修正タスク（FR-1・FR-2・FR-3）の処理フローを示す。
+FR-1はMEMORY.md内の2箇所（80行目・94～96行目）の記述更新である。
+FR-2はnext.ts内のサブフェーズループに対してsubagentTemplate・content・claudeMdSectionsフィールドを削除する処理を追加する。
+FR-3はdefinitions.ts内の3つのサブエージェントテンプレート（manual_test・performance_test・e2e_test）に評価結論フレーズの重複回避ガイダンスを追加する。
+各修正後のビルド・再起動手順も含む。
+
+---
+
+## フローチャート
+
+本フローチャートは修正全体の処理フローを示す。修正順序は FR-1 → FR-2 → FR-3 となり、FR-1 はドキュメント修正のみで再起動不要だが、FR-2 と FR-3 はコアモジュール変更のため npm run build と MCP サーバー再起動が必須である。各修正後の効果検証ステップも含まれている。
+
+```mermaid
+flowchart TD
+    Start([修正開始]) --> FR1Start{FR-1 実行}
+
+    FR1Start -->|ドキュメント修正| FR1Task["MEMORY.md 編集<br/>80行目: workflow_status削除<br/>94～96行目: テンプレート取得経路更新"]
+    FR1Task --> FR1Check["修正内容確認<br/>ドキュメント内容の一貫性検証"]
+    FR1Check --> FR1End{修正完了}
+    FR1End -->|OK| FR2Start{FR-2 実行}
+    FR1End -->|NG| FR1Task
+
+    FR2Start -->|コード修正| FR2Task["next.ts 編集<br/>606～614行のループ処理変更<br/>subagentTemplate削除処理追加<br/>content削除処理追加<br/>claudeMdSections削除処理追加"]
+    FR2Task --> FR2Build["npm run build 実行<br/>dist/tools/next.js トランスパイル"]
+    FR2Build --> FR2Verify["ビルド成功確認<br/>dist/tools/next.js更新日時確認"]
+    FR2Verify --> FR2Restart["MCP サーバー再起動<br/>Claude Desktop再起動"]
+    FR2Restart --> FR2Check["workflow_status実行<br/>フェーズ確認"]
+    FR2Check --> FR2Test["parallel_verification遷移テスト<br/>レスポンスサイズ確認 15K文字以下"]
+    FR2Test --> FR2End{修正完了}
+    FR2End -->|OK| FR3Start{FR-3 実行}
+    FR2End -->|NG| FR2Task
+
+    FR3Start -->|テンプレート追記| FR3Task1["manual_test テンプレート追記<br/>評価結論フレーズ重複回避ガイダンス"]
+    FR3Task1 --> FR3Task2["performance_test テンプレート追記<br/>計測対象の一意化ガイダンス"]
+    FR3Task2 --> FR3Task3["e2e_test テンプレート追記<br/>シナリオ検証結論の一意化ガイダンス"]
+    FR3Task3 --> FR3Build["npm run build 実行<br/>dist/phases/definitions.js トランスパイル"]
+    FR3Build --> FR3Verify["ビルド成功確認<br/>dist/phases/definitions.js更新日時確認"]
+    FR3Verify --> FR3Restart["MCP サーバー再起動<br/>Claude Desktop再起動"]
+    FR3Restart --> FR3Check["workflow_status実行<br/>フェーズ確認"]
+    FR3Check --> FR3Test["テンプレート更新確認<br/>3テンプレートのガイダンス反映確認"]
+    FR3Test --> FR3End{修正完了}
+    FR3End -->|OK| AllComplete([全修正完了])
+    FR3End -->|NG| FR3Task1
+
+    style Start fill:#90EE90
+    style AllComplete fill:#90EE90
+    style FR1Task fill:#87CEEB
+    style FR2Task fill:#87CEEB
+    style FR3Task1 fill:#87CEEB
+    style FR2Build fill:#FFB6C1
+    style FR2Restart fill:#FFB6C1
+    style FR3Build fill:#FFB6C1
+    style FR3Restart fill:#FFB6C1
+```
+
+---
+
+## フロー説明
+
+修正全体の処理は3つのメインタスクから構成される。
+第1段階はFR-1（MEMORY.md記述更新）であり、workflow_statusとworkflow_nextの役割分担を正確に記載する。この段階ではドキュメント変更のみのためビルドと再起動は不要である。
+第2段階はFR-2（next.tsのサブフェーズスリム化）であり、parallel_verificationへの遷移時にサブフェーズのsubagentTemplate・content・claudeMdSectionsフィールドを削除する処理を追加する。コアモジュール変更のためnpm runビルド後にMCPサーバーを再起動してから効果を検証する。
+第3段階はFR-3（definitions.tsテンプレート追記）であり、manual_test・performance_test・e2e_testの各テンプレートに評価結論フレーズの重複回避ガイダンスを追加する。FR-2と同様にビルドと再起動が必須である。
+各段階の修正後には検証ステップが含まれており、修正内容が正しく反映されたことを確認してから次段階に進む設計となっている。
+
