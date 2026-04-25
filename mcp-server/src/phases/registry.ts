@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-phases.md
  */
 
-import type { PhaseConfig, PhaseName, TaskSize, ParallelGroupName } from '../state/types.js';
+import type { PhaseConfig, PhaseName, TaskSize, ParallelGroupName, WorkflowMode } from '../state/types.js';
 import { checkHearingUserResponse } from '../gates/dod-l2-hearing.js';
 
 export const PHASE_REGISTRY: Record<PhaseName, PhaseConfig> = {
@@ -106,7 +106,44 @@ export const SIZE_MINLINES_FACTOR: Record<TaskSize, number> = {
   large: 1.0,
 };
 
-export function getActivePhases(size: TaskSize): PhaseName[] {
+/** Phase列 by mode (CBR-2). express=6, standard=14, full=30 */
+export const MODE_PHASES: Record<WorkflowMode, readonly PhaseName[]> = {
+  express: [
+    'hearing',
+    'scope_definition',
+    'implementation',
+    'testing',
+    'docs_update',
+    'commit',
+  ],
+  standard: [
+    'hearing',
+    'scope_definition',
+    'research',
+    'requirements',
+    'planning',
+    'test_design',
+    'test_impl',
+    'implementation',
+    'refactoring',
+    'docs_update',
+    'code_review',
+    'testing',
+    'regression_test',
+    'commit',
+  ],
+  full: PHASE_ORDER,
+};
+
+/** Returns the active phase list for the given mode. */
+export function getModePhases(mode: WorkflowMode | undefined): readonly PhaseName[] {
+  return MODE_PHASES[mode ?? 'full'];
+}
+
+export function getActivePhases(size: TaskSize, mode?: WorkflowMode): PhaseName[] {
+  if (mode) {
+    return [...getModePhases(mode)];
+  }
   const skip = SIZE_SKIP_MAP[size];
   return PHASE_ORDER.filter((p) => !skip.includes(p));
 }
@@ -114,8 +151,9 @@ export function getActivePhases(size: TaskSize): PhaseName[] {
 export function getNextPhase(
   currentPhase: PhaseName,
   size: TaskSize,
+  mode?: WorkflowMode,
 ): PhaseName | null {
-  const active = getActivePhases(size);
+  const active = getActivePhases(size, mode);
   const idx = active.indexOf(currentPhase);
   if (idx === -1 || idx === active.length - 1) return null;
   return active[idx + 1];

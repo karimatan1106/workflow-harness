@@ -6,6 +6,7 @@
 import { execSync } from 'node:child_process';
 import type { StateManager } from '../../state/manager.js';
 import type { TaskSize } from '../../state/types.js';
+import type { WorkflowMode } from '../../state/types-core.js';
 import { PHASE_REGISTRY } from '../../phases/registry.js';
 import { respond, respondError, buildPhaseGuide, type HandlerResult } from '../handler-shared.js';
 import { recordPhaseStart } from '../metrics.js';
@@ -20,6 +21,31 @@ const AMBIGUOUS_PATTERNS = [
   'とか', 'いい感じ', '適当に', 'よしなに', 'なんか', 'てきとう',
   'ちょっと', 'いろいろ', 'そのへん', 'うまく', 'ざっくり',
 ];
+
+/** Hard-signal classifier for workflow mode (CBR-2 MVP). */
+function classifyMode(userIntent: string, files?: string[]): { mode: WorkflowMode; rationale: string } {
+  const intent = userIntent.toLowerCase();
+  const fullSignals = [
+    'migration', 'schema', 'architecture', 'security', 'auth', 'oauth', 'permission',
+    'encryption', 'breaking change', 'public api', 'production', 'deploy', 'rollout',
+  ];
+  for (const s of fullSignals) {
+    if (intent.includes(s)) return { mode: 'full', rationale: 'Hard signal: ' + s };
+  }
+  const expressSignals = ['typo', 'rename', 'format', 'lint', 'comment', 'readme', 'docs only'];
+  for (const s of expressSignals) {
+    if (intent.includes(s)) return { mode: 'express', rationale: 'Hard signal: ' + s };
+  }
+  if (files && files.length > 0 && files.length <= 2) {
+    return { mode: 'express', rationale: 'Small scope: ' + files.length + ' file(s)' };
+  }
+  const softSignals = ['fix', 'bug', '修正', 'refactor', 'feature', '追加', 'endpoint', 'validator', '緩和'];
+  let softScore = 0;
+  for (const s of softSignals) if (intent.includes(s)) softScore++;
+  if (files && files.length >= 4) softScore++;
+  if (softScore >= 2) return { mode: 'standard', rationale: 'Soft signal score: ' + softScore };
+  return { mode: 'standard', rationale: 'Default (品質側)' };
+}
 
 export async function handleHarnessStart(
   args: Record<string, unknown>,

@@ -15,6 +15,7 @@ export const TOOL_DEFS_A = [
         files: { type: 'array', items: { type: 'string' }, description: 'Scope files.' },
         dirs: { type: 'array', items: { type: 'string' }, description: 'Scope dirs.' },
         size: { type: 'string', enum: ['large'], description: 'Task size. Default: large.' },
+        mode: { type: 'string', enum: ['express', 'standard', 'full'], description: 'Workflow mode. express=6 phase, standard=14, full=30. Default: auto-classify.' },
       },
       required: ['taskName', 'userIntent'],
     },

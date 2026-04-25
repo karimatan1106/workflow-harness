@@ -4,7 +4,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry } from './types.js';
+import type { TaskState, PhaseName, TaskSize, AcceptanceCriterion, RTMEntry, ProofEntry, WorkflowMode } from './types.js';
 import type { Invariant, InvariantStatus } from './types-invariant.js';
 import { ensureHmacKeys } from '../utils/hmac.js';
 import { loadTaskFromDisk, listTasksFromDisk, gcAbandonedTasks } from './manager-read.js';
@@ -63,6 +63,14 @@ export class StateManager {
   saveTask(state: TaskState): void {
     state.updatedAt = new Date().toISOString();
     signAndPersist(state, this.hmacKey);
+  }
+
+  /** Persist workflow mode + rationale on the task state (CBR-2). */
+  setMode(taskId: string, mode: WorkflowMode, rationale: string): boolean {
+    return withTask(taskId, this.hmacKey, s => {
+      s.mode = mode;
+      s.modeRationale = rationale;
+    });
   }
 
   // Lifecycle delegates (→ manager-lifecycle.ts)

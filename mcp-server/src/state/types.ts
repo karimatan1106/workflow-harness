@@ -22,6 +22,7 @@ export type {
   PhaseConfig,
   ProofTier,
   ProjectTraits,
+  WorkflowMode,
 } from './types-core.js';
 
 export {
@@ -48,6 +49,7 @@ import type {
   Checkpoint,
   SubPhaseStatus,
   ProjectTraits,
+  WorkflowMode,
 } from './types-core.js';
 
 import type { Invariant } from './types-invariant.js';
@@ -109,6 +111,11 @@ export interface TaskState {
 
   // Project traits (dynamic doc categories)
   projectTraits?: ProjectTraits;
+
+  /** Workflow execution mode (CBR-2). Default: 'full' for backward compat. */
+  mode?: WorkflowMode;
+  /** Reason for the chosen mode (auto-classifier signal or user-explicit). */
+  modeRationale?: string;
 
   // Sprint 1-2 additions
   retryCount?: Record<string, number>;                  // RLM-1: phase name → retry count

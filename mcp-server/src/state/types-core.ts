@@ -1,5 +1,6 @@
 /** Core type definitions — @spec docs/spec/features/workflow-harness.md */
 import { z } from 'zod';
+export { type WorkflowMode, WorkflowModeSchema } from './workflow-mode.js';
 // ─── Control Levels ─────────────────────────────
 export type ControlLevel = 'L1' | 'L2' | 'L3' | 'L4';
 
@@ -17,7 +18,6 @@ export interface GateContext {
   scopeFiles: string[];
   proofLog: ProofEntry[];
 }
-
 // ─── Phase Names ────────────────────────────────
 export const PHASE_NAMES = [
   'hearing',
@@ -55,7 +55,6 @@ export const PHASE_NAMES = [
 ] as const;
 
 export type PhaseName = typeof PHASE_NAMES[number];
-
 // ─── Task Size ──────────────────────────────────
 export type TaskSize = 'large';
 
