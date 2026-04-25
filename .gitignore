@@ -19,3 +19,14 @@ mcp-server/.claude/generated-files.json
 # Runtime state (MCP server execution artifacts)
 mcp-server/.agent/
 mcp-server/workflow-harness/mcp-server/.claude/state/
+
+# vitest transient cache (CBR-2 dogfooding 
+  2026-04-25)
+**/node_modules/.vite/
+**/.vite/
+mcp-server/vitest-out.json
+
+# vitest transient cache (CBR-2 dogfooding  2026-04-25)
+**/node_modules/.vite/
+**/.vite/
+mcp-server/vitest-out.json
