@@ -199,6 +199,9 @@ function buildMarkdown(tasks) {
   for (const o of outliers.slice(0, 2)) recs.push(`- Phase "${o.phase}" P95 is ${o.ratio}x median — investigate blocking behavior`);
   if (recs.length === 0) recs.push(`- No high-confidence recommendations from current data`);
   for (const r of recs) lines.push(r);
+  lines.push(``);
+  const dispatchEntries = readDispatchLog(ROOT);
+  lines.push(...buildDispatchSection(dispatchEntries));
   return lines.join('\n') + '\n';
 }
 
@@ -218,6 +221,65 @@ function buildJson(tasks) {
     topErrors: errors.slice(0, 15).map(e => ({ check: e.check, level: e.level, total: e.total, taskCount: e.tasks.size, phases: [...e.phases].sort() })),
     outliers: findOutliers(byPhase),
   }, null, 2) + '\n';
+}
+
+function readDispatchLog(root) {
+  const p = path.join(root, '.agent', 'dispatch-log.toon');
+  if (!fs.existsSync(p)) return [];
+  let text;
+  try { text = fs.readFileSync(p, 'utf8'); } catch (_) { return []; }
+  const entries = [];
+  let cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const m = raw.match(/^\s*-\s+ts:\s*(\S+)/);
+    if (m) {
+      if (cur) entries.push(cur);
+      cur = { ts: m[1] };
+      continue;
+    }
+    if (!cur) continue;
+    const kv = raw.match(/^\s+([a-zA-Z]+):\s*(.+?)\s*$/);
+    if (kv) {
+      const [, k, v] = kv;
+      const num = Number(v);
+      cur[k] = !Number.isNaN(num) && /^\d+$/.test(v) ? num : v.replace(/^"(.*)"$/, '$1');
+    }
+  }
+  if (cur) entries.push(cur);
+  return entries;
+}
+
+function buildDispatchSection(entries) {
+  if (entries.length === 0) return ['## Token consumption (dispatch log)', '- No dispatch log entries yet (.agent/dispatch-log.toon empty or missing)', ''];
+  const lines = ['## Token consumption (dispatch log)'];
+  const total = entries.reduce((a, e) => a + (e.tokens || 0), 0);
+  const stallCount = entries.filter(e => e.result === 'stall').length;
+  const errorCount = entries.filter(e => e.result === 'error').length;
+  lines.push(`- Total dispatches: ${entries.length}`);
+  lines.push(`- Total tokens: ${total.toLocaleString()}`);
+  lines.push(`- Stall rate: ${stallCount}/${entries.length} (${(100 * stallCount / entries.length).toFixed(1)}%)`);
+  lines.push(`- Error rate: ${errorCount}/${entries.length} (${(100 * errorCount / entries.length).toFixed(1)}%)`);
+  lines.push('');
+  lines.push('### Tokens by phase');
+  const byPhase = {};
+  for (const e of entries) {
+    const ph = e.phase || 'none';
+    if (!byPhase[ph]) byPhase[ph] = { count: 0, tokens: 0, durations: [] };
+    byPhase[ph].count++;
+    byPhase[ph].tokens += e.tokens || 0;
+    if (e.durationMs) byPhase[ph].durations.push(e.durationMs);
+  }
+  lines.push('| Phase | Dispatches | Total tokens | Mean tokens | Mean duration ms |');
+  lines.push('|-------|-----------|-------------|-------------|-----------------|');
+  const phases = Object.keys(byPhase).sort((a, b) => byPhase[b].tokens - byPhase[a].tokens);
+  for (const ph of phases) {
+    const d = byPhase[ph];
+    const meanTok = Math.round(d.tokens / d.count);
+    const meanDur = d.durations.length ? Math.round(d.durations.reduce((a, b) => a + b, 0) / d.durations.length) : 0;
+    lines.push(`| ${ph} | ${d.count} | ${d.tokens.toLocaleString()} | ${meanTok.toLocaleString()} | ${meanDur.toLocaleString()} |`);
+  }
+  lines.push('');
+  return lines;
 }
 
 function main() {
@@ -241,4 +303,6 @@ module.exports = {
   percentile,
   median,
   mean,
+  readDispatchLog,
+  buildDispatchSection,
 };
