@@ -21,9 +21,13 @@ entries[N]:
 ```
 
 `result` values:
-- `ok`: agent returned and produced expected output
-- `stall`: agent returned mid-reasoning without completing the task (orchestrator's judgment based on missing report sections)
-- `error`: agent reported [FAIL] or threw
+- `ok`: agent returned and produced expected output (a "Report:" section, requested file paths, or all required step summaries)
+- `stall`: agent returned mid-reasoning. Indicators:
+  - Output ends with "Let me ...", "I'll ...", "Now I need to ...", or similar prelude phrase
+  - Output is a single paragraph with no concrete result
+  - Required "Report:" / artifact-path summary is missing
+  - Output references "let me check" / "let me look" without follow-through
+- `error`: agent reported [FAIL] / threw exception / explicitly stated blocked
 
 ## Producer
 

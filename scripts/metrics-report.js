@@ -278,6 +278,37 @@ function buildDispatchSection(entries) {
     const meanDur = d.durations.length ? Math.round(d.durations.reduce((a, b) => a + b, 0) / d.durations.length) : 0;
     lines.push(`| ${ph} | ${d.count} | ${d.tokens.toLocaleString()} | ${meanTok.toLocaleString()} | ${meanDur.toLocaleString()} |`);
   }
+  // Per-agent-type stall rates
+  const byAgent = {};
+  for (const e of entries) {
+    const t = e.agentType || 'unknown';
+    if (!byAgent[t]) byAgent[t] = { count: 0, stall: 0, error: 0 };
+    byAgent[t].count++;
+    if (e.result === 'stall') byAgent[t].stall++;
+    else if (e.result === 'error') byAgent[t].error++;
+  }
+  if (Object.keys(byAgent).length > 0) {
+    lines.push('### Outcome by agent type');
+    lines.push('| Agent type | Dispatches | Stall % | Error % |');
+    lines.push('|-----------|-----------|---------|---------|');
+    for (const [t, d] of Object.entries(byAgent).sort((a, b) => b[1].count - a[1].count)) {
+      lines.push(`| ${t} | ${d.count} | ${(100 * d.stall / d.count).toFixed(1)}% | ${(100 * d.error / d.count).toFixed(1)}% |`);
+    }
+    lines.push('');
+  }
+  // Phases with most stalls
+  const phaseStalls = {};
+  for (const e of entries) {
+    if (e.result !== 'stall') continue;
+    const ph = e.phase || 'none';
+    phaseStalls[ph] = (phaseStalls[ph] || 0) + 1;
+  }
+  const topStalls = Object.entries(phaseStalls).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (topStalls.length > 0) {
+    lines.push('### Top stall phases');
+    for (const [ph, n] of topStalls) lines.push(`- ${ph}: ${n} stall(s)`);
+    lines.push('');
+  }
   lines.push('');
   return lines;
 }
