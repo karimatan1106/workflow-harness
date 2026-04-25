@@ -50,7 +50,7 @@ export function advancePhase(taskId: string, hmacKey: string): PhaseResult {
   if (state.integrityWarning) {
     return { success: false, error: 'Task has integrity warning — write operations blocked. Re-sign or reset HMAC keys.' };
   }
-  const nextPhase = getNextPhase(state.phase, state.size);
+  const nextPhase = getNextPhase(state.phase, state.size, state.mode);
   if (!nextPhase) return { success: false, error: 'No next phase available' };
 
   const prevPhase = state.phase;
