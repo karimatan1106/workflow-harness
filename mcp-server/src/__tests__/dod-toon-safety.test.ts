@@ -7,16 +7,26 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { checkToonSafety } from '../gates/dod-l4-toon.js';
+import { PHASE_REGISTRY } from '../phases/registry.js';
 import { createTempDir, removeTempDir } from './dod-test-helpers.js';
 
 let tempDir: string;
 let docsDir: string;
+let originalResearchOutputFile: string | undefined;
 
 beforeEach(() => {
   ({ tempDir, docsDir } = createTempDir());
+  // F-204: checkToonSafety skips non-.toon files via extname guard.
+  // For tests that need the safety check to actually run, swap the
+  // research phase outputFile to a .toon path during the test.
+  originalResearchOutputFile = PHASE_REGISTRY.research.outputFile;
+  (PHASE_REGISTRY.research as { outputFile?: string }).outputFile =
+    '{docsDir}/research.toon';
 });
 
 afterEach(() => {
+  (PHASE_REGISTRY.research as { outputFile?: string }).outputFile =
+    originalResearchOutputFile;
   removeTempDir(tempDir);
 });
 
@@ -24,7 +34,7 @@ afterEach(() => {
 
 describe('Check A: colon spacing', () => {
   it('fails when key:value has no space after colon', () => {
-    writeFileSync(join(docsDir, 'research.md'), 'phase:research\ntaskId: test\n', 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), 'phase:research\ntaskId: test\n', 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(false);
     expect(result.evidence).toContain('phase:research');
@@ -32,20 +42,20 @@ describe('Check A: colon spacing', () => {
   });
 
   it('passes when key: value has space after colon', () => {
-    writeFileSync(join(docsDir, 'research.md'), 'phase: research\ntaskId: test\n', 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), 'phase: research\ntaskId: test\n', 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
   });
 
   it('does not flag URLs (http://)', () => {
-    writeFileSync(join(docsDir, 'research.md'), 'phase: research\nurl: http://example.com\n', 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), 'phase: research\nurl: http://example.com\n', 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
   });
 
   it('does not flag indented array row data', () => {
     const content = 'items[1]{id,name}:\n  1, foo:bar\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
   });
@@ -56,14 +66,14 @@ describe('Check A: colon spacing', () => {
 describe('Check B: field count mismatch', () => {
   it('passes when field count matches declaration', () => {
     const content = 'items[2]{id,name}:\n  1, foo\n  2, bar\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
   });
 
   it('fails when row has fewer fields than declared', () => {
     const content = 'items[2]{id,name,desc}:\n  1, foo\n  2, bar\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(false);
     expect(result.evidence).toContain('フィールド数 2 != 宣言数 3');
@@ -71,7 +81,7 @@ describe('Check B: field count mismatch', () => {
 
   it('respects quoted commas (does not count them as separators)', () => {
     const content = 'items[1]{id,name}:\n  1, "foo, bar"\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
   });
@@ -82,7 +92,7 @@ describe('Check B: field count mismatch', () => {
 describe('Check B+C: quoting guidance', () => {
   it('includes quoting hint when field count mismatch is detected', () => {
     const content = 'items[1]{id,name,desc}:\n  1, foo\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(false);
     expect(result.fix).toContain('"..."');
@@ -94,7 +104,7 @@ describe('Check B+C: quoting guidance', () => {
 describe('Integration', () => {
   it('passes with valid TOON content', () => {
     const content = 'phase: research\ntaskId: test-id\nitems[2]{id,name}:\n  1, foo\n  2, bar\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(true);
     expect(result.evidence).toContain('TOON pre-parse safety OK');
@@ -112,7 +122,7 @@ describe('Integration', () => {
 
   it('prioritizes Check A over Check B', () => {
     const content = 'phase:research\nitems[1]{id,name,desc}:\n  1, foo\n';
-    writeFileSync(join(docsDir, 'research.md'), content, 'utf8');
+    writeFileSync(join(docsDir, 'research.toon'), content, 'utf8');
     const result = checkToonSafety('research', docsDir, tempDir);
     expect(result.passed).toBe(false);
     expect(result.evidence).toContain('Missing space after colon');

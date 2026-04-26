@@ -36,6 +36,8 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 
 TDD Red記録: harness_record_test_result(taskId, exitCode: 1, summary: "Red phase - tests fail as expected") を使用。
 
+重要: harness_record_proof は result:false で記録すること（テスト失敗が Red 確認 の意図）。
+
 {BASH_CATEGORIES}
 {EXIT_CODE_RULE}`,
   },

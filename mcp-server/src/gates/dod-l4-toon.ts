@@ -5,6 +5,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { extname } from 'node:path';
 import { resolveProjectPath } from '../utils/project-root.js';
 import type { PhaseConfig } from '../state/types.js';
 import { PHASE_REGISTRY } from '../phases/registry.js';
@@ -82,6 +83,16 @@ export function checkToonSafety(phase: string, docsDir: string, workflowDir: str
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'No output file for this phase' };
   }
   const outputFile = resolveProjectPath(config.outputFile.replace('{docsDir}', docsDir).replace('{workflowDir}', workflowDir));
+  // F-204: MD 化により .toon 以外のファイルは TOON 検査の対象外
+  const ext = extname(outputFile).toLowerCase();
+  if (ext !== '.toon') {
+    return {
+      level: 'L4',
+      check: 'toon_safety',
+      passed: true,
+      evidence: `Skipped: outputFile is not .toon (extname=${ext || '(none)'}, non-TOON)`,
+    };
+  }
   if (!existsSync(outputFile)) {
     return { level: 'L4', check: 'toon_safety', passed: true, evidence: 'Output file not found; skipped (L1 handles)' };
   }

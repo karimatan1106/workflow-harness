@@ -3,7 +3,7 @@
  * @spec docs/spec/features/workflow-harness.md
  */
 
-import type { PhaseName } from '../state/types.js';
+import type { PhaseName, TaskState } from '../state/types.js';
 import { PHASE_REGISTRY } from './registry.js';
 import { formatLessonsForPrompt } from '../tools/reflector.js';
 import {
@@ -15,6 +15,11 @@ import {
   buildDocCategories,
   loadTraitCategories,
 } from './definitions-shared.js';
+import {
+  getEffectiveSkippedOutputs,
+  stripSkippedPhaseLines,
+  resolveAndFilterInputFiles,
+} from './definitions-mode-filter.js';
 
 export { buildDocCategories, loadTraitCategories };
 import * as skelA from './toon-skeletons-a.js';
@@ -71,15 +76,10 @@ export const OUTPUT_FILE_TO_PHASE: Record<string, string> = {
   'docs-update.md': 'docs_update',
 };
 
-function buildArtifactFirstSection(phase: string, docsDir: string): string {
+function buildArtifactFirstSection(phase: string, docsDir: string, state?: TaskState): string {
   const config = PHASE_REGISTRY[phase as keyof typeof PHASE_REGISTRY];
-  const inputFiles = config?.inputFiles ?? [];
-  if (inputFiles.length === 0) return '';
-  const resolved = inputFiles.map(f => f.replace(/\{docsDir\}/g, docsDir));
-  const artifactFiles = resolved.filter(f => {
-    const basename = f.split('/').pop() ?? '';
-    return OUTPUT_FILE_TO_PHASE[basename] !== undefined;
-  });
+  const resolved = resolveAndFilterInputFiles(config?.inputFiles ?? [], docsDir, state);
+  const artifactFiles = resolved.filter(f => OUTPUT_FILE_TO_PHASE[f.split('/').pop() ?? ''] !== undefined);
   if (artifactFiles.length === 0) return '';
   return '\n\n成果物入力(ACE)\nread: ' + artifactFiles.join(', ') + '\n';
 }
@@ -96,6 +96,7 @@ export function buildSubagentPrompt(
   projectTraits?: Record<string, boolean>,
   refinedIntent?: string,
   docPaths?: string[],
+  state?: TaskState,
 ): string {
   const def = getPhaseDefinition(phase);
   if (!def) return `# ${phase} phase\n\nNo template defined for this phase.`;
@@ -129,7 +130,10 @@ export function buildSubagentPrompt(
   prompt = prompt.replace(/\{phase\}/g, phase);
   prompt = prompt.replace(/\{docCategories\}/g, buildDocCategories(projectTraits, docPaths));
   // Prepend compact header (task info + input + output in 2 lines)
-  const inputFiles = config?.inputFiles?.map(f => f.replace(/\{docsDir\}/g, docsDir)) ?? [];
+  // Mode-aware filter: drop inputFiles produced by skipped phases (F-201 / AC-1)
+  const skippedOutputs = getEffectiveSkippedOutputs(state);
+  const rawInputFiles = (config?.inputFiles ?? []).filter(f => !skippedOutputs.has(f));
+  const inputFiles = rawInputFiles.map(f => f.replace(/\{docsDir\}/g, docsDir));
   const outputFile = config?.outputFile?.replace(/\{docsDir\}/g, docsDir) ?? '';
   const intentStr = refinedIntent ?? userIntent;
   const modeMap: Record<string, string> = { full: 'full', summary: 'sum', reference: 'ref' };
@@ -168,10 +172,12 @@ export function buildSubagentPrompt(
   }
 
   // ACE artifact-first + Reflector lessons
-  const artifactFirst = buildArtifactFirstSection(phase, docsDir);
+  const artifactFirst = buildArtifactFirstSection(phase, docsDir, state);
   if (artifactFirst) prompt += artifactFirst;
   const lessons = formatLessonsForPrompt(phase);
   if (lessons) prompt += lessons;
 
-  return prompt;
+  // Final mode-aware sweep: drop any remaining lines that reference skipped-phase
+  // outputs (e.g. hard-coded 「入力」 entries embedded in subagentTemplate strings).
+  return stripSkippedPhaseLines(prompt, state);
 }

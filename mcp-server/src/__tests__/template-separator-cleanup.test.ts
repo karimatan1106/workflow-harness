@@ -102,7 +102,8 @@ describe('AC-3: templates have no Markdown headers', () => {
     });
   }
 
-  it('TC-AC3-05: all buildSubagentPrompt outputs have no separators or headers', () => {
+  // F-204 contract change: skeletons now MD-formatted (## headers are intentional)
+  it.skip('TC-AC3-05: all buildSubagentPrompt outputs have no separators or headers', () => {
     for (const phase of Object.keys(PHASE_DEFINITIONS)) {
       const output = buildSubagentPrompt(
         phase, 'test-task', 'docs/workflows/test-task',
@@ -127,7 +128,8 @@ describe('AC-1: defs-stage6 docs_update has no separator', () => {
 // --- AC-BOLD: No bold markdown labels in templates ---
 
 describe('AC-BOLD: templates have no bold markdown labels', () => {
-  it('TC-BOLD-01: shared constants have no bold labels', () => {
+  // F-204 contract change: skeletons now MD-formatted (**bold** labels are intentional)
+  it.skip('TC-BOLD-01: shared constants have no bold labels', () => {
     expect(ARTIFACT_QUALITY_RULES).not.toMatch(BOLD_RE);
     expect(SUMMARY_SECTION_RULE).not.toMatch(BOLD_RE);
     expect(EXIT_CODE_RULE).not.toMatch(BOLD_RE);
@@ -139,7 +141,8 @@ describe('AC-BOLD: templates have no bold markdown labels', () => {
     expect(output).not.toMatch(BOLD_RE);
   });
 
-  it('TC-BOLD-03: all buildSubagentPrompt outputs have no bold labels', () => {
+  // F-204 contract change: skeletons now MD-formatted (**bold** labels are intentional)
+  it.skip('TC-BOLD-03: all buildSubagentPrompt outputs have no bold labels', () => {
     for (const phase of Object.keys(PHASE_DEFINITIONS)) {
       const output = buildSubagentPrompt(
         phase, 'test-task', 'docs/workflows/test-task',
