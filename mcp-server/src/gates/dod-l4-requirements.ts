@@ -163,11 +163,50 @@ export function checkOpenQuestions(state: TaskState, phase: string, docsDir: str
   if (!oqKey) {
     return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'requirements.md is missing openQuestions section\n修正方法: requirements.md に ## openQuestions セクションを追加してください。未解決の場合は空にしてください。', fix: 'openQuestionsセクションを追加してください。不明点がなければ空セクション。', example: '## openQuestions\n' };
   }
+  // F-003 / AC-3: structured judgement — count Markdown list items (`- ` prefix) only.
+  // Prose content (e.g. "未解決事項なし。") in this section is ignored. Keyword matching
+  // ("未解決", "TBD", literal "なし") is intentionally removed to prevent false positives.
   const content = req.sections[oqKey];
-  // Empty or "なし" means no open questions (resolved)
-  const hasOpen = content !== '' && content !== 'なし' && content.trim().length > 0;
-  if (hasOpen) {
-    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: 'openQuestionsに未解決の質問が残っています。全て解決するか、セクションを空にしてください。', fix: 'openQuestionsの未解決質問を解決してください。' };
+  const listItems = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => /^-\s+/.test(line));
+  const openItems = listItems.filter(item => isOpenQuestion(item));
+  if (openItems.length > 0) {
+    return { level: 'L4', check: 'open_questions_section', passed: false, evidence: `openQuestionsに未解決の質問が${openItems.length}件残っています。全て解決するか、セクションを空にしてください。`, fix: 'openQuestionsの未解決質問を解決してください。' };
   }
-  return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'openQuestions section found in requirements.md with no open items' };
+  return { level: 'L4', check: 'open_questions_section', passed: true, evidence: 'openQuestions section found in requirements.md with no open list items' };
+}
+
+/**
+ * F-007 / AC-7: Hearing consistency check.
+ * Verifies AskUserQuestion is mentioned in both .claude/agents/hearing-worker.md and
+ * mcp-server/src/phases/defs-stage0.ts (hearing template).
+ *
+ * If contents are passed as arguments, they are used directly (test path).
+ * Otherwise, both files are read from disk via project-root resolution.
+ *
+ * @param hearingWorkerMd optional content of .claude/agents/hearing-worker.md
+ * @param defsStage0Ts optional content of mcp-server/src/phases/defs-stage0.ts
+ */
+export function checkHearingConsistency(hearingWorkerMd?: string, defsStage0Ts?: string): { passed: boolean; evidence: string } {
+  const hearingPath = '.claude/agents/hearing-worker.md';
+  const defsPath = 'mcp-server/src/phases/defs-stage0.ts';
+  const hearingContent = hearingWorkerMd ?? (() => {
+    const p = resolveProjectPath(hearingPath);
+    return existsSync(p) ? readFileSync(p, 'utf8') : '';
+  })();
+  const defsContent = defsStage0Ts ?? (() => {
+    const p = resolveProjectPath(defsPath);
+    return existsSync(p) ? readFileSync(p, 'utf8') : '';
+  })();
+  const hearingHas = hearingContent.includes('AskUserQuestion');
+  const defsHas = defsContent.includes('AskUserQuestion');
+  if (hearingHas && defsHas) {
+    return { passed: true, evidence: 'OK: both files mention AskUserQuestion' };
+  }
+  const missing: string[] = [];
+  if (!hearingHas) missing.push(hearingPath);
+  if (!defsHas) missing.push(defsPath);
+  return { passed: false, evidence: `AskUserQuestion missing in: ${missing.join(', ')}` };
 }

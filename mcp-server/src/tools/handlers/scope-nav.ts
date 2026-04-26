@@ -6,11 +6,22 @@
 import type { StateManager } from '../../state/manager.js';
 import type { PhaseName, ProofEntry, ControlLevel } from '../../state/types.js';
 import { runDoDChecks } from '../../gates/dod.js';
-import { PHASE_REGISTRY } from '../../phases/registry.js';
+import { PHASE_REGISTRY, PHASE_ORDER } from '../../phases/registry.js';
 import { getPhaseDefinition } from '../../phases/definitions.js';
 import { buildRetryPrompt, type RetryContext } from '../retry.js';
 import { stashFailure, promoteStashedFailure } from '../reflector.js';
 import { respond, respondError, validateSession, PARALLEL_GROUPS, PHASE_APPROVAL_GATES, type HandlerResult } from '../handler-shared.js';
+
+/**
+ * Returns phases that come AFTER targetPhase in PHASE_ORDER.
+ * targetPhase itself is NOT included (rollback target's own approval is preserved).
+ * Used by handleHarnessBack cascade to scope approval deletion to downstream phases only.
+ */
+function phasesAfter(targetPhase: string): string[] {
+  const idx = PHASE_ORDER.indexOf(targetPhase as (typeof PHASE_ORDER)[number]);
+  if (idx === -1) return [];
+  return PHASE_ORDER.slice(idx + 1) as string[];
+}
 
 export async function handleHarnessSetScope(args: Record<string, unknown>, sm: StateManager): Promise<HandlerResult> {
   const taskId = String(args.taskId ?? '');
@@ -99,11 +110,13 @@ export async function handleHarnessBack(args: Record<string, unknown>, sm: State
   }
   const cascadeReapproved: string[] = [];
   const cascadeFailed: { phase: string; reason: string }[] = [];
-  // deleteApprovals for rolled-back gate phases during cascade
+  // deleteApprovals only for gate phases AFTER targetPhase (F-002 / AC-2).
+  // targetPhase 自体および以前の approval は保持し、再承認ループを防ぐ。
   const refreshed = sm.loadTask(taskId);
   if (refreshed?.approvals) {
-    const gatePhases = Object.keys(PHASE_APPROVAL_GATES);
-    for (const gp of gatePhases) {
+    const gateKeys = new Set(Object.keys(PHASE_APPROVAL_GATES));
+    const downstreamGatePhases = phasesAfter(targetPhase).filter((p) => gateKeys.has(p));
+    for (const gp of downstreamGatePhases) {
       if (refreshed.approvals[PHASE_APPROVAL_GATES[gp]]) {
         delete refreshed.approvals[PHASE_APPROVAL_GATES[gp]];
         cascadeReapproved.push(gp);

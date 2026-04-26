@@ -35,6 +35,35 @@ AGENT_ID=$(echo "$INPUT" | grep -o '"agent_id":"[^"]*"' | head -1 | sed 's/"agen
 # Subagent: full tool access (Coordinator, Worker, Explore, etc.)
 # ============================================================
 if [ -n "$AGENT_ID" ]; then
+  # Coordinator Write: enforce allowedWriteExt whitelist from agent metadata
+  if [ "$AGENT_ID" = "coordinator" ] && [ "$TOOL_NAME" = "Write" ]; then
+    AGENT_MD=".claude/agents/coordinator.md"
+    if [ -f "$AGENT_MD" ]; then
+      ALLOWED_RAW=$(grep -m1 '^allowedWriteExt:' "$AGENT_MD" | sed 's/^allowedWriteExt: *//' | tr -d '\r' || echo "")
+      if [ -n "$ALLOWED_RAW" ]; then
+        FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | sed 's/"file_path":"//;s/"//g')
+        # Strip [ ] and split by comma; normalize tokens
+        ALLOWED_LIST=$(echo "$ALLOWED_RAW" | tr -d '[] ' | tr ',' '\n')
+        EXT=".${FILE_PATH##*.}"
+        MATCHED=0
+        while IFS= read -r token; do
+          [ -z "$token" ] && continue
+          if [ "$token" = "$EXT" ]; then
+            MATCHED=1
+            break
+          fi
+        done <<< "$ALLOWED_LIST"
+        if [ "$MATCHED" -eq 1 ]; then
+          log_trace_event "ALLOW" "$TOOL_NAME" "coordinator" "ext-whitelist" "$FILE_PATH"
+          exit 0
+        else
+          log_trace_event "BLOCK" "$TOOL_NAME" "coordinator" "ext-not-whitelisted" "$FILE_PATH"
+          echo "BLOCKED: coordinator Write not allowed for extension '$EXT' (allowed: $ALLOWED_RAW)"
+          exit 2
+        fi
+      fi
+    fi
+  fi
   log_trace_event "ALLOW" "$TOOL_NAME" "worker" "subagent" "agent_id=$AGENT_ID"
   exit 0
 fi

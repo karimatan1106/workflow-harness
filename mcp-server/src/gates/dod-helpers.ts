@@ -25,6 +25,8 @@ export function isStructuralLine(line: string): boolean {
   if (/^\*\*[^*]+\*\*[:：]?\s*$/.test(trimmed)) return true;
   if (/^[-*]\s+\*\*[^*]+\*\*[:：]?\s*$/.test(trimmed)) return true;
   if (/^(?:[-*]\s+)?.{1,50}[:：]\s*$/.test(trimmed)) return true;
+  // F-001 / AC-1: short hyphen-bullet body (<=40 chars total, no terminating punctuation) is structural
+  if (/^-\s+\S/.test(trimmed) && trimmed.length <= 40 && !/[.。!?！？]\s*$/.test(trimmed)) return true;
   // Mermaid syntax keywords
   if (/^(graph|subgraph|end|classDef|class |pie|gantt|sequenceDiagram|flowchart)\b/.test(trimmed)) return true;
   // Mermaid arrows

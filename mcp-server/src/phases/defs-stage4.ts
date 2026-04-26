@@ -30,6 +30,8 @@ export const DEFS_STAGE4: Record<string, PhaseDefinition> = {
 2. テストは失敗する状態で作成（実装コードがまだないため）
 3. テストファイルのパスを記録
 
+命名規則: **TC-AC<N>-<NN>** 形式で命名すること（旧形式 TC-N-NN も互換受理）。
+
 テストが失敗することを確認してください。
 
 TDD Red記録: harness_record_test_result(taskId, exitCode: 1, summary: "Red phase - tests fail as expected") を使用。

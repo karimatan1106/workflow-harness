@@ -70,7 +70,7 @@ E2Eテストを実施してください。
     description: 'Update specifications, README, CHANGELOG',
     model: 'sonnet',
     bashCategories: ['readonly', 'implementation'],
-    inputFiles: ['{docsDir}/planning.md', '{docsDir}/requirements.md', '{docsDir}/code-review.md'],
+    inputFiles: ['{docsDir}/planning.md', '{docsDir}/requirements.md'],
     outputFile: '{docsDir}/docs-update.md',
     requiredSections: ['decisions', 'artifacts', 'next'],
     minLines: 30,

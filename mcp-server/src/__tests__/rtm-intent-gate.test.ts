@@ -57,8 +57,11 @@ describe('AC-1: checkOpenQuestions blocks non-empty openQuestions', () => {
     fs.writeFileSync(path.join(tmpDir, 'requirements.md'), content);
   }
 
-  it('TC-AC1-01: string openQuestions with valid item → passed:false', () => {
-    writeReqMd('OQ-1: 未解決質問');
+  it('TC-AC1-01: list-item openQuestions with valid item → passed:false', () => {
+    // F-003 / AC-3: new contract — checkOpenQuestions counts Markdown list items only.
+    // Plain prose like "OQ-1: 未解決質問" without `- ` prefix is treated as 0 items (passes).
+    // To represent an unresolved question, use list-item format.
+    writeReqMd('- OQ-1: 未解決質問');
     const state = { phase: 'requirements', userIntent: 'test' } as any;
     const result = checkOpenQuestions(state, 'requirements', tmpDir);
     expect(result.passed).toBe(false);

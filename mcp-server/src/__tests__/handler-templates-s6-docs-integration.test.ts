@@ -66,7 +66,7 @@ describe('docs_update buildSubagentPrompt integration', () => {
     expect(prompt).toContain('out:');
     expect(prompt).toContain('planning.md');
     expect(prompt).toContain('requirements.md');
-    expect(prompt).toContain('code-review.md');
+    expect(prompt).not.toContain('code-review.md');
     expect(prompt).toContain('docs-update.md');
   });
 });

@@ -1,7 +1,8 @@
 ---
 name: coordinator
 description: L2 Coordinator for harness workflow phases. Analyzes scope, decomposes tasks, Worker に移譲, and reports results. Use when orchestrator needs to delegate phase work.
-tools: Read, Glob, Grep, Bash, Skill, ToolSearch
+tools: Read, Glob, Grep, Bash, Skill, ToolSearch, Write
+allowedWriteExt: [.toon, .mmd]
 model: inherit
 maxTurns: 30
 ---

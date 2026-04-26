@@ -70,11 +70,9 @@ describe('AC-2: registry.ts docs_update config', () => {
     expect(config.outputFile).toBe('{docsDir}/docs-update.md');
   });
 
-  it('TC-AC2-02: inputFiles contains planning.md, requirements.md, code-review.md', () => {
+  it('TC-AC2-02: inputFiles contains planning.md and requirements.md', () => {
     const inputFiles = config.inputFiles as string[];
-    expect(inputFiles).toContain('{docsDir}/planning.md');
-    expect(inputFiles).toContain('{docsDir}/requirements.md');
-    expect(inputFiles).toContain('{docsDir}/code-review.md');
+    expect(inputFiles).toEqual(['{docsDir}/planning.md', '{docsDir}/requirements.md']);
   });
 
   it('TC-AC2-03: requiredSections is [decisions, artifacts, next]', () => {
