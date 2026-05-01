@@ -46,6 +46,27 @@ src/backend/
 
 **Dependency Flow**: Presentation → Application → Domain ← Infrastructure. Domain is pure (no external deps).
 
+## Rust Crate (Library/Binary)
+
+```
+crate-root/
+├── Cargo.toml          # crate metadata + dependencies
+├── Cargo.lock          # dependency lock (commit for binary, gitignore for library)
+├── src/
+│   ├── lib.rs          # library root (when crate is a lib)
+│   ├── main.rs         # binary entry (when crate is a bin)
+│   └── <module>.rs     # modules with #[cfg(test)] mod tests
+├── tests/
+│   ├── integration_test.rs  # integration tests (each file = test binary)
+│   └── fixtures/       # test fixtures
+├── benches/            # cargo bench (optional)
+└── examples/           # cargo run --example (optional)
+```
+
+- Unit tests live alongside source as `#[cfg(test)] mod tests { ... }`
+- Integration tests live in `tests/` directory (each file becomes a separate test binary)
+- Fixtures live in `tests/fixtures/`
+
 ## Docs-to-Source Mapping
 
 | Docs | Frontend | Backend |
