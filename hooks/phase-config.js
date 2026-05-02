@@ -7,12 +7,19 @@ const BASH_COMMANDS = {
   testing: [
     'npm test', 'npm run test', 'npx vitest', 'npx jest',
     'npx playwright', 'pytest', 'node --test',
+    'cargo test', 'cargo nextest run',
   ],
   // includes read-only inspection commands needed to verify before push
   git: ['git add', 'git commit', 'git push', 'git tag', 'git status', 'git log', 'git show', 'git branch', 'git diff', 'git check-ignore'],
   security: [
     'npm audit', 'npx audit-ci', 'detect-secrets', 'semgrep',
     'npx snyk', 'trivy', 'gitleaks',
+  ],
+  implementation: [
+    'npm install', 'npm run build', 'mkdir', 'rm',
+    'git add', 'git commit',
+    'cargo build', 'cargo check', 'cargo clippy', 'cargo fmt',
+    'cargo add', 'cargo remove',
   ],
 };
 
@@ -55,12 +62,12 @@ const PHASE_EXT = {
   state_machine:           ['.md', '.mmd'],
   flowchart:               ['.md', '.mmd'],
   ui_design:               ['.md', '.mmd'],
-  testing:                 ['.md', '.ts', '.tsx', '.js'],
-  regression_test:         ['.md', '.ts', '.tsx', '.js'],
-  test_impl:               ['.test.ts', '.spec.ts', '.test.tsx', '.spec.tsx', '.md'],
+  testing:                 ['.md', '.ts', '.tsx', '.js', '.rs'],
+  regression_test:         ['.md', '.ts', '.tsx', '.js', '.rs'],
+  test_impl:               ['.test.ts', '.spec.ts', '.test.tsx', '.spec.tsx', '.md', '.rs'],
   implementation:          ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html', '.md', '.py', '.go', '.rs', '.java', '.yml', '.yaml', '.toml', '.env', '.sh'],
   refactoring:             ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.test.ts', '.spec.ts', '.py', '.go', '.rs', '.java', '.md'],
-  e2e_test:                ['.md', '.test.ts', '.spec.ts'],
+  e2e_test:                ['.md', '.test.ts', '.spec.ts', '.rs'],
   build_check:             null,
   commit:                  null,
   push:                    null,

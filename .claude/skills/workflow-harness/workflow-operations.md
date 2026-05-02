@@ -6,14 +6,14 @@ description: Test output placement, MCP server cache management, and package ins
 
 ## 1. Test Output Placement
 
-| File Type | Backend | Frontend |
-|-----------|---------|----------|
-| Test input/output | `src/backend/tests/fixtures/{input,output}/` | `src/frontend/test/fixtures/` |
-| Screenshots | `src/backend/tests/screenshots/` | `src/frontend/test/screenshots/` |
-| Unit tests | `src/backend/tests/unit/` | `src/frontend/**/*.test.tsx` |
-| Integration tests | `src/backend/tests/integration/` | `src/frontend/test/integration/` |
-| Regression tests | `src/backend/tests/regression/` | `src/frontend/test/regression/` |
-| E2E / Temp | `e2e/` / `.tmp/` | `e2e/` / `.tmp/` |
+| File Type | Backend | Frontend | Rust |
+|-----------|---------|----------|------|
+| Test input/output | `src/backend/tests/fixtures/{input,output}/` | `src/frontend/test/fixtures/` | `tests/fixtures/` |
+| Screenshots | `src/backend/tests/screenshots/` | `src/frontend/test/screenshots/` | `tests/screenshots/` |
+| Unit tests | `src/backend/tests/unit/` | `src/frontend/**/*.test.tsx` | `src/<module>.rs` 内 `#[cfg(test)] mod tests` |
+| Integration tests | `src/backend/tests/integration/` | `src/frontend/test/integration/` | `tests/*.rs` |
+| Regression tests | `src/backend/tests/regression/` | `src/frontend/test/regression/` | `tests/regression/*.rs` |
+| E2E / Temp | `e2e/` / `.tmp/` | `e2e/` / `.tmp/` | `e2e/` / `.tmp/` |
 
 **禁止**: root `tests/`, `test_*.ts`, `*.pptx/pdf/png` outputs, `screenshot*.png`, `*_output.*`
 
@@ -33,5 +33,6 @@ Node.jsはモジュールをメモリキャッシュ。コード変更後は再�
 | Frontend | `src/frontend/` | `cd src/frontend && npm install xxx` |
 | Backend | `src/backend/` | `cd src/backend && pnpm add xxx` |
 | E2E | `e2e/` | `cd e2e && npm install playwright` |
+| Rust | crate root (`Cargo.toml` 直下) | `cargo add <crate>` |
 
 **禁止**: root `npm install/init`, `pnpm add`, `yarn add`. root に `package.json` / `node_modules` 作成禁止。
