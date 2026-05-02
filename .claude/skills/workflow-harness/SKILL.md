@@ -9,6 +9,8 @@ user-invocable: true
 30-phase, 8-stage lifecycle. Gates use L1-L4 deterministic checks only (L5 forbidden).
 Phases = context compression devices: each artifact is the complete handoff for the next phase.
 
+> Breaking Change: Backend 規約は v2 から Rust(axum/utoipa/sqlx) に統一されています。既存 TS Backend を持つ下流リポジトリの後方互換は持ちません。詳細は ADR-032 を参照。
+
 ---
 
 ## 0. Task Detection (Auto-Start)
@@ -56,8 +58,8 @@ Phases = context compression devices: each artifact is the complete handoff for 
 | `workflow-execution.md` | 62 | subagent設定表, Bash許可表, エラー変換表, 編集制限表 | subagent起動時 |
 | `workflow-docs.md` | 136 | ディレクトリ構造, 命名規則, フェーズ別ドキュメント作成 | ドキュメント配置時 |
 | `workflow-operations.md` | 37 | テスト配置, MCP再起動, パッケージ規則 | テスト/運用時 |
-| `workflow-project-structure.md` | 73 | Frontend/Backend構造, Docs-Source対応表 | ファイル作成時 |
-| `workflow-api-standards.md` | 103 | Zod/Hono/OpenAPI, レスポンス形式, エラーコード | API実装時 |
+| `workflow-project-structure.md` | 73 | Frontend構造 / Backend (Rust crate) 構造, Docs-Source対応表 | ファイル作成時 |
+| `workflow-api-standards.md` | 103 | axum/utoipa/sqlx, レスポンス形式, エラーコード | API実装時 |
 
 ---
 
