@@ -51,9 +51,10 @@ export async function handleHarnessStart(
   args: Record<string, unknown>,
   sm: StateManager,
 ): Promise<HandlerResult> {
-  const taskName = String(args.taskName ?? '');
+  const rawTaskName = String(args.taskName ?? '');
+  const taskName = rawTaskName.replace(/[/\\]/g, '');
   const userIntent = String(args.userIntent ?? '');
-  if (!taskName) return respondError('taskName is required');
+  if (!taskName) return respondError('taskName is required (or contained only slashes)');
   if (userIntent.length < 20) {
     return respondError(
       'userIntent must be at least 20 characters long. '
