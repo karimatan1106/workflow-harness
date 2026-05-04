@@ -17,7 +17,7 @@ description: Phase-specific subagent config, bash permissions, error-to-improvem
 | ui_design | sonnet | TeamCreate→Coordinator→Agent→Worker | planning.md + *.mmd | ui-design.md |
 | design_review | sonnet | TeamCreate→Coordinator→Agent→Worker | *.mmd + ui-design.md | - |
 | test_design | sonnet | TeamCreate→Coordinator→Agent→Worker | planning.md + *.mmd | test-design.md |
-| test_impl / implementation | sonnet | TeamCreate→Coordinator→Agent→Worker | test-design.md / *.test.ts | *.test.ts / *.ts |
+| test_impl / implementation | sonnet | TeamCreate→Coordinator→Agent→Worker | test-design.md / *.test.ts, *.rs | *.test.ts, *.rs(Rust: `#[cfg(test)] mod tests` または `tests/*.rs`、`Cargo.toml` の `[dev-dependencies]`) / *.ts, *.rs |
 | refactoring / build_check | haiku | TeamCreate→Coordinator→Agent→Worker | *.ts | *.ts / - |
 | code_review | **opus** | TeamCreate→Coordinator→Agent→Worker | *.ts | code-review.md |
 | testing / regression_test | haiku | TeamCreate→Coordinator→Agent→Worker | テストスイート | - |

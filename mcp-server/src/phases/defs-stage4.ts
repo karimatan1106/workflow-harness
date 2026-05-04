@@ -132,10 +132,23 @@ ${REFACTORING_STRATEGY}
 - タスク名: {taskName}
 
 作業内容
-ビルドが成功することを確認してください。
-1. TypeScriptコンパイル（tsc --noEmit）
-2. ビルドコマンド（npm run build）
-3. エラーがあれば修正
+ビルドが成功することを確認してください。プロジェクトルートの言語別マニフェストをランタイム検知し、該当する手順のみを実行してください（不在の言語はスキップ／graceful skip）。
+
+ランタイム検知ロジック（優先順位順）
+1. Cargo.toml が存在する場合（Rust 優先）:
+   - \`cargo build\` を実行
+   - \`cargo clippy --no-deps\` を実行
+   - cargo が利用不可な環境では graceful skip
+2. tsconfig.json が存在する場合（TypeScript）:
+   - \`tsc --noEmit\` を実行
+   - \`npm run build\` を実行
+3. pyproject.toml が存在する場合（Python）:
+   - \`python -m py_compile $(git ls-files '*.py')\` を実行
+   - もしくは \`pytest --collect-only\` でコレクト検証
+4. Cargo.toml / tsconfig.json / pyproject.toml いずれも不在の場合:
+   - build_check をスキップ（graceful）
+
+エラーがあれば修正してから再実行してください。
 
 {BASH_CATEGORIES}
 {EXIT_CODE_RULE}`,

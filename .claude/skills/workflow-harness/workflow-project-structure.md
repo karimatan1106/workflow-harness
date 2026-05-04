@@ -24,40 +24,89 @@ src/frontend/
 
 **Co-location**: Component + Story + Test + CSS in same directory.
 
-## Backend (Clean Architecture + DDD)
+## Backend (Rust + Cargo workspace + Clean Architecture + DDD)
 
 ```
 src/backend/
-├── domain/               # ★ Business logic core
-│   ├── entities/ | value-objects/ | aggregates/ | events/
-│   ├── repositories/     # Ports (interfaces)
-│   └── services/
-├── application/          # Use cases
-│   ├── use-cases/ | commands/ (CQRS write) | queries/ (CQRS read) | dtos/
-├── infrastructure/       # Technical adapters
-│   ├── database/         # Prisma + repository impls
-│   ├── external/ | messaging/ | cache/ | config/
-├── presentation/         # API layer (Hono routes)
-│   ├── routes/ | middleware/ | schemas/ (Zod)
-├── batch/                # Batch jobs
-├── shared/               # Constants, utils, exceptions
-└── tests/                # Integration tests
+├── Cargo.toml              # workspace root: [workspace] members = ["crates/*"]
+├── Cargo.lock              # commit (binary workspace)
+├── crates/
+│   ├── domain/             # ★ Business logic core (no external deps)
+│   │   ├── Cargo.toml      # [dependencies] のみ最小限(serde 等)
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── entities/   # entity structs + impl
+│   │       ├── value_objects/
+│   │       ├── aggregates/
+│   │       ├── events/     # domain events
+│   │       ├── repositories/  # repository traits (Ports)
+│   │       └── services/   # domain services
+│   ├── application/        # Use cases
+│   │   ├── Cargo.toml      # [dependencies] domain のみ
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── use_cases/
+│   │       ├── commands/   # CQRS write
+│   │       ├── queries/    # CQRS read
+│   │       └── dtos/
+│   ├── infrastructure/     # Technical adapters
+│   │   ├── Cargo.toml      # [dependencies] domain + sqlx + refinery 等
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── database/   # sqlx + repository impls
+│   │       ├── migrations/ # refinery .rs migrations(V001__init.rs 形式)
+│   │       ├── external/
+│   │       ├── messaging/
+│   │       ├── cache/
+│   │       └── config/
+│   └── presentation/       # API layer (axum routes)
+│       ├── Cargo.toml      # [dependencies] application + axum + utoipa + tokio
+│       └── src/
+│           ├── lib.rs
+│           ├── main.rs     # binary entry
+│           ├── routes/
+│           ├── middleware/
+│           └── schemas/    # utoipa derive structs
+└── tests/                  # workspace integration tests (各 crate にも tests/ あり)
 ```
 
-**Dependency Flow**: Presentation → Application → Domain ← Infrastructure. Domain is pure (no external deps).
+**Dependency Flow**: `presentation → application → domain ← infrastructure`. Cargo `[dependencies]` で機械的に強制(domain crate は他 crate 依存ゼロ)。
+
+**Why Cargo workspace**: module visibility のみでは依存方向逆流を CI で検知できない。物理 crate 分離で依存方向を Cargo レベルで強制し、L1-L4 決定的ゲート(LLM 判断不要)思想と一致。
+
+## Rust Crate (Library/Binary)
+
+```
+crate-root/
+├── Cargo.toml          # crate metadata + dependencies
+├── Cargo.lock          # dependency lock (commit for binary, gitignore for library)
+├── src/
+│   ├── lib.rs          # library root (when crate is a lib)
+│   ├── main.rs         # binary entry (when crate is a bin)
+│   └── <module>.rs     # modules with #[cfg(test)] mod tests
+├── tests/
+│   ├── integration_test.rs  # integration tests (each file = test binary)
+│   └── fixtures/       # test fixtures
+├── benches/            # cargo bench (optional)
+└── examples/           # cargo run --example (optional)
+```
+
+- Unit tests live alongside source as `#[cfg(test)] mod tests { ... }`
+- Integration tests live in `tests/` directory (each file becomes a separate test binary)
+- Fixtures live in `tests/fixtures/`
 
 ## Docs-to-Source Mapping
 
 | Docs | Frontend | Backend |
 |------|----------|---------|
-| `docs/spec/features/{name}.md` | `features/{name}/` | `application/use-cases/{name}/` |
+| `docs/spec/features/{name}.md` | `features/{name}/` | `crates/application/src/use_cases/{name}/` |
 | `docs/spec/components/{name}.md` | `components/ui/{name}/` | — |
 | `docs/spec/screens/{name}.md` | `app/(routes)/{name}/` | — |
-| `docs/spec/api/{name}.md` | `features/{name}/api/` | `presentation/routes/{name}/` |
-| `docs/spec/events/{name}.md` | — | `domain/events/` |
-| `docs/spec/database/{name}.md` | — | `infrastructure/database/` |
-| `docs/architecture/integrations/{name}.md` | — | `infrastructure/external/` |
-| `docs/architecture/batch/{name}.md` | — | `batch/` |
+| `docs/spec/api/{name}.md` | `features/{name}/api/` | `crates/presentation/src/routes/{name}/` |
+| `docs/spec/events/{name}.md` | — | `crates/domain/src/events/` |
+| `docs/spec/database/{name}.md` | — | `crates/infrastructure/src/database/` |
+| `docs/architecture/integrations/{name}.md` | — | `crates/infrastructure/src/external/` |
+| `docs/architecture/batch/{name}.md` | — | `crates/infrastructure/src/batch/` |
 
 ## Phase-Specific Considerations
 

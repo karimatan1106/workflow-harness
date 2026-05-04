@@ -7,6 +7,16 @@ mcp-server/.claude/generated-files.json
 *.tmp
 *.local
 .env
+.env.*
+!.env.example
+!.env.test
+*.pem
+*.key
+secrets/
+.aws/
+.ssh/
+.npmrc
+.pypirc
 
 # Watchdog & session ephemeral files (generated per-project)
 .agent/.watchdog-counter

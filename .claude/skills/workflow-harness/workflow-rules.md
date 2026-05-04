@@ -128,8 +128,8 @@ Note: R17 forbidden vocabulary はここに列挙されたリストと同一。
 | Category | Commands |
 |----------|---------|
 | readonly | ls, pwd, cat, head, tail, grep, find, wc, git status/log/diff/show, npm list, node --version |
-| testing | npm test, npm run test, npx vitest/jest/playwright, pytest |
-| implementation | npm install, pnpm add, npm run build, mkdir, rm, git add, git commit |
+| testing | npm test, npm run test, npx vitest/jest/playwright, pytest, cargo test, cargo nextest run |
+| implementation | npm install, pnpm add, npm run build, mkdir, rm, git add, git commit, cargo build, cargo check, cargo clippy, cargo fmt, cargo add, cargo remove |
 | security | npm audit, npx audit-ci, npx snyk test, npx semgrep, semgrep, trivy fs/image/config |
 | git | git add, git commit, git push, git tag |
 
