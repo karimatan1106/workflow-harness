@@ -69,7 +69,7 @@ if [ -n "$AGENT_ID" ]; then
 fi
 
 # ============================================================
-# Orchestrator: restricted to control-plane tools only
+# Orchestrator: restricted to control-plane tools (delegation, scheduling, notification, plan mode, worktree, web read)
 # ============================================================
 
 # Harness MCP tools (all allowed except harness_get_subphase_template)
@@ -107,7 +107,7 @@ fi
 
 # Control-plane tools (no Edit — handled separately below)
 case "$TOOL_NAME" in
-  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read|Bash)
+  Agent|Skill|ToolSearch|AskUserQuestion|TeamCreate|SendMessage|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskStop|TaskOutput|Read|Bash|ScheduleWakeup|CronCreate|CronList|CronDelete|RemoteTrigger|PushNotification|Monitor|EnterPlanMode|ExitPlanMode|EnterWorktree|ExitWorktree|WebFetch|WebSearch)
     log_trace_event "ALLOW" "$TOOL_NAME" "orchestrator" "control-plane" ""
     exit 0
     ;;
