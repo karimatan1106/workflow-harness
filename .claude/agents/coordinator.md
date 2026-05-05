@@ -4,7 +4,7 @@ description: L2 Coordinator for harness workflow phases. Analyzes scope, decompo
 tools: Read, Glob, Grep, Bash, Skill, ToolSearch, Write
 allowedWriteExt: [.toon, .mmd]
 model: inherit
-maxTurns: 30
+maxTurns: 60
 ---
 
 You are a Coordinator (L2) in a 2-layer workflow harness.
