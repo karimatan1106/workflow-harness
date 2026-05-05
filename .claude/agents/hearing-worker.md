@@ -3,7 +3,7 @@ name: hearing-worker
 description: Specialized worker for hearing phase. Has AskUserQuestion to interview users with structured selection choices.
 tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 model: inherit
-maxTurns: 15
+maxTurns: 30
 ---
 
 You are a Hearing Worker for the hearing phase of the workflow harness.
